@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RentMeUskar | Alquiler de Furgonetas sin Conductor en Huéscar (Granada)</title>
+    <meta name="description" content="Alquiler de furgonetas sin conductor en Huéscar y el Altiplano Granadino. Furgonetas de carga y vehículos de 9 plazas para tu mudanza o viaje. Precios sin sorpresas.">
+    <!-- Favicon (using logo fallback) -->
+    <link rel="icon" type="image/png" href="assets/logo.png">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="styles.css?v=3.9">
+</head>
+<body>
+
+    <!-- Header / Navbar -->
+    <header class="main-header" id="header">
+        <div class="header-container">
+            <a href="#" class="logo-area" id="logo-link">
+                <img src="assets/logo.png" alt="RentMeUskar Logo" class="nav-logo" id="nav-logo">
+            </a>
+            
+            <nav class="navbar" id="navbar">
+                <ul class="nav-menu" id="nav-menu">
+                    <li><a href="#inicio" class="nav-link active" id="link-inicio">INICIO</a></li>
+                    <li><a href="#flota" class="nav-link" id="link-flota">FURGONETAS</a></li>
+                    <li><a href="#calculadora" class="nav-link" id="link-calculadora">PRECIOS</a></li>
+                    <li><a href="#servicios" class="nav-link" id="link-servicios">VENTAJAS</a></li>
+                    <li><a href="#contacto" class="nav-link" id="link-contacto">CONTACTO</a></li>
+                </ul>
+            </nav>
+            
+            <div class="header-actions">
+                <a href="#calculadora" class="btn btn-primary btn-nav btn-header-reserve" id="btn-nav-reserve">
+                    <i class="fa-regular fa-calendar-days"></i> RESERVA AHORA
+                </a>
+                <button class="mobile-menu-toggle" id="mobile-menu-toggle" aria-label="Abrir menú de navegación">
+                    <span class="bar" id="bar-1"></span>
+                    <span class="bar" id="bar-2"></span>
+                    <span class="bar" id="bar-3"></span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        
+        <!-- Hero Section -->
+        <section class="hero-section" id="inicio">
+            <div class="container hero-container">
+                <div class="hero-content">
+                    <div class="hero-text-block animate-fade-in-up">
+                        <div class="hero-brand-badge animate-scale-in">// RENTMEUSKAR</div>
+                        <h1 class="hero-title">
+                            <span class="text-white">MUÉVETE</span><br>
+                            <span class="text-neon">A TU MANERA</span>
+                        </h1>
+                        <div class="hero-subbox animate-fade-in">
+                            <p>ALQUILER DE FURGONETAS EN HUÉSCAR Y ALREDEDORES</p>
+                        </div>
+                    </div>
+                    
+                    <div class="hero-badges animate-fade-in-up-delayed">
+                        <div class="hero-badge-item">
+                            <div class="badge-icon-circle"><i class="fa-solid fa-shield-halved"></i></div>
+                            <div class="badge-text">
+                                <strong>FURGONETAS</strong>
+                                <span>MODERNAS Y SEGURAS</span>
+                            </div>
+                        </div>
+                        <div class="hero-badge-item">
+                            <div class="badge-icon-circle"><i class="fa-solid fa-map-location-dot"></i></div>
+                            <div class="badge-text">
+                                <strong>COBERTURA</strong>
+                                <span>HASTA 70 KM</span>
+                            </div>
+                        </div>
+                        <div class="hero-badge-item">
+                            <div class="badge-icon-circle"><i class="fa-solid fa-bolt"></i></div>
+                            <div class="badge-text">
+                                <strong>RÁPIDO, FÁCIL</strong>
+                                <span>Y SIN COMPLICACIONES</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="hero-vehicle animate-slide-in-right">
+                    <img src="assets/van_hero_green_platform_no_bg.png" alt="Mercedes Sprinter RentMeUskar" class="hero-van-img">
+                </div>
+            </div>
+            
+            <div class="hero-footer-wrapper animate-fade-in-up-late">
+                <div class="hero-footer-bar">
+                    <div class="footer-bar-container">
+                        <div class="footer-bar-item">
+                            <i class="fa-solid fa-calendar-days"></i>
+                            <div class="footer-bar-text">
+                                <strong>ALQUILA POR DÍAS</strong>
+                                <span>O POR HORAS</span>
+                            </div>
+                        </div>
+                        <div class="footer-bar-item">
+                            <i class="fa-solid fa-headset"></i>
+                            <div class="footer-bar-text">
+                                <strong>ATENCIÓN PERSONALIZADA</strong>
+                                <span>ESTAMOS PARA AYUDARTE</span>
+                            </div>
+                        </div>
+                        <div class="footer-bar-item">
+                            <i class="fa-solid fa-thumbs-up"></i>
+                            <div class="footer-bar-text">
+                                <strong>PRECIOS COMPETITIVOS</strong>
+                                <span>SIN SORPRESAS</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="scroll-down-indicator">
+                <a href="#flota" id="scroll-down-link" aria-label="Ir a sección de flota" class="animate-bounce">
+                    <i class="fa-solid fa-chevron-down"></i>
+                </a>
+            </div>
+        </section>
+
+        <!-- Stats Counter Section -->
+        <section class="stats-section" id="stats-area">
+            <div class="stats-container container">
+                <div class="stat-card reveal">
+                    <div class="stat-icon"><i class="fa-solid fa-truck"></i></div>
+                    <h3 class="stat-number" id="stat-vans">2 Modelos</h3>
+                    <p class="stat-label">Adaptados a cada necesidad</p>
+                </div>
+                <div class="stat-card reveal delay-1">
+                    <div class="stat-icon"><i class="fa-solid fa-face-smile"></i></div>
+                    <h3 class="stat-number" id="stat-clients">+500 Clientes</h3>
+                    <p class="stat-label">Satisfechos en Huéscar y comarca</p>
+                </div>
+                <div class="stat-card reveal delay-2">
+                    <div class="stat-icon"><i class="fa-solid fa-road"></i></div>
+                    <h3 class="stat-number" id="stat-kms">100% Libres</h3>
+                    <p class="stat-label">Kilómetros a tu medida</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Fleet Section -->
+        <section class="fleet-section" id="flota">
+            <div class="container">
+                <div class="section-header reveal">
+                    <span class="subtitle">Nuestra Flota</span>
+                    <h2 class="section-title">Vehículos para Cualquier Tarea</h2>
+                    <p class="section-desc">Elige la furgoneta que mejor se adapte a tu mudanza, portes o viaje grupal. Todos nuestros vehículos se conducen con carnet B habitual.</p>
+                </div>
+                
+                <div class="fleet-grid">
+                    <!-- Van Card 1: Ford Transit Custom -->
+                    <article class="van-card reveal" id="card-van-medium">
+                        <div class="van-image-container">
+                            <img src="assets/ford_transit_custom.png" alt="Ford Transit Custom" class="van-image" id="img-van-medium">
+                            <div class="van-tag highlight">Más Popular</div>
+                        </div>
+                        <div class="van-details">
+                            <h3 class="van-name">Ford Transit Custom L2H2</h3>
+                            <p class="van-model-example">Capacidad de carga mediana y ágil</p>
+                            <ul class="van-specs">
+                                <li><i class="fa-solid fa-box"></i> <strong>8 m³</strong> de capacidad</li>
+                                <li><i class="fa-solid fa-weight-hanging"></i> Carga útil: <strong>1.000 kg</strong></li>
+                                <li><i class="fa-solid fa-user"></i> <strong>3 plazas</strong> delanteras</li>
+                                <li><i class="fa-solid fa-door-open"></i> Puerta lateral corredera</li>
+                            </ul>
+                            <div class="van-footer">
+                                <div class="van-price">
+                                    <span class="price-from">Desde</span>
+                                    <span class="price-amount">59€</span>
+                                    <span class="price-unit">/ día</span>
+                                </div>
+                                <a href="#calculadora" class="btn btn-secondary btn-sm select-van-btn" data-van="medium" id="btn-select-medium">Seleccionar</a>
+                            </div>
+                        </div>
+                    </article>
+
+                    <!-- Van Card 2: MAN TGE -->
+                    <article class="van-card reveal delay-1" id="card-van-large">
+                        <div class="van-image-container">
+                            <img src="assets/man_tge.png" alt="MAN TGE Gran Volumen" class="van-image" id="img-van-large">
+                            <div class="van-tag">Gran Volumen</div>
+                        </div>
+                        <div class="van-details">
+                            <h3 class="van-name">MAN TGE L4H3 Gran Volumen</h3>
+                            <p class="van-model-example">Máxima capacidad para grandes portes</p>
+                            <ul class="van-specs">
+                                <li><i class="fa-solid fa-box"></i> <strong>14 m³</strong> de capacidad</li>
+                                <li><i class="fa-solid fa-weight-hanging"></i> Carga útil: <strong>1.400 kg</strong></li>
+                                <li><i class="fa-solid fa-user"></i> <strong>3 plazas</strong> con cabina amplia</li>
+                                <li><i class="fa-solid fa-arrows-up-down-left-right"></i> Altura interior para estar de pie</li>
+                            </ul>
+                            <div class="van-footer">
+                                <div class="van-price">
+                                    <span class="price-from">Desde</span>
+                                    <span class="price-amount">79€</span>
+                                    <span class="price-unit">/ día</span>
+                                </div>
+                                <a href="#calculadora" class="btn btn-secondary btn-sm select-van-btn" data-van="large" id="btn-select-large">Seleccionar</a>
+                            </div>
+                        </div>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <!-- Dynamic Budget Calculator Section -->
+        <section class="calculator-section" id="calculadora">
+            <div class="container">
+                <div class="calculator-wrapper reveal">
+                    <div class="calculator-info">
+                        <span class="subtitle">Calcula en 1 Minuto</span>
+                        <h2 class="calculator-title">Simulador de Presupuesto</h2>
+                        <p class="calculator-text">
+                            Selecciona el vehículo, introduce las fechas y elige los extras que necesites. Verás el precio total estimado al instante. Si te convence, solicita la reserva y te responderemos por WhatsApp de inmediato.
+                        </p>
+                        
+                        <div class="info-checklist">
+                            <div class="check-item">
+                                <i class="fa-solid fa-circle-check text-neon"></i>
+                                <span>Kilometraje adaptado en el presupuesto</span>
+                            </div>
+                            <div class="check-item">
+                                <i class="fa-solid fa-circle-check text-neon"></i>
+                                <span>Seguro a todo riesgo con franquicia estándar</span>
+                            </div>
+                            <div class="check-item">
+                                <i class="fa-solid fa-circle-check text-neon"></i>
+                                <span>Sin adelantos de pago online (pagas al recoger)</span>
+                            </div>
+                        </div>
+                        
+                        <div class="whatsapp-disclaimer">
+                            <i class="fa-brands fa-whatsapp whatsapp-icon"></i>
+                            <div>
+                                <h4>Reserva directa por WhatsApp</h4>
+                                <p>La solicitud se envía formateada al instante. Sin formularios complejos ni registros.</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <form class="calculator-form" id="booking-calculator-form">
+                        <h3 class="form-title">Detalles del Alquiler</h3>
+                        
+                        <!-- Step 1: Select Van -->
+                        <div class="form-group">
+                            <label for="calc-van-select"><i class="fa-solid fa-truck-ramp-box"></i> Tipo de Furgoneta</label>
+                            <select id="calc-van-select" class="form-control" required>
+                                <option value="" disabled selected>-- Elige un modelo --</option>
+                                <option value="medium" data-price="59">Ford Transit Custom L2H2 (8m³) - Desde 59€/día</option>
+                                <option value="large" data-price="79">MAN TGE L4H3 Gran Volumen (14m³) - Desde 79€/día</option>
+                            </select>
+                        </div>
+                        
+                        <!-- Step 2: Dates -->
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="calc-date-start"><i class="fa-regular fa-calendar"></i> Recogida</label>
+                                <input type="date" id="calc-date-start" class="form-control" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="calc-time-start"><i class="fa-regular fa-clock"></i> Hora</label>
+                                <select id="calc-time-start" class="form-control">
+                                    <option value="08:00">08:00 AM</option>
+                                    <option value="09:00" selected>09:00 AM</option>
+                                    <option value="10:00">10:00 AM</option>
+                                    <option value="12:00">12:00 PM</option>
+                                    <option value="16:00">16:00 PM</option>
+                                    <option value="19:00">19:00 PM</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="calc-date-end"><i class="fa-regular fa-calendar"></i> Devolución</label>
+                                <input type="date" id="calc-date-end" class="form-control" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="calc-time-end"><i class="fa-regular fa-clock"></i> Hora</label>
+                                <select id="calc-time-end" class="form-control">
+                                    <option value="08:00">08:00 AM</option>
+                                    <option value="09:00" selected>09:00 AM</option>
+                                    <option value="10:00">10:00 AM</option>
+                                    <option value="12:00">12:00 PM</option>
+                                    <option value="16:00">16:00 PM</option>
+                                    <option value="19:00">19:00 PM</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <!-- Step 3: Extras -->
+                        <div class="form-group">
+                            <label><i class="fa-solid fa-circle-plus"></i> ¿Necesitas algún extra?</label>
+                            <div class="extras-grid">
+                                <label class="extra-checkbox-card" id="card-extra-gps">
+                                    <input type="checkbox" id="calc-extra-gps" value="5">
+                                    <div class="extra-content">
+                                        <i class="fa-solid fa-map-location-dot"></i>
+                                        <span class="extra-name">GPS Navegador</span>
+                                        <span class="extra-price">+5€ / día</span>
+                                    </div>
+                                </label>
+                                <label class="extra-checkbox-card" id="card-extra-driver">
+                                    <input type="checkbox" id="calc-extra-driver" value="8">
+                                    <div class="extra-content">
+                                        <i class="fa-solid fa-user-plus"></i>
+                                        <span class="extra-name">2º Conductor</span>
+                                        <span class="extra-price">+8€ / día</span>
+                                    </div>
+                                </label>
+                                <label class="extra-checkbox-card" id="card-extra-moving">
+                                    <input type="checkbox" id="calc-extra-moving" value="10">
+                                    <div class="extra-content">
+                                        <i class="fa-solid fa-boxes-packing"></i>
+                                        <span class="extra-name">Kit Mudanza</span>
+                                        <span class="extra-price">+10€ total</span>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Step 4: Contact details -->
+                        <div class="form-group">
+                            <label for="calc-name"><i class="fa-solid fa-user"></i> Tu Nombre</label>
+                            <input type="text" id="calc-name" class="form-control" placeholder="Escribe tu nombre completo" required>
+                        </div>
+                        
+                        <!-- Real-time calculation summary -->
+                        <div class="price-summary-box" id="price-summary-box">
+                            <div class="summary-row">
+                                <span id="summary-days-label">Días de alquiler:</span>
+                                <span class="summary-value" id="summary-days">0 días</span>
+                            </div>
+                            <div class="summary-row">
+                                <span>Precio base:</span>
+                                <span class="summary-value" id="summary-base-price">0,00 €</span>
+                            </div>
+                            <div class="summary-row">
+                                <span>Extras:</span>
+                                <span class="summary-value" id="summary-extras-price">0,00 €</span>
+                            </div>
+                            <hr class="summary-divider">
+                            <div class="summary-row total-row">
+                                <span>Total Estimado:</span>
+                                <span class="summary-total" id="summary-total-price">0,00 €</span>
+                            </div>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary btn-block btn-lg" id="btn-submit-booking">
+                            <i class="fa-brands fa-whatsapp"></i> Enviar Solicitud por WhatsApp
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <!-- Services & Advantages Section -->
+        <section class="services-section" id="servicios">
+            <div class="container">
+                <div class="section-header reveal">
+                    <span class="subtitle">Ventajas RentMeUskar</span>
+                    <h2 class="section-title">¿Por Qué Alquilar Con Nosotros?</h2>
+                    <p class="section-desc">Estamos en Huéscar y conocemos el terreno. Te ofrecemos flexibilidad total y las mejores furgonetas de Granada.</p>
+                </div>
+                
+                <div class="services-grid">
+                    <div class="service-card reveal">
+                        <div class="service-icon"><i class="fa-solid fa-key"></i></div>
+                        <h3 class="service-title">Sin Conductor</h3>
+                        <p class="service-desc-text">Conduce tú mismo. Solo necesitas tu permiso de conducir B (de coche) con al menos 2 años de antigüedad para operar cualquiera de nuestras furgonetas.</p>
+                    </div>
+                    <div class="service-card reveal delay-1">
+                        <div class="service-icon"><i class="fa-solid fa-coins"></i></div>
+                        <h3 class="service-title">Precios Claros</h3>
+                        <p class="service-desc-text">Lo que ves es lo que pagas. IVA, kilometraje acordado y seguro básico con franquicia incluidos. Sin sorpresas inesperadas al recoger la furgoneta.</p>
+                    </div>
+                    <div class="service-card reveal delay-2">
+                        <div class="service-icon"><i class="fa-solid fa-clock-rotate-left"></i></div>
+                        <h3 class="service-title">Flexibilidad Horaria</h3>
+                        <p class="service-desc-text">¿Necesitas recogerla a primera hora o entregarla tarde? Nos adaptamos a tus necesidades. Recogida y entrega personalizada en Huéscar.</p>
+                    </div>
+                    <div class="service-card reveal">
+                        <div class="service-icon"><i class="fa-solid fa-location-arrow"></i></div>
+                        <h3 class="service-title">Servicio en el Altiplano</h3>
+                        <p class="service-desc-text">Atendemos a todo el Altiplano de Granada: Castril, Galera, Orce, Puebla de Don Fadrique, Castilléjar y Baza. Tu solución logística local.</p>
+                    </div>
+                    <div class="service-card reveal delay-1">
+                        <div class="service-icon"><i class="fa-solid fa-screwdriver-wrench"></i></div>
+                        <h3 class="service-title">Flota Moderna y Segura</h3>
+                        <p class="service-desc-text">Todos nuestros furgones pasan revisiones estrictas y cuentan con asistencia en carretera 24/7 en toda España para tu total tranquilidad.</p>
+                    </div>
+                    <div class="service-card reveal delay-2">
+                        <div class="service-icon"><i class="fa-solid fa-truck-ramp-box"></i></div>
+                        <h3 class="service-title">Perfecto para Mudanzas</h3>
+                        <p class="service-desc-text">Disponemos de kits de mudanza (cinchas de amarre y mantas protectoras) para asegurar tu carga y que tus pertenencias viajen seguras.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Testimonials -->
+        <section class="testimonials-section" id="testimonios">
+            <div class="container">
+                <div class="section-header reveal">
+                    <span class="subtitle">Opiniones</span>
+                    <h2 class="section-title">Lo Que Dicen Nuestros Vecinos</h2>
+                    <p class="section-desc">La confianza de nuestros clientes en Huéscar y comarca es nuestra mayor garantía.</p>
+                </div>
+                
+                <div class="testimonials-grid">
+                    <div class="testimonial-card reveal">
+                        <div class="stars"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i></div>
+                        <p class="testimonial-text">"Alquilé la furgoneta mediana para trasladar unos muebles desde Granada a Huéscar. El trato fue inmejorable y el vehículo estaba limpísimo. Repetiré seguro."</p>
+                        <div class="testimonial-author">
+                            <div class="author-info">
+                                <h4 class="author-name">Francisco M.</h4>
+                                <p class="author-role">Particular (Huéscar)</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="testimonial-card reveal delay-1">
+                        <div class="stars"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i></div>
+                        <p class="testimonial-text">"Necesitábamos una furgoneta de 9 plazas para un viaje de fin de semana con amigos de la Puebla de Don Fadrique. El viaje fue comodísimo y el precio muy razonable."</p>
+                        <div class="testimonial-author">
+                            <div class="author-info">
+                                <h4 class="author-name">María José S.</h4>
+                                <p class="author-role">Viaje Familiar</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="testimonial-card reveal delay-2">
+                        <div class="stars"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i></div>
+                        <p class="testimonial-text">"Como autónomo, a veces necesito un vehículo de gran volumen para repartos extra. RentMeUskar me soluciona la papeleta rápidamente y sin burocracia pesada."</p>
+                        <div class="testimonial-author">
+                            <div class="author-info">
+                                <h4 class="author-name">Antonio G.</h4>
+                                <p class="author-role">Autónomo (Castril)</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- FAQ Section -->
+        <section class="faq-section" id="faq">
+            <div class="container">
+                <div class="section-header reveal">
+                    <span class="subtitle">Dudas Frecuentes</span>
+                    <h2 class="section-title">Preguntas Frecuentes</h2>
+                    <p class="section-desc">Todo lo que necesitas saber antes de alquilar tu furgoneta con nosotros.</p>
+                </div>
+                
+                <div class="faq-list">
+                    <div class="faq-item reveal" id="faq-1">
+                        <button class="faq-question" id="faq-q-1">
+                            <span>¿Qué requisitos necesito cumplir para alquilar sin conductor?</span>
+                            <i class="fa-solid fa-plus faq-toggle-icon"></i>
+                        </button>
+                        <div class="faq-answer" id="faq-a-1">
+                            <p>Necesitas tener al menos 23 años (21 para furgonetas compactas) y estar en posesión del permiso de conducir tipo B vigente con una antigüedad mínima de 2 años. Deberás presentar el DNI/NIE y el carnet de conducir originales al retirar el vehículo.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="faq-item reveal" id="faq-2">
+                        <button class="faq-question" id="faq-q-2">
+                            <span>¿Hay que dejar alguna fianza o depósito?</span>
+                            <i class="fa-solid fa-plus faq-toggle-icon"></i>
+                        </button>
+                        <div class="faq-answer" id="faq-a-2">
+                            <p>Sí, se requiere un depósito o fianza con tarjeta de crédito/débito que oscila entre los 150€ y los 300€ según el modelo de furgoneta. Esta fianza se retiene temporalmente y se libera íntegramente tras revisar que el vehículo se devuelve en las mismas condiciones y con el depósito de combustible correcto.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="faq-item reveal" id="faq-3">
+                        <button class="faq-question" id="faq-q-3">
+                            <span>¿Cómo funciona la política de combustible?</span>
+                            <i class="fa-solid fa-plus faq-toggle-icon"></i>
+                        </button>
+                        <div class="faq-answer" id="faq-a-3">
+                            <p>Nuestra política es Lleno-Lleno (Full-to-Full). Te entregamos la furgoneta con el depósito de combustible lleno (diésel) y debes devolverla de la misma forma. De lo contrario, se cobrará el coste del combustible faltante más un cargo de gestión de repostaje.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="faq-item reveal" id="faq-4">
+                        <button class="faq-question" id="faq-q-4">
+                            <span>¿Qué seguro está incluido en el precio base?</span>
+                            <i class="fa-solid fa-plus faq-toggle-icon"></i>
+                        </button>
+                        <div class="faq-answer" id="faq-a-4">
+                            <p>El precio incluye seguro obligatorio de responsabilidad civil y seguro de colisión básico con franquicia. Esto significa que en caso de accidente o daños, la responsabilidad máxima del cliente está limitada al importe de la franquicia establecida (salvo negligencia).</p>
+                        </div>
+                    </div>
+                    
+                    <div class="faq-item reveal" id="faq-5">
+                        <button class="faq-question" id="faq-q-5">
+                            <span>¿Puedo viajar fuera de España con la furgoneta?</span>
+                            <i class="fa-solid fa-plus faq-toggle-icon"></i>
+                        </button>
+                        <div class="faq-answer" id="faq-a-5">
+                            <p>Por defecto, el uso de las furgonetas está autorizada en territorio nacional (Península Ibérica). Si tienes pensado viajar a Portugal, Francia u otros países de Europa, debes comunicarlo con antelación para tramitar la cobertura del seguro correspondiente y asistencia en el extranjero.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Contact Section -->
+        <section class="contact-section" id="contacto">
+            <div class="container">
+                <div class="contact-wrapper">
+                    <!-- Contact Form & Info -->
+                    <div class="contact-info-area reveal">
+                        <span class="subtitle">Contacta Con Nosotros</span>
+                        <h2 class="contact-section-title">¿Tienes Alguna Pregunta?</h2>
+                        <p class="contact-section-desc">Escríbenos, llámanos o visítanos en Huéscar. Estaremos encantados de resolver tus dudas y ayudarte a elegir el vehículo ideal.</p>
+                        
+                        <div class="contact-methods">
+                            <a href="tel:+34600000000" class="contact-method-card" id="contact-phone-link">
+                                <div class="method-icon"><i class="fa-solid fa-phone"></i></div>
+                                <div class="method-details">
+                                    <h4>Teléfono y Llamadas</h4>
+                                    <p>+34 600 000 000</p>
+                                </div>
+                            </a>
+                            <a href="https://wa.me/34600000000" target="_blank" class="contact-method-card" id="contact-wa-link">
+                                <div class="method-icon"><i class="fa-brands fa-whatsapp text-neon"></i></div>
+                                <div class="method-details">
+                                    <h4>WhatsApp Directo</h4>
+                                    <p>+34 600 000 000</p>
+                                </div>
+                            </a>
+                            <a href="mailto:info@rentmeuskar.com" class="contact-method-card" id="contact-email-link">
+                                <div class="method-icon"><i class="fa-solid fa-envelope"></i></div>
+                                <div class="method-details">
+                                    <h4>Correo Electrónico</h4>
+                                    <p>info@rentmeuskar.com</p>
+                                </div>
+                            </a>
+                            <div class="contact-method-card">
+                                <div class="method-icon"><i class="fa-solid fa-map-location-dot"></i></div>
+                                <div class="method-details">
+                                    <h4>Ubicación Principal</h4>
+                                    <p>Polígono Industrial La Sagra, Calle A, Huéscar (Granada)</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Map Display Area -->
+                    <div class="contact-map-area reveal delay-1">
+                        <div class="map-card-container">
+                            <h3 class="map-card-title"><i class="fa-solid fa-compass"></i> Dónde Estamos</h3>
+                            <p class="map-card-subtitle">Servicio de recogida en Huéscar, Granada</p>
+                            <!-- Embedded OpenStreetMap / Stylized Iframe Map -->
+                            <div class="map-iframe-wrapper">
+                                <iframe 
+                                    id="google-map"
+                                    title="Mapa de localización de RentMeUskar en Google Maps"
+                                    src="https://maps.google.com/maps?q=Pol%C3%ADgono+Industrial+La+Sagra,+Calle+A,+Hu%C3%A9scar,+Granada&amp;t=&amp;z=15&amp;ie=UTF8&amp;iwloc=&amp;output=embed" 
+                                    style="border: 0; width: 100%; height: 100%; border-radius: 12px; filter: grayscale(1) invert(0.9) contrast(1.2);">
+                                </iframe>
+                            </div>
+                            <div class="map-card-footer">
+                                <a href="https://www.google.com/maps/search/?api=1&amp;query=Pol%C3%ADgono+Industrial+La+Sagra,+Calle+A,+Hu%C3%A9scar,+Granada" target="_blank" class="btn btn-secondary btn-block btn-sm" id="btn-view-large-map">
+                                    <i class="fa-solid fa-map-pin"></i> Ver Mapa Ampliado
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="main-footer" id="footer">
+        <div class="footer-top container">
+            <div class="footer-brand-info">
+                <img src="assets/logo.png" alt="RentMeUskar Logotipo" class="footer-logo" id="footer-logo">
+                <p class="footer-brand-desc">Alquiler local de furgonetas de carga y pasajeros sin conductor. Comprometidos con el desarrollo y la movilidad del Altiplano Granadino.</p>
+                <div class="social-links">
+                    <a href="#" aria-label="Facebook de RentMeUskar" id="social-fb"><i class="fa-brands fa-facebook-f"></i></a>
+                    <a href="#" aria-label="Instagram de RentMeUskar" id="social-ig"><i class="fa-brands fa-instagram"></i></a>
+                    <a href="#" aria-label="WhatsApp de RentMeUskar" id="social-wa"><i class="fa-brands fa-whatsapp"></i></a>
+                </div>
+            </div>
+            
+            <div class="footer-links-col">
+                <h4>Enlaces Útiles</h4>
+                <ul>
+                    <li><a href="#inicio">Inicio</a></li>
+                    <li><a href="#flota">Nuestra Flota</a></li>
+                    <li><a href="#calculadora">Calculadora de Precios</a></li>
+                    <li><a href="#servicios">Servicios</a></li>
+                    <li><a href="#faq">Preguntas Frecuentes</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-links-col">
+                <h4>Legal</h4>
+                <ul>
+                    <li><a href="#" id="legal-terms">Condiciones Generales</a></li>
+                    <li><a href="#" id="legal-privacy">Política de Privacidad</a></li>
+                    <li><a href="#" id="legal-cookies">Política de Cookies</a></li>
+                    <li><a href="#" id="legal-notice">Aviso Legal</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-links-col">
+                <h4>Horario de Atención</h4>
+                <ul class="schedule-list">
+                    <li><span>Lunes - Viernes:</span> <span>08:00 - 14:00, 16:00 - 20:00</span></li>
+                    <li><span>Sábados:</span> <span>09:00 - 13:30</span></li>
+                    <li><span>Domingos:</span> <span>Cerrado (Devoluciones pactadas)</span></li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="footer-bottom">
+            <div class="container footer-bottom-flex">
+                <p class="copyright">&copy; 2026 RentMeUskar. Todos los derechos reservados. Diseñado para el Altiplano de Granada.</p>
+                <p class="developer-credit">Localidad: Huéscar (Granada)</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Custom Script -->
+    <script src="app.js?v=2.0"></script>
+</body>
+</html>
