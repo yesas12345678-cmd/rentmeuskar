@@ -416,20 +416,20 @@ a {
 .hero-subbox {
     background-color: rgba(15, 28, 63, 0.4);
     backdrop-filter: blur(8px);
-    border-left: 4px solid var(--color-neon);
+    border-left: 3px solid var(--color-neon);
     border-top: 1px solid rgba(255, 255, 255, 0.05);
     border-right: 1px solid rgba(255, 255, 255, 0.05);
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    padding: 0.6rem 1.2rem;
-    max-width: 580px;
-    border-radius: 0 8px 8px 0;
+    padding: 0.4rem 0.8rem;
+    max-width: 450px;
+    border-radius: 0 6px 6px 0;
 }
 
 .hero-subbox p {
     color: var(--text-primary);
     font-family: var(--font-heading);
     font-weight: 700;
-    font-size: 0.85rem;
+    font-size: 0.65rem;
     letter-spacing: 0.05em;
 }
 
