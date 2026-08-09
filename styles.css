@@ -517,9 +517,10 @@ a {
 
 @media (min-width: 1025px) {
     .hero-van-img {
-        width: 135%;
-        max-width: 850px;
-        margin-left: -22%;
+        width: 170%;
+        max-width: 1100px;
+        margin-left: -40%;
+        margin-top: -120px;
     }
 }
 
