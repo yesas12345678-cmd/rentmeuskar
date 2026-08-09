@@ -420,7 +420,7 @@ a {
     border-top: 1px solid rgba(255, 255, 255, 0.05);
     border-right: 1px solid rgba(255, 255, 255, 0.05);
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    padding: 0.85rem 1.5rem;
+    padding: 0.6rem 1.2rem;
     max-width: 580px;
     border-radius: 0 8px 8px 0;
 }
@@ -429,7 +429,7 @@ a {
     color: var(--text-primary);
     font-family: var(--font-heading);
     font-weight: 700;
-    font-size: 1rem;
+    font-size: 0.85rem;
     letter-spacing: 0.05em;
 }
 
@@ -517,10 +517,10 @@ a {
 
 @media (min-width: 1025px) {
     .hero-van-img {
-        width: 170%;
-        max-width: 1100px;
-        margin-left: -40%;
-        margin-top: -120px;
+        width: 210%;
+        max-width: 1350px;
+        margin-left: -55%;
+        margin-top: -60px;
     }
 }
 
