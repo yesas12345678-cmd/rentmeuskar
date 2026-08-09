@@ -88,8 +88,8 @@
                         <div class="hero-badge-item">
                             <div class="badge-icon-circle"><i class="fa-solid fa-map-location-dot"></i></div>
                             <div class="badge-text">
-                                <strong>COBERTURA</strong>
-                                <span>HASTA 70 KM</span>
+                                <strong>ENTREGA EN</strong>
+                                <span>HUÉSCAR (GRANADA)</span>
                             </div>
                         </div>
                         <div class="hero-badge-item">
@@ -1129,6 +1129,16 @@
             background: var(--color-neon);
             border-color: var(--color-neon);
             color: #000;
+        }
+
+        /* Estilo personalizado para días no disponibles (deshabilitados) en el calendario */
+        .flatpickr-day.flatpickr-disabled,
+        .flatpickr-day.flatpickr-disabled:hover {
+            color: #ff4d6d !important;
+            background: rgba(255, 77, 109, 0.15) !important;
+            text-decoration: line-through;
+            cursor: not-allowed;
+            border-color: transparent !important;
         }
     </style>
 

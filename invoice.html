@@ -397,37 +397,66 @@
                     if (!isCon) {
                         // MODALIDAD: SIN CONDUCTOR
                         const baseDailyPrice = isFord ? 79.00 : 107.44;
-                        let baseRentalTotal = baseDailyPrice * booking.days;
                         
-                        // Furgoneta Base row
-                        const trBase = document.createElement('tr');
-                        trBase.innerHTML = `
-                            <td>
-                                <strong>Alquiler de Vehículo sin Conductor</strong><br>
-                                <small style="color: #64748b;">Modelo: ${booking.van_name} | Matrícula: ${isFord ? '3681 MCC' : '3758 MDW'}</small>
-                            </td>
-                            <td class="number-col">${booking.days} d</td>
-                            <td class="number-col">${baseDailyPrice.toFixed(2)} €</td>
-                            <td class="number-col"><strong>${baseRentalTotal.toFixed(2)} €</strong></td>
-                        `;
-                        tbody.appendChild(trBase);
-                        calculatedBaseTaxable += baseRentalTotal;
-
-                        // Descuento del 5% row (if >= 3 days)
-                        if (booking.days >= 3) {
-                            const discountVal = baseRentalTotal * 0.05;
-                            const trDisc = document.createElement('tr');
-                            trDisc.innerHTML = `
+                        if (booking.days > 7) {
+                            // Larga duración (Tarifa personalizada)
+                            let extrasTotal = 0;
+                            if (booking.extras && booking.extras.length > 0) {
+                                booking.extras.forEach(extra => {
+                                    if (extra.includes('GPS')) extrasTotal += 5.00 * booking.days;
+                                    else if (extra.includes('Conductor')) extrasTotal += 8.00 * booking.days;
+                                    else if (extra.includes('Mudanza')) extrasTotal += 10.00;
+                                });
+                            }
+                            
+                            const totalPrice = parseFloat(booking.total_price);
+                            const baseRentalTotal = totalPrice > 0 ? (totalPrice / 1.21) - extrasTotal : 0;
+                            
+                            const trBase = document.createElement('tr');
+                            trBase.innerHTML = `
                                 <td>
-                                    <strong>Descuento Comercial (5%)</strong><br>
-                                    <small style="color: #64748b;">Aplicado por duración de alquiler &ge; 3 días</small>
+                                    <strong>Alquiler de Vehículo sin Conductor (Larga Duración)</strong><br>
+                                    <small style="color: #64748b;">Modelo: ${booking.van_name} | Matrícula: ${isFord ? '3681 MCC' : '3758 MDW'}</small>
                                 </td>
-                                <td class="number-col">1</td>
-                                <td class="number-col">-${discountVal.toFixed(2)} €</td>
-                                <td class="number-col" style="color: #ff4d6d;"><strong>-${discountVal.toFixed(2)} €</strong></td>
+                                <td class="number-col">${booking.days} d</td>
+                                <td class="number-col">${totalPrice > 0 ? (baseRentalTotal / booking.days).toFixed(2) : 'A consultar'} €</td>
+                                <td class="number-col"><strong>${totalPrice > 0 ? baseRentalTotal.toFixed(2) : 'A consultar'} €</strong></td>
                             `;
-                            tbody.appendChild(trDisc);
-                            calculatedBaseTaxable -= discountVal;
+                            tbody.appendChild(trBase);
+                            calculatedBaseTaxable += baseRentalTotal;
+                        } else {
+                            let baseRentalTotal = baseDailyPrice * booking.days;
+                            
+                            // Furgoneta Base row
+                            const trBase = document.createElement('tr');
+                            trBase.innerHTML = `
+                                <td>
+                                    <strong>Alquiler de Vehículo sin Conductor</strong><br>
+                                    <small style="color: #64748b;">Modelo: ${booking.van_name} | Matrícula: ${isFord ? '3681 MCC' : '3758 MDW'}</small>
+                                </td>
+                                <td class="number-col">${booking.days} d</td>
+                                <td class="number-col">${baseDailyPrice.toFixed(2)} €</td>
+                                <td class="number-col"><strong>${baseRentalTotal.toFixed(2)} €</strong></td>
+                            `;
+                            tbody.appendChild(trBase);
+                            calculatedBaseTaxable += baseRentalTotal;
+
+                            // Descuento del 5% row (if >= 3 days y <= 7)
+                            if (booking.days >= 3 && booking.days <= 7) {
+                                const discountVal = baseRentalTotal * 0.05;
+                                const trDisc = document.createElement('tr');
+                                trDisc.innerHTML = `
+                                    <td>
+                                        <strong>Descuento Comercial (5%)</strong><br>
+                                        <small style="color: #64748b;">Aplicado por duración de alquiler &ge; 3 días (máximo 1 semana)</small>
+                                    </td>
+                                    <td class="number-col">1</td>
+                                    <td class="number-col">-${discountVal.toFixed(2)} €</td>
+                                    <td class="number-col" style="color: #ff4d6d;"><strong>-${discountVal.toFixed(2)} €</strong></td>
+                                `;
+                                tbody.appendChild(trDisc);
+                                calculatedBaseTaxable -= discountVal;
+                            }
                         }
 
                         // Extras rows

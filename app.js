@@ -276,11 +276,19 @@ document.addEventListener('DOMContentLoaded', () => {
         let totalEstimated = 0;
 
         if (mode === 'sin') {
+            if (days > 7) {
+                summaryDays.textContent = `${days} días (> 1 sem.)`;
+                summaryBasePrice.textContent = 'A consultar';
+                summaryExtrasPrice.textContent = 'A consultar';
+                summaryTotalPrice.textContent = 'A consultar';
+                return;
+            }
+
             const baseDailyRate = CONFIG.prices.sin[vanType].price;
             let totalBase = baseDailyRate * days;
             
-            // Descuento del 5% a partir de 3 días
-            if (days >= 3) {
+            // Descuento del 5% a partir de 3 días (máximo 1 semana)
+            if (days >= 3 && days <= 7) {
                 totalBase = totalBase * 0.95;
             }
 
@@ -664,7 +672,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         const totalPriceText = summaryTotalPrice.textContent;
-        const totalPriceNum = parseFloat(totalPriceText.replace(/[^\d.,]/g, '').replace(',', '.'));
+        const totalPriceNum = totalPriceText.includes('A consultar') ? 0.00 : parseFloat(totalPriceText.replace(/[^\d.,]/g, '').replace(',', '.'));
 
         // Obtener ID del usuario
         let user;
