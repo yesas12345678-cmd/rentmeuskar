@@ -16,6 +16,10 @@
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
+    <!-- Flatpickr CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.css">
+    
     <!-- Custom CSS -->
     <link rel="stylesheet" href="styles.css?v=3.9">
 </head>
@@ -39,6 +43,11 @@
             </nav>
             
             <div class="header-actions">
+                <div class="user-auth-section" id="user-auth-section" style="display: flex; gap: 0.5rem; align-items: center;">
+                    <button class="btn btn-secondary btn-sm" id="btn-login-modal" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">
+                        <i class="fa-solid fa-user-lock"></i> Entrar
+                    </button>
+                </div>
                 <a href="#calculadora" class="btn btn-primary btn-nav btn-header-reserve" id="btn-nav-reserve">
                     <i class="fa-regular fa-calendar-days"></i> RESERVA AHORA
                 </a>
@@ -148,8 +157,8 @@
                 </div>
                 <div class="stat-card reveal delay-2">
                     <div class="stat-icon"><i class="fa-solid fa-road"></i></div>
-                    <h3 class="stat-number" id="stat-kms">100% Libres</h3>
-                    <p class="stat-label">Kilómetros a tu medida</p>
+                    <h3 class="stat-number" id="stat-kms">350 km/día</h3>
+                    <p class="stat-label">Kilómetros incluidos</p>
                 </div>
             </div>
         </section>
@@ -182,8 +191,8 @@
                             <div class="van-footer">
                                 <div class="van-price">
                                     <span class="price-from">Desde</span>
-                                    <span class="price-amount">59€</span>
-                                    <span class="price-unit">/ día</span>
+                                    <span class="price-amount">79,00 €</span>
+                                    <span class="price-unit">+ IVA / día</span>
                                 </div>
                                 <a href="#calculadora" class="btn btn-secondary btn-sm select-van-btn" data-van="medium" id="btn-select-medium">Seleccionar</a>
                             </div>
@@ -208,8 +217,8 @@
                             <div class="van-footer">
                                 <div class="van-price">
                                     <span class="price-from">Desde</span>
-                                    <span class="price-amount">79€</span>
-                                    <span class="price-unit">/ día</span>
+                                    <span class="price-amount">107,44 €</span>
+                                    <span class="price-unit">+ IVA / día</span>
                                 </div>
                                 <a href="#calculadora" class="btn btn-secondary btn-sm select-van-btn" data-van="large" id="btn-select-large">Seleccionar</a>
                             </div>
@@ -256,14 +265,35 @@
                     
                     <form class="calculator-form" id="booking-calculator-form">
                         <h3 class="form-title">Detalles del Alquiler</h3>
+
+                        <!-- Step 0: Rental Modality -->
+                        <div class="form-group">
+                            <label><i class="fa-solid fa-user-gear"></i> Modalidad de Alquiler</label>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 0.5rem; margin-bottom: 0.5rem;">
+                                <label class="extra-checkbox-card mode-selector-card active" id="label-mode-sin" style="cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0.8rem; border-radius: 8px; border: 2px solid var(--color-neon); background: rgba(130, 209, 5, 0.05); transition: all 0.2s; user-select: none;">
+                                    <input type="radio" name="rental-mode" id="mode-sin-conductor" value="sin" checked style="display: none;">
+                                    <div style="text-align: center;">
+                                        <i class="fa-solid fa-key" style="font-size: 1.3rem; color: var(--color-neon); margin-bottom: 0.3rem; display: block;"></i>
+                                        <span style="font-weight: 700; display: block; color: #fff; font-size: 0.85rem;">SIN CONDUCTOR</span>
+                                    </div>
+                                </label>
+                                <label class="extra-checkbox-card mode-selector-card" id="label-mode-con" style="cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0.8rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.02); transition: all 0.2s; user-select: none;">
+                                    <input type="radio" name="rental-mode" id="mode-con-conductor" value="con" style="display: none;">
+                                    <div style="text-align: center;">
+                                        <i class="fa-solid fa-user-tie" style="font-size: 1.3rem; color: var(--text-secondary); margin-bottom: 0.3rem; display: block;"></i>
+                                        <span style="font-weight: 700; display: block; color: var(--text-secondary); font-size: 0.85rem;">CON CONDUCTOR</span>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
                         
                         <!-- Step 1: Select Van -->
                         <div class="form-group">
                             <label for="calc-van-select"><i class="fa-solid fa-truck-ramp-box"></i> Tipo de Furgoneta</label>
                             <select id="calc-van-select" class="form-control" required>
                                 <option value="" disabled selected>-- Elige un modelo --</option>
-                                <option value="medium" data-price="59">Ford Transit Custom L2H2 (8m³) - Desde 59€/día</option>
-                                <option value="large" data-price="79">MAN TGE L4H3 Gran Volumen (14m³) - Desde 79€/día</option>
+                                <option value="medium" data-price="79">Ford Transit Custom L2H2 (8m³) - 79€ + IVA / día</option>
+                                <option value="large" data-price="107.44">MAN TGE L4H3 Gran Volumen (14m³) - 107,44€ + IVA / día</option>
                             </select>
                         </div>
                         
@@ -304,8 +334,25 @@
                             </div>
                         </div>
                         
-                        <!-- Step 3: Extras -->
-                        <div class="form-group">
+                        <!-- Conditional Fields: With Driver parameters -->
+                        <div id="calc-con-conductor-fields" style="display: none; border-top: 1px dashed rgba(255,255,255,0.08); padding-top: 1rem; margin-top: 1rem; margin-bottom: 1rem;">
+                            <h4 style="font-size: 0.9rem; font-family: var(--font-heading); margin-bottom: 0.8rem; color: var(--color-neon);"><i class="fa-solid fa-sliders"></i> Estimaciones del Trayecto</h4>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="calc-kms-estimate"><i class="fa-solid fa-road"></i> Kilómetros Estimados</label>
+                                    <input type="number" id="calc-kms-estimate" class="form-control" value="20" min="1" step="1">
+                                    <small style="color: var(--text-secondary); font-size: 0.75rem;">Mínimo 20 km incluidos en la tarifa</small>
+                                </div>
+                                <div class="form-group">
+                                    <label for="calc-wait-hours"><i class="fa-solid fa-hourglass-half"></i> Horas de Espera</label>
+                                    <input type="number" id="calc-wait-hours" class="form-control" value="0" min="0" step="0.5">
+                                    <small style="color: var(--text-secondary); font-size: 0.75rem;">Para carga y descarga del vehículo</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Step 3: Extras (Only for Sin Conductor) -->
+                        <div class="form-group" id="calc-extras-section">
                             <label><i class="fa-solid fa-circle-plus"></i> ¿Necesitas algún extra?</label>
                             <div class="extras-grid">
                                 <label class="extra-checkbox-card" id="card-extra-gps">
@@ -333,6 +380,12 @@
                                     </div>
                                 </label>
                             </div>
+                        </div>
+
+                        <!-- Fianza Note (Only for Sin Conductor) -->
+                        <div class="form-group" id="calc-fianza-note" style="background: rgba(130,209,5,0.05); border: 1px dashed rgba(130,209,5,0.2); border-radius: 8px; padding: 0.8rem; margin-top: 1rem; font-size: 0.8rem; color: var(--text-secondary);">
+                            <i class="fa-solid fa-shield-halved" style="color: var(--color-neon); margin-right: 0.3rem;"></i>
+                            <strong>Fianza Reembolsable de 500€:</strong> Se retendrá temporalmente en tu tarjeta y se liberará íntegra al devolver el vehículo en las mismas condiciones.
                         </div>
 
                         <!-- Step 4: Contact details -->
@@ -484,7 +537,7 @@
                             <i class="fa-solid fa-plus faq-toggle-icon"></i>
                         </button>
                         <div class="faq-answer" id="faq-a-2">
-                            <p>Sí, se requiere un depósito o fianza con tarjeta de crédito/débito que oscila entre los 150€ y los 300€ según el modelo de furgoneta. Esta fianza se retiene temporalmente y se libera íntegramente tras revisar que el vehículo se devuelve en las mismas condiciones y con el depósito de combustible correcto.</p>
+                            <p>Sí, se requiere una fianza de 500€ que se retiene o paga mediante tarjeta en la web (para reservas de una semana o menos) o se gestiona manualmente. Esta fianza se reembolsará íntegramente tras revisar que el vehículo se devuelve en las mismas condiciones, limpio y sin daños.</p>
                         </div>
                     </div>
                     
@@ -532,25 +585,25 @@
                         <p class="contact-section-desc">Escríbenos, llámanos o visítanos en Huéscar. Estaremos encantados de resolver tus dudas y ayudarte a elegir el vehículo ideal.</p>
                         
                         <div class="contact-methods">
-                            <a href="tel:+34600000000" class="contact-method-card" id="contact-phone-link">
+                            <a href="tel:+34614767411" class="contact-method-card" id="contact-phone-link">
                                 <div class="method-icon"><i class="fa-solid fa-phone"></i></div>
                                 <div class="method-details">
                                     <h4>Teléfono y Llamadas</h4>
-                                    <p>+34 600 000 000</p>
+                                    <p>+34 614 767 411</p>
                                 </div>
                             </a>
-                            <a href="https://wa.me/34600000000" target="_blank" class="contact-method-card" id="contact-wa-link">
+                            <a href="https://wa.me/34614767411" target="_blank" class="contact-method-card" id="contact-wa-link">
                                 <div class="method-icon"><i class="fa-brands fa-whatsapp text-neon"></i></div>
                                 <div class="method-details">
                                     <h4>WhatsApp Directo</h4>
-                                    <p>+34 600 000 000</p>
+                                    <p>+34 614 767 411</p>
                                 </div>
                             </a>
-                            <a href="mailto:info@rentmeuskar.com" class="contact-method-card" id="contact-email-link">
+                            <a href="mailto:rentmeuskar@gmail.com" class="contact-method-card" id="contact-email-link">
                                 <div class="method-icon"><i class="fa-solid fa-envelope"></i></div>
                                 <div class="method-details">
                                     <h4>Correo Electrónico</h4>
-                                    <p>info@rentmeuskar.com</p>
+                                    <p>rentmeuskar@gmail.com</p>
                                 </div>
                             </a>
                             <div class="contact-method-card">
@@ -596,10 +649,16 @@
             <div class="footer-brand-info">
                 <img src="assets/logo.png" alt="RentMeUskar Logotipo" class="footer-logo" id="footer-logo">
                 <p class="footer-brand-desc">Alquiler local de furgonetas de carga y pasajeros sin conductor. Comprometidos con el desarrollo y la movilidad del Altiplano Granadino.</p>
-                <div class="social-links">
-                    <a href="#" aria-label="Facebook de RentMeUskar" id="social-fb"><i class="fa-brands fa-facebook-f"></i></a>
-                    <a href="#" aria-label="Instagram de RentMeUskar" id="social-ig"><i class="fa-brands fa-instagram"></i></a>
-                    <a href="#" aria-label="WhatsApp de RentMeUskar" id="social-wa"><i class="fa-brands fa-whatsapp"></i></a>
+                <div class="social-links-premium" style="display: flex; align-items: center; gap: 1rem; margin-top: 1.2rem;">
+                    <a href="https://facebook.com/rentmeuskar" target="_blank" style="display: flex; align-items: center; gap: 0.5rem; text-decoration: none; color: #fff; font-size: 0.9rem;" id="social-fb">
+                        <span style="display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; border: 1.5px solid var(--color-neon); color: var(--color-neon);"><i class="fa-brands fa-facebook-f"></i></span>
+                        <span>rentmeuskar</span>
+                    </a>
+                    <span style="color: rgba(255,255,255,0.2); font-weight: 300;">|</span>
+                    <a href="https://instagram.com/rentmeuskar" target="_blank" style="display: flex; align-items: center; gap: 0.5rem; text-decoration: none; color: #fff; font-size: 0.9rem;" id="social-ig">
+                        <span style="display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; border: 1.5px solid var(--color-neon); color: var(--color-neon);"><i class="fa-brands fa-instagram"></i></span>
+                        <span>@rentmeuskar</span>
+                    </a>
                 </div>
             </div>
             
@@ -641,6 +700,441 @@
             </div>
         </div>
     </footer>
+
+    <!-- ==========================================================
+         MODALES Y PASARELA TPV DE LA APLICACIÓN
+         ========================================================== -->
+    
+    <!-- Modal: Login de Clientes -->
+    <div class="custom-modal-backdrop" id="login-modal" style="display: none;">
+        <div class="custom-modal-card">
+            <span class="custom-modal-close" onclick="closeAuthModal('login-modal')">&times;</span>
+            <div class="custom-modal-header">
+                <h2>Iniciar Sesión</h2>
+                <p>Accede a tu panel para reservar, ver contratos y facturas.</p>
+            </div>
+            <form id="login-form">
+                <div class="custom-form-group">
+                    <label for="login-email">Correo Electrónico</label>
+                    <input type="email" id="login-email" class="custom-form-control" required placeholder="tu@email.com">
+                </div>
+                <div class="custom-form-group">
+                    <label for="login-password">Contraseña</label>
+                    <input type="password" id="login-password" class="custom-form-control" required placeholder="******">
+                </div>
+                <button type="submit" class="btn btn-primary btn-block" style="margin-top: 1rem;">Entrar</button>
+            </form>
+            <div class="custom-modal-footer">
+                ¿No tienes cuenta? <a href="#" onclick="switchAuthModal('login-modal', 'register-modal')">Regístrate aquí</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Registro de Clientes -->
+    <div class="custom-modal-backdrop" id="register-modal" style="display: none;">
+        <div class="custom-modal-card">
+            <span class="custom-modal-close" onclick="closeAuthModal('register-modal')">&times;</span>
+            <div class="custom-modal-header">
+                <h2>Crear Cuenta</h2>
+                <p>Regístrate para reservar furgonetas en el altiplano.</p>
+            </div>
+            <form id="register-form">
+                <div class="custom-form-group">
+                    <label for="reg-name">Nombre Completo</label>
+                    <input type="text" id="reg-name" class="custom-form-control" required placeholder="Juan Pérez">
+                </div>
+                <div class="custom-form-group">
+                    <label for="reg-email">Correo Electrónico</label>
+                    <input type="email" id="reg-email" class="custom-form-control" required placeholder="juan@gmail.com">
+                </div>
+                <div class="custom-form-group">
+                    <label for="reg-phone">Teléfono de Contacto</label>
+                    <input type="tel" id="reg-phone" class="custom-form-control" required placeholder="614767411">
+                </div>
+                <div class="custom-form-group">
+                    <label for="reg-dni">DNI / NIE</label>
+                    <input type="text" id="reg-dni" class="custom-form-control" required placeholder="12345678A">
+                </div>
+                <div class="custom-form-group">
+                    <label for="reg-password">Contraseña</label>
+                    <input type="password" id="reg-password" class="custom-form-control" required placeholder="Mínimo 6 caracteres">
+                </div>
+                <button type="submit" class="btn btn-primary btn-block" style="margin-top: 1rem;">Crear Cuenta</button>
+            </form>
+            <div class="custom-modal-footer">
+                ¿Ya tienes cuenta? <a href="#" onclick="switchAuthModal('register-modal', 'login-modal')">Inicia sesión aquí</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Área de Cliente (Reservas e Historial) -->
+    <div class="custom-modal-backdrop" id="client-modal" style="display: none;">
+        <div class="custom-modal-card max-width-lg">
+            <span class="custom-modal-close" onclick="closeAuthModal('client-modal')">&times;</span>
+            <div class="custom-modal-header">
+                <h2 id="client-panel-title">Mi Área de Cliente</h2>
+                <p>Historial de reservas, contratos y facturas.</p>
+            </div>
+            
+            <div class="client-bookings-area">
+                <table class="client-table" id="client-bookings-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Furgoneta</th>
+                            <th>Recogida</th>
+                            <th>Devolución</th>
+                            <th>Total</th>
+                            <th>Fianza</th>
+                            <th>Estado</th>
+                            <th>Docs</th>
+                        </tr>
+                    </thead>
+                    <tbody id="client-bookings-tbody">
+                        <tr>
+                            <td colspan="8" style="text-align: center; padding: 2rem;">No tienes reservas registradas.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="client-modal-actions" style="margin-top: 1.5rem; display: flex; justify-content: space-between; align-items: center;">
+                <span id="client-user-info" style="font-size: 0.85rem; color: var(--text-secondary);"></span>
+                <button class="btn" id="btn-client-logout" style="border-color: var(--color-danger); color: var(--color-danger);"><i class="fa-solid fa-power-off"></i> Cerrar Sesión</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Pasarela TPV Virtual CaixaBank -->
+    <div class="custom-modal-backdrop" id="tpv-modal" style="display: none;">
+        <div class="custom-modal-card tpv-card">
+            <div class="tpv-header">
+                <div class="tpv-logo-box">
+                    <span class="tpv-star"><i class="fa-solid fa-star-of-david"></i></span>
+                    <span class="tpv-bank-name">CaixaBank</span>
+                </div>
+                <div class="tpv-header-title">Pago Seguro SSL</div>
+            </div>
+            <div class="tpv-body">
+                <div class="tpv-amount-box">
+                    <div class="tpv-amount-row">
+                        <span>Importe Alquiler:</span>
+                        <span id="tpv-rent-amount">0,00 €</span>
+                    </div>
+                    <div class="tpv-amount-row">
+                        <span>Fianza (Retenida):</span>
+                        <span>500,00 €</span>
+                    </div>
+                    <hr style="border-color: rgba(255,255,255,0.1); margin: 0.5rem 0;">
+                    <div class="tpv-amount-row total">
+                        <span>Importe Total:</span>
+                        <span id="tpv-total-amount" class="text-neon">500,00 €</span>
+                    </div>
+                </div>
+
+                <form id="tpv-form">
+                    <div class="custom-form-group">
+                        <label for="tpv-card-number">Número de Tarjeta</label>
+                        <input type="text" id="tpv-card-number" class="custom-form-control tpv-input" maxlength="19" required placeholder="4000 1234 5678 9010">
+                    </div>
+                    <div class="tpv-grid">
+                        <div class="custom-form-group">
+                            <label for="tpv-card-expiry">Caducidad</label>
+                            <input type="text" id="tpv-card-expiry" class="custom-form-control tpv-input" maxlength="5" required placeholder="MM/AA">
+                        </div>
+                        <div class="custom-form-group">
+                            <label for="tpv-card-cvc">CVC</label>
+                            <input type="text" id="tpv-card-cvc" class="custom-form-control tpv-input" maxlength="3" required placeholder="123">
+                        </div>
+                    </div>
+                    <div class="custom-form-group">
+                        <label for="tpv-card-name">Titular de la Tarjeta</label>
+                        <input type="text" id="tpv-card-name" class="custom-form-control tpv-input" required placeholder="Juan Pérez">
+                    </div>
+                    <button type="submit" class="btn btn-block" id="tpv-submit-btn" style="background: #007bff; border-color: #007bff; color: #fff; margin-top: 1rem;">
+                        <i class="fa-solid fa-lock"></i> Autorizar Pago
+                    </button>
+                    <button type="button" class="btn btn-block" onclick="cancelTpvPayment()" style="margin-top: 0.5rem; background: transparent; border-color: rgba(255,255,255,0.1); color: var(--text-secondary);">
+                        Cancelar Transacción
+                    </button>
+                </form>
+            </div>
+            <div class="tpv-footer">
+                <i class="fa-solid fa-shield-halved"></i> Conexión Encriptada de 256 bits por Redsys
+            </div>
+        </div>
+    </div>
+
+    <!-- Estilos de los modales incrustados para no alterar styles.css principal -->
+    <style>
+        .custom-modal-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(7, 14, 36, 0.85);
+            backdrop-filter: blur(8px);
+            z-index: 2000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 1;
+            transition: all 0.3s ease;
+        }
+
+        .custom-modal-card {
+            background: #0f1c3f;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            width: 90%;
+            max-width: 450px;
+            padding: 2rem;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+            position: relative;
+            animation: modalFadeIn 0.3s ease;
+        }
+
+        .custom-modal-card.max-width-lg {
+            max-width: 800px;
+        }
+
+        @keyframes modalFadeIn {
+            from { transform: scale(0.95); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .custom-modal-close {
+            position: absolute;
+            top: 1rem;
+            right: 1.2rem;
+            font-size: 1.8rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .custom-modal-close:hover {
+            color: #fff;
+        }
+
+        .custom-modal-header {
+            margin-bottom: 1.5rem;
+        }
+
+        .custom-modal-header h2 {
+            font-size: 1.6rem;
+            margin-bottom: 0.25rem;
+            color: #fff;
+            font-family: var(--font-heading);
+        }
+
+        .custom-modal-header p {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+
+        .custom-form-group {
+            margin-bottom: 1rem;
+            text-align: left;
+        }
+
+        .custom-form-group label {
+            display: block;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+            margin-bottom: 0.3rem;
+            font-weight: 600;
+        }
+
+        .custom-form-control {
+            width: 100%;
+            background: rgba(7, 14, 36, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 0.7rem 1rem;
+            color: #fff;
+            outline: none;
+            font-family: var(--font-sans);
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+        }
+
+        .custom-form-control:focus {
+            border-color: var(--color-neon);
+            box-shadow: 0 0 10px rgba(130, 209, 5, 0.15);
+        }
+
+        .custom-modal-footer {
+            margin-top: 1.2rem;
+            text-align: center;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .custom-modal-footer a {
+            color: var(--color-neon);
+            font-weight: 600;
+            text-decoration: underline;
+        }
+
+        /* TPV CaixaBank Styles */
+        .custom-modal-card.tpv-card {
+            background: #fbfbfb;
+            color: #333;
+            max-width: 400px;
+            padding: 0;
+            overflow: hidden;
+            border-radius: 12px;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.5);
+        }
+
+        .tpv-header {
+            background: #007bff; /* CaixaBank Blue representation */
+            color: #fff;
+            padding: 1.2rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .tpv-logo-box {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .tpv-star {
+            color: #f7b32b; /* yellow star */
+            font-size: 1.3rem;
+        }
+
+        .tpv-bank-name {
+            font-weight: 800;
+            font-size: 1.2rem;
+            letter-spacing: -0.03em;
+        }
+
+        .tpv-header-title {
+            font-size: 0.8rem;
+            background: rgba(255,255,255,0.15);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+        }
+
+        .tpv-body {
+            padding: 1.5rem;
+        }
+
+        .tpv-amount-box {
+            background: #f1f5f9;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1.2rem;
+            border: 1px solid #e2e8f0;
+        }
+
+        .tpv-amount-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+            color: #475569;
+            margin-bottom: 0.25rem;
+        }
+
+        .tpv-amount-row.total {
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: #0f172a;
+            margin-top: 0.25rem;
+        }
+
+        .tpv-input {
+            background: #fff !important;
+            border-color: #cbd5e1 !important;
+            color: #333 !important;
+        }
+
+        .tpv-input:focus {
+            border-color: #007bff !important;
+            box-shadow: 0 0 8px rgba(0, 123, 255, 0.2) !important;
+        }
+
+        .tpv-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .tpv-footer {
+            background: #f8fafc;
+            border-top: 1px solid #e2e8f0;
+            padding: 0.8rem 1.5rem;
+            font-size: 0.75rem;
+            color: #64748b;
+            text-align: center;
+        }
+
+        /* Client Dashboard Table Styles */
+        .client-bookings-area {
+            overflow-x: auto;
+            max-height: 400px;
+            margin-top: 1rem;
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 8px;
+        }
+
+        .client-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+            text-align: left;
+        }
+
+        .client-table th {
+            background: rgba(7, 14, 36, 0.4);
+            padding: 0.8rem 1rem;
+            color: var(--text-secondary);
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            font-weight: 600;
+        }
+
+        .client-table td {
+            padding: 0.8rem 1rem;
+            border-bottom: 1px solid rgba(255,255,255,0.03);
+            color: var(--text-primary);
+        }
+
+        .client-table tbody tr:hover {
+            background: rgba(255,255,255,0.02);
+        }
+
+        .client-doc-btn {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: var(--text-primary);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.2rem;
+            transition: all 0.2s ease;
+        }
+
+        .client-doc-btn:hover {
+            background: var(--color-neon);
+            border-color: var(--color-neon);
+            color: #000;
+        }
+    </style>
+
+    <!-- Flatpickr JS -->
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
 
     <!-- Custom Script -->
     <script src="app.js?v=2.0"></script>

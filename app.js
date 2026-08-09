@@ -7,10 +7,16 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // CONFIGURACIÓN CENTRALIZADA
     const CONFIG = {
-        whatsappNumber: '34600000000', // Código de país + número (34 para España)
+        whatsappNumber: '34614767411', // Teléfono del propietario con prefijo de España
         prices: {
-            medium: { name: 'Ford Transit Custom L2H2 (8m³)', price: 59 },
-            large: { name: 'MAN TGE L4H3 Gran Volumen (14m³)', price: 79 }
+            sin: {
+                medium: { name: 'Ford Transit Custom L2H2 (8m³)', price: 79.00 }, // SIN Conductor Base
+                large: { name: 'MAN TGE L4H3 Gran Volumen (14m³)', price: 107.44 } // SIN Conductor Base
+            },
+            con: {
+                medium: { name: 'Ford Transit Custom L2H2 (8m³)', minPrice: 50.00, kmPrice: 1.00 }, // CON Conductor Base
+                large: { name: 'MAN TGE L4H3 Gran Volumen (14m³)', minPrice: 60.00, kmPrice: 1.40 } // CON Conductor Base
+            }
         }
     };
 
@@ -24,6 +30,22 @@ document.addEventListener('DOMContentLoaded', () => {
     // Elementos de la Calculadora
     const calcForm = document.getElementById('booking-calculator-form');
     const vanSelect = document.getElementById('calc-van-select');
+    
+    // Modalidades
+    const modeSin = document.getElementById('mode-sin-conductor');
+    const modeCon = document.getElementById('mode-con-conductor');
+    const labelModeSin = document.getElementById('label-mode-sin');
+    const labelModeCon = document.getElementById('label-mode-con');
+    
+    // Contenedores condicionales
+    const conConductorFields = document.getElementById('calc-con-conductor-fields');
+    const extrasSection = document.getElementById('calc-extras-section');
+    const fianzaNote = document.getElementById('calc-fianza-note');
+    
+    // Parámetros Con Conductor
+    const kmsEstimate = document.getElementById('calc-kms-estimate');
+    const waitHours = document.getElementById('calc-wait-hours');
+
     const dateStart = document.getElementById('calc-date-start');
     const timeStart = document.getElementById('calc-time-start');
     const dateEnd = document.getElementById('calc-date-end');
@@ -41,6 +63,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Elementos de FAQ
     const faqQuestions = document.querySelectorAll('.faq-question');
+
+    // TPV Form
+    const tpvForm = document.getElementById('tpv-form');
+
+    // Variables de Estado de Reserva y Calendario
+    let pickerStart, pickerEnd;
+    let disabledRanges = [];
+    let pendingBookingData = null;
 
     /* ==========================================================================
        1. NAVEGACIÓN Y EFECTOS HEADER
@@ -129,63 +159,68 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     /* ==========================================================================
-       3. PREPARAR FECHAS POR DEFECTO EN LA CALCULADORA
+       3. INTEGRACIÓN DE FLATPICKR (CALENDARIO DE DISPONIBILIDAD)
        ========================================================================== */
-    const initCalculatorDates = () => {
-        const today = new Date();
-        const tomorrow = new Date(today);
-        tomorrow.setDate(today.getDate() + 1);
-        
-        const dayAfterTomorrow = new Date(today);
-        dayAfterTomorrow.setDate(today.getDate() + 2);
-        
-        // Formatear a YYYY-MM-DD
-        const formatDate = (date) => {
-            const d = new Date(date);
-            let month = '' + (d.getMonth() + 1);
-            let day = '' + d.getDate();
-            const year = d.getFullYear();
+    
+    const initFlatpickr = () => {
+        pickerStart = flatpickr("#calc-date-start", {
+            locale: "es",
+            minDate: "today",
+            dateFormat: "Y-m-d",
+            disableMobile: "true",
+            onChange: function(selectedDates, dateStr, instance) {
+                pickerEnd.set("minDate", dateStr);
+                calculatePrice();
+            }
+        });
 
-            if (month.length < 2) month = '0' + month;
-            if (day.length < 2) day = '0' + day;
-
-            return [year, month, day].join('-');
-        };
-
-        // Establecer fecha mínima como hoy
-        const todayStr = formatDate(today);
-        dateStart.min = todayStr;
-        dateEnd.min = todayStr;
-        
-        // Establecer valores por defecto (mañana a pasado mañana)
-        dateStart.value = formatDate(tomorrow);
-        dateEnd.value = formatDate(dayAfterTomorrow);
+        pickerEnd = flatpickr("#calc-date-end", {
+            locale: "es",
+            minDate: "today",
+            dateFormat: "Y-m-d",
+            disableMobile: "true",
+            onChange: function(selectedDates, dateStr, instance) {
+                calculatePrice();
+            }
+        });
     };
 
-    initCalculatorDates();
+    initFlatpickr();
 
-    // Actualizar fecha mínima de devolución según fecha de recogida
-    dateStart.addEventListener('change', () => {
-        dateEnd.min = dateStart.value;
+    // Obtener fechas ocupadas de la furgoneta seleccionada (solo aplica a Sin Conductor)
+    const updateCalendarAvailability = async () => {
+        const vanType = vanSelect.value;
+        const mode = document.querySelector('input[name="rental-mode"]:checked').value;
         
-        // Si la fecha de fin es anterior a la nueva fecha de inicio, la actualizamos
-        if (new Date(dateEnd.value) < new Date(dateStart.value)) {
-            const nextDay = new Date(dateStart.value);
-            nextDay.setDate(nextDay.getDate() + 1);
-            
-            const formatDate = (date) => {
-                const year = date.getFullYear();
-                let month = '' + (date.getMonth() + 1);
-                let day = '' + date.getDate();
-                if (month.length < 2) month = '0' + month;
-                if (day.length < 2) day = '0' + day;
-                return [year, month, day].join('-');
-            };
-            
-            dateEnd.value = formatDate(nextDay);
+        if (!vanType) return;
+        
+        if (mode === 'con') {
+            // Con conductor no tiene bloqueo de fechas reservadas
+            pickerStart.set('disable', []);
+            pickerEnd.set('disable', []);
+            return;
         }
-        calculatePrice();
-    });
+        
+        try {
+            const response = await fetch(`/api/bookings/unavailable-dates?van_type=${vanType}`);
+            if (response.ok) {
+                const ranges = await response.json();
+                
+                // Mapear al formato esperado por Flatpickr: [{from: 'YYYY-MM-DD', to: 'YYYY-MM-DD'}]
+                const disableDates = ranges.map(range => ({
+                    from: range.from,
+                    to: range.to
+                }));
+                
+                pickerStart.set('disable', disableDates);
+                pickerEnd.set('disable', disableDates);
+            }
+        } catch (err) {
+            console.error('Error al obtener disponibilidad de fechas:', err);
+        }
+    };
+
+    vanSelect.addEventListener('change', updateCalendarAvailability);
 
     /* ==========================================================================
        4. LÓGICA DE LA CALCULADORA DE PRESUPUESTO
@@ -193,6 +228,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     const calculatePrice = () => {
         const vanType = vanSelect.value;
+        const mode = document.querySelector('input[name="rental-mode"]:checked').value;
         
         // Si no hay furgoneta seleccionada, poner valores a cero
         if (!vanType) {
@@ -203,48 +239,138 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        const baseRate = CONFIG.prices[vanType].price;
-        
+        // Toggle UI elements based on modality
+        if (mode === 'sin') {
+            conConductorFields.style.display = 'none';
+            extrasSection.style.display = 'block';
+            fianzaNote.style.display = 'block';
+            
+            // Labels de Sin Conductor
+            document.getElementById('summary-days-label').textContent = 'Días de alquiler:';
+            document.querySelector('.price-summary-box .summary-row:nth-child(2) span:first-child').textContent = 'Subtotal Base (excl. IVA):';
+            document.querySelector('.price-summary-box .summary-row:nth-child(3) span:first-child').textContent = 'IVA (21%):';
+        } else {
+            conConductorFields.style.display = 'block';
+            extrasSection.style.display = 'none';
+            fianzaNote.style.display = 'none';
+            
+            // Labels de Con Conductor
+            document.getElementById('summary-days-label').textContent = 'Estimación:';
+            document.querySelector('.price-summary-box .summary-row:nth-child(2) span:first-child').textContent = 'Subtotal Base (excl. IVA):';
+            document.querySelector('.price-summary-box .summary-row:nth-child(3) span:first-child').textContent = 'IVA (21%):';
+        }
+
         // Calcular número de días
-        const start = new Date(dateStart.value);
-        const end = new Date(dateEnd.value);
-        
-        // Calcular diferencia en milisegundos y pasar a días
+        const startVal = dateStart.value;
+        const endVal = dateEnd.value;
+        if (!startVal || !endVal) return;
+
+        const start = new Date(startVal);
+        const end = new Date(endVal);
         const diffTime = end - start;
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        
-        // Alquiler mínimo es 1 día
         const days = diffDays > 0 ? diffDays : 1;
-        
-        // Calcular precio base total
-        const totalBase = baseRate * days;
-        
-        // Calcular extras
-        let totalExtras = 0;
-        
-        if (extraGps.checked) {
-            totalExtras += parseFloat(extraGps.value) * days; // 5€ por día
+
+        let baseTaxable = 0;
+        let vatAmount = 0;
+        let totalEstimated = 0;
+
+        if (mode === 'sin') {
+            const baseDailyRate = CONFIG.prices.sin[vanType].price;
+            let totalBase = baseDailyRate * days;
+            
+            // Descuento del 5% a partir de 3 días
+            if (days >= 3) {
+                totalBase = totalBase * 0.95;
+            }
+
+            // Calcular extras
+            let totalExtras = 0;
+            if (extraGps.checked) {
+                totalExtras += parseFloat(extraGps.value) * days; // 5€ por día
+            }
+            if (extraDriver.checked) {
+                totalExtras += parseFloat(extraDriver.value) * days; // 8€ por día
+            }
+            if (extraMoving.checked) {
+                totalExtras += parseFloat(extraMoving.value); // 10€ pago único
+            }
+
+            baseTaxable = totalBase + totalExtras;
+            vatAmount = baseTaxable * 0.21;
+            totalEstimated = baseTaxable + vatAmount;
+
+            summaryDays.textContent = `${days} ${days === 1 ? 'día' : 'días'}${days >= 3 ? ' (5% desc.)' : ''}`;
+        } else {
+            // CON CONDUCTOR
+            const baseMinRate = CONFIG.prices.con[vanType].minPrice;
+            const kmRate = CONFIG.prices.con[vanType].kmPrice;
+            
+            const kms = parseInt(kmsEstimate.value) || 20;
+            const wait = parseFloat(waitHours.value) || 0;
+            
+            let extraKmCost = 0;
+            if (kms > 20) {
+                extraKmCost = (kms - 20) * kmRate;
+            }
+            
+            const waitCost = wait * 30.00;
+            
+            baseTaxable = baseMinRate + extraKmCost + waitCost;
+            vatAmount = baseTaxable * 0.21;
+            totalEstimated = baseTaxable + vatAmount;
+
+            summaryDays.textContent = `${kms} km / ${wait} h espera`;
         }
-        if (extraDriver.checked) {
-            totalExtras += parseFloat(extraDriver.value) * days; // 8€ por día
-        }
-        if (extraMoving.checked) {
-            totalExtras += parseFloat(extraMoving.value); // 10€ pago único
-        }
-        
-        const totalEstimated = totalBase + totalExtras;
-        
+
         // Renderizar valores en pantalla
-        summaryDays.textContent = `${days} ${days === 1 ? 'día' : 'días'}`;
-        summaryBasePrice.textContent = `${totalBase.toFixed(2)} €`;
-        summaryExtrasPrice.textContent = `${totalExtras.toFixed(2)} €`;
+        summaryBasePrice.textContent = `${baseTaxable.toFixed(2)} €`;
+        summaryExtrasPrice.textContent = `${vatAmount.toFixed(2)} €`;
         summaryTotalPrice.textContent = `${totalEstimated.toFixed(2)} €`;
     };
 
-    // Añadir event listeners para recálculo instantáneo
+    // Event handlers para los selectores de modalidad
+    const handleModeChange = (e) => {
+        // Toggle visual active state
+        if (modeSin.checked) {
+            labelModeSin.classList.add('active');
+            labelModeSin.style.borderColor = 'var(--color-neon)';
+            labelModeSin.style.background = 'rgba(130, 209, 5, 0.05)';
+            labelModeSin.querySelector('i').style.color = 'var(--color-neon)';
+            labelModeSin.querySelector('span').style.color = '#fff';
+
+            labelModeCon.classList.remove('active');
+            labelModeCon.style.borderColor = 'rgba(255,255,255,0.1)';
+            labelModeCon.style.background = 'rgba(255,255,255,0.02)';
+            labelModeCon.querySelector('i').style.color = 'var(--text-secondary)';
+            labelModeCon.querySelector('span').style.color = 'var(--text-secondary)';
+        } else {
+            labelModeCon.classList.add('active');
+            labelModeCon.style.borderColor = 'var(--color-neon)';
+            labelModeCon.style.background = 'rgba(130, 209, 5, 0.05)';
+            labelModeCon.querySelector('i').style.color = 'var(--color-neon)';
+            labelModeCon.querySelector('span').style.color = '#fff';
+
+            labelModeSin.classList.remove('active');
+            labelModeSin.style.borderColor = 'rgba(255,255,255,0.1)';
+            labelModeSin.style.background = 'rgba(255,255,255,0.02)';
+            labelModeSin.querySelector('i').style.color = 'var(--text-secondary)';
+            labelModeSin.querySelector('span').style.color = 'var(--text-secondary)';
+        }
+        
+        updateCalendarAvailability();
+        calculatePrice();
+    };
+
+    modeSin.addEventListener('change', handleModeChange);
+    modeCon.addEventListener('change', handleModeChange);
+    
+    // Inputs de con conductor
+    kmsEstimate.addEventListener('input', calculatePrice);
+    waitHours.addEventListener('input', calculatePrice);
+
+    // Event listeners para recálculo instantáneo
     vanSelect.addEventListener('change', calculatePrice);
-    dateStart.addEventListener('change', calculatePrice);
-    dateEnd.addEventListener('change', calculatePrice);
     timeStart.addEventListener('change', calculatePrice);
     timeEnd.addEventListener('change', calculatePrice);
     extraGps.addEventListener('change', calculatePrice);
@@ -261,6 +387,9 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Seleccionar en el dropdown
             vanSelect.value = vanType;
+            
+            // Actualizar disponibilidad del calendario para esa furgoneta
+            updateCalendarAvailability();
             
             // Recalcular
             calculatePrice();
@@ -282,11 +411,222 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     /* ==========================================================================
-       6. ENVIAR FORMULARIO E INTEGRACIÓN CON WHATSAPP
+       6. SISTEMA DE AUTENTICACIÓN DEL CLIENTE (MODALES)
        ========================================================================== */
-    calcForm.addEventListener('submit', (e) => {
+    
+    // Funciones globales de modales
+    window.openAuthModal = (modalId) => {
+        document.getElementById(modalId).style.display = 'flex';
+    };
+    
+    window.closeAuthModal = (modalId) => {
+        document.getElementById(modalId).style.display = 'none';
+    };
+    
+    window.switchAuthModal = (closeId, openId) => {
+        window.closeAuthModal(closeId);
+        window.openAuthModal(openId);
+    };
+
+    // Actualizar NavBar según estado de sesión
+    const updateAuthUI = async () => {
+        const token = localStorage.getItem('user_token');
+        const authSection = document.getElementById('user-auth-section');
+        
+        if (!token) {
+            authSection.innerHTML = `
+                <button class="btn btn-secondary btn-sm" onclick="openAuthModal('login-modal')" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">
+                    <i class="fa-solid fa-user-lock"></i> Entrar
+                </button>
+            `;
+            return;
+        }
+        
+        try {
+            const res = await fetch('/api/auth/me', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const user = await res.json();
+                authSection.innerHTML = `
+                    <button class="btn btn-secondary btn-sm" onclick="openClientArea()" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; border-color: var(--color-neon); color: var(--color-neon);">
+                        <i class="fa-solid fa-user-circle"></i> Mi Panel (${user.name.split(' ')[0]})
+                    </button>
+                `;
+                
+                if (!clientName.value) {
+                    clientName.value = user.name;
+                }
+            } else {
+                localStorage.removeItem('user_token');
+                updateAuthUI();
+            }
+        } catch (err) {
+            console.error('Error al verificar perfil de sesión:', err);
+        }
+    };
+
+    // Event listener para login modal botón en header
+    document.getElementById('btn-login-modal').addEventListener('click', () => {
+        window.openAuthModal('login-modal');
+    });
+
+    // Login Form Submit
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('login-email').value;
+        const password = document.getElementById('login-password').value;
+        
+        try {
+            const res = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                if (data.user && data.user.is_admin) {
+                    localStorage.setItem('admin_token', data.token);
+                    window.location.href = '/admin';
+                    return;
+                }
+                
+                localStorage.setItem('user_token', data.token);
+                window.closeAuthModal('login-modal');
+                updateAuthUI();
+                alert('Sesión iniciada correctamente.');
+            } else {
+                alert(data.error || 'Error al iniciar sesión.');
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Error de conexión con el servidor.');
+        }
+    });
+
+    // Register Form Submit
+    document.getElementById('register-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const name = document.getElementById('reg-name').value;
+        const email = document.getElementById('reg-email').value;
+        const phone = document.getElementById('reg-phone').value;
+        const dni = document.getElementById('reg-dni').value;
+        const password = document.getElementById('reg-password').value;
+        
+        if (password.length < 6) {
+            alert('La contraseña debe tener al menos 6 caracteres.');
+            return;
+        }
+        
+        try {
+            const res = await fetch('/api/auth/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, email, password, phone, dni })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                localStorage.setItem('user_token', data.token);
+                window.closeAuthModal('register-modal');
+                updateAuthUI();
+                alert('Registro completado con éxito.');
+            } else {
+                alert(data.error || 'Error al registrarse.');
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Error de conexión con el servidor.');
+        }
+    });
+
+    // Abrir Panel de Área de Cliente
+    window.openClientArea = async () => {
+        const token = localStorage.getItem('user_token');
+        if (!token) return;
+        
+        try {
+            const res = await fetch('/api/auth/me', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!res.ok) throw new Error('Token expirado');
+            const user = await res.json();
+            
+            document.getElementById('client-user-info').textContent = `Conectado como: ${user.name} (${user.email}) | DNI: ${user.dni}`;
+            
+            // Obtener reservas del cliente
+            const bookingsRes = await fetch(`/api/bookings?user_id=${user.id}`);
+            const bookingsList = await bookingsRes.json();
+            
+            const tbody = document.getElementById('client-bookings-tbody');
+            if (bookingsList.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; padding: 2rem;">No tienes reservas registradas.</td></tr>`;
+            } else {
+                tbody.innerHTML = '';
+                bookingsList.forEach(b => {
+                    const tr = document.createElement('tr');
+                    
+                    const statusLabel = b.status === 'pending' ? 'Pendiente' : b.status === 'confirmed' ? 'Confirmado' : 'Cancelado';
+                    const paymentLabel = b.payment_status === 'paid' ? 'Pagado' : 'Pendiente';
+                    const fianzaLabel = b.fianza_status === 'paid' ? 'Retenida (500€)' : b.fianza_status === 'refunded' ? 'Devuelta' : 'Pendiente';
+                    
+                    const formatDate = (dateStr) => {
+                        const cleanDate = dateStr.split('T')[0];
+                        const [year, month, day] = cleanDate.split('-');
+                        return `${day}/${month}/${year}`;
+                    };
+                    
+                    tr.innerHTML = `
+                        <td>#${b.id}</td>
+                        <td><strong>${b.van_name.split(' ')[0]} ${b.van_name.split(' ')[1] || ''}</strong></td>
+                        <td>${formatDate(b.pickup_date)} ${b.pickup_time}</td>
+                        <td>${formatDate(b.return_date)} ${b.return_time}</td>
+                        <td><strong>${parseFloat(b.total_price).toFixed(2)} €</strong></td>
+                        <td><span style="font-size: 0.8rem; padding: 2px 6px; border-radius: 4px; background: rgba(255,255,255,0.05);">${fianzaLabel}</span></td>
+                        <td><span style="font-size: 0.8rem; font-weight: 700; color: ${b.status === 'confirmed' ? '#82d105' : b.status === 'pending' ? '#ffb703' : '#ff4d6d'};">${statusLabel}</span></td>
+                        <td>
+                            ${b.status === 'confirmed' ? `
+                                <button class="client-doc-btn" onclick="window.open('/contract/${b.id}', '_blank')"><i class="fa-solid fa-file-signature"></i> Contrato</button>
+                                <button class="client-doc-btn" onclick="window.open('/invoice/${b.id}', '_blank')"><i class="fa-solid fa-file-invoice-dollar"></i> Factura</button>
+                            ` : '<span style="color: var(--text-muted); font-size: 0.75rem;">Pendiente</span>'}
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+            
+            window.openAuthModal('client-modal');
+        } catch (err) {
+            console.error(err);
+            localStorage.removeItem('user_token');
+            updateAuthUI();
+        }
+    };
+
+    // Cerrar sesión
+    document.getElementById('btn-client-logout').addEventListener('click', () => {
+        localStorage.removeItem('user_token');
+        window.closeAuthModal('client-modal');
+        updateAuthUI();
+        clientName.value = '';
+    });
+
+    updateAuthUI(); // Comprobar sesión al arrancar
+
+    /* ==========================================================================
+       7. ENVIAR FORMULARIO, PASARELA TPV Y WHATSAPP FLOW
+       ========================================================================== */
+    
+    calcForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         
+        // 1. Validar autenticación
+        const token = localStorage.getItem('user_token');
+        if (!token) {
+            alert('Por favor, inicia sesión o regístrate para solicitar una reserva.');
+            window.openAuthModal('login-modal');
+            return;
+        }
+
         const vanType = vanSelect.value;
         if (!vanType) {
             alert('Por favor, selecciona un tipo de furgoneta.');
@@ -302,7 +642,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Obtener datos del alquiler
-        const vanName = CONFIG.prices[vanType].name;
+        const rentalMode = document.querySelector('input[name="rental-mode"]:checked').value;
+        const vanName = CONFIG.prices[rentalMode][vanType].name;
         const pickupDateStr = dateStart.value;
         const pickupTimeStr = timeStart.value;
         const returnDateStr = dateEnd.value;
@@ -316,42 +657,219 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Recopilar extras activos
         const selectedExtras = [];
-        if (extraGps.checked) selectedExtras.push('GPS Navegador (+5€/día)');
-        if (extraDriver.checked) selectedExtras.push('Segundo Conductor (+8€/día)');
-        if (extraMoving.checked) selectedExtras.push('Kit Mudanza (+10€ pago único)');
+        if (rentalMode === 'sin') {
+            if (extraGps.checked) selectedExtras.push('GPS Navegador (+5€/día)');
+            if (extraDriver.checked) selectedExtras.push('Segundo Conductor (+8€/día)');
+            if (extraMoving.checked) selectedExtras.push('Kit Mudanza (+10€ pago único)');
+        }
         
-        const extrasText = selectedExtras.length > 0 
-            ? '\n- *Extras:* ' + selectedExtras.join(', ')
-            : '';
-
         const totalPriceText = summaryTotalPrice.textContent;
+        const totalPriceNum = parseFloat(totalPriceText.replace(/[^\d.,]/g, '').replace(',', '.'));
 
-        // Construir el mensaje formateado para WhatsApp
-        const messageText = `Hola *RentMeUskar*, me gustaría solicitar una solicitud de reserva de furgoneta:
+        // Obtener ID del usuario
+        let user;
+        try {
+            const res = await fetch('/api/auth/me', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!res.ok) throw new Error();
+            user = await res.json();
+        } catch (err) {
+            alert('Tu sesión ha expirado. Por favor entra de nuevo.');
+            localStorage.removeItem('user_token');
+            updateAuthUI();
+            return;
+        }
 
-*Detalles del Cliente:*
-- *Nombre:* ${nameValue}
+        // Construir datos temporales de reserva
+        pendingBookingData = {
+            name: nameValue,
+            van_type: vanType,
+            van_name: vanName,
+            pickup_date: pickupDateStr,
+            pickup_time: pickupTimeStr,
+            return_date: returnDateStr,
+            return_time: returnTimeStr,
+            days: days,
+            extras: selectedExtras,
+            total_price: totalPriceNum,
+            user_id: user.id,
+            rental_mode: rentalMode,
+            estimated_kms: rentalMode === 'con' ? parseInt(kmsEstimate.value) : 0,
+            waiting_hours: rentalMode === 'con' ? parseFloat(waitHours.value) : 0.00
+        };
 
-*Detalles del Alquiler:*
+        // DETERMINACIÓN DE FLUJO SEGÚN DURACIÓN (1 semana o menos vs más de 1 semana)
+        if (days <= 7) {
+            // FLUJO A: Pago online obligatorio de alquiler + fianza de 500€ (solo si es sin conductor)
+            const fianzaAmount = rentalMode === 'sin' ? 500 : 0;
+            document.getElementById('tpv-rent-amount').textContent = `${totalPriceNum.toFixed(2)} €`;
+            document.getElementById('tpv-total-amount').textContent = `${(totalPriceNum + fianzaAmount).toFixed(2)} €`;
+            
+            // Rellenar por defecto titular
+            document.getElementById('tpv-card-name').value = user.name;
+            
+            // Mostrar pasarela TPV
+            window.openAuthModal('tpv-modal');
+        } else {
+            // FLUJO B: Reserva sin pago online, gestionado manualmente por WhatsApp
+            const submitBtn = document.getElementById('btn-submit-booking');
+            const originalBtnHtml = submitBtn.innerHTML;
+            
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Registrando solicitud...';
+
+            try {
+                const finalBookingData = {
+                    ...pendingBookingData,
+                    status: 'pending',
+                    payment_status: 'pending',
+                    fianza_status: rentalMode === 'sin' ? 'pending' : 'refunded'
+                };
+
+                const response = await fetch('/api/bookings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(finalBookingData)
+                });
+                
+                const data = await response.json();
+                if (!response.ok) {
+                    throw new Error(data.error || 'Error al guardar reserva.');
+                }
+
+                // Generar mensaje WhatsApp para reserva manual > 1 semana
+                const isCon = finalBookingData.rental_mode === 'con';
+                const modeLabelText = isCon ? 'CON CONDUCTOR' : 'SIN CONDUCTOR';
+                const extraDetailsText = isCon 
+                    ? `\n- *Trayecto:* ${finalBookingData.estimated_kms} km estimados` + 
+                      `\n- *Espera:* ${finalBookingData.waiting_hours} h de espera`
+                    : (finalBookingData.extras.length > 0 ? '\n- *Extras:* ' + finalBookingData.extras.join(', ') : '');
+
+                const messageText = `Hola *RentMeUskar*, me gustaría solicitar una reserva de furgoneta para larga duración (> 1 semana):
+
+*Solicitud de Reserva #${data.booking.id}*
+- *Cliente:* ${nameValue} (DNI: ${user.dni})
+- *Modalidad:* ${modeLabelText}
 - *Vehículo:* ${vanName}
 - *Recogida:* ${pickupDateStr} a las ${pickupTimeStr}
-- *Devolución:* ${returnDateStr} a las ${returnTimeStr}
-- *Duración:* ${days} ${days === 1 ? 'día' : 'días'}${extrasText}
+- *Devolución:* ${returnDateStr} a las ${returnTimeStr}${extraDetailsText}
+- *Duración:* ${isCon ? '-' : days + ' días'}
 
 *Precio estimado total:* ${totalPriceText}
+*Fianza establecida:* ${isCon ? '0,00 € (No aplica)' : '500,00 € (Pendiente de cobro/depósito)'}
 
-(Solicitud enviada desde la web local. Pendiente de confirmación de disponibilidad).`;
+(Solicitud pendiente de confirmación de disponibilidad del propietario).`;
 
-        // Generar enlace de WhatsApp (usamos api.whatsapp.com para mejor soporte en pc y móvil)
-        const encodedText = encodeURIComponent(messageText);
-        const whatsappUrl = `https://api.whatsapp.com/send?phone=${CONFIG.whatsappNumber}&text=${encodedText}`;
-        
-        // Abrir en nueva ventana/pestaña
-        window.open(whatsappUrl, '_blank');
+                const encodedText = encodeURIComponent(messageText);
+                const whatsappUrl = `https://api.whatsapp.com/send?phone=${CONFIG.whatsappNumber}&text=${encodedText}`;
+                window.open(whatsappUrl, '_blank');
+                
+                alert('Solicitud registrada. Se ha abierto WhatsApp para que contactes con el propietario y confirmes la reserva.');
+            } catch (err) {
+                console.error(err);
+                alert('Error al procesar la reserva: ' + err.message);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalBtnHtml;
+            }
+        }
     });
 
+    // Procesar pago en la TPV CaixaBank
+    tpvForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const tpvSubmitBtn = document.getElementById('tpv-submit-btn');
+        const originalBtnHtml = tpvSubmitBtn.innerHTML;
+        
+        tpvSubmitBtn.disabled = true;
+        tpvSubmitBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Conectando con Redsys...';
+        
+        // Simular Redsys CaixaBank
+        setTimeout(() => {
+            tpvSubmitBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Autorizando pago seguro...';
+            
+            setTimeout(async () => {
+                try {
+                    const paymentId = 'TPV_' + Math.random().toString(36).substr(2, 9).toUpperCase();
+                    const isCon = pendingBookingData.rental_mode === 'con';
+                    const fianzaStatus = isCon ? 'refunded' : 'paid';
+                    
+                    const finalBookingData = {
+                        ...pendingBookingData,
+                        status: 'confirmed',
+                        payment_status: 'paid',
+                        fianza_status: fianzaStatus,
+                        payment_id: paymentId
+                    };
+                    
+                    const response = await fetch('/api/bookings', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(finalBookingData)
+                    });
+                    
+                    const data = await response.json();
+                    if (!response.ok) {
+                        throw new Error(data.error || 'Error al guardar reserva.');
+                    }
+                    
+                    alert(`¡PAGO AUTORIZADO CORRECTAMENTE!\nReserva #${data.booking.id} confirmada con éxito.\nReferencia de operación: ${paymentId}`);
+                    
+                    window.closeAuthModal('tpv-modal');
+                    tpvForm.reset();
+                    
+                    // Bloquear fechas ocupadas inmediatamente
+                    updateCalendarAvailability();
+                    
+                    // Abrir WhatsApp con el recibo
+                    const modeLabelText = isCon ? 'CON CONDUCTOR' : 'SIN CONDUCTOR';
+                    const extraDetailsText = isCon 
+                        ? `\n- *Trayecto:* ${finalBookingData.estimated_kms} km estimados` + 
+                          `\n- *Espera:* ${finalBookingData.waiting_hours} h de espera`
+                        : (finalBookingData.extras.length > 0 ? '\n- *Extras:* ' + finalBookingData.extras.join(', ') : '');
+                    
+                    const messageText = `Hola *RentMeUskar*, he completado una reserva y pago online en la web:
+                    
+*Reserva Confirmada #${data.booking.id}*
+- *Cliente:* ${finalBookingData.name}
+- *Modalidad:* ${modeLabelText}
+- *Vehículo:* ${finalBookingData.van_name}
+- *Recogida:* ${finalBookingData.pickup_date} a las ${finalBookingData.pickup_time}
+- *Devolución:* ${finalBookingData.return_date} a las ${finalBookingData.return_time}${extraDetailsText}
+- *Duración:* ${isCon ? '-' : finalBookingData.days + ' días'}
+
+*Pago Confirmado:*
+- *Alquiler:* ${finalBookingData.total_price.toFixed(2)} €
+- *Fianza:* ${isCon ? '0,00 € (No aplica)' : '500,00 € (Retenida en TPV)'}
+- *Total Operación:* ${(finalBookingData.total_price + (isCon ? 0 : 500)).toFixed(2)} €
+- *Código de Operación:* ${paymentId}`;
+                    
+                    const encodedText = encodeURIComponent(messageText);
+                    const whatsappUrl = `https://api.whatsapp.com/send?phone=${CONFIG.whatsappNumber}&text=${encodedText}`;
+                    window.open(whatsappUrl, '_blank');
+                    
+                } catch (err) {
+                    console.error(err);
+                    alert('Error al registrar la reserva pagada: ' + err.message);
+                } finally {
+                    tpvSubmitBtn.disabled = false;
+                    tpvSubmitBtn.innerHTML = originalBtnHtml;
+                }
+            }, 1000);
+        }, 1500);
+    });
+
+    window.cancelTpvPayment = () => {
+        if (confirm('¿Deseas cancelar la transacción? Los importes no se cobrarán y la reserva no se registrará.')) {
+            window.closeAuthModal('tpv-modal');
+            pendingBookingData = null;
+        }
+    };
+
     /* ==========================================================================
-       7. PREGUNTAS FRECUENTES (FAQ ACORDEÓN)
+       8. PREGUNTAS FRECUENTES (FAQ ACORDEÓN)
        ========================================================================== */
     faqQuestions.forEach(question => {
         question.addEventListener('click', () => {

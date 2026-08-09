@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Administración | RentMeUskar</title>
+    <link rel="icon" type="image/png" href="assets/logo.png">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        /* Estilos heredados del sistema de RentMeUskar y mejorados */
+        :root {
+            --bg-primary: #070e24;
+            --bg-secondary: #0f1c3f;
+            --bg-tertiary: #182c5c;
+            --bg-card: rgba(15, 28, 63, 0.6);
+            --text-primary: #f3f4f6;
+            --text-secondary: #9ca3af;
+            --text-muted: #6b7280;
+            
+            --color-neon: #82d105;
+            --color-neon-hover: #9cfc04;
+            --color-neon-rgb: 130, 209, 5;
+            --color-neon-glow: rgba(130, 209, 5, 0.15);
+            --color-neon-border: rgba(130, 209, 5, 0.3);
+            
+            --color-info: #00d2ff;
+            --color-warning: #ffb703;
+            --color-danger: #ff4d6d;
+            
+            --font-sans: 'Plus Jakarta Sans', sans-serif;
+            --font-heading: 'Space Grotesk', sans-serif;
+            
+            --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --border-glow: 1px solid rgba(255, 255, 255, 0.08);
+            --shadow-soft: 0 10px 30px -10px rgba(0, 0, 0, 0.7);
+            
+            --border-radius-sm: 8px;
+            --border-radius-md: 16px;
+            --border-radius-lg: 24px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: var(--font-sans);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--bg-primary);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--bg-secondary);
+            border: 2px solid var(--bg-primary);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--color-neon);
+        }
+
+        /* Layout */
+        .admin-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem 1.5rem;
+        }
+
+        /* Header */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding-bottom: 1.5rem;
+        }
+
+        .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo-img {
+            height: 45px;
+        }
+
+        .header-title h1 {
+            font-family: var(--font-heading);
+            font-size: 1.8rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #fff 30%, var(--color-neon) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header-title p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .btn {
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+            padding: 0.6rem 1.2rem;
+            border-radius: var(--border-radius-sm);
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: var(--transition-smooth);
+        }
+
+        .btn:hover {
+            border-color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .btn-primary {
+            background: var(--color-neon);
+            border-color: var(--color-neon);
+            color: #000;
+        }
+
+        .btn-primary:hover {
+            background: var(--color-neon-hover);
+            border-color: var(--color-neon-hover);
+            color: #000;
+            box-shadow: 0 0 15px rgba(130, 209, 5, 0.4);
+        }
+
+        /* KPI Cards */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .metric-card {
+            background: var(--bg-card);
+            border: var(--border-glow);
+            border-radius: var(--border-radius-md);
+            padding: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: relative;
+            overflow: hidden;
+            box-shadow: var(--shadow-soft);
+            backdrop-filter: blur(10px);
+            transition: var(--transition-smooth);
+        }
+
+        .metric-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: var(--text-muted);
+        }
+
+        .metric-card.primary::before { background: var(--color-neon); }
+        .metric-card.warning::before { background: var(--color-warning); }
+        .metric-card.success::before { background: var(--color-info); }
+
+        .metric-card:hover {
+            transform: translateY(-3px);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .metric-info h3 {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .metric-value {
+            font-family: var(--font-heading);
+            font-size: 2.2rem;
+            font-weight: 700;
+            line-height: 1.1;
+        }
+
+        .metric-icon {
+            font-size: 2.5rem;
+            opacity: 0.15;
+            color: var(--text-primary);
+        }
+
+        .metric-card.primary .metric-icon { color: var(--color-neon); opacity: 0.25; }
+        .metric-card.warning .metric-icon { color: var(--color-warning); opacity: 0.25; }
+        .metric-card.success .metric-icon { color: var(--color-info); opacity: 0.25; }
+
+        /* Filters */
+        .controls-row {
+            background: var(--bg-card);
+            border: var(--border-glow);
+            border-radius: var(--border-radius-md);
+            padding: 1.2rem 1.5rem;
+            margin-bottom: 2rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: var(--shadow-soft);
+            backdrop-filter: blur(10px);
+        }
+
+        .search-wrapper {
+            position: relative;
+            flex: 1;
+            min-width: 300px;
+        }
+
+        .search-wrapper i {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+        }
+
+        .search-input {
+            width: 100%;
+            background: rgba(7, 14, 36, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: var(--border-radius-sm);
+            padding: 0.6rem 1rem 0.6rem 2.5rem;
+            color: var(--text-primary);
+            font-family: var(--font-sans);
+            font-size: 0.95rem;
+            transition: var(--transition-smooth);
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--color-neon);
+            box-shadow: 0 0 10px rgba(130, 209, 5, 0.15);
+        }
+
+        .filter-groups {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .filter-group label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            font-weight: 500;
+        }
+
+        .select-filter {
+            background: rgba(7, 14, 36, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+            padding: 0.6rem 2rem 0.6rem 1rem;
+            border-radius: var(--border-radius-sm);
+            font-family: var(--font-sans);
+            font-size: 0.9rem;
+            cursor: pointer;
+            outline: none;
+            transition: var(--transition-smooth);
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 0.75rem center;
+            background-size: 1rem;
+        }
+
+        .select-filter:focus {
+            border-color: var(--color-neon);
+        }
+
+        /* Table Card */
+        .table-card {
+            background: var(--bg-card);
+            border: var(--border-glow);
+            border-radius: var(--border-radius-md);
+            box-shadow: var(--shadow-soft);
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+            margin-bottom: 2rem;
+        }
+
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+        }
+
+        .bookings-table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        .bookings-table th {
+            background: rgba(7, 14, 36, 0.4);
+            padding: 1.2rem 1.5rem;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            font-weight: 600;
+        }
+
+        .bookings-table td {
+            padding: 1.2rem 1.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            font-size: 0.95rem;
+            color: var(--text-primary);
+            vertical-align: middle;
+        }
+
+        .bookings-table tbody tr {
+            transition: var(--transition-smooth);
+        }
+
+        .bookings-table tbody tr:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .client-cell {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .client-name {
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .client-date {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 0.2rem;
+        }
+
+        .van-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .van-badge.medium { color: var(--color-info); }
+        .van-badge.large { color: #d946ef; }
+
+        .date-cell {
+            font-size: 0.9rem;
+        }
+
+        .date-cell .time {
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            display: block;
+        }
+
+        .price-value {
+            font-family: var(--font-heading);
+            font-weight: 700;
+            color: var(--color-neon);
+        }
+
+        /* Status Badges */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.75rem;
+            border-radius: 50px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        .status-badge.pending {
+            background: rgba(255, 183, 3, 0.1);
+            color: var(--color-warning);
+            border: 1px solid rgba(255, 183, 3, 0.2);
+            box-shadow: 0 0 10px rgba(255, 183, 3, 0.05);
+        }
+
+        .status-badge.confirmed {
+            background: rgba(130, 209, 5, 0.1);
+            color: var(--color-neon);
+            border: 1px solid rgba(130, 209, 5, 0.2);
+            box-shadow: 0 0 10px rgba(130, 209, 5, 0.05);
+        }
+
+        .status-badge.cancelled {
+            background: rgba(255, 77, 109, 0.1);
+            color: var(--color-danger);
+            border: 1px solid rgba(255, 77, 109, 0.2);
+            box-shadow: 0 0 10px rgba(255, 77, 109, 0.05);
+        }
+
+        /* Action Buttons */
+        .actions-cell {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn-icon {
+            width: 32px;
+            height: 32px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: var(--border-radius-sm);
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: var(--transition-smooth);
+        }
+
+        .btn-icon:hover {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .btn-icon.confirm:hover {
+            color: #000;
+            background: var(--color-neon);
+            border-color: var(--color-neon);
+            box-shadow: 0 0 10px rgba(130, 209, 5, 0.3);
+        }
+
+        .btn-icon.cancel:hover {
+            color: #fff;
+            background: var(--color-warning);
+            border-color: var(--color-warning);
+            box-shadow: 0 0 10px rgba(255, 183, 3, 0.3);
+        }
+
+        .btn-icon.delete:hover {
+            color: #fff;
+            background: var(--color-danger);
+            border-color: var(--color-danger);
+            box-shadow: 0 0 10px rgba(255, 77, 109, 0.3);
+        }
+
+        /* Empty State */
+        .empty-state {
+            padding: 4rem 2rem;
+            text-align: center;
+            color: var(--text-secondary);
+        }
+
+        .empty-state i {
+            font-size: 3.5rem;
+            color: var(--text-muted);
+            margin-bottom: 1.5rem;
+            display: block;
+        }
+
+        .empty-state h3 {
+            font-family: var(--font-heading);
+            color: #fff;
+            margin-bottom: 0.5rem;
+        }
+
+        /* Modal Details */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(7, 14, 36, 0.85);
+            backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: var(--transition-smooth);
+        }
+
+        .modal.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-content {
+            background: #0f1c3f;
+            border: var(--border-glow);
+            border-radius: var(--border-radius-lg);
+            width: 100%;
+            max-width: 700px; /* Incrementado para sección de inspección */
+            padding: 2rem;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+            transform: scale(0.95);
+            transition: var(--transition-smooth);
+            position: relative;
+        }
+
+        .modal.active .modal-content {
+            transform: scale(1);
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 1.5rem;
+            right: 1.5rem;
+            font-size: 1.5rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: var(--transition-smooth);
+        }
+
+        .modal-close:hover {
+            color: #fff;
+        }
+
+        .modal-header {
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-header h2 {
+            font-family: var(--font-heading);
+            font-size: 1.5rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .modal-header .subtitle {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .detail-row.total-row {
+            border-bottom: none;
+            padding-top: 1.2rem;
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+
+        .detail-label {
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .detail-value {
+            color: #fff;
+            font-weight: 600;
+            text-align: right;
+        }
+
+        .detail-value.highlight {
+            color: var(--color-neon);
+        }
+
+        .extras-list {
+            list-style: none;
+            padding: 0;
+            margin: 0.5rem 0;
+            text-align: right;
+        }
+
+        .extras-list li {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 0.4rem;
+        }
+
+        .modal-footer {
+            margin-top: 2rem;
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+        }
+
+        /* Toast Notifications */
+        .toast-container {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            z-index: 1100;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .toast {
+            background: #0f1c3f;
+            border-left: 4px solid var(--text-muted);
+            border-right: var(--border-glow);
+            border-top: var(--border-glow);
+            border-bottom: var(--border-glow);
+            border-radius: var(--border-radius-sm);
+            color: #fff;
+            padding: 1rem 1.5rem;
+            min-width: 300px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            transform: translateX(120%);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .toast.active {
+            transform: translateX(0);
+        }
+
+        .toast.success { border-left-color: var(--color-neon); }
+        .toast.error { border-left-color: var(--color-danger); }
+        .toast.info { border-left-color: var(--color-info); }
+
+        .toast i {
+            font-size: 1.2rem;
+        }
+        .toast.success i { color: var(--color-neon); }
+        .toast.error i { color: var(--color-danger); }
+        .toast.info i { color: var(--color-info); }
+
+        /* Media Queries */
+        @media (max-width: 768px) {
+            header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+            .header-actions {
+                width: 100%;
+                justify-content: space-between;
+            }
+            .controls-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .search-wrapper {
+                min-width: unset;
+            }
+            .filter-groups {
+                flex-direction: column;
+            }
+            .filter-group {
+                justify-content: space-between;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Owner Login Layout -->
+    <div id="admin-login-layout" style="display: flex; align-items: center; justify-content: center; min-height: 100vh; background: #070e24;">
+        <div style="background: #0f1c3f; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 16px; width: 90%; max-width: 400px; padding: 2.5rem; box-shadow: 0 20px 40px rgba(0,0,0,0.6); text-align: center; backdrop-filter: blur(10px);">
+            <img src="assets/logo.png" alt="RentMeUskar" style="height: 50px; margin-bottom: 1.5rem; -webkit-user-drag: none; user-select: none;">
+            <h2 style="font-family: var(--font-heading); margin-bottom: 0.5rem; color: #fff; font-size: 1.6rem;">Acceso Propietario</h2>
+            <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 1.5rem;">Consola de administración protegida</p>
+            <form id="admin-login-form">
+                <div class="custom-form-group" style="margin-bottom: 1rem; text-align: left;">
+                    <label style="display: block; font-size: 0.8rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 0.3rem; font-weight: 600; letter-spacing: 0.05em;">Usuario</label>
+                    <input type="text" id="admin-username" class="search-input" style="padding-left: 1rem;" required placeholder="zVaito">
+                </div>
+                <div class="custom-form-group" style="margin-bottom: 1.5rem; text-align: left;">
+                    <label style="display: block; font-size: 0.8rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 0.3rem; font-weight: 600; letter-spacing: 0.05em;">Contraseña</label>
+                    <input type="password" id="admin-password" class="search-input" style="padding-left: 1rem;" required placeholder="******">
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%; padding: 0.8rem; justify-content: center;">Iniciar Sesión</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Admin Dashboard Layout -->
+    <div id="admin-dashboard-layout" style="display: none;">
+        <div class="admin-container">
+            
+            <!-- Header -->
+            <header>
+                <div class="logo-area">
+                    <img src="assets/logo.png" alt="RentMeUskar" class="logo-img">
+                    <div class="header-title">
+                        <h1>Consola de Administración</h1>
+                        <p>Gestión de solicitudes de alquiler y reservas</p>
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <button class="btn" id="btn-admin-logout" style="border-color: var(--color-danger); color: var(--color-danger);">
+                        <i class="fa-solid fa-power-off"></i> Salir
+                    </button>
+                    <a href="/" class="btn">
+                        <i class="fa-solid fa-arrow-left"></i> Volver a la Web
+                    </a>
+                    <button class="btn btn-primary" id="btn-refresh">
+                        <i class="fa-solid fa-rotate"></i> Actualizar
+                    </button>
+                </div>
+            </header>
+
+            <!-- Metrics cards (KPI) -->
+            <div class="metrics-grid">
+                <div class="metric-card primary">
+                    <div class="metric-info">
+                        <h3>Reservas Totales</h3>
+                        <div class="metric-value" id="kpi-total">0</div>
+                    </div>
+                    <div class="metric-icon">
+                        <i class="fa-solid fa-calendar-check"></i>
+                    </div>
+                </div>
+                
+                <div class="metric-card warning">
+                    <div class="metric-info">
+                        <h3>Pendientes</h3>
+                        <div class="metric-value" id="kpi-pending">0</div>
+                    </div>
+                    <div class="metric-icon">
+                        <i class="fa-solid fa-clock"></i>
+                    </div>
+                </div>
+                
+                <div class="metric-card success">
+                    <div class="metric-info">
+                        <h3>Ingresos Estimados</h3>
+                        <div class="metric-value" id="kpi-revenue">0,00 €</div>
+                    </div>
+                    <div class="metric-icon">
+                        <i class="fa-solid fa-euro-sign"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filters / Controls toolbar -->
+            <div class="controls-row">
+                <div class="search-wrapper">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="text" id="search-name" class="search-input" placeholder="Buscar por nombre de cliente...">
+                </div>
+                <div class="filter-groups">
+                    <div class="filter-group">
+                        <label for="filter-van">Vehículo</label>
+                        <select id="filter-van" class="select-filter">
+                            <option value="all">Todos los vehículos</option>
+                            <option value="medium">Ford Transit (Mediana)</option>
+                            <option value="large">MAN TGE (Grande)</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="filter-status">Estado</label>
+                        <select id="filter-status" class="select-filter">
+                            <option value="all">Todos los estados</option>
+                            <option value="pending">Pendientes</option>
+                            <option value="confirmed">Confirmados</option>
+                            <option value="cancelled">Cancelados</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Table Card -->
+            <div class="table-card">
+                <div class="table-responsive">
+                    <table class="bookings-table">
+                        <thead>
+                            <tr>
+                                <th>Cliente</th>
+                                <th>Vehículo</th>
+                                <th>Recogida</th>
+                                <th>Devolución</th>
+                                <th>Duración</th>
+                                <th>Precio Estimado</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="bookings-tbody">
+                            <!-- Carga dinámica por javascript -->
+                            <tr>
+                                <td colspan="8" style="text-align: center; padding: 3rem;">
+                                    <i class="fa-solid fa-spinner fa-spin" style="font-size: 2rem; color: var(--color-neon); margin-bottom: 1rem; display: block;"></i>
+                                    Cargando reservas...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Details Modal -->
+    <div class="modal" id="details-modal">
+        <div class="modal-content">
+            <span class="modal-close" id="modal-close-btn">&times;</span>
+            <div class="modal-header">
+                <h2 id="modal-client-name">Nombre del Cliente</h2>
+                <div class="subtitle">
+                    <i class="fa-solid fa-receipt"></i> Reserva ID: <span id="modal-booking-id">#0</span>
+                    <span id="modal-status-badge" class="status-badge pending">Estado</span>
+                </div>
+            </div>
+            <div class="modal-body">
+                <div class="detail-row">
+                    <span class="detail-label">Vehículo</span>
+                    <span class="detail-value" id="modal-van-name">-</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Fecha de Recogida</span>
+                    <span class="detail-value" id="modal-pickup-date">-</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Fecha de Devolución</span>
+                    <span class="detail-value" id="modal-return-date">-</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Duración</span>
+                    <span class="detail-value" id="modal-duration">-</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Modalidad</span>
+                    <span class="detail-value" id="modal-rental-mode">-</span>
+                </div>
+                <div class="detail-row" id="modal-estimated-kms-row" style="display: none;">
+                    <span class="detail-label">Kilómetros Estimados</span>
+                    <span class="detail-value" id="modal-estimated-kms">-</span>
+                </div>
+                <div class="detail-row" id="modal-waiting-hours-row" style="display: none;">
+                    <span class="detail-label">Horas de Espera</span>
+                    <span class="detail-value" id="modal-waiting-hours">-</span>
+                </div>
+                <div class="detail-row" id="modal-extras-section-row">
+                    <span class="detail-label">Extras Contratados</span>
+                    <div class="detail-value">
+                        <ul class="extras-list" id="modal-extras-list">
+                            <li>Ninguno</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <!-- Campos Nuevos Integrados -->
+                <div class="detail-row">
+                    <span class="detail-label">Estado Pago</span>
+                    <span class="detail-value" id="modal-payment-status">-</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Estado Fianza</span>
+                    <span class="detail-value" id="modal-fianza-status">-</span>
+                </div>
+                <div class="detail-row" id="modal-payment-ref-row" style="display: none;">
+                    <span class="detail-label">Código Transacción TPV</span>
+                    <span class="detail-value" id="modal-payment-ref">-</span>
+                </div>
+                
+                <div class="detail-row">
+                    <span class="detail-label">Fecha de Registro</span>
+                    <span class="detail-value" id="modal-created-at">-</span>
+                </div>
+                <div class="detail-row total-row" style="border-bottom: none;">
+                    <span class="detail-label">Total Estimado</span>
+                    <span class="detail-value highlight" id="modal-total-price">0,00 €</span>
+                </div>
+
+                <!-- Documentos dinámicos -->
+                <div class="detail-row" id="modal-docs-row" style="align-items: center; padding-top: 1rem; border-top: 1px dashed rgba(255,255,255,0.05); margin-top: 0.5rem; display: none;">
+                    <span class="detail-label">Documentación PDF</span>
+                    <div class="detail-value" style="display: flex; gap: 0.5rem;">
+                        <button class="btn btn-sm" id="modal-btn-contract" style="font-size: 0.8rem; padding: 4px 10px;"><i class="fa-solid fa-file-signature"></i> Contrato</button>
+                        <button class="btn btn-sm" id="modal-btn-invoice" style="font-size: 0.8rem; padding: 4px 10px;"><i class="fa-solid fa-file-invoice-dollar"></i> Factura</button>
+                    </div>
+                </div>
+
+                <!-- Inspección del vehículo y fotos -->
+                <div style="margin-top: 1.2rem; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 1rem;">
+                    <h3 style="font-size: 0.95rem; font-family: var(--font-heading); margin-bottom: 0.8rem; color: #fff;"><i class="fa-solid fa-camera"></i> Inspección (Fotos de Control)</h3>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div>
+                            <h4 style="font-size: 0.7rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 0.4rem; font-weight: 700; letter-spacing: 0.02em;">Antes del Alquiler</h4>
+                            <div id="modal-photos-before" style="display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 0.5rem; min-height: 45px; background: rgba(0,0,0,0.15); border-radius: 6px; padding: 5px; border: 1px solid rgba(255,255,255,0.02);">
+                                <!-- Inyectadas por JS -->
+                            </div>
+                            <input type="file" id="input-upload-before" multiple accept="image/*" style="display: none;">
+                            <button class="btn" id="btn-trigger-before" style="width: 100%; font-size: 0.7rem; padding: 0.35rem; justify-content: center; background: rgba(255,255,255,0.02);"><i class="fa-solid fa-plus"></i> Añadir Fotos</button>
+                        </div>
+                        <div>
+                            <h4 style="font-size: 0.7rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 0.4rem; font-weight: 700; letter-spacing: 0.02em;">Después del Alquiler</h4>
+                            <div id="modal-photos-after" style="display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 0.5rem; min-height: 45px; background: rgba(0,0,0,0.15); border-radius: 6px; padding: 5px; border: 1px solid rgba(255,255,255,0.02);">
+                                <!-- Inyectadas por JS -->
+                            </div>
+                            <input type="file" id="input-upload-after" multiple accept="image/*" style="display: none;">
+                            <button class="btn" id="btn-trigger-after" style="width: 100%; font-size: 0.7rem; padding: 0.35rem; justify-content: center; background: rgba(255,255,255,0.02);"><i class="fa-solid fa-plus"></i> Añadir Fotos</button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="modal-footer" id="modal-actions-footer">
+                <!-- Se inyectan botones según el estado -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <script src="admin.js"></script>
+</body>
+</html>

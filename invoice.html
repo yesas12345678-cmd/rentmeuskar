@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Factura | RentMeUskar</title>
+    <link rel="icon" type="image/png" href="/assets/logo.png">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            color: #1e293b;
+            background-color: #f8fafc;
+            margin: 0;
+            padding: 2rem 1rem;
+            line-height: 1.5;
+        }
+
+        .invoice-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 3rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+            border: 1px solid #e2e8f0;
+            position: relative;
+        }
+
+        .no-print-bar {
+            max-width: 800px;
+            margin: 0 auto 1.5rem auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .btn {
+            background: #0f172a;
+            color: #fff;
+            border: none;
+            padding: 0.6rem 1.2rem;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn:hover {
+            background: #1e293b;
+        }
+
+        .header-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 3rem;
+        }
+
+        .header-logo {
+            width: 150px;
+        }
+
+        .header-title-box {
+            text-align: right;
+        }
+
+        .header-title-box h1 {
+            margin: 0;
+            font-size: 2rem;
+            font-weight: 800;
+            color: #0f172a;
+            letter-spacing: -0.02em;
+        }
+
+        .header-title-box p {
+            margin: 0.25rem 0 0 0;
+            color: #64748b;
+            font-size: 0.9rem;
+        }
+
+        .addresses-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 2.5rem;
+        }
+
+        .address-col {
+            width: 50%;
+            vertical-align: top;
+            font-size: 0.85rem;
+        }
+
+        .address-col h3 {
+            margin: 0 0 0.5rem 0;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #64748b;
+            font-weight: 700;
+        }
+
+        .address-col p {
+            margin: 0 0 0.25rem 0;
+            color: #0f172a;
+        }
+
+        .address-col p.name {
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: 0.4rem;
+        }
+
+        /* Items Table */
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 2.5rem;
+        }
+
+        .items-table th {
+            background: #f8fafc;
+            border-bottom: 2px solid #cbd5e1;
+            padding: 0.8rem 1rem;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            font-weight: 700;
+            color: #475569;
+            text-align: left;
+        }
+
+        .items-table td {
+            padding: 1rem;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 0.9rem;
+            color: #334155;
+        }
+
+        .items-table td.number-col {
+            text-align: right;
+        }
+
+        .items-table th.number-col {
+            text-align: right;
+        }
+
+        .totals-container {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 3rem;
+        }
+
+        .totals-table {
+            width: 320px;
+            border-collapse: collapse;
+        }
+
+        .totals-table td {
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+            color: #475569;
+        }
+
+        .totals-table tr.grand-total td {
+            font-size: 1.2rem;
+            font-weight: 800;
+            color: #0f172a;
+            border-top: 2px solid #0f172a;
+            padding-top: 0.8rem;
+        }
+
+        .totals-table td.amount-col {
+            text-align: right;
+            font-weight: 600;
+        }
+
+        .totals-table tr.grand-total td.amount-col {
+            color: #82d105;
+        }
+
+        /* Payment Status Badge */
+        .payment-badge {
+            position: absolute;
+            top: 10rem;
+            right: 3rem;
+            border: 4px double #82d105;
+            color: #82d105;
+            background: rgba(130, 209, 5, 0.05);
+            font-size: 1.1rem;
+            font-weight: 800;
+            padding: 0.5rem 1.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            transform: rotate(-10deg);
+            border-radius: 4px;
+            opacity: 0.8;
+            pointer-events: none;
+        }
+
+        .payment-badge.pending {
+            border-color: #ffb703;
+            color: #ffb703;
+            background: rgba(255, 183, 3, 0.05);
+        }
+
+        .invoice-footer {
+            border-top: 1px solid #e2e8f0;
+            padding-top: 1.5rem;
+            font-size: 0.75rem;
+            color: #64748b;
+            text-align: center;
+        }
+
+        .invoice-memo {
+            margin-bottom: 2rem;
+            padding: 1rem;
+            background: #f8fafc;
+            border-left: 4px solid #0f172a;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            color: #475569;
+        }
+
+        /* Print Media Styles */
+        @media print {
+            body {
+                background-color: #fff;
+                padding: 0;
+                color: #000;
+            }
+            .invoice-container {
+                box-shadow: none;
+                border: none;
+                padding: 0;
+                max-width: 100%;
+            }
+            .no-print {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="no-print-bar no-print">
+        <a href="/" class="btn" style="background: transparent; color: #475569; border: 1px solid #cbd5e1;">Volver a la Web</a>
+        <button class="btn" onclick="window.print()">Imprimir Factura (PDF)</button>
+    </div>
+
+    <div class="invoice-container">
+        
+        <!-- Payment stamp badge -->
+        <div class="payment-badge" id="payment-status-badge">PAGADA</div>
+
+        <!-- Header -->
+        <table class="header-table">
+            <tr>
+                <td>
+                    <img src="/assets/logo.png" alt="RentMeUskar" class="header-logo">
+                </td>
+                <td class="header-title-box">
+                    <h1>FACTURA</h1>
+                    <p>Factura Nº: <span id="invoice-id">#0000</span></p>
+                    <p>Fecha Emisión: <span id="invoice-date">-</span></p>
+                    <p>Método de Pago: <span id="payment-method">-</span></p>
+                </td>
+            </tr>
+        </table>
+
+        <!-- Sender / Receiver Addresses -->
+        <table class="addresses-table">
+            <tr>
+                <td class="address-col">
+                    <h3>Emisor (Arrendador)</h3>
+                    <p class="name">RentMeUskar</p>
+                    <p>Servicios Logísticos Huéscar</p>
+                    <p>Polígono Industrial La Sagra, Calle A</p>
+                    <p>18830 Huéscar, Granada</p>
+                    <p>CIF: 45896213K</p>
+                    <p>Contacto: rentmeuskar@gmail.com</p>
+                </td>
+                <td class="address-col" style="padding-left: 2rem;">
+                    <h3>Facturado A (Arrendatario)</h3>
+                    <p class="name" id="client-name">-</p>
+                    <p>DNI / NIE: <span id="client-dni">-</span></p>
+                    <p>Teléfono: <span id="client-phone">-</span></p>
+                    <p>Email: <span id="client-email">-</span></p>
+                </td>
+            </tr>
+        </table>
+
+        <!-- Table of items -->
+        <table class="items-table">
+            <thead>
+                <tr>
+                    <th>Descripción</th>
+                    <th class="number-col" style="width: 100px;">Días / Uds</th>
+                    <th class="number-col" style="width: 120px;">Precio Unit. (Base)</th>
+                    <th class="number-col" style="width: 120px;">Importe (Base)</th>
+                </tr>
+            </thead>
+            <tbody id="invoice-items-tbody">
+                <!-- Se inyectan dinámicamente -->
+            </tbody>
+        </table>
+
+        <!-- Memo details (Fianza/Depositos) -->
+        <div class="invoice-memo" id="invoice-fianza-memo">
+            <strong>Depósito de Garantía (Fianza):</strong> Se ha registrado una fianza de 500,00 € para esta reserva. Este importe ha sido retenido y no computa en la base imponible del servicio de alquiler. Se reembolsará íntegramente tras finalizar el servicio de alquiler satisfactoriamente.
+        </div>
+
+        <!-- Totals section -->
+        <div class="totals-container">
+            <table class="totals-table">
+                <tr>
+                    <td>Base Imponible (Suma Conceptos)</td>
+                    <td class="amount-col" id="total-base-tax">-</td>
+                </tr>
+                <tr>
+                    <td>IVA (21%)</td>
+                    <td class="amount-col" id="total-iva">-</td>
+                </tr>
+                <tr class="grand-total">
+                    <td>Total Factura (IVA Incl.)</td>
+                    <td class="amount-col" id="total-price">-</td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- Footer -->
+        <div class="invoice-footer">
+            ¡Gracias por confiar en RentMeUskar para tu logística en el Altiplano Granadino!<br>
+            Huéscar (Granada), España.
+        </div>
+
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const pathParts = window.location.pathname.split('/');
+            const bookingId = pathParts[pathParts.length - 1];
+            
+            if (!bookingId || isNaN(bookingId)) {
+                alert('ID de factura inválido.');
+                return;
+            }
+
+            // Fetch details
+            fetch(`/api/bookings/${bookingId}`)
+                .then(res => {
+                    if (!res.ok) throw new Error('Error al obtener datos');
+                    return res.json();
+                })
+                .then(booking => {
+                    document.getElementById('invoice-id').textContent = `#RMU-FAC-${booking.id}`;
+                    
+                    const formatTimestamp = (timestampStr) => {
+                        const date = new Date(timestampStr);
+                        return date.toLocaleDateString('es-ES');
+                    };
+
+                    document.getElementById('invoice-date').textContent = formatTimestamp(booking.created_at);
+                    
+                    // Método de pago
+                    if (booking.payment_status === 'paid') {
+                        document.getElementById('payment-method').innerHTML = `Tarjeta TPV CaixaBank<br><small style="color: #64748b;">Ref: ${booking.payment_id || '-'}</small>`;
+                        const stamp = document.getElementById('payment-status-badge');
+                        stamp.className = 'payment-badge';
+                        stamp.textContent = 'PAGADA';
+                    } else {
+                        document.getElementById('payment-method').textContent = 'Pendiente de cobro / Manual';
+                        const stamp = document.getElementById('payment-status-badge');
+                        stamp.className = 'payment-badge pending';
+                        stamp.textContent = 'PENDIENTE';
+                    }
+
+                    // Cliente
+                    document.getElementById('client-name').textContent = booking.user_name || booking.name;
+                    document.getElementById('client-dni').textContent = booking.user_dni || '-';
+                    document.getElementById('client-phone').textContent = booking.user_phone || '-';
+                    document.getElementById('client-email').textContent = booking.user_email || '-';
+
+                    // Tabla de Conceptos
+                    const tbody = document.getElementById('invoice-items-tbody');
+                    tbody.innerHTML = '';
+
+                    const isCon = booking.rental_mode === 'con';
+                    const isFord = booking.van_type === 'medium';
+                    
+                    let calculatedBaseTaxable = 0;
+
+                    if (!isCon) {
+                        // MODALIDAD: SIN CONDUCTOR
+                        const baseDailyPrice = isFord ? 79.00 : 107.44;
+                        let baseRentalTotal = baseDailyPrice * booking.days;
+                        
+                        // Furgoneta Base row
+                        const trBase = document.createElement('tr');
+                        trBase.innerHTML = `
+                            <td>
+                                <strong>Alquiler de Vehículo sin Conductor</strong><br>
+                                <small style="color: #64748b;">Modelo: ${booking.van_name} | Matrícula: ${isFord ? '3681 MCC' : '3758 MDW'}</small>
+                            </td>
+                            <td class="number-col">${booking.days} d</td>
+                            <td class="number-col">${baseDailyPrice.toFixed(2)} €</td>
+                            <td class="number-col"><strong>${baseRentalTotal.toFixed(2)} €</strong></td>
+                        `;
+                        tbody.appendChild(trBase);
+                        calculatedBaseTaxable += baseRentalTotal;
+
+                        // Descuento del 5% row (if >= 3 days)
+                        if (booking.days >= 3) {
+                            const discountVal = baseRentalTotal * 0.05;
+                            const trDisc = document.createElement('tr');
+                            trDisc.innerHTML = `
+                                <td>
+                                    <strong>Descuento Comercial (5%)</strong><br>
+                                    <small style="color: #64748b;">Aplicado por duración de alquiler &ge; 3 días</small>
+                                </td>
+                                <td class="number-col">1</td>
+                                <td class="number-col">-${discountVal.toFixed(2)} €</td>
+                                <td class="number-col" style="color: #ff4d6d;"><strong>-${discountVal.toFixed(2)} €</strong></td>
+                            `;
+                            tbody.appendChild(trDisc);
+                            calculatedBaseTaxable -= discountVal;
+                        }
+
+                        // Extras rows
+                        if (booking.extras && booking.extras.length > 0) {
+                            booking.extras.forEach(extra => {
+                                let extraName = extra;
+                                let extraPrice = 0;
+                                let quantityText = '1';
+                                
+                                if (extra.includes('GPS')) {
+                                    extraName = 'GPS Navegador';
+                                    extraPrice = 5.00 * booking.days;
+                                    quantityText = `${booking.days} d`;
+                                } else if (extra.includes('Conductor')) {
+                                    extraName = 'Segundo Conductor Autorizado';
+                                    extraPrice = 8.00 * booking.days;
+                                    quantityText = `${booking.days} d`;
+                                } else if (extra.includes('Mudanza')) {
+                                    extraName = 'Kit Mudanza (Cinchas y Mantas)';
+                                    extraPrice = 10.00;
+                                    quantityText = '1 ud';
+                                }
+
+                                const trExtra = document.createElement('tr');
+                                trExtra.innerHTML = `
+                                    <td>
+                                        <strong>Extra: ${extraName}</strong><br>
+                                        <small style="color: #64748b;">Añadido a la reserva</small>
+                                    </td>
+                                    <td class="number-col">${quantityText}</td>
+                                    <td class="number-col">${(extraPrice / (quantityText.includes('d') ? booking.days : 1)).toFixed(2)} €</td>
+                                    <td class="number-col"><strong>${extraPrice.toFixed(2)} €</strong></td>
+                                `;
+                                tbody.appendChild(trExtra);
+                                calculatedBaseTaxable += extraPrice;
+                            });
+                        }
+                    } else {
+                        // MODALIDAD: CON CONDUCTOR
+                        const baseMinRate = isFord ? 50.00 : 60.00;
+                        const kmRate = isFord ? 1.00 : 1.40;
+                        
+                        const kms = parseInt(booking.estimated_kms) || 20;
+                        const wait = parseFloat(booking.waiting_hours) || 0;
+
+                        // 1. Tarifa Mínima Row
+                        const trMin = document.createElement('tr');
+                        trMin.innerHTML = `
+                            <td>
+                                <strong>Alquiler con Conductor - Tarifa Mínima</strong><br>
+                                <small style="color: #64748b;">Incluye conductor, furgoneta y 20 km (1 hora)</small>
+                            </td>
+                            <td class="number-col">1 ud</td>
+                            <td class="number-col">${baseMinRate.toFixed(2)} €</td>
+                            <td class="number-col"><strong>${baseMinRate.toFixed(2)} €</strong></td>
+                        `;
+                        tbody.appendChild(trMin);
+                        calculatedBaseTaxable += baseMinRate;
+
+                        // 2. Extra Kms Row
+                        if (kms > 20) {
+                            const extraKms = kms - 20;
+                            const extraKmCost = extraKms * kmRate;
+                            const trKm = document.createElement('tr');
+                            trKm.innerHTML = `
+                                <td>
+                                    <strong>Kilómetros Excedentes Contratados</strong><br>
+                                    <small style="color: #64748b;">Kilometraje total: ${kms} km (primeros 20 km incluidos)</small>
+                                </td>
+                                <td class="number-col">${extraKms} km</td>
+                                <td class="number-col">${kmRate.toFixed(2)} €</td>
+                                <td class="number-col"><strong>${extraKmCost.toFixed(2)} €</strong></td>
+                            `;
+                            tbody.appendChild(trKm);
+                            calculatedBaseTaxable += extraKmCost;
+                        }
+
+                        // 3. Waiting hours Row
+                        if (wait > 0) {
+                            const waitCost = wait * 30.00;
+                            const trWait = document.createElement('tr');
+                            trWait.innerHTML = `
+                                <td>
+                                    <strong>Horas de Espera del Conductor (Carga/Descarga)</strong><br>
+                                    <small style="color: #64748b;">Estancia y esperas contratadas</small>
+                                </td>
+                                <td class="number-col">${wait} h</td>
+                                <td class="number-col">30.00 €</td>
+                                <td class="number-col"><strong>${waitCost.toFixed(2)} €</strong></td>
+                            `;
+                            tbody.appendChild(trWait);
+                            calculatedBaseTaxable += waitCost;
+                        }
+                    }
+
+                    // Calculo de IVA
+                    const totalPrice = parseFloat(booking.total_price);
+                    const iva = totalPrice - calculatedBaseTaxable;
+
+                    document.getElementById('total-base-tax').textContent = `${calculatedBaseTaxable.toFixed(2)} €`;
+                    document.getElementById('total-iva').textContent = `${iva.toFixed(2)} €`;
+                    document.getElementById('total-price').textContent = `${totalPrice.toFixed(2)} €`;
+                    
+                    // Memo de fianza
+                    const memo = document.getElementById('invoice-fianza-memo');
+                    if (isCon) {
+                        memo.style.display = 'none';
+                    } else {
+                        memo.style.display = 'block';
+                        if (booking.fianza_status === 'refunded') {
+                            memo.innerHTML = `<strong>Depósito de Garantía (Fianza):</strong> Se depositó una fianza de 500,00 € que ha sido <strong>REEMBOLSADA / LIBERADA</strong> satisfactoriamente tras revisar el vehículo.`;
+                        }
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    alert('No se pudo cargar la información de la factura.');
+                });
+        });
+    </script>
+</body>
+</html>
