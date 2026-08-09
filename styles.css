@@ -374,6 +374,7 @@ a {
     display: flex;
     flex-direction: column;
     gap: 2rem;
+    z-index: 5;
 }
 
 .hero-brand-badge {
@@ -502,6 +503,7 @@ a {
     justify-content: center;
     align-items: center;
     transition: var(--transition-smooth);
+    z-index: 1;
 }
 
 .hero-van-img {
@@ -511,6 +513,14 @@ a {
     object-fit: contain;
     filter: drop-shadow(0 15px 35px rgba(0, 0, 0, 0.7));
     transition: var(--transition-smooth);
+}
+
+@media (min-width: 1025px) {
+    .hero-van-img {
+        width: 135%;
+        max-width: 850px;
+        margin-left: -22%;
+    }
 }
 
 .hero-vehicle:hover .hero-van-img {
