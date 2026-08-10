@@ -422,6 +422,7 @@ a {
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     padding: 0.4rem 0.8rem;
     max-width: 450px;
+    width: fit-content;
     border-radius: 0 6px 6px 0;
 }
 
