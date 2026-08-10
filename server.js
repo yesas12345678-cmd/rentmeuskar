@@ -76,6 +76,20 @@ const initDb = async () => {
     );
   `;
 
+  const createVansTableQuery = `
+    CREATE TABLE IF NOT EXISTS vans (
+      id SERIAL PRIMARY KEY,
+      van_type VARCHAR(50) UNIQUE NOT NULL,
+      name VARCHAR(255) NOT NULL,
+      plate VARCHAR(50) NOT NULL,
+      m3 VARCHAR(50) NOT NULL,
+      price_sin NUMERIC(10, 2) NOT NULL,
+      min_price_con NUMERIC(10, 2) NOT NULL,
+      km_price_con NUMERIC(10, 2) NOT NULL,
+      status VARCHAR(50) DEFAULT 'active'
+    );
+  `;
+
   const alterBookingsQueries = [
     'ALTER TABLE bookings ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id) ON DELETE SET NULL;',
     "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS fianza_status VARCHAR(50) DEFAULT 'pending';",
@@ -85,7 +99,9 @@ const initDb = async () => {
     "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS photos_after TEXT[] DEFAULT '{}';",
     "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS rental_mode VARCHAR(50) DEFAULT 'sin';",
     "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS estimated_kms INTEGER DEFAULT 0;",
-    "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS waiting_hours NUMERIC(5, 2) DEFAULT 0.00;"
+    "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS waiting_hours NUMERIC(5, 2) DEFAULT 0.00;",
+    "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS van_plate VARCHAR(50);",
+    "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS van_m3 VARCHAR(50);"
   ];
 
   try {
@@ -100,6 +116,21 @@ const initDb = async () => {
     await client.query(createBookingsTableQuery);
     console.log('Tabla "bookings" verificada/creada.');
     
+    // Crear tabla de furgonetas
+    await client.query(createVansTableQuery);
+    console.log('Tabla "vans" verificada/creada.');
+
+    // Pre-poblar furgonetas por defecto si está vacía
+    const countVans = await client.query('SELECT COUNT(*) FROM vans');
+    if (parseInt(countVans.rows[0].count) === 0) {
+      await client.query(`
+        INSERT INTO vans (van_type, name, plate, m3, price_sin, min_price_con, km_price_con, status) VALUES
+        ('medium', 'Ford Transit Custom L2H2 (8m³)', '3681 MCC', '8m³', 79.00, 50.00, 1.00, 'active'),
+        ('large', 'MAN TGE L4H3 Gran Volumen (14m³)', '3758 MDW', '14m³', 107.44, 60.00, 1.40, 'active')
+      `);
+      console.log('Furgonetas por defecto insertadas.');
+    }
+
     // Alterar tabla de reservas para añadir columnas adicionales
     for (const query of alterBookingsQueries) {
       await client.query(query);
@@ -280,6 +311,25 @@ app.post('/api/bookings', async (req, res) => {
   }
 
   try {
+    // Obtener matrícula y volumen de la base de datos para la furgoneta
+    let realPlate = '';
+    let realM3 = '';
+    try {
+      const vanRes = await pool.query('SELECT plate, m3 FROM vans WHERE van_type = $1', [van_type]);
+      if (vanRes.rowCount > 0) {
+        realPlate = vanRes.rows[0].plate;
+        realM3 = vanRes.rows[0].m3;
+      } else {
+        // Fallback histórico
+        realPlate = van_type === 'medium' ? '3681 MCC' : '3758 MDW';
+        realM3 = van_type === 'medium' ? '8m³' : '14m³';
+      }
+    } catch (e) {
+      console.error('Error al consultar matrícula de furgoneta:', e);
+      realPlate = van_type === 'medium' ? '3681 MCC' : '3758 MDW';
+      realM3 = van_type === 'medium' ? '8m³' : '14m³';
+    }
+
     // Verificar colisión de fechas (solo para alquiler SIN conductor, con conductor no bloquea)
     if ((rental_mode || 'sin') === 'sin') {
       const checkOverlapsQuery = `
@@ -304,8 +354,8 @@ app.post('/api/bookings', async (req, res) => {
         name, van_type, van_name, pickup_date, pickup_time, 
         return_date, return_time, days, extras, total_price,
         user_id, fianza_status, payment_status, payment_id, status,
-        rental_mode, estimated_kms, waiting_hours
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
+        rental_mode, estimated_kms, waiting_hours, van_plate, van_m3
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
       RETURNING *;
     `;
 
@@ -327,7 +377,9 @@ app.post('/api/bookings', async (req, res) => {
       status || 'pending',
       rental_mode || 'sin',
       estimated_kms || 0,
-      waiting_hours || 0.00
+      waiting_hours || 0.00,
+      realPlate,
+      realM3
     ];
 
     const result = await pool.query(query, values);
@@ -346,9 +398,11 @@ app.get('/api/bookings/:id', async (req, res) => {
   const { id } = req.params;
   try {
     const query = `
-      SELECT b.*, u.name as user_name, u.email as user_email, u.phone as user_phone, u.dni as user_dni
+      SELECT b.*, u.name as user_name, u.email as user_email, u.phone as user_phone, u.dni as user_dni,
+             v.price_sin, v.min_price_con, v.km_price_con
       FROM bookings b
       LEFT JOIN users u ON b.user_id = u.id
+      LEFT JOIN vans v ON b.van_type = v.van_type
       WHERE b.id = $1
     `;
     const result = await pool.query(query, [id]);
@@ -479,6 +533,130 @@ app.delete('/api/bookings/:id', async (req, res) => {
   } catch (err) {
     console.error('Error al eliminar reserva:', err);
     res.status(500).json({ error: 'Error del servidor al eliminar la reserva.' });
+  }
+});
+
+// --- RUTAS DE GESTIÓN DE FLOTA (FURGONETAS) ---
+
+// Middleware de verificación de Administrador
+const verifyAdmin = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    return res.status(401).json({ error: 'No autorizado. Falta token.' });
+  }
+  const token = authHeader.replace('Bearer ', '');
+  if (token !== 'admin_token_rentmeuskar') {
+    return res.status(403).json({ error: 'Acceso denegado. Permisos insuficientes.' });
+  }
+  next();
+};
+
+// 1. Obtener furgonetas activas (público)
+app.get('/api/vans', async (req, res) => {
+  try {
+    const result = await pool.query("SELECT * FROM vans WHERE status = 'active' ORDER BY id ASC");
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error al obtener furgonetas:', err);
+    res.status(500).json({ error: 'Error del servidor al obtener furgonetas.' });
+  }
+});
+
+// 2. Obtener todas las furgonetas (admin)
+app.get('/api/admin/vans', verifyAdmin, async (req, res) => {
+  try {
+    const result = await pool.query("SELECT * FROM vans ORDER BY id ASC");
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error al obtener furgonetas de admin:', err);
+    res.status(500).json({ error: 'Error del servidor.' });
+  }
+});
+
+// 3. Crear una nueva furgoneta
+app.post('/api/vans', verifyAdmin, async (req, res) => {
+  const { van_type, name, plate, m3, price_sin, min_price_con, km_price_con, status } = req.body;
+  if (!van_type || !name || !plate || !m3 || price_sin === undefined || min_price_con === undefined || km_price_con === undefined) {
+    return res.status(400).json({ error: 'Faltan campos obligatorios para registrar la furgoneta.' });
+  }
+
+  try {
+    // Comprobar si ya existe el tipo
+    const checkRes = await pool.query('SELECT id FROM vans WHERE van_type = $1', [van_type]);
+    if (checkRes.rowCount > 0) {
+      return res.status(400).json({ error: 'Ya existe un tipo de furgoneta registrado con ese identificador.' });
+    }
+
+    const query = `
+      INSERT INTO vans (van_type, name, plate, m3, price_sin, min_price_con, km_price_con, status)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *;
+    `;
+    const values = [van_type, name, plate, m3, price_sin, min_price_con, km_price_con, status || 'active'];
+    const result = await pool.query(query, values);
+    
+    res.status(201).json({
+      message: 'Furgoneta registrada con éxito.',
+      van: result.rows[0]
+    });
+  } catch (err) {
+    console.error('Error al crear furgoneta:', err);
+    res.status(500).json({ error: 'Error del servidor al registrar la furgoneta.' });
+  }
+});
+
+// 4. Modificar una furgoneta
+app.put('/api/vans/:id', verifyAdmin, async (req, res) => {
+  const { id } = req.params;
+  const { van_type, name, plate, m3, price_sin, min_price_con, km_price_con, status } = req.body;
+
+  try {
+    const checkRes = await pool.query('SELECT * FROM vans WHERE id = $1', [id]);
+    if (checkRes.rowCount === 0) {
+      return res.status(404).json({ error: 'Furgoneta no encontrada.' });
+    }
+    const current = checkRes.rows[0];
+
+    const query = `
+      UPDATE vans 
+      SET van_type = $1, name = $2, plate = $3, m3 = $4, price_sin = $5, min_price_con = $6, km_price_con = $7, status = $8
+      WHERE id = $9 RETURNING *;
+    `;
+    const values = [
+      van_type !== undefined ? van_type : current.van_type,
+      name !== undefined ? name : current.name,
+      plate !== undefined ? plate : current.plate,
+      m3 !== undefined ? m3 : current.m3,
+      price_sin !== undefined ? price_sin : current.price_sin,
+      min_price_con !== undefined ? min_price_con : current.min_price_con,
+      km_price_con !== undefined ? km_price_con : current.km_price_con,
+      status !== undefined ? status : current.status,
+      id
+    ];
+
+    const result = await pool.query(query, values);
+    res.json({
+      message: 'Furgoneta actualizada con éxito.',
+      van: result.rows[0]
+    });
+  } catch (err) {
+    console.error('Error al actualizar furgoneta:', err);
+    res.status(500).json({ error: 'Error del servidor al actualizar la furgoneta.' });
+  }
+});
+
+// 5. Eliminar una furgoneta
+app.delete('/api/vans/:id', verifyAdmin, async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const result = await pool.query('DELETE FROM vans WHERE id = $1 RETURNING *', [id]);
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: 'Furgoneta no encontrada.' });
+    }
+    res.json({ message: 'Furgoneta eliminada con éxito.' });
+  } catch (err) {
+    console.error('Error al eliminar furgoneta:', err);
+    res.status(500).json({ error: 'Error del servidor al eliminar la furgoneta.' });
   }
 });
 

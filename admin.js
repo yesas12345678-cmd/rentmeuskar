@@ -66,6 +66,33 @@ document.addEventListener('DOMContentLoaded', () => {
     // Toast Container
     const toastContainer = document.getElementById('toast-container');
 
+    // Elementos de la Pestaña de Flota
+    const tabBookings = document.getElementById('tab-bookings');
+    const tabFleet = document.getElementById('tab-fleet');
+    const sectionBookings = document.getElementById('section-bookings');
+    const sectionFleet = document.getElementById('section-fleet');
+    const fleetTbody = document.getElementById('fleet-tbody');
+    const btnAddVan = document.getElementById('btn-add-van');
+    
+    // Modal de furgonetas
+    const vanModal = document.getElementById('van-modal');
+    const vanModalCloseBtn = document.getElementById('van-modal-close-btn');
+    const vanForm = document.getElementById('van-form');
+    const vanFormId = document.getElementById('van-form-id');
+    const vanFormType = document.getElementById('van-form-type');
+    const vanFormName = document.getElementById('van-form-name');
+    const vanFormPlate = document.getElementById('van-form-plate');
+    const vanFormM3 = document.getElementById('van-form-m3');
+    const vanFormPriceSin = document.getElementById('van-form-price-sin');
+    const vanFormMinPriceCon = document.getElementById('van-form-min-price-con');
+    const vanFormKmPriceCon = document.getElementById('van-form-km-price-con');
+    const vanFormStatus = document.getElementById('van-form-status');
+    const vanBtnCancel = document.getElementById('van-btn-cancel');
+    const vanModalTitle = document.getElementById('van-modal-title');
+    
+    // Variables de Estado de Flota
+    let fleet = [];
+
     /* ==========================================================================
        1. AUTENTICACIÓN
        ========================================================================== */
@@ -75,6 +102,7 @@ document.addEventListener('DOMContentLoaded', () => {
             loginLayout.style.display = 'none';
             dashboardLayout.style.display = 'block';
             fetchBookings();
+            fetchFleet();
         } else {
             loginLayout.style.display = 'flex';
             dashboardLayout.style.display = 'none';
@@ -619,7 +647,10 @@ document.addEventListener('DOMContentLoaded', () => {
     
     btnRefresh.addEventListener('click', () => {
         fetchBookings();
-        showToast('Datos de reservas actualizados.', 'success');
+        if (sectionFleet.style.display === 'block') {
+            fetchFleet();
+        }
+        showToast('Datos actualizados.', 'success');
     });
 
     searchName.addEventListener('input', renderBookings);
@@ -629,6 +660,253 @@ document.addEventListener('DOMContentLoaded', () => {
     modalCloseBtn.addEventListener('click', closeModal);
     modal.addEventListener('click', (e) => {
         if (e.target === modal) closeModal();
+    });
+
+    /* ==========================================================================
+       6. GESTIÓN DE FLOTA (FURGONETAS)
+       ========================================================================== */
+    
+    // Alternar pestañas
+    const switchTab = (tab) => {
+        if (tab === 'bookings') {
+            tabBookings.classList.add('btn-primary');
+            tabBookings.style.borderColor = 'var(--color-neon)';
+            tabFleet.classList.remove('btn-primary');
+            tabFleet.style.borderColor = 'rgba(255,255,255,0.08)';
+            
+            sectionBookings.style.display = 'block';
+            sectionFleet.style.display = 'none';
+        } else {
+            tabFleet.classList.add('btn-primary');
+            tabFleet.style.borderColor = 'var(--color-neon)';
+            tabBookings.classList.remove('btn-primary');
+            tabBookings.style.borderColor = 'rgba(255,255,255,0.08)';
+            
+            sectionBookings.style.display = 'none';
+            sectionFleet.style.display = 'block';
+            fetchFleet();
+        }
+    };
+
+    // Obtener la flota de furgonetas
+    const fetchFleet = async () => {
+        const token = localStorage.getItem('admin_token');
+        if (!token) return;
+
+        try {
+            const response = await fetch('/api/admin/vans', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!response.ok) throw new Error('Error al obtener datos de la flota');
+            
+            fleet = await response.json();
+            
+            // Actualizar selector de filtrado de reservas dinámicamente
+            updateFilterVanSelect();
+
+            renderFleet();
+        } catch (err) {
+            console.error(err);
+            showToast('Error al conectar con el catálogo de flota.', 'error');
+            fleetTbody.innerHTML = `
+                <tr>
+                    <td colspan="9" style="text-align: center; padding: 3rem; color: var(--color-danger);">
+                        <i class="fa-solid fa-triangle-exclamation" style="font-size: 2.5rem; margin-bottom: 1rem; display: block;"></i>
+                        No se pudo conectar a la base de datos de flota.
+                    </td>
+                </tr>
+            `;
+        }
+    };
+
+    // Actualizar el select filter-van de la pestaña de reservas
+    const updateFilterVanSelect = () => {
+        const currentVal = filterVan.value;
+        filterVan.innerHTML = '<option value="all">Todos los vehículos</option>';
+        fleet.forEach(van => {
+            const opt = document.createElement('option');
+            opt.value = van.van_type;
+            opt.textContent = `${van.name} (${van.plate})`;
+            filterVan.appendChild(opt);
+        });
+        filterVan.value = currentVal;
+    };
+
+    // Renderizar la tabla de furgonetas
+    const renderFleet = () => {
+        fleetTbody.innerHTML = '';
+        if (fleet.length === 0) {
+            fleetTbody.innerHTML = `
+                <tr>
+                    <td colspan="9" style="text-align: center; padding: 3rem; color: var(--text-secondary);">
+                        <i class="fa-solid fa-truck" style="font-size: 2.5rem; margin-bottom: 1rem; display: block; opacity: 0.3;"></i>
+                        No hay furgonetas en el catálogo.
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        fleet.forEach(van => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><strong style="color: var(--color-info);">${van.van_type}</strong></td>
+                <td><strong>${van.name}</strong></td>
+                <td>${van.plate}</td>
+                <td>${van.m3}</td>
+                <td class="price-value">${formatCurrency(van.price_sin)}</td>
+                <td>${formatCurrency(van.min_price_con)}</td>
+                <td>${formatCurrency(van.km_price_con)}/km</td>
+                <td>
+                    <span class="status-badge ${van.status === 'active' ? 'confirmed' : 'cancelled'}" style="font-size: 0.7rem; padding: 2px 8px;">
+                        ${van.status === 'active' ? 'Activo' : 'Inactivo'}
+                    </span>
+                </td>
+                <td>
+                    <div class="actions-cell">
+                        <button class="btn-icon edit-van" title="Editar tarifas y datos" data-id="${van.id}">
+                            <i class="fa-solid fa-pencil"></i>
+                        </button>
+                        <button class="btn-icon delete delete-van" title="Eliminar furgoneta" data-id="${van.id}">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            `;
+            
+            // Asignar listeners
+            tr.querySelector('.edit-van').addEventListener('click', () => openVanModal(van));
+            tr.querySelector('.delete-van').addEventListener('click', () => deleteVan(van.id));
+            
+            fleetTbody.appendChild(tr);
+        });
+    };
+
+    // Eliminar furgoneta
+    const deleteVan = async (id) => {
+        const vanObj = fleet.find(v => v.id === id);
+        if (!vanObj) return;
+
+        if (vanObj.van_type === 'medium' || vanObj.van_type === 'large') {
+            if (!confirm(`La furgoneta "${vanObj.name}" es parte de la configuración base inicial. ¿Seguro que quieres eliminarla?`)) {
+                return;
+            }
+        } else {
+            if (!confirm(`¿Seguro que quieres eliminar la furgoneta "${vanObj.name}" permanentemente del catálogo?`)) {
+                return;
+            }
+        }
+
+        const token = localStorage.getItem('admin_token');
+        if (!token) return;
+
+        try {
+            const response = await fetch(`/api/vans/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await response.json();
+            if (response.ok) {
+                showToast('Furgoneta eliminada correctamente.', 'success');
+                fetchFleet();
+            } else {
+                showToast(data.error || 'Error al eliminar furgoneta.', 'error');
+            }
+        } catch (err) {
+            console.error(err);
+            showToast('Error de red al conectar con el servidor.', 'error');
+        }
+    };
+
+    // Abrir modal de furgonetas para añadir o editar
+    const openVanModal = (van = null) => {
+        if (van) {
+            vanModalTitle.textContent = 'Editar Furgoneta';
+            vanFormId.value = van.id;
+            vanFormType.value = van.van_type;
+            vanFormType.disabled = true;
+            vanFormName.value = van.name;
+            vanFormPlate.value = van.plate;
+            vanFormM3.value = van.m3;
+            vanFormPriceSin.value = van.price_sin;
+            vanFormMinPriceCon.value = van.min_price_con;
+            vanFormKmPriceCon.value = van.km_price_con;
+            vanFormStatus.value = van.status;
+        } else {
+            vanModalTitle.textContent = 'Añadir Nueva Furgoneta';
+            vanFormId.value = '';
+            vanFormType.value = '';
+            vanFormType.disabled = false;
+            vanFormName.value = '';
+            vanFormPlate.value = '';
+            vanFormM3.value = '';
+            vanFormPriceSin.value = '';
+            vanFormMinPriceCon.value = '';
+            vanFormKmPriceCon.value = '';
+            vanFormStatus.value = 'active';
+        }
+        vanModal.classList.add('active');
+    };
+
+    const closeVanModal = () => {
+        vanModal.classList.remove('active');
+        vanForm.reset();
+    };
+
+    // Event listeners de la pestaña
+    tabBookings.addEventListener('click', () => switchTab('bookings'));
+    tabFleet.addEventListener('click', () => switchTab('fleet'));
+    btnAddVan.addEventListener('click', () => openVanModal());
+    vanModalCloseBtn.addEventListener('click', closeVanModal);
+    vanBtnCancel.addEventListener('click', closeVanModal);
+    
+    vanModal.addEventListener('click', (e) => {
+        if (e.target === vanModal) closeVanModal();
+    });
+
+    // Envío del formulario de furgoneta
+    vanForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const id = vanFormId.value;
+        const bodyData = {
+            van_type: vanFormType.value.trim(),
+            name: vanFormName.value.trim(),
+            plate: vanFormPlate.value.trim(),
+            m3: vanFormM3.value.trim(),
+            price_sin: parseFloat(vanFormPriceSin.value),
+            min_price_con: parseFloat(vanFormMinPriceCon.value),
+            km_price_con: parseFloat(vanFormKmPriceCon.value),
+            status: vanFormStatus.value
+        };
+
+        const token = localStorage.getItem('admin_token');
+        if (!token) return;
+
+        const url = id ? `/api/vans/${id}` : '/api/vans';
+        const method = id ? 'PUT' : 'POST';
+
+        try {
+            const response = await fetch(url, {
+                method: method,
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}` 
+                },
+                body: JSON.stringify(bodyData)
+            });
+            const data = await response.json();
+            
+            if (response.ok) {
+                showToast(id ? 'Furgoneta actualizada con éxito.' : 'Nueva furgoneta registrada con éxito.', 'success');
+                closeVanModal();
+                fetchFleet();
+            } else {
+                showToast(data.error || 'Error al guardar los cambios.', 'error');
+            }
+        } catch (err) {
+            console.error(err);
+            showToast('Error de red al guardar furgoneta.', 'error');
+        }
     });
     
     // Inicializar página

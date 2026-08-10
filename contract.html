@@ -332,9 +332,8 @@
                     
                     // Alquiler
                     document.getElementById('van-name').textContent = booking.van_name;
-                    
-                    const isFord = booking.van_type === 'medium';
-                    document.getElementById('van-plate').textContent = isFord ? '3681 MCC' : '3758 MDW';
+                            const isFord = booking.van_type === 'medium';
+                    document.getElementById('van-plate').textContent = booking.van_plate || (isFord ? '3681 MCC' : '3758 MDW');
 
                     document.getElementById('pickup-details').innerHTML = `${formatDate(booking.pickup_date)} a las <strong>${booking.pickup_time}</strong>`;
                     document.getElementById('return-details').innerHTML = `${formatDate(booking.return_date)} a las <strong>${booking.return_time}</strong>`;
@@ -356,15 +355,22 @@
                         document.getElementById('extras-list').textContent = 'Ninguno';
                     }
 
+                    // Tarifas y pesos dinámicos
+                    const kmRateText = booking.km_price_con !== undefined && booking.km_price_con !== null 
+                        ? `${parseFloat(booking.km_price_con).toFixed(2).replace('.', ',')} €` 
+                        : (isFord ? '1,00 €' : '1,40 €');
+                        
+                    const maxWeight = (booking.van_m3 && booking.van_m3.includes('14')) ? '1.400 kg' : '1.000 kg';
+
                     // Clausulas
                     const clausesContainer = document.getElementById('clauses-container');
                     if (isCon) {
                         clausesContainer.innerHTML = `
                             <li><strong>Servicio con Conductor:</strong> El alquiler incluye chofer profesional aportado por RentMeUskar. El arrendatario no conducirá el vehículo bajo ninguna circunstancia.</li>
-                            <li><strong>Límite de Kilometraje:</strong> El servicio incluye el kilometraje de <strong>\${booking.estimated_kms} km</strong> estimados en la reserva. Si el trayecto final excede dicho límite, se facturará al cliente a razón de <strong>\${isFord ? '1,00 €' : '1,40 €'} + IVA por kilómetro excedido</strong>.</li>
-                            <li><strong>Tiempo de Espera:</strong> El precio incluye un tiempo de espera de <strong>\${booking.waiting_hours} horas</strong> de carga/descarga ligera. Las horas adicionales de retención del conductor se cobrarán a razón de <strong>30,00 € + IVA la hora</strong>.</li>
+                            <li><strong>Límite de Kilometraje:</strong> El servicio incluye el kilometraje de <strong>${booking.estimated_kms} km</strong> estimados en la reserva. Si el trayecto final excede dicho límite, se facturará al cliente a razón de <strong>${kmRateText} + IVA por kilómetro excedido</strong>.</li>
+                            <li><strong>Tiempo de Espera:</strong> El precio incluye un tiempo de espera de <strong>${booking.waiting_hours} horas</strong> de carga/descarga ligera. Las horas adicionales de retención del conductor se cobrarán a razón de <strong>30,00 € + IVA la hora</strong>.</li>
                             <li><strong>Inspección y Daños:</strong> Dado que el conductor es aportado por el arrendador, el cliente queda exento de fianza y responsabilidad por daños por colisión del vehículo, salvo vandalismo o daños provocados directamente en la zona de carga por mala estiba de sus enseres.</li>
-                            <li><strong>Uso Autorizado de la Carga:</strong> Queda prohibido el transporte de materias peligrosas, inflamables o de contrabando. La carga máxima autorizada es de \${isFord ? '1.000 kg' : '1.400 kg'}.</li>
+                            <li><strong>Uso Autorizado de la Carga:</strong> Queda prohibido el transporte de materias peligrosas, inflamables o de contrabando. La carga máxima autorizada es de ${maxWeight}.</li>
                         `;
                     } else {
                         clausesContainer.innerHTML = `
@@ -372,7 +378,9 @@
                             <li><strong>Fianza y Depósito:</strong> El arrendatario ha depositado o autorizado la retención de una fianza de <strong>500,00 €</strong>. Esta fianza cubre cualquier daño menor, faltas en el combustible o retrasos en la devolución. Se reembolsará en su totalidad una vez revisado el vehículo y verificado que se encuentra en las mismas condiciones de entrega.</li>
                             <li><strong>Combustible:</strong> El vehículo se entrega con el depósito de combustible lleno y deberá ser devuelto del mismo modo. De lo contrario, se cobrará el coste del combustible faltante más un cargo de gestión de repostaje de 15€.</li>
                             <li><strong>Seguro y Franquicia:</strong> El alquiler incluye seguro obligatorio con franquicia estándar. El arrendatario es responsable de cualquier daño o siniestro propio hasta el límite de la franquicia establecida (salvo negligencia manifiesta).</li>
-                            <li><strong>Uso Autorizado:</strong> Queda terninantemente prohibido utilizar el vehículo para el transporte de mercancías peligrosas, actividades ilícitas, subarrendamiento, o conducción bajo los efectos del alcohol o sustancias psicotrópicas. Solo los conductores autorizados en este contrato pueden conducir el vehículo.</li>
+                            <li><strong>Uso Autorizado:</strong> Queda terminantemente prohibido utilizar el vehículo para el transporte de mercancías peligrosas, actividades ilícitas, subarrendamiento, o conducción bajo los efectos del alcohol o sustancias psicotrópicas. Solo los conductores autorizados en este contrato pueden conducir el vehículo.</li>
+                        `;
+                    }den conducir el vehículo.</li>
                         `;
                     }
                 })

@@ -396,7 +396,9 @@
 
                     if (!isCon) {
                         // MODALIDAD: SIN CONDUCTOR
-                        const baseDailyPrice = isFord ? 79.00 : 107.44;
+                        const baseDailyPrice = booking.price_sin !== undefined && booking.price_sin !== null 
+                            ? parseFloat(booking.price_sin) 
+                            : (isFord ? 79.00 : 107.44);
                         
                         if (booking.days > 7) {
                             // Larga duración (Tarifa personalizada)
@@ -416,7 +418,7 @@
                             trBase.innerHTML = `
                                 <td>
                                     <strong>Alquiler de Vehículo sin Conductor (Larga Duración)</strong><br>
-                                    <small style="color: #64748b;">Modelo: ${booking.van_name} | Matrícula: ${isFord ? '3681 MCC' : '3758 MDW'}</small>
+                                    <small style="color: #64748b;">Modelo: ${booking.van_name} | Matrícula: ${booking.van_plate || (isFord ? '3681 MCC' : '3758 MDW')}</small>
                                 </td>
                                 <td class="number-col">${booking.days} d</td>
                                 <td class="number-col">${totalPrice > 0 ? (baseRentalTotal / booking.days).toFixed(2) : 'A consultar'} €</td>
@@ -432,7 +434,7 @@
                             trBase.innerHTML = `
                                 <td>
                                     <strong>Alquiler de Vehículo sin Conductor</strong><br>
-                                    <small style="color: #64748b;">Modelo: ${booking.van_name} | Matrícula: ${isFord ? '3681 MCC' : '3758 MDW'}</small>
+                                    <small style="color: #64748b;">Modelo: ${booking.van_name} | Matrícula: ${booking.van_plate || (isFord ? '3681 MCC' : '3758 MDW')}</small>
                                 </td>
                                 <td class="number-col">${booking.days} d</td>
                                 <td class="number-col">${baseDailyPrice.toFixed(2)} €</td>
@@ -496,8 +498,12 @@
                         }
                     } else {
                         // MODALIDAD: CON CONDUCTOR
-                        const baseMinRate = isFord ? 50.00 : 60.00;
-                        const kmRate = isFord ? 1.00 : 1.40;
+                        const baseMinRate = booking.min_price_con !== undefined && booking.min_price_con !== null 
+                            ? parseFloat(booking.min_price_con) 
+                            : (isFord ? 50.00 : 60.00);
+                        const kmRate = booking.km_price_con !== undefined && booking.km_price_con !== null 
+                            ? parseFloat(booking.km_price_con) 
+                            : (isFord ? 1.00 : 1.40);
                         
                         const kms = parseInt(booking.estimated_kms) || 20;
                         const wait = parseFloat(booking.waiting_hours) || 0;

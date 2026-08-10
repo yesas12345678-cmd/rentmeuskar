@@ -71,6 +71,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let pickerStart, pickerEnd;
     let disabledRanges = [];
     let pendingBookingData = null;
+    let databaseVans = [];
 
     /* ==========================================================================
        1. NAVEGACIÓN Y EFECTOS HEADER
@@ -228,6 +229,47 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initFlatpickr();
 
+    // Cargar catálogo de furgonetas desde la API
+    const loadVans = async () => {
+        try {
+            const response = await fetch('/api/vans');
+            if (response.ok) {
+                databaseVans = await response.json();
+                
+                // Repoblar el selector calc-van-select
+                const selectedVal = vanSelect.value;
+                
+                vanSelect.innerHTML = '<option value="" disabled selected>-- Elige un modelo --</option>';
+                databaseVans.forEach(van => {
+                    const opt = document.createElement('option');
+                    opt.value = van.van_type;
+                    opt.setAttribute('data-price', van.price_sin);
+                    opt.textContent = `${van.name} - ${parseFloat(van.price_sin).toFixed(2).replace('.', ',')}€ + IVA / día`;
+                    vanSelect.appendChild(opt);
+                });
+                
+                if (selectedVal && databaseVans.some(v => v.van_type === selectedVal)) {
+                    vanSelect.value = selectedVal;
+                }
+            } else {
+                console.error('Error al descargar catálogo de furgonetas.');
+                useStaticVansFallback();
+            }
+        } catch (err) {
+            console.error('Error de red al conectar con el servidor:', err);
+            useStaticVansFallback();
+        }
+    };
+
+    const useStaticVansFallback = () => {
+        databaseVans = [
+            { van_type: 'medium', name: 'Ford Transit Custom L2H2 (8m³)', plate: '3681 MCC', m3: '8m³', price_sin: 79.00, min_price_con: 50.00, km_price_con: 1.00 },
+            { van_type: 'large', name: 'MAN TGE L4H3 Gran Volumen (14m³)', plate: '3758 MDW', m3: '14m³', price_sin: 107.44, min_price_con: 60.00, km_price_con: 1.40 }
+        ];
+    };
+
+    loadVans();
+
     // Obtener fechas ocupadas de la furgoneta seleccionada (solo aplica a Sin Conductor)
     const updateCalendarAvailability = async () => {
         const vanType = vanSelect.value;
@@ -325,7 +367,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            const baseDailyRate = CONFIG.prices.sin[vanType].price;
+            const van = databaseVans.find(v => v.van_type === vanType);
+            const baseDailyRate = van ? parseFloat(van.price_sin) : (vanType === 'medium' ? 79.00 : 107.44);
             let totalBase = baseDailyRate * days;
             
             // Descuento del 5% a partir de 3 días (máximo 1 semana)
@@ -350,10 +393,10 @@ document.addEventListener('DOMContentLoaded', () => {
             totalEstimated = baseTaxable + vatAmount;
 
             summaryDays.textContent = `${days} ${days === 1 ? 'día' : 'días'}${days >= 3 ? ' (5% desc.)' : ''}`;
-        } else {
             // CON CONDUCTOR
-            const baseMinRate = CONFIG.prices.con[vanType].minPrice;
-            const kmRate = CONFIG.prices.con[vanType].kmPrice;
+            const van = databaseVans.find(v => v.van_type === vanType);
+            const baseMinRate = van ? parseFloat(van.min_price_con) : (vanType === 'medium' ? 50.00 : 60.00);
+            const kmRate = van ? parseFloat(van.km_price_con) : (vanType === 'medium' ? 1.00 : 1.40);
             
             const kms = parseInt(kmsEstimate.value) || 20;
             const wait = parseFloat(waitHours.value) || 0;
@@ -692,7 +735,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Obtener datos del alquiler
         const rentalMode = document.querySelector('input[name="rental-mode"]:checked').value;
-        const vanName = CONFIG.prices[rentalMode][vanType].name;
+        const van = databaseVans.find(v => v.van_type === vanType);
+        const vanName = van ? van.name : (vanType === 'medium' ? 'Ford Transit Custom L2H2 (8m³)' : 'MAN TGE L4H3 Gran Volumen (14m³)');
         const pickupDateStr = dateStart.value;
         const pickupTimeStr = timeStart.value;
         const returnDateStr = dateEnd.value;
