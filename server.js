@@ -439,8 +439,8 @@ app.get('/api/bookings', async (req, res) => {
     }
     res.json(result.rows);
   } catch (err) {
-    console.error('Error al obtener reservas:', err);
-    res.status(500).json({ error: 'Error del servidor al obtener las reservas.' });
+    console.warn('Base de datos offline, retornando array vacío de reservas:', err.message);
+    res.json([]);
   }
 });
 
@@ -538,6 +538,12 @@ app.delete('/api/bookings/:id', async (req, res) => {
 
 // --- RUTAS DE GESTIÓN DE FLOTA (FURGONETAS) ---
 
+// Catálogo fallback en memoria en caso de que la base de datos PostgreSQL remota esté caída
+let fallbackVans = [
+  { id: 1, van_type: 'medium', name: 'Ford Transit Custom L2H2 (8m³)', plate: '3681 MCC', m3: '8m³', price_sin: 79.00, min_price_con: 50.00, km_price_con: 1.00, status: 'active' },
+  { id: 2, van_type: 'large', name: 'MAN TGE L4H3 Gran Volumen (14m³)', plate: '3758 MDW', m3: '14m³', price_sin: 107.44, min_price_con: 60.00, km_price_con: 1.40, status: 'active' }
+];
+
 // Middleware de verificación de Administrador
 const verifyAdmin = (req, res, next) => {
   const authHeader = req.headers.authorization;
@@ -557,8 +563,8 @@ app.get('/api/vans', async (req, res) => {
     const result = await pool.query("SELECT * FROM vans WHERE status = 'active' ORDER BY id ASC");
     res.json(result.rows);
   } catch (err) {
-    console.error('Error al obtener furgonetas:', err);
-    res.status(500).json({ error: 'Error del servidor al obtener furgonetas.' });
+    console.warn('Base de datos offline, enviando furgonetas fallback:', err.message);
+    res.json(fallbackVans.filter(v => v.status === 'active'));
   }
 });
 
@@ -568,8 +574,8 @@ app.get('/api/admin/vans', verifyAdmin, async (req, res) => {
     const result = await pool.query("SELECT * FROM vans ORDER BY id ASC");
     res.json(result.rows);
   } catch (err) {
-    console.error('Error al obtener furgonetas de admin:', err);
-    res.status(500).json({ error: 'Error del servidor.' });
+    console.warn('Base de datos offline, enviando furgonetas fallback para admin:', err.message);
+    res.json(fallbackVans);
   }
 });
 
@@ -594,13 +600,39 @@ app.post('/api/vans', verifyAdmin, async (req, res) => {
     const values = [van_type, name, plate, m3, price_sin, min_price_con, km_price_con, status || 'active'];
     const result = await pool.query(query, values);
     
+    // Sincronizar catálogo local
+    const index = fallbackVans.findIndex(v => v.van_type === van_type);
+    if (index === -1) {
+      fallbackVans.push(result.rows[0]);
+    } else {
+      fallbackVans[index] = result.rows[0];
+    }
+    
     res.status(201).json({
       message: 'Furgoneta registrada con éxito.',
       van: result.rows[0]
     });
   } catch (err) {
-    console.error('Error al crear furgoneta:', err);
-    res.status(500).json({ error: 'Error del servidor al registrar la furgoneta.' });
+    console.warn('Base de datos offline, simulando inserción en memoria:', err.message);
+    if (fallbackVans.some(v => v.van_type === van_type)) {
+      return res.status(400).json({ error: 'Ya existe una furgoneta con ese identificador (tipo ID).' });
+    }
+    const newVan = {
+      id: fallbackVans.length > 0 ? Math.max(...fallbackVans.map(v => v.id)) + 1 : 1,
+      van_type,
+      name,
+      plate,
+      m3,
+      price_sin: parseFloat(price_sin),
+      min_price_con: parseFloat(min_price_con),
+      km_price_con: parseFloat(km_price_con),
+      status: status || 'active'
+    };
+    fallbackVans.push(newVan);
+    res.status(201).json({
+      message: 'Furgoneta añadida temporalmente (Modo offline sin BD).',
+      van: newVan
+    });
   }
 });
 
@@ -612,7 +644,7 @@ app.put('/api/vans/:id', verifyAdmin, async (req, res) => {
   try {
     const checkRes = await pool.query('SELECT * FROM vans WHERE id = $1', [id]);
     if (checkRes.rowCount === 0) {
-      return res.status(404).json({ error: 'Furgoneta no encontrada.' });
+      return res.status(404).json({ error: 'Furgoneta no encontrada en base de datos.' });
     }
     const current = checkRes.rows[0];
 
@@ -634,13 +666,40 @@ app.put('/api/vans/:id', verifyAdmin, async (req, res) => {
     ];
 
     const result = await pool.query(query, values);
+    
+    // Sincronizar catálogo local
+    const index = fallbackVans.findIndex(v => v.id == id);
+    if (index !== -1) {
+      fallbackVans[index] = result.rows[0];
+    }
+    
     res.json({
       message: 'Furgoneta actualizada con éxito.',
       van: result.rows[0]
     });
   } catch (err) {
-    console.error('Error al actualizar furgoneta:', err);
-    res.status(500).json({ error: 'Error del servidor al actualizar la furgoneta.' });
+    console.warn('Base de datos offline, simulando edición en memoria:', err.message);
+    const index = fallbackVans.findIndex(v => v.id == id);
+    if (index === -1) {
+      return res.status(404).json({ error: 'Furgoneta no encontrada.' });
+    }
+    const current = fallbackVans[index];
+    const updated = {
+      ...current,
+      van_type: van_type !== undefined ? van_type : current.van_type,
+      name: name !== undefined ? name : current.name,
+      plate: plate !== undefined ? plate : current.plate,
+      m3: m3 !== undefined ? m3 : current.m3,
+      price_sin: price_sin !== undefined ? parseFloat(price_sin) : current.price_sin,
+      min_price_con: min_price_con !== undefined ? parseFloat(min_price_con) : current.min_price_con,
+      km_price_con: km_price_con !== undefined ? parseFloat(km_price_con) : current.km_price_con,
+      status: status !== undefined ? status : current.status
+    };
+    fallbackVans[index] = updated;
+    res.json({
+      message: 'Furgoneta actualizada temporalmente (Modo offline sin BD).',
+      van: updated
+    });
   }
 });
 
@@ -651,12 +710,24 @@ app.delete('/api/vans/:id', verifyAdmin, async (req, res) => {
   try {
     const result = await pool.query('DELETE FROM vans WHERE id = $1 RETURNING *', [id]);
     if (result.rowCount === 0) {
-      return res.status(404).json({ error: 'Furgoneta no encontrada.' });
+      return res.status(404).json({ error: 'Furgoneta no encontrada en base de datos.' });
     }
+    
+    // Sincronizar catálogo local
+    const index = fallbackVans.findIndex(v => v.id == id);
+    if (index !== -1) {
+      fallbackVans.splice(index, 1);
+    }
+    
     res.json({ message: 'Furgoneta eliminada con éxito.' });
   } catch (err) {
-    console.error('Error al eliminar furgoneta:', err);
-    res.status(500).json({ error: 'Error del servidor al eliminar la furgoneta.' });
+    console.warn('Base de datos offline, simulando borrado en memoria:', err.message);
+    const index = fallbackVans.findIndex(v => v.id == id);
+    if (index === -1) {
+      return res.status(404).json({ error: 'Furgoneta no encontrada.' });
+    }
+    fallbackVans.splice(index, 1);
+    res.json({ message: 'Furgoneta eliminada temporalmente de memoria (Modo offline sin BD).' });
   }
 });
 
