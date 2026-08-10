@@ -94,15 +94,56 @@ document.addEventListener('DOMContentLoaded', () => {
         navbar.classList.toggle('active');
     });
 
-    // Cerrar menú móvil al hacer clic en un enlace
-    navLinks.forEach(link => {
-        link.addEventListener('click', () => {
-            mobileMenuToggle.classList.remove('active');
-            navbar.classList.remove('active');
+    // Limpiar cualquier almohadilla (#) de la URL en la carga inicial de la página
+    if (window.location.hash) {
+        history.replaceState(null, null, window.location.pathname);
+    }
+
+    // Interceptar todos los enlaces internos que empiezan por # para evitar la almohadilla en la URL
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            const targetId = this.getAttribute('href');
             
-            // Actualizar clase activa del enlace
-            navLinks.forEach(l => l.classList.remove('active'));
-            link.classList.add('active');
+            // Evitar interceptar si apunta a modales o acciones JS específicas
+            if (targetId.includes('modal') || this.hasAttribute('data-toggle') || this.classList.contains('custom-modal-close') || this.id.includes('login') || this.id.includes('register')) {
+                return;
+            }
+            
+            e.preventDefault();
+            
+            if (targetId === '#') {
+                window.scrollTo({
+                    top: 0,
+                    behavior: 'smooth'
+                });
+                history.replaceState(null, null, window.location.pathname);
+                return;
+            }
+            
+            const targetElement = document.querySelector(targetId);
+            if (targetElement) {
+                const headerOffset = 100; // Compensar la cabecera fija
+                const elementPosition = targetElement.getBoundingClientRect().top;
+                const offsetPosition = elementPosition + window.scrollY - headerOffset;
+                
+                window.scrollTo({
+                    top: offsetPosition,
+                    behavior: 'smooth'
+                });
+                
+                // Actualizar clase activa del enlace en el menú
+                if (this.classList.contains('nav-link')) {
+                    navLinks.forEach(l => l.classList.remove('active'));
+                    this.classList.add('active');
+                }
+                
+                // Cerrar menú móvil
+                mobileMenuToggle.classList.remove('active');
+                navbar.classList.remove('active');
+                
+                // Limpiar la URL de hashes para que quede limpia
+                history.replaceState(null, null, window.location.pathname);
+            }
         });
     });
 
