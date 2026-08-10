@@ -188,7 +188,7 @@ const initApp = () => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
                 entry.target.classList.add('active');
-                observer.unobserve(entry.target); // Solo animar una vez
+                observer.unobserve(entry.target);
             }
         });
     }, {
@@ -199,6 +199,23 @@ const initApp = () => {
     revealElements.forEach(element => {
         revealObserver.observe(element);
     });
+
+    // Fallback robusto usando scroll clásico y getBoundingClientRect
+    const checkRevealFallback = () => {
+        revealElements.forEach(element => {
+            if (element.classList.contains('active')) return;
+            const rect = element.getBoundingClientRect();
+            // Si el elemento entra en la pantalla
+            if (rect.top < window.innerHeight - 50) {
+                element.classList.add('active');
+            }
+        });
+    };
+
+    window.addEventListener('scroll', checkRevealFallback);
+    // Disparar inmediatamente al cargar para asegurar que la portada y secciones iniciales sean visibles
+    setTimeout(checkRevealFallback, 300);
+    setTimeout(checkRevealFallback, 800); // Doble disparo de seguridad por si hay retraso en renderizado
 
     /* ==========================================================================
        3. INTEGRACIÓN DE FLATPICKR (CALENDARIO DE DISPONIBILIDAD)
