@@ -104,6 +104,10 @@ const initDb = async () => {
     "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS van_m3 VARCHAR(50);"
   ];
 
+  const alterVansQueries = [
+    "ALTER TABLE vans ADD COLUMN IF NOT EXISTS images TEXT[] DEFAULT '{}';"
+  ];
+
   try {
     const client = await pool.connect();
     console.log('Conectado a la base de datos PostgreSQL.');
@@ -136,6 +140,12 @@ const initDb = async () => {
       await client.query(query);
     }
     console.log('Columnas de "bookings" verificadas/actualizadas.');
+
+    // Alterar tabla de furgonetas para añadir imágenes
+    for (const query of alterVansQueries) {
+      await client.query(query);
+    }
+    console.log('Columnas de "vans" verificadas/actualizadas.');
     
     client.release();
   } catch (err) {
@@ -540,8 +550,8 @@ app.delete('/api/bookings/:id', async (req, res) => {
 
 // Catálogo fallback en memoria en caso de que la base de datos PostgreSQL remota esté caída
 let fallbackVans = [
-  { id: 1, van_type: 'medium', name: 'Ford Transit Custom L2H2 (8m³)', plate: '3681 MCC', m3: '8m³', price_sin: 79.00, min_price_con: 50.00, km_price_con: 1.00, status: 'active' },
-  { id: 2, van_type: 'large', name: 'MAN TGE L4H3 Gran Volumen (14m³)', plate: '3758 MDW', m3: '14m³', price_sin: 107.44, min_price_con: 60.00, km_price_con: 1.40, status: 'active' }
+  { id: 1, van_type: 'medium', name: 'Ford Transit Custom L2H2 (8m³)', plate: '3681 MCC', m3: '8m³', price_sin: 79.00, min_price_con: 50.00, km_price_con: 1.00, status: 'active', images: [] },
+  { id: 2, van_type: 'large', name: 'MAN TGE L4H3 Gran Volumen (14m³)', plate: '3758 MDW', m3: '14m³', price_sin: 107.44, min_price_con: 60.00, km_price_con: 1.40, status: 'active', images: [] }
 ];
 
 // Middleware de verificación de Administrador
@@ -580,11 +590,13 @@ app.get('/api/admin/vans', verifyAdmin, async (req, res) => {
 });
 
 // 3. Crear una nueva furgoneta
-app.post('/api/vans', verifyAdmin, async (req, res) => {
+app.post('/api/vans', verifyAdmin, upload.array('images', 20), async (req, res) => {
   const { van_type, name, plate, m3, price_sin, min_price_con, km_price_con, status } = req.body;
   if (!van_type || !name || !plate || !m3 || price_sin === undefined || min_price_con === undefined || km_price_con === undefined) {
     return res.status(400).json({ error: 'Faltan campos obligatorios para registrar la furgoneta.' });
   }
+
+  const newImages = req.files ? req.files.map(f => '/uploads/' + f.filename) : [];
 
   try {
     // Comprobar si ya existe el tipo
@@ -594,10 +606,10 @@ app.post('/api/vans', verifyAdmin, async (req, res) => {
     }
 
     const query = `
-      INSERT INTO vans (van_type, name, plate, m3, price_sin, min_price_con, km_price_con, status)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *;
+      INSERT INTO vans (van_type, name, plate, m3, price_sin, min_price_con, km_price_con, status, images)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *;
     `;
-    const values = [van_type, name, plate, m3, price_sin, min_price_con, km_price_con, status || 'active'];
+    const values = [van_type, name, plate, m3, price_sin, min_price_con, km_price_con, status || 'active', newImages];
     const result = await pool.query(query, values);
     
     // Sincronizar catálogo local
@@ -626,7 +638,8 @@ app.post('/api/vans', verifyAdmin, async (req, res) => {
       price_sin: parseFloat(price_sin),
       min_price_con: parseFloat(min_price_con),
       km_price_con: parseFloat(km_price_con),
-      status: status || 'active'
+      status: status || 'active',
+      images: newImages
     };
     fallbackVans.push(newVan);
     res.status(201).json({
@@ -637,9 +650,24 @@ app.post('/api/vans', verifyAdmin, async (req, res) => {
 });
 
 // 4. Modificar una furgoneta
-app.put('/api/vans/:id', verifyAdmin, async (req, res) => {
+app.put('/api/vans/:id', verifyAdmin, upload.array('images', 20), async (req, res) => {
   const { id } = req.params;
   const { van_type, name, plate, m3, price_sin, min_price_con, km_price_con, status } = req.body;
+
+  let existingImages = [];
+  if (req.body.existing_images) {
+    try {
+      existingImages = JSON.parse(req.body.existing_images);
+      if (!Array.isArray(existingImages)) {
+        existingImages = [existingImages];
+      }
+    } catch (e) {
+      existingImages = req.body.existing_images.split(',').filter(Boolean);
+    }
+  }
+
+  const newImages = req.files ? req.files.map(f => '/uploads/' + f.filename) : [];
+  const updatedImages = [...existingImages, ...newImages];
 
   try {
     const checkRes = await pool.query('SELECT * FROM vans WHERE id = $1', [id]);
@@ -650,8 +678,8 @@ app.put('/api/vans/:id', verifyAdmin, async (req, res) => {
 
     const query = `
       UPDATE vans 
-      SET van_type = $1, name = $2, plate = $3, m3 = $4, price_sin = $5, min_price_con = $6, km_price_con = $7, status = $8
-      WHERE id = $9 RETURNING *;
+      SET van_type = $1, name = $2, plate = $3, m3 = $4, price_sin = $5, min_price_con = $6, km_price_con = $7, status = $8, images = $9
+      WHERE id = $10 RETURNING *;
     `;
     const values = [
       van_type !== undefined ? van_type : current.van_type,
@@ -662,6 +690,7 @@ app.put('/api/vans/:id', verifyAdmin, async (req, res) => {
       min_price_con !== undefined ? min_price_con : current.min_price_con,
       km_price_con !== undefined ? km_price_con : current.km_price_con,
       status !== undefined ? status : current.status,
+      updatedImages,
       id
     ];
 
@@ -693,7 +722,8 @@ app.put('/api/vans/:id', verifyAdmin, async (req, res) => {
       price_sin: price_sin !== undefined ? parseFloat(price_sin) : current.price_sin,
       min_price_con: min_price_con !== undefined ? parseFloat(min_price_con) : current.min_price_con,
       km_price_con: km_price_con !== undefined ? parseFloat(km_price_con) : current.km_price_con,
-      status: status !== undefined ? status : current.status
+      status: status !== undefined ? status : current.status,
+      images: updatedImages
     };
     fallbackVans[index] = updated;
     res.json({

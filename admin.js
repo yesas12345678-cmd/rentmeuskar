@@ -89,9 +89,14 @@ const initAdmin = () => {
     const vanFormStatus = document.getElementById('van-form-status');
     const vanBtnCancel = document.getElementById('van-btn-cancel');
     const vanModalTitle = document.getElementById('van-modal-title');
+    const vanFormImagesInput = document.getElementById('van-form-images-input');
+    const vanBtnUploadTrigger = document.getElementById('van-btn-upload-trigger');
+    const vanImagesPreviewGrid = document.getElementById('van-images-preview-grid');
     
     // Variables de Estado de Flota
     let fleet = [];
+    let currentVanImages = [];
+    let newVanFiles = [];
 
     /* ==========================================================================
        1. AUTENTICACIÓN
@@ -749,9 +754,14 @@ const initAdmin = () => {
 
         fleet.forEach(van => {
             const tr = document.createElement('tr');
+            const firstImg = (van.images && van.images.length > 0) ? van.images[0] : null;
+            const imgHtml = firstImg 
+                ? `<img src="${firstImg}" style="width: 36px; height: 26px; object-fit: cover; border-radius: 4px; vertical-align: middle; margin-right: 8px; border: 1px solid rgba(255,255,255,0.15);">` 
+                : `<i class="fa-solid fa-truck" style="color: var(--text-muted); margin-right: 8px; font-size: 1rem; vertical-align: middle;"></i>`;
+
             tr.innerHTML = `
                 <td><strong style="color: var(--color-info);">${van.van_type}</strong></td>
-                <td><strong>${van.name}</strong></td>
+                <td><strong>${imgHtml}${van.name}</strong></td>
                 <td>${van.plate}</td>
                 <td>${van.m3}</td>
                 <td class="price-value">${formatCurrency(van.price_sin)}</td>
@@ -818,6 +828,136 @@ const initAdmin = () => {
         }
     };
 
+    // Renderizar la previsualización de imágenes de furgonetas en el modal
+    const renderVanImagesPreview = () => {
+        vanImagesPreviewGrid.innerHTML = '';
+        
+        const totalImages = currentVanImages.length + newVanFiles.length;
+        if (totalImages === 0) {
+            vanImagesPreviewGrid.innerHTML = '<span style="grid-column: 1 / -1; font-size: 0.75rem; color: var(--text-muted); text-align: center; width: 100%; padding: 0.5rem 0;">Sin imágenes (se usará silueta genérica)</span>';
+            return;
+        }
+
+        // 1. Mostrar imágenes existentes cargadas de la base de datos
+        currentVanImages.forEach((imgUrl, index) => {
+            const container = document.createElement('div');
+            container.style.position = 'relative';
+            container.style.width = '100%';
+            container.style.height = '60px';
+            container.style.borderRadius = '4px';
+            container.style.overflow = 'hidden';
+            container.style.border = '1px solid rgba(255,255,255,0.1)';
+
+            const img = document.createElement('img');
+            img.src = imgUrl;
+            img.style.width = '100%';
+            img.style.height = '100%';
+            img.style.objectFit = 'cover';
+
+            const deleteBtn = document.createElement('button');
+            deleteBtn.type = 'button';
+            deleteBtn.innerHTML = '&times;';
+            deleteBtn.style.position = 'absolute';
+            deleteBtn.style.top = '2px';
+            deleteBtn.style.right = '2px';
+            deleteBtn.style.background = 'rgba(239, 68, 68, 0.85)';
+            deleteBtn.style.color = '#fff';
+            deleteBtn.style.border = 'none';
+            deleteBtn.style.borderRadius = '50%';
+            deleteBtn.style.width = '18px';
+            deleteBtn.style.height = '18px';
+            deleteBtn.style.display = 'flex';
+            deleteBtn.style.alignItems = 'center';
+            deleteBtn.style.justifyContent = 'center';
+            deleteBtn.style.fontSize = '12px';
+            deleteBtn.style.cursor = 'pointer';
+            deleteBtn.style.padding = '0';
+            deleteBtn.style.lineHeight = '1';
+
+            deleteBtn.addEventListener('click', () => {
+                currentVanImages.splice(index, 1);
+                renderVanImagesPreview();
+            });
+
+            container.appendChild(img);
+            container.appendChild(deleteBtn);
+            vanImagesPreviewGrid.appendChild(container);
+        });
+
+        // 2. Mostrar imágenes nuevas seleccionadas pendientes de subir
+        newVanFiles.forEach((file, index) => {
+            const container = document.createElement('div');
+            container.style.position = 'relative';
+            container.style.width = '100%';
+            container.style.height = '60px';
+            container.style.borderRadius = '4px';
+            container.style.overflow = 'hidden';
+            container.style.border = '1px dashed var(--color-neon)';
+
+            const img = document.createElement('img');
+            img.src = URL.createObjectURL(file);
+            img.style.width = '100%';
+            img.style.height = '100%';
+            img.style.objectFit = 'cover';
+
+            const deleteBtn = document.createElement('button');
+            deleteBtn.type = 'button';
+            deleteBtn.innerHTML = '&times;';
+            deleteBtn.style.position = 'absolute';
+            deleteBtn.style.top = '2px';
+            deleteBtn.style.right = '2px';
+            deleteBtn.style.background = 'rgba(239, 68, 68, 0.85)';
+            deleteBtn.style.color = '#fff';
+            deleteBtn.style.border = 'none';
+            deleteBtn.style.borderRadius = '50%';
+            deleteBtn.style.width = '18px';
+            deleteBtn.style.height = '18px';
+            deleteBtn.style.display = 'flex';
+            deleteBtn.style.alignItems = 'center';
+            deleteBtn.style.justifyContent = 'center';
+            deleteBtn.style.fontSize = '12px';
+            deleteBtn.style.cursor = 'pointer';
+            deleteBtn.style.padding = '0';
+            deleteBtn.style.lineHeight = '1';
+
+            // Etiqueta indicando que es nueva
+            const newBadge = document.createElement('span');
+            newBadge.textContent = 'NUEVA';
+            newBadge.style.position = 'absolute';
+            newBadge.style.bottom = '2px';
+            newBadge.style.left = '2px';
+            newBadge.style.background = 'var(--color-neon)';
+            newBadge.style.color = '#000';
+            newBadge.style.fontSize = '8px';
+            newBadge.style.fontWeight = '700';
+            newBadge.style.padding = '1px 3px';
+            newBadge.style.borderRadius = '2px';
+
+            deleteBtn.addEventListener('click', () => {
+                newVanFiles.splice(index, 1);
+                renderVanImagesPreview();
+            });
+
+            container.appendChild(img);
+            container.appendChild(deleteBtn);
+            container.appendChild(newBadge);
+            vanImagesPreviewGrid.appendChild(container);
+        });
+    };
+
+    // Trigger de selección de imágenes
+    vanBtnUploadTrigger.addEventListener('click', () => {
+        vanFormImagesInput.click();
+    });
+
+    // Control del cambio en la selección de archivos
+    vanFormImagesInput.addEventListener('change', (e) => {
+        const files = Array.from(e.target.files);
+        newVanFiles = [...newVanFiles, ...files];
+        vanFormImagesInput.value = ''; // Resetear para permitir seleccionar los mismos archivos
+        renderVanImagesPreview();
+    });
+
     // Abrir modal de furgonetas para añadir o editar
     const openVanModal = (van = null) => {
         if (van) {
@@ -832,6 +972,11 @@ const initAdmin = () => {
             vanFormMinPriceCon.value = van.min_price_con;
             vanFormKmPriceCon.value = van.km_price_con;
             vanFormStatus.value = van.status;
+            
+            // Cargar imágenes
+            currentVanImages = Array.isArray(van.images) ? [...van.images] : [];
+            newVanFiles = [];
+            renderVanImagesPreview();
         } else {
             vanModalTitle.textContent = 'Añadir Nueva Furgoneta';
             vanFormId.value = '';
@@ -844,6 +989,10 @@ const initAdmin = () => {
             vanFormMinPriceCon.value = '';
             vanFormKmPriceCon.value = '';
             vanFormStatus.value = 'active';
+            
+            currentVanImages = [];
+            newVanFiles = [];
+            renderVanImagesPreview();
         }
         vanModal.classList.add('active');
     };
@@ -851,6 +1000,9 @@ const initAdmin = () => {
     const closeVanModal = () => {
         vanModal.classList.remove('active');
         vanForm.reset();
+        currentVanImages = [];
+        newVanFiles = [];
+        renderVanImagesPreview();
     };
 
     // Event listeners de la pestaña
@@ -868,16 +1020,21 @@ const initAdmin = () => {
     vanForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const id = vanFormId.value;
-        const bodyData = {
-            van_type: vanFormType.value.trim(),
-            name: vanFormName.value.trim(),
-            plate: vanFormPlate.value.trim(),
-            m3: vanFormM3.value.trim(),
-            price_sin: parseFloat(vanFormPriceSin.value),
-            min_price_con: parseFloat(vanFormMinPriceCon.value),
-            km_price_con: parseFloat(vanFormKmPriceCon.value),
-            status: vanFormStatus.value
-        };
+        
+        const formData = new FormData();
+        formData.append('van_type', vanFormType.value.trim());
+        formData.append('name', vanFormName.value.trim());
+        formData.append('plate', vanFormPlate.value.trim());
+        formData.append('m3', vanFormM3.value.trim());
+        formData.append('price_sin', parseFloat(vanFormPriceSin.value));
+        formData.append('min_price_con', parseFloat(vanFormMinPriceCon.value));
+        formData.append('km_price_con', parseFloat(vanFormKmPriceCon.value));
+        formData.append('status', vanFormStatus.value);
+        formData.append('existing_images', JSON.stringify(currentVanImages));
+        
+        newVanFiles.forEach(file => {
+            formData.append('images', file);
+        });
 
         const token = localStorage.getItem('admin_token');
         if (!token) return;
@@ -889,10 +1046,9 @@ const initAdmin = () => {
             const response = await fetch(url, {
                 method: method,
                 headers: { 
-                    'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}` 
                 },
-                body: JSON.stringify(bodyData)
+                body: formData
             });
             const data = await response.json();
             

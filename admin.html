@@ -1060,6 +1060,17 @@
                         <option value="inactive">Inactivo (Ocultar en Calculadora)</option>
                     </select>
                 </div>
+                <div class="custom-form-group" style="margin-bottom: 1.5rem; text-align: left;">
+                    <label style="display: block; font-size: 0.8rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 0.3rem; font-weight: 600; letter-spacing: 0.05em;">Imágenes del Vehículo</label>
+                    <input type="file" id="van-form-images-input" multiple accept="image/*" style="display: none;">
+                    <button type="button" class="btn btn-secondary" id="van-btn-upload-trigger" style="width: 100%; margin-bottom: 0.75rem; background: rgba(255,255,255,0.05);">
+                        <i class="fa-solid fa-cloud-arrow-up"></i> Seleccionar Imágenes
+                    </button>
+                    <!-- Galería de miniaturas -->
+                    <div id="van-images-preview-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; min-height: 60px; border: 1px dashed rgba(255, 255, 255, 0.15); border-radius: var(--border-radius-sm); padding: 0.5rem; background: rgba(7, 14, 36, 0.3); align-items: center;">
+                        <!-- Las miniaturas se inyectarán aquí con JavaScript -->
+                    </div>
+                </div>
                 <div class="modal-footer">
                     <button type="button" class="btn" id="van-btn-cancel" style="border-color: rgba(255,255,255,0.1);">Cancelar</button>
                     <button type="submit" class="btn btn-primary" id="van-btn-submit">Guardar Vehículo</button>

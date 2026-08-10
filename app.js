@@ -251,6 +251,80 @@ const initApp = () => {
                 if (selectedVal && databaseVans.some(v => v.van_type === selectedVal)) {
                     vanSelect.value = selectedVal;
                 }
+
+                // Vincular imágenes subidas a las tarjetas públicas de furgonetas en el DOM
+                databaseVans.forEach(van => {
+                    const card = document.getElementById('card-van-' + van.van_type);
+                    if (!card) return;
+
+                    const imgEl = card.querySelector('.van-image');
+                    if (!imgEl) return;
+
+                    imgEl.style.transition = 'opacity 0.15s ease-in-out';
+
+                    if (van.images && van.images.length > 0) {
+                        // Cambiar la imagen principal por la primera subida
+                        imgEl.src = van.images[0];
+
+                        // Si hay múltiples imágenes, añadir galería interactiva de puntitos
+                        if (van.images.length > 1) {
+                            let dotsContainer = card.querySelector('.van-gallery-dots');
+                            if (!dotsContainer) {
+                                dotsContainer = document.createElement('div');
+                                dotsContainer.className = 'van-gallery-dots';
+                                dotsContainer.style.position = 'absolute';
+                                dotsContainer.style.bottom = '12px';
+                                dotsContainer.style.left = '50%';
+                                dotsContainer.style.transform = 'translateX(-50%)';
+                                dotsContainer.style.display = 'flex';
+                                dotsContainer.style.gap = '6px';
+                                dotsContainer.style.zIndex = '10';
+                                dotsContainer.style.background = 'rgba(7, 14, 36, 0.6)';
+                                dotsContainer.style.padding = '4px 8px';
+                                dotsContainer.style.borderRadius = '10px';
+                                dotsContainer.style.backdropFilter = 'blur(4px)';
+                                dotsContainer.style.border = '1px solid rgba(255,255,255,0.05)';
+
+                                const imgContainer = card.querySelector('.van-image-container');
+                                if (imgContainer) {
+                                    imgContainer.style.position = 'relative';
+                                    imgContainer.appendChild(dotsContainer);
+                                }
+                            }
+
+                            dotsContainer.innerHTML = '';
+                            van.images.forEach((imgUrl, imgIndex) => {
+                                const dot = document.createElement('span');
+                                dot.style.width = '6px';
+                                dot.style.height = '6px';
+                                dot.style.borderRadius = '50%';
+                                dot.style.background = imgIndex === 0 ? 'var(--color-neon)' : 'rgba(255, 255, 255, 0.4)';
+                                dot.style.cursor = 'pointer';
+                                dot.style.transition = 'all 0.2s ease';
+
+                                dot.addEventListener('click', (e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+
+                                    // Transición de cambio de imagen
+                                    imgEl.style.opacity = '0';
+                                    setTimeout(() => {
+                                        imgEl.src = imgUrl;
+                                        imgEl.style.opacity = '1';
+                                    }, 150);
+
+                                    // Resaltar el puntito activo
+                                    Array.from(dotsContainer.children).forEach((d, idx) => {
+                                        d.style.background = idx === imgIndex ? 'var(--color-neon)' : 'rgba(255, 255, 255, 0.4)';
+                                        d.style.transform = idx === imgIndex ? 'scale(1.2)' : 'scale(1)';
+                                    });
+                                });
+
+                                dotsContainer.appendChild(dot);
+                            });
+                        }
+                    }
+                });
             } else {
                 console.error('Error al descargar catálogo de furgonetas.');
                 useStaticVansFallback();
