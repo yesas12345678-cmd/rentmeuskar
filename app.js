@@ -3,7 +3,7 @@
  * Sitio web de alquiler de furgonetas sin conductor en Huéscar
  */
 
-document.addEventListener('DOMContentLoaded', () => {
+const initApp = () => {
     
     // CONFIGURACIÓN CENTRALIZADA
     const CONFIG = {
@@ -980,4 +980,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     });
-});
+};
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initApp);
+} else {
+    initApp();
+}

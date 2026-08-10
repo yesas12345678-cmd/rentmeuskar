@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', () => {
+const initAdmin = () => {
     
     // VARIABLES DE ESTADO
     let bookings = [];
@@ -911,4 +911,10 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Inicializar página
     checkAuth();
-});
+};
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initAdmin);
+} else {
+    initAdmin();
+}
