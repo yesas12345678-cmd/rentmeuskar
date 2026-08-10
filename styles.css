@@ -1,3 +1,10 @@
+@font-face {
+    font-family: 'Newscrash';
+    src: url('assets/fonts/Newscrash.otf') format('opentype');
+    font-weight: normal;
+    font-style: normal;
+}
+
 /* CSS Variable System matching RentMeUskar Brand Identity */
 :root {
     --bg-primary: #070e24;
@@ -394,11 +401,12 @@ a {
 }
 
 .hero-title {
+    font-family: 'Newscrash', sans-serif;
     font-size: 4.5rem;
-    font-style: italic;
-    font-weight: 900;
+    font-style: normal;
+    font-weight: normal;
     line-height: 1.05;
-    letter-spacing: -0.03em;
+    letter-spacing: 0.02em;
     margin-bottom: 1.5rem;
     text-transform: uppercase;
 }
