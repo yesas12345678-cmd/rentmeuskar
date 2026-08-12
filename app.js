@@ -64,6 +64,16 @@ const initApp = () => {
     // Elementos de FAQ
     const faqQuestions = document.querySelectorAll('.faq-question');
 
+    // Elementos de Opiniones Verificadas
+    const testimonialsGrid = document.getElementById('testimonials-grid');
+    const btnOpenReviewModal = document.getElementById('btn-open-review-modal');
+    const writeReviewForm = document.getElementById('write-review-form');
+    const reviewCodeInput = document.getElementById('review-code-input');
+    const reviewNameInput = document.getElementById('review-name-input');
+    const reviewCityInput = document.getElementById('review-city-input');
+    const reviewRatingInput = document.getElementById('review-rating-input');
+    const reviewCommentInput = document.getElementById('review-comment-input');
+
     // TPV Form
     const tpvForm = document.getElementById('tpv-form');
 
@@ -223,13 +233,35 @@ const initApp = () => {
        ========================================================================== */
     
     const initFlatpickr = () => {
+        if (typeof flatpickr === 'undefined') {
+            console.warn('Flatpickr no está cargado. Se usarán selectores de fecha nativos.');
+            const startEl = document.getElementById('calc-date-start');
+            const endEl = document.getElementById('calc-date-end');
+            
+            if (startEl && endEl) {
+                startEl.type = 'date';
+                endEl.type = 'date';
+                
+                const todayStr = new Date().toISOString().split('T')[0];
+                startEl.min = todayStr;
+                endEl.min = todayStr;
+                
+                startEl.addEventListener('change', function() {
+                    endEl.min = this.value;
+                    calculatePrice();
+                });
+                endEl.addEventListener('change', calculatePrice);
+            }
+            return;
+        }
+
         pickerStart = flatpickr("#calc-date-start", {
             locale: "es",
             minDate: "today",
             dateFormat: "Y-m-d",
-            disableMobile: "true",
+            disableMobile: true,
             onChange: function(selectedDates, dateStr, instance) {
-                pickerEnd.set("minDate", dateStr);
+                if (pickerEnd) pickerEnd.set("minDate", dateStr);
                 calculatePrice();
             }
         });
@@ -238,7 +270,7 @@ const initApp = () => {
             locale: "es",
             minDate: "today",
             dateFormat: "Y-m-d",
-            disableMobile: "true",
+            disableMobile: true,
             onChange: function(selectedDates, dateStr, instance) {
                 calculatePrice();
             }
@@ -365,9 +397,11 @@ const initApp = () => {
     // Obtener fechas ocupadas de la furgoneta seleccionada (solo aplica a Sin Conductor)
     const updateCalendarAvailability = async () => {
         const vanType = vanSelect.value;
-        const mode = document.querySelector('input[name="rental-mode"]:checked').value;
+        const modeInput = document.querySelector('input[name="rental-mode"]:checked');
+        const mode = modeInput ? modeInput.value : 'sin';
         
         if (!vanType) return;
+        if (typeof flatpickr === 'undefined' || !pickerStart || !pickerEnd) return;
         
         if (mode === 'con') {
             // Con conductor no tiene bloqueo de fechas reservadas
@@ -403,7 +437,8 @@ const initApp = () => {
     
     const calculatePrice = () => {
         const vanType = vanSelect.value;
-        const mode = document.querySelector('input[name="rental-mode"]:checked').value;
+        const modeInput = document.querySelector('input[name="rental-mode"]:checked');
+        const mode = modeInput ? modeInput.value : 'sin';
         
         // Si no hay furgoneta seleccionada, poner valores a cero
         if (!vanType) {
@@ -450,16 +485,20 @@ const initApp = () => {
         let vatAmount = 0;
         let totalEstimated = 0;
 
+        const van = databaseVans.find(v => v.van_type === vanType);
+
         if (mode === 'sin') {
             if (days > 7) {
                 summaryDays.textContent = `${days} días (> 1 sem.)`;
                 summaryBasePrice.textContent = 'A consultar';
                 summaryExtrasPrice.textContent = 'A consultar';
                 summaryTotalPrice.textContent = 'A consultar';
+                
+                const submitBtn = document.getElementById('btn-submit-booking');
+                if (submitBtn) submitBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Reservar por WhatsApp (Larga Duración)';
                 return;
             }
 
-            const van = databaseVans.find(v => v.van_type === vanType);
             const baseDailyRate = van ? parseFloat(van.price_sin) : (vanType === 'medium' ? 79.00 : 107.44);
             let totalBase = baseDailyRate * days;
             
@@ -468,16 +507,30 @@ const initApp = () => {
                 totalBase = totalBase * 0.95;
             }
 
+            // Precios de extras editables
+            const extraGpsPrice = van && van.extra_gps_price !== undefined ? parseFloat(van.extra_gps_price) : 5.00;
+            const extraDriverPrice = van && van.extra_driver_price !== undefined ? parseFloat(van.extra_driver_price) : 8.00;
+            const extraMovingPrice = van && van.extra_moving_price !== undefined ? parseFloat(van.extra_moving_price) : 10.00;
+            
+            // Actualizar etiquetas en la interfaz
+            const gpsLabel = document.querySelector('#calc-extra-gps').parentElement.querySelector('.extra-price');
+            const driverLabel = document.querySelector('#calc-extra-driver').parentElement.querySelector('.extra-price');
+            const movingLabel = document.querySelector('#calc-extra-moving').parentElement.querySelector('.extra-price');
+            
+            if (gpsLabel) gpsLabel.textContent = `+${extraGpsPrice.toFixed(2)}€/día`;
+            if (driverLabel) driverLabel.textContent = `+${extraDriverPrice.toFixed(2)}€/día`;
+            if (movingLabel) movingLabel.textContent = `+${extraMovingPrice.toFixed(2)} total`;
+
             // Calcular extras
             let totalExtras = 0;
             if (extraGps.checked) {
-                totalExtras += parseFloat(extraGps.value) * days; // 5€ por día
+                totalExtras += extraGpsPrice * days;
             }
             if (extraDriver.checked) {
-                totalExtras += parseFloat(extraDriver.value) * days; // 8€ por día
+                totalExtras += extraDriverPrice * days;
             }
             if (extraMoving.checked) {
-                totalExtras += parseFloat(extraMoving.value); // 10€ pago único
+                totalExtras += extraMovingPrice;
             }
 
             baseTaxable = totalBase + totalExtras;
@@ -485,8 +538,8 @@ const initApp = () => {
             totalEstimated = baseTaxable + vatAmount;
 
             summaryDays.textContent = `${days} ${days === 1 ? 'día' : 'días'}${days >= 3 ? ' (5% desc.)' : ''}`;
+        } else {
             // CON CONDUCTOR
-            const van = databaseVans.find(v => v.van_type === vanType);
             const baseMinRate = van ? parseFloat(van.min_price_con) : (vanType === 'medium' ? 50.00 : 60.00);
             const kmRate = van ? parseFloat(van.km_price_con) : (vanType === 'medium' ? 1.00 : 1.40);
             
@@ -511,6 +564,18 @@ const initApp = () => {
         summaryBasePrice.textContent = `${baseTaxable.toFixed(2)} €`;
         summaryExtrasPrice.textContent = `${vatAmount.toFixed(2)} €`;
         summaryTotalPrice.textContent = `${totalEstimated.toFixed(2)} €`;
+
+        // Actualizar texto del botón de enviar
+        const submitBtn = document.getElementById('btn-submit-booking');
+        if (submitBtn) {
+            if (mode === 'con') {
+                submitBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Solicitar por WhatsApp (Sin pago online)';
+            } else if (days > 7) {
+                submitBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Reservar por WhatsApp (Larga Duración)';
+            } else {
+                submitBtn.innerHTML = '<i class="fa-solid fa-credit-card"></i> Pagar y Reservar Online';
+            }
+        }
     };
 
     // Event handlers para los selectores de modalidad
@@ -545,6 +610,16 @@ const initApp = () => {
         updateCalendarAvailability();
         calculatePrice();
     };
+
+    // Forzar el click manual en las etiquetas en lugar del radio por bugs de navegadores móviles
+    labelModeSin.addEventListener('click', () => {
+        modeSin.checked = true;
+        handleModeChange();
+    });
+    labelModeCon.addEventListener('click', () => {
+        modeCon.checked = true;
+        handleModeChange();
+    });
 
     modeSin.addEventListener('change', handleModeChange);
     modeCon.addEventListener('change', handleModeChange);
@@ -843,9 +918,9 @@ const initApp = () => {
         // Recopilar extras activos
         const selectedExtras = [];
         if (rentalMode === 'sin') {
-            if (extraGps.checked) selectedExtras.push('GPS Navegador (+5€/día)');
-            if (extraDriver.checked) selectedExtras.push('Segundo Conductor (+8€/día)');
-            if (extraMoving.checked) selectedExtras.push('Kit Mudanza (+10€ pago único)');
+            if (extraGps.checked) selectedExtras.push('GPS Navegador');
+            if (extraDriver.checked) selectedExtras.push('Segundo Conductor');
+            if (extraMoving.checked) selectedExtras.push('Kit Mudanza');
         }
         
         const totalPriceText = summaryTotalPrice.textContent;
@@ -884,8 +959,8 @@ const initApp = () => {
             waiting_hours: rentalMode === 'con' ? parseFloat(waitHours.value) : 0.00
         };
 
-        // DETERMINACIÓN DE FLUJO SEGÚN DURACIÓN (1 semana o menos vs más de 1 semana)
-        if (days <= 7) {
+        // DETERMINACIÓN DE FLUJO SEGÚN DURACIÓN Y MODALIDAD (Con Conductor nunca paga online)
+        if (days <= 7 && rentalMode === 'sin') {
             // FLUJO A: Pago online obligatorio de alquiler + fianza de 500€ (solo si es sin conductor)
             const fianzaAmount = rentalMode === 'sin' ? 500 : 0;
             document.getElementById('tpv-rent-amount').textContent = `${totalPriceNum.toFixed(2)} €`;
@@ -923,7 +998,7 @@ const initApp = () => {
                     throw new Error(data.error || 'Error al guardar reserva.');
                 }
 
-                // Generar mensaje WhatsApp para reserva manual > 1 semana
+                // Generar mensaje WhatsApp para reserva manual
                 const isCon = finalBookingData.rental_mode === 'con';
                 const modeLabelText = isCon ? 'CON CONDUCTOR' : 'SIN CONDUCTOR';
                 const extraDetailsText = isCon 
@@ -931,20 +1006,32 @@ const initApp = () => {
                       `\n- *Espera:* ${finalBookingData.waiting_hours} h de espera`
                     : (finalBookingData.extras.length > 0 ? '\n- *Extras:* ' + finalBookingData.extras.join(', ') : '');
 
-                const messageText = `Hola *RentMeUskar*, me gustaría solicitar una reserva de furgoneta para larga duración (> 1 semana):
-
-*Solicitud de Reserva #${data.booking.id}*
-- *Cliente:* ${nameValue} (DNI: ${user.dni})
-- *Modalidad:* ${modeLabelText}
-- *Vehículo:* ${vanName}
-- *Recogida:* ${pickupDateStr} a las ${pickupTimeStr}
-- *Devolución:* ${returnDateStr} a las ${returnTimeStr}${extraDetailsText}
-- *Duración:* ${isCon ? '-' : days + ' días'}
-
-*Precio estimado total:* ${totalPriceText}
-*Fianza establecida:* ${isCon ? '0,00 € (No aplica)' : '500,00 € (Pendiente de cobro/depósito)'}
-
-(Solicitud pendiente de confirmación de disponibilidad del propietario).`;
+                let messageText = '';
+                if (isCon) {
+                    messageText = `Hola *RentMeUskar*, me gustaría solicitar una reserva de furgoneta *CON CONDUCTOR*:\n\n` +
+                        `*Solicitud de Reserva #${data.booking.id}*\n` +
+                        `- *Cliente:* ${nameValue} (DNI: ${user.dni})\n` +
+                        `- *Vehículo:* ${vanName}\n` +
+                        `- *Recogida:* ${pickupDateStr} a las ${pickupTimeStr}\n` +
+                        `- *Devolución:* ${returnDateStr} a las ${returnTimeStr}\n` +
+                        `- *Trayecto:* ${finalBookingData.estimated_kms} km estimados\n` +
+                        `- *Espera:* ${finalBookingData.waiting_hours} h de espera\n\n` +
+                        `*Precio estimado total:* ${totalPriceText}\n` +
+                        `*Fianza:* No aplica (Alquiler con chofer)\n\n` +
+                        `¿Tenéis disponibilidad para este servicio? Quedo a la espera de confirmación.`;
+                } else {
+                    messageText = `Hola *RentMeUskar*, me gustaría solicitar una reserva de furgoneta para larga duración (> 1 semana):\n\n` +
+                        `*Solicitud de Reserva #${data.booking.id}*\n` +
+                        `- *Cliente:* ${nameValue} (DNI: ${user.dni})\n` +
+                        `- *Modalidad:* ${modeLabelText}\n` +
+                        `- *Vehículo:* ${vanName}\n` +
+                        `- *Recogida:* ${pickupDateStr} a las ${pickupTimeStr}\n` +
+                        `- *Devolución:* ${returnDateStr} a las ${returnTimeStr}${extraDetailsText}\n` +
+                        `- *Duración:* ${days} días\n\n` +
+                        `*Precio estimado total:* ${totalPriceText}\n` +
+                        `*Fianza:* 500,00 € (Pendiente de cobro/depósito)\n\n` +
+                        `(Solicitud pendiente de confirmación de disponibilidad del propietario).`;
+                }
 
                 const encodedText = encodeURIComponent(messageText);
                 const whatsappUrl = `https://api.whatsapp.com/send?phone=${CONFIG.whatsappNumber}&text=${encodedText}`;
@@ -1072,6 +1159,268 @@ const initApp = () => {
             }
         });
     });
+
+    /* ==========================================================================
+       9. OPINIONES VERIFICADAS E INTEGRACIÓN DE DETALLES DE VEHÍCULOS
+       ========================================================================== */
+    let detailCarouselIndex = 0;
+    let detailCarouselImages = [];
+
+    const openVanDetailsModal = (vanType) => {
+        const van = databaseVans.find(v => v.van_type === vanType);
+        if (!van) return;
+        
+        // Rellenar textos del modal
+        document.getElementById('detail-van-name').textContent = van.name;
+        document.getElementById('detail-van-m3').textContent = `${van.m3} de volumen`;
+        document.getElementById('detail-van-price').innerHTML = `${parseFloat(van.price_sin).toFixed(2)}€<span style="font-size: 1rem; font-weight: normal; color: var(--text-secondary);">/día</span>`;
+        document.getElementById('detail-spec-plate').textContent = van.plate || '-';
+        
+        // Carrusel de imágenes
+        const slidesContainer = document.getElementById('detail-carousel-slides');
+        const dotsContainer = document.getElementById('detail-carousel-dots');
+        slidesContainer.innerHTML = '';
+        dotsContainer.innerHTML = '';
+        
+        let images = van.images;
+        if (!Array.isArray(images) || images.length === 0) {
+            images = [vanType === 'medium' ? 'assets/ford_transit.png' : 'assets/man_tge.png'];
+        }
+        
+        detailCarouselImages = images;
+        detailCarouselIndex = 0;
+        
+        images.forEach((img, idx) => {
+            const slide = document.createElement('div');
+            slide.style.minWidth = '100%';
+            slide.style.height = '100%';
+            slide.style.display = 'flex';
+            slide.style.alignItems = 'center';
+            slide.style.justifyContent = 'center';
+            slide.innerHTML = `<img src="${img}" style="width: 100%; height: 100%; object-fit: cover;" alt="${van.name} foto ${idx + 1}">`;
+            slidesContainer.appendChild(slide);
+            
+            const dot = document.createElement('span');
+            dot.style.width = '10px';
+            dot.style.height = '10px';
+            dot.style.borderRadius = '50%';
+            dot.style.background = idx === 0 ? 'var(--color-neon)' : 'rgba(255,255,255,0.3)';
+            dot.style.cursor = 'pointer';
+            dot.addEventListener('click', () => {
+                showDetailCarouselSlide(idx);
+            });
+            dotsContainer.appendChild(dot);
+        });
+        
+        // Mostrar modal
+        window.openAuthModal('van-details-modal');
+        showDetailCarouselSlide(0);
+        
+        // Configurar botón de reserva
+        const bookBtn = document.getElementById('detail-van-book-btn');
+        bookBtn.onclick = () => {
+            vanSelect.value = vanType;
+            vanSelect.dispatchEvent(new Event('change'));
+            window.closeAuthModal('van-details-modal');
+            
+            const calcSection = document.getElementById('calculadora');
+            if (calcSection) {
+                calcSection.scrollIntoView({ behavior: 'smooth' });
+            }
+        };
+    };
+    
+    const showDetailCarouselSlide = (idx) => {
+        if (idx < 0) idx = detailCarouselImages.length - 1;
+        if (idx >= detailCarouselImages.length) idx = 0;
+        detailCarouselIndex = idx;
+        
+        const slidesContainer = document.getElementById('detail-carousel-slides');
+        slidesContainer.style.transform = `translateX(-${idx * 100}%)`;
+        
+        const dots = document.querySelectorAll('#detail-carousel-dots span');
+        dots.forEach((dot, dIdx) => {
+            dot.style.background = dIdx === idx ? 'var(--color-neon)' : 'rgba(255,255,255,0.3)';
+        });
+    };
+    
+    document.getElementById('detail-carousel-prev').addEventListener('click', (e) => {
+        e.stopPropagation();
+        showDetailCarouselSlide(detailCarouselIndex - 1);
+    });
+    document.getElementById('detail-carousel-next').addEventListener('click', (e) => {
+        e.stopPropagation();
+        showDetailCarouselSlide(detailCarouselIndex + 1);
+    });
+
+    // Abrir modal de detalles al hacer click en las tarjetas de furgonetas
+    const vanCards = document.querySelectorAll('.van-card');
+    vanCards.forEach(card => {
+        card.style.cursor = 'pointer';
+        card.addEventListener('click', function(e) {
+            const vanType = this.id.includes('large') ? 'large' : 'medium';
+            openVanDetailsModal(vanType);
+        });
+    });
+
+    // Cargar opiniones de compras verificadas
+    const loadReviews = async () => {
+        try {
+            const res = await fetch('/api/reviews');
+            if (res.ok) {
+                const reviews = await res.json();
+                if (reviews.length > 0) {
+                    testimonialsGrid.innerHTML = '';
+                    reviews.forEach(review => {
+                        const starsHtml = '<i class="fa-solid fa-star"></i>'.repeat(review.rating) + 
+                                          '<i class="fa-regular fa-star" style="color: rgba(255,255,255,0.15);"></i>'.repeat(5 - review.rating);
+                                          
+                        const card = document.createElement('div');
+                        card.className = 'testimonial-card reveal';
+                        card.innerHTML = `
+                            <div class="stars">${starsHtml}</div>
+                            <p class="testimonial-text">"${review.comment}"</p>
+                            <div class="testimonial-author">
+                                <div class="author-info">
+                                    <h4 class="author-name">${review.client_name}</h4>
+                                    <p class="author-role">${review.role_or_city || 'Particular'}</p>
+                                </div>
+                            </div>
+                            <div class="verified-badge" style="display: inline-flex; align-items: center; gap: 0.3rem; background: rgba(130, 209, 5, 0.08); color: var(--color-neon); font-size: 0.75rem; font-weight: 700; padding: 4px 10px; border-radius: 20px; margin-top: 1rem; border: 1px solid rgba(130, 209, 5, 0.2);">
+                                <i class="fa-solid fa-circle-check"></i> Compra Verificada
+                            </div>
+                        `;
+                        testimonialsGrid.appendChild(card);
+                    });
+                }
+            }
+        } catch (err) {
+            console.error('Error al cargar opiniones:', err);
+        }
+    };
+
+    // Escribir opinión verified
+    if (btnOpenReviewModal) {
+        btnOpenReviewModal.addEventListener('click', () => {
+            window.openAuthModal('write-review-modal');
+        });
+    }
+
+    // Inicializar selector de estrellas
+    const initStarRating = () => {
+        const stars = document.querySelectorAll('.star-rating-selector i');
+        stars.forEach(star => {
+            star.addEventListener('click', function() {
+                const rating = parseInt(this.getAttribute('data-rating'));
+                reviewRatingInput.value = rating;
+                stars.forEach(s => {
+                    const r = parseInt(s.getAttribute('data-rating'));
+                    if (r <= rating) {
+                        s.style.color = 'var(--color-neon)';
+                    } else {
+                        s.style.color = 'rgba(255,255,255,0.15)';
+                    }
+                });
+            });
+            
+            star.addEventListener('mouseenter', function() {
+                const rating = parseInt(this.getAttribute('data-rating'));
+                stars.forEach(s => {
+                    const r = parseInt(s.getAttribute('data-rating'));
+                    if (r <= rating) {
+                        s.style.color = 'var(--color-neon)';
+                    } else {
+                        s.style.color = 'rgba(255,255,255,0.15)';
+                    }
+                });
+            });
+        });
+        
+        const selector = document.querySelector('.star-rating-selector');
+        if (selector) {
+            selector.addEventListener('mouseleave', () => {
+                const rating = parseInt(reviewRatingInput.value);
+                stars.forEach(s => {
+                    const r = parseInt(s.getAttribute('data-rating'));
+                    if (r <= rating) {
+                        s.style.color = 'var(--color-neon)';
+                    } else {
+                        s.style.color = 'rgba(255,255,255,0.15)';
+                    }
+                });
+            });
+        }
+    };
+
+    if (writeReviewForm) {
+        writeReviewForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const submitBtn = writeReviewForm.querySelector('button[type="submit"]');
+            const originalHtml = submitBtn.innerHTML;
+            
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Publicando reseña...';
+            
+            try {
+                const res = await fetch('/api/reviews', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        booking_code: reviewCodeInput.value.trim(),
+                        client_name: reviewNameInput.value.trim(),
+                        rating: parseInt(reviewRatingInput.value),
+                        comment: reviewCommentInput.value.trim(),
+                        role_or_city: reviewCityInput.value.trim()
+                    })
+                });
+                
+                const data = await res.json();
+                if (res.ok) {
+                    alert('¡Gracias por tu opinión! Tu reseña verificada ha sido publicada correctamente.');
+                    window.closeAuthModal('write-review-modal');
+                    writeReviewForm.reset();
+                    reviewRatingInput.value = '5';
+                    document.querySelectorAll('.star-rating-selector i').forEach((s) => {
+                        s.style.color = 'var(--color-neon)';
+                    });
+                    loadReviews();
+                } else {
+                    alert(data.error || 'Error al publicar opinión.');
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Error de conexión con el servidor.');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalHtml;
+            }
+        });
+    }
+
+    // Cargar configuraciones de horario
+    const loadSettings = async () => {
+        try {
+            const res = await fetch('/api/settings');
+            if (res.ok) {
+                const data = await res.json();
+                const week = document.getElementById('hours-weekdays');
+                const sat = document.getElementById('hours-saturdays');
+                const sun = document.getElementById('hours-sundays');
+                
+                if (week && data.hours_weekdays) week.textContent = data.hours_weekdays;
+                if (sat && data.hours_saturdays) sat.textContent = data.hours_saturdays;
+                if (sun && data.hours_sundays) sun.textContent = data.hours_sundays;
+            }
+        } catch (err) {
+            console.error('Error al cargar horarios:', err);
+        }
+    };
+
+    // Ejecutar inicializaciones dinámicas
+    loadReviews();
+    loadSettings();
+    initStarRating();
 };
 
 if (document.readyState === 'loading') {

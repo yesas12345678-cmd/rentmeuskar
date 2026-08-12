@@ -482,7 +482,7 @@
                     <p class="section-desc">La confianza de nuestros clientes en Huéscar y comarca es nuestra mayor garantía.</p>
                 </div>
                 
-                <div class="testimonials-grid">
+                <div class="testimonials-grid" id="testimonials-grid">
                     <div class="testimonial-card reveal">
                         <div class="stars"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i></div>
                         <p class="testimonial-text">"Alquilé la furgoneta mediana para trasladar unos muebles desde Granada a Huéscar. El trato fue inmejorable y el vehículo estaba limpísimo. Repetiré seguro."</p>
@@ -513,6 +513,12 @@
                             </div>
                         </div>
                     </div>
+                </div>
+                
+                <div style="text-align: center; margin-top: 3rem;" class="reveal">
+                    <button class="btn btn-primary" id="btn-open-review-modal">
+                        <i class="fa-solid fa-pen-to-square"></i> Escribir una Opinión Verificada
+                    </button>
                 </div>
             </div>
         </section>
@@ -692,9 +698,9 @@
             <div class="footer-links-col">
                 <h4>Horario de Atención</h4>
                 <ul class="schedule-list">
-                    <li><span>Lunes - Viernes:</span> <span>08:00 - 14:00, 16:00 - 20:00</span></li>
-                    <li><span>Sábados:</span> <span>09:00 - 13:30</span></li>
-                    <li><span>Domingos:</span> <span>Cerrado (Devoluciones pactadas)</span></li>
+                    <li><span>Lunes - Viernes:</span> <span id="hours-weekdays">08:00 - 14:00, 16:00 - 20:00</span></li>
+                    <li><span>Sábados:</span> <span id="hours-saturdays">09:00 - 13:30</span></li>
+                    <li><span>Domingos:</span> <span id="hours-sundays">Cerrado (Devoluciones pactadas)</span></li>
                 </ul>
             </div>
         </div>
@@ -711,6 +717,122 @@
          MODALES Y PASARELA TPV DE LA APLICACIÓN
          ========================================================== -->
     
+    <!-- Modal: Detalle Ampliado de Furgoneta -->
+    <div class="custom-modal-backdrop" id="van-details-modal" style="display: none;">
+        <div class="custom-modal-card" style="max-width: 700px; padding: 0; overflow: hidden; background: #070e24;">
+            <span class="custom-modal-close" onclick="closeAuthModal('van-details-modal')" style="top: 1.5rem; right: 1.5rem; z-index: 10; font-size: 2rem;">&times;</span>
+            
+            <!-- Carrusel de fotos -->
+            <div class="modal-carousel" style="position: relative; width: 100%; height: 350px; background: #000; overflow: hidden;">
+                <div class="carousel-slides" id="detail-carousel-slides" style="display: flex; width: 100%; height: 100%; transition: transform 0.4s ease-in-out;">
+                    <!-- Insertado dinámicamente -->
+                </div>
+                <button class="carousel-control prev" id="detail-carousel-prev" style="position: absolute; top: 50%; left: 1rem; transform: translateY(-50%); background: rgba(0,0,0,0.5); border: none; color: #fff; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; z-index: 5;">
+                    <i class="fa-solid fa-chevron-left"></i>
+                </button>
+                <button class="carousel-control next" id="detail-carousel-next" style="position: absolute; top: 50%; right: 1rem; transform: translateY(-50%); background: rgba(0,0,0,0.5); border: none; color: #fff; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; z-index: 5;">
+                    <i class="fa-solid fa-chevron-right"></i>
+                </button>
+                <div class="carousel-dots" id="detail-carousel-dots" style="position: absolute; bottom: 1rem; left: 50%; transform: translateX(-50%); display: flex; gap: 0.5rem; z-index: 5;">
+                    <!-- Insertado dinámicamente -->
+                </div>
+            </div>
+            
+            <div style="padding: 2rem;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem;">
+                    <div style="text-align: left;">
+                        <h2 id="detail-van-name" style="font-size: 1.8rem; font-family: var(--font-heading); color: #fff; margin: 0 0 0.3rem 0;">Ford Transit Custom</h2>
+                        <span id="detail-van-m3" style="background: rgba(130, 209, 5, 0.15); color: var(--color-neon); font-size: 0.8rem; font-weight: 700; padding: 4px 10px; border-radius: 4px; display: inline-block;">8m³ de volumen</span>
+                    </div>
+                    <div style="text-align: right;">
+                        <span style="color: var(--text-secondary); font-size: 0.8rem; display: block;">Desde solo</span>
+                        <strong id="detail-van-price" style="font-size: 2rem; color: var(--color-neon); font-family: var(--font-heading);">79€<span style="font-size: 1rem; font-weight: normal; color: var(--text-secondary);">/día</span></strong>
+                    </div>
+                </div>
+                
+                <h3 style="font-size: 1rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 0.75rem; letter-spacing: 0.05em; text-align: left;">Ficha Técnica y Equipamiento</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 2rem;">
+                    <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); padding: 1rem; border-radius: var(--border-radius-sm); text-align: left;">
+                        <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.6rem; font-size: 0.9rem;">
+                            <li><i class="fa-solid fa-truck" style="color: var(--color-neon); width: 20px;"></i> Matrícula: <strong id="detail-spec-plate">-</strong></li>
+                            <li><i class="fa-solid fa-weight-hanging" style="color: var(--color-neon); width: 20px;"></i> Carga útil: <strong>Hasta 1200 kg</strong></li>
+                            <li><i class="fa-solid fa-up-down-left-right" style="color: var(--color-neon); width: 20px;"></i> Altura interior: <strong>1.78 metros</strong></li>
+                        </ul>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); padding: 1rem; border-radius: var(--border-radius-sm); text-align: left;">
+                        <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.6rem; font-size: 0.9rem;">
+                            <li><i class="fa-solid fa-snowflake" style="color: var(--color-neon); width: 20px;"></i> Aire Acondicionado: <strong>Sí, de serie</strong></li>
+                            <li><i class="fa-solid fa-route" style="color: var(--color-neon); width: 20px;"></i> GPS integrado: <strong>Opcional</strong></li>
+                            <li><i class="fa-solid fa-shield-halved" style="color: var(--color-neon); width: 20px;"></i> Seguro incluido: <strong>Sí, con franquicia</strong></li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div style="display: flex; gap: 1rem;">
+                    <button class="btn btn-secondary" onclick="closeAuthModal('van-details-modal')" style="flex: 1; height: 50px;">
+                        Volver
+                    </button>
+                    <button class="btn btn-primary" id="detail-van-book-btn" style="flex: 2; height: 50px; font-weight: 700;">
+                        <i class="fa-solid fa-calendar-days"></i> Simular Presupuesto
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Escribir Opinión Verificada -->
+    <div class="custom-modal-backdrop" id="write-review-modal" style="display: none;">
+        <div class="custom-modal-card" style="max-width: 500px;">
+            <span class="custom-modal-close" onclick="closeAuthModal('write-review-modal')">&times;</span>
+            <div class="custom-modal-header" style="text-align: left; margin-bottom: 1.5rem;">
+                <h2>Escribir Opinión Verificada</h2>
+                <p>Tu opinión nos ayuda a mejorar y a dar confianza a otros vecinos.</p>
+            </div>
+            <form id="write-review-form">
+                <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1.5rem; line-height: 1.5; text-align: left;">
+                    <i class="fa-solid fa-circle-info" style="color: var(--color-neon);"></i> Para garantizar la veracidad de las opiniones, solo los clientes con un código de reserva válido pueden publicar una reseña. El código se le asigna al completar su reserva.
+                </p>
+                
+                <div class="custom-form-group" style="text-align: left;">
+                    <label for="review-code-input"><i class="fa-solid fa-ticket"></i> Código de Reserva (Verificado)</label>
+                    <input type="text" id="review-code-input" class="custom-form-control" placeholder="Ej: RMU-A39X" required style="text-transform: uppercase;">
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="custom-form-group" style="text-align: left;">
+                        <label for="review-name-input"><i class="fa-solid fa-user"></i> Tu Nombre</label>
+                        <input type="text" id="review-name-input" class="custom-form-control" placeholder="Ej: Juan P." required>
+                    </div>
+                    <div class="custom-form-group" style="text-align: left;">
+                        <label for="review-city-input"><i class="fa-solid fa-location-dot"></i> Ciudad / Rol</label>
+                        <input type="text" id="review-city-input" class="custom-form-control" placeholder="Ej: Galera" required>
+                    </div>
+                </div>
+                
+                <div class="custom-form-group" style="text-align: left;">
+                    <label style="display: block; margin-bottom: 0.5rem;"><i class="fa-solid fa-star"></i> Puntuación</label>
+                    <div class="star-rating-selector" style="display: flex; gap: 0.5rem; font-size: 1.8rem; color: rgba(255,255,255,0.15); cursor: pointer; justify-content: center; margin: 0.5rem 0;">
+                        <i class="fa-solid fa-star" data-rating="1"></i>
+                        <i class="fa-solid fa-star" data-rating="2"></i>
+                        <i class="fa-solid fa-star" data-rating="3"></i>
+                        <i class="fa-solid fa-star" data-rating="4"></i>
+                        <i class="fa-solid fa-star" data-rating="5" style="color: var(--color-neon);"></i>
+                    </div>
+                    <input type="hidden" id="review-rating-input" value="5">
+                </div>
+                
+                <div class="custom-form-group" style="text-align: left;">
+                    <label for="review-comment-input"><i class="fa-solid fa-comment-dots"></i> Comentario / Reseña</label>
+                    <textarea id="review-comment-input" class="custom-form-control" rows="3" placeholder="Cuéntanos tu experiencia con el alquiler..." required style="resize: vertical; min-height: 80px;"></textarea>
+                </div>
+                
+                <button type="submit" class="btn btn-primary btn-block" style="margin-top: 1rem;">
+                    <i class="fa-solid fa-paper-plane"></i> Publicar Reseña Verificada
+                </button>
+            </form>
+        </div>
+    </div>
+
     <!-- Modal: Login de Clientes -->
     <div class="custom-modal-backdrop" id="login-modal" style="display: none;">
         <div class="custom-modal-card">
