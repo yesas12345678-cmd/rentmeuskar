@@ -424,7 +424,7 @@ a {
 }
 
 .hero-subbox {
-    background-color: rgba(15, 28, 63, 0.4);
+    background-color: var(--bg-secondary);
     backdrop-filter: blur(8px);
     border-left: 3px solid var(--color-neon);
     border-top: 1px solid rgba(255, 255, 255, 0.05);
