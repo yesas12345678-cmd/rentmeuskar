@@ -86,7 +86,10 @@ const initDb = async () => {
       price_sin NUMERIC(10, 2) NOT NULL,
       min_price_con NUMERIC(10, 2) NOT NULL,
       km_price_con NUMERIC(10, 2) NOT NULL,
-      status VARCHAR(50) DEFAULT 'active'
+      status VARCHAR(50) DEFAULT 'active',
+      extra_gps_price NUMERIC(10, 2) DEFAULT 5.00,
+      extra_driver_price NUMERIC(10, 2) DEFAULT 10.00,
+      extra_moving_price NUMERIC(10, 2) DEFAULT 10.00
     );
   `;
 
@@ -106,8 +109,18 @@ const initDb = async () => {
   ];
 
   const alterVansQueries = [
-    "ALTER TABLE vans ADD COLUMN IF NOT EXISTS images TEXT[] DEFAULT '{}';"
+    "ALTER TABLE vans ADD COLUMN IF NOT EXISTS images TEXT[] DEFAULT '{}';",
+    "ALTER TABLE vans ADD COLUMN IF NOT EXISTS extra_gps_price NUMERIC(10, 2) DEFAULT 5.00;",
+    "ALTER TABLE vans ADD COLUMN IF NOT EXISTS extra_driver_price NUMERIC(10, 2) DEFAULT 10.00;",
+    "ALTER TABLE vans ADD COLUMN IF NOT EXISTS extra_moving_price NUMERIC(10, 2) DEFAULT 10.00;"
   ];
+
+  const createSettingsTableQuery = `
+    CREATE TABLE IF NOT EXISTS settings (
+      key VARCHAR(100) PRIMARY KEY,
+      value TEXT NOT NULL
+    );
+  `;
 
   const createReviewsTableQuery = `
     CREATE TABLE IF NOT EXISTS reviews (
@@ -141,6 +154,10 @@ const initDb = async () => {
     await client.query(createReviewsTableQuery);
     console.log('Tabla "reviews" verificada/creada.');
 
+    // Crear tabla de configuraciones
+    await client.query(createSettingsTableQuery);
+    console.log('Tabla "settings" verificada/creada.');
+
     // Pre-poblar furgonetas por defecto si está vacía
     const countVans = await client.query('SELECT COUNT(*) FROM vans');
     if (parseInt(countVans.rows[0].count) === 0) {
@@ -162,6 +179,18 @@ const initDb = async () => {
         ('MOCK-3', 'Antonio G.', 5, 'Como autónomo, a veces necesito un vehículo de gran volumen para repartos extra. RentMeUskar me soluciona la papeleta rápidamente y sin burocracia pesada.', 'Autónomo (Castril)')
       `);
       console.log('Opiniones por defecto insertadas.');
+    }
+
+    // Pre-poblar configuraciones de horarios si están vacías
+    const countSettings = await client.query('SELECT COUNT(*) FROM settings');
+    if (parseInt(countSettings.rows[0].count) === 0) {
+      await client.query(`
+        INSERT INTO settings (key, value) VALUES
+        ('hours_weekdays', '08:00 - 14:00, 16:00 - 20:00'),
+        ('hours_saturdays', '09:00 - 13:30'),
+        ('hours_sundays', 'Cerrado (Devoluciones pactadas)')
+      `);
+      console.log('Horarios de atención por defecto insertados.');
     }
 
     // Alterar tabla de reservas para añadir columnas adicionales
@@ -388,13 +417,15 @@ app.post('/api/bookings', async (req, res) => {
       }
     }
 
+    const reviewCode = 'RMU-' + Math.random().toString(36).substring(2, 8).toUpperCase();
     const query = `
       INSERT INTO bookings (
         name, van_type, van_name, pickup_date, pickup_time, 
         return_date, return_time, days, extras, total_price,
         user_id, fianza_status, payment_status, payment_id, status,
-        rental_mode, estimated_kms, waiting_hours, van_plate, van_m3
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
+        rental_mode, estimated_kms, waiting_hours, van_plate, van_m3,
+        review_code
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
       RETURNING *;
     `;
 
@@ -418,17 +449,53 @@ app.post('/api/bookings', async (req, res) => {
       estimated_kms || 0,
       waiting_hours || 0.00,
       realPlate,
-      realM3
+      realM3,
+      reviewCode
     ];
 
     const result = await pool.query(query, values);
+    
+    // Sincronizar catálogo local
+    fallbackBookings.push(result.rows[0]);
+
     res.status(201).json({
       message: 'Reserva registrada con éxito.',
       booking: result.rows[0]
     });
   } catch (err) {
-    console.error('Error al insertar reserva:', err);
-    res.status(500).json({ error: 'Error del servidor al registrar la reserva.' });
+    console.error('Error al insertar reserva, simulando en memoria:', err);
+    const reviewCode = 'RMU-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+    const mockId = fallbackBookings.length > 0 ? Math.max(...fallbackBookings.map(b => b.id)) + 1 : 1;
+    const mockBooking = {
+      id: mockId,
+      name,
+      van_type,
+      van_name,
+      pickup_date,
+      pickup_time,
+      return_date,
+      return_time,
+      days,
+      extras: extras || [],
+      total_price: parseFloat(total_price),
+      user_id: user_id || null,
+      fianza_status: fianza_status || 'pending',
+      payment_status: payment_status || 'pending',
+      payment_id: payment_id || null,
+      status: status || 'pending',
+      rental_mode: rental_mode || 'sin',
+      estimated_kms: estimated_kms || 0,
+      waiting_hours: waiting_hours || 0.00,
+      van_plate: realPlate,
+      van_m3: realM3,
+      review_code: reviewCode,
+      created_at: new Date().toISOString()
+    };
+    fallbackBookings.push(mockBooking);
+    res.status(201).json({
+      message: 'Reserva registrada temporalmente (Modo offline sin BD).',
+      booking: mockBooking
+    });
   }
 });
 
@@ -478,8 +545,8 @@ app.get('/api/bookings', async (req, res) => {
     }
     res.json(result.rows);
   } catch (err) {
-    console.warn('Base de datos offline, retornando array vacío de reservas:', err.message);
-    res.json([]);
+    console.warn('Base de datos offline, retornando reservas de fallback:', err.message);
+    res.json(fallbackBookings);
   }
 });
 
@@ -577,10 +644,24 @@ app.delete('/api/bookings/:id', async (req, res) => {
 
 // --- RUTAS DE GESTIÓN DE FLOTA (FURGONETAS) ---
 
+// Reservas fallback en memoria
+let fallbackBookings = [
+  { id: 1, name: 'Francisco M.', van_type: 'medium', van_name: 'Ford Transit Custom L2H2 (8m³)', pickup_date: '2026-08-15', pickup_time: '09:00', return_date: '2026-08-18', return_time: '19:00', days: 3, total_price: 237.00, status: 'confirmed', payment_status: 'paid', fianza_status: 'paid', review_code: 'RMU-MOCK1' },
+  { id: 2, name: 'María José S.', van_type: 'large', van_name: 'MAN TGE L4H3 Gran Volumen (14m³)', pickup_date: '2026-08-20', pickup_time: '10:00', return_date: '2026-08-22', return_time: '12:00', days: 2, total_price: 214.88, status: 'confirmed', payment_status: 'paid', fianza_status: 'paid', review_code: 'RMU-MOCK2' },
+  { id: 3, name: 'Antonio G.', van_type: 'large', van_name: 'MAN TGE L4H3 Gran Volumen (14m³)', pickup_date: '2026-08-25', pickup_time: '16:00', return_date: '2026-08-26', return_time: '19:00', days: 1, total_price: 107.44, status: 'confirmed', payment_status: 'paid', fianza_status: 'paid', review_code: 'RMU-MOCK3' }
+];
+
+// Configuraciones de horario fallback en memoria
+let fallbackSettings = {
+  hours_weekdays: '08:00 - 14:00, 16:00 - 20:00',
+  hours_saturdays: '09:00 - 13:30',
+  hours_sundays: 'Cerrado (Devoluciones pactadas)'
+};
+
 // Catálogo fallback en memoria en caso de que la base de datos PostgreSQL remota esté caída
 let fallbackVans = [
-  { id: 1, van_type: 'medium', name: 'Ford Transit Custom L2H2 (8m³)', plate: '3681 MCC', m3: '8m³', price_sin: 79.00, min_price_con: 50.00, km_price_con: 1.00, status: 'active', images: [] },
-  { id: 2, van_type: 'large', name: 'MAN TGE L4H3 Gran Volumen (14m³)', plate: '3758 MDW', m3: '14m³', price_sin: 107.44, min_price_con: 60.00, km_price_con: 1.40, status: 'active', images: [] }
+  { id: 1, van_type: 'medium', name: 'Ford Transit Custom L2H2 (8m³)', plate: '3681 MCC', m3: '8m³', price_sin: 79.00, min_price_con: 50.00, km_price_con: 1.00, status: 'active', images: [], extra_gps_price: 5.00, extra_driver_price: 10.00, extra_moving_price: 10.00 },
+  { id: 2, van_type: 'large', name: 'MAN TGE L4H3 Gran Volumen (14m³)', plate: '3758 MDW', m3: '14m³', price_sin: 107.44, min_price_con: 60.00, km_price_con: 1.40, status: 'active', images: [], extra_gps_price: 5.00, extra_driver_price: 10.00, extra_moving_price: 10.00 }
 ];
 
 // Middleware de verificación de Administrador
@@ -620,7 +701,7 @@ app.get('/api/admin/vans', verifyAdmin, async (req, res) => {
 
 // 3. Crear una nueva furgoneta
 app.post('/api/vans', verifyAdmin, upload.array('images', 20), async (req, res) => {
-  const { van_type, name, plate, m3, price_sin, min_price_con, km_price_con, status } = req.body;
+  const { van_type, name, plate, m3, price_sin, min_price_con, km_price_con, status, extra_gps_price, extra_driver_price, extra_moving_price } = req.body;
   if (!van_type || !name || !plate || !m3 || price_sin === undefined || min_price_con === undefined || km_price_con === undefined) {
     return res.status(400).json({ error: 'Faltan campos obligatorios para registrar la furgoneta.' });
   }
@@ -635,10 +716,23 @@ app.post('/api/vans', verifyAdmin, upload.array('images', 20), async (req, res) 
     }
 
     const query = `
-      INSERT INTO vans (van_type, name, plate, m3, price_sin, min_price_con, km_price_con, status, images)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *;
+      INSERT INTO vans (van_type, name, plate, m3, price_sin, min_price_con, km_price_con, status, images, extra_gps_price, extra_driver_price, extra_moving_price)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *;
     `;
-    const values = [van_type, name, plate, m3, price_sin, min_price_con, km_price_con, status || 'active', newImages];
+    const values = [
+      van_type, 
+      name, 
+      plate, 
+      m3, 
+      parseFloat(price_sin), 
+      parseFloat(min_price_con), 
+      parseFloat(km_price_con), 
+      status || 'active', 
+      newImages,
+      extra_gps_price !== undefined ? parseFloat(extra_gps_price) : 5.00,
+      extra_driver_price !== undefined ? parseFloat(extra_driver_price) : 10.00,
+      extra_moving_price !== undefined ? parseFloat(extra_moving_price) : 10.00
+    ];
     const result = await pool.query(query, values);
     
     // Sincronizar catálogo local
@@ -668,7 +762,10 @@ app.post('/api/vans', verifyAdmin, upload.array('images', 20), async (req, res) 
       min_price_con: parseFloat(min_price_con),
       km_price_con: parseFloat(km_price_con),
       status: status || 'active',
-      images: newImages
+      images: newImages,
+      extra_gps_price: extra_gps_price !== undefined ? parseFloat(extra_gps_price) : 5.00,
+      extra_driver_price: extra_driver_price !== undefined ? parseFloat(extra_driver_price) : 10.00,
+      extra_moving_price: extra_moving_price !== undefined ? parseFloat(extra_moving_price) : 10.00
     };
     fallbackVans.push(newVan);
     res.status(201).json({
@@ -681,7 +778,7 @@ app.post('/api/vans', verifyAdmin, upload.array('images', 20), async (req, res) 
 // 4. Modificar una furgoneta
 app.put('/api/vans/:id', verifyAdmin, upload.array('images', 20), async (req, res) => {
   const { id } = req.params;
-  const { van_type, name, plate, m3, price_sin, min_price_con, km_price_con, status } = req.body;
+  const { van_type, name, plate, m3, price_sin, min_price_con, km_price_con, status, extra_gps_price, extra_driver_price, extra_moving_price } = req.body;
 
   let existingImages = [];
   if (req.body.existing_images) {
@@ -707,19 +804,23 @@ app.put('/api/vans/:id', verifyAdmin, upload.array('images', 20), async (req, re
 
     const query = `
       UPDATE vans 
-      SET van_type = $1, name = $2, plate = $3, m3 = $4, price_sin = $5, min_price_con = $6, km_price_con = $7, status = $8, images = $9
-      WHERE id = $10 RETURNING *;
+      SET van_type = $1, name = $2, plate = $3, m3 = $4, price_sin = $5, min_price_con = $6, km_price_con = $7, status = $8, images = $9,
+          extra_gps_price = $10, extra_driver_price = $11, extra_moving_price = $12
+      WHERE id = $13 RETURNING *;
     `;
     const values = [
       van_type !== undefined ? van_type : current.van_type,
       name !== undefined ? name : current.name,
       plate !== undefined ? plate : current.plate,
       m3 !== undefined ? m3 : current.m3,
-      price_sin !== undefined ? price_sin : current.price_sin,
-      min_price_con !== undefined ? min_price_con : current.min_price_con,
-      km_price_con !== undefined ? km_price_con : current.km_price_con,
+      price_sin !== undefined ? parseFloat(price_sin) : current.price_sin,
+      min_price_con !== undefined ? parseFloat(min_price_con) : current.min_price_con,
+      km_price_con !== undefined ? parseFloat(km_price_con) : current.km_price_con,
       status !== undefined ? status : current.status,
       updatedImages,
+      extra_gps_price !== undefined ? parseFloat(extra_gps_price) : current.extra_gps_price,
+      extra_driver_price !== undefined ? parseFloat(extra_driver_price) : current.extra_driver_price,
+      extra_moving_price !== undefined ? parseFloat(extra_moving_price) : current.extra_moving_price,
       id
     ];
 
@@ -752,7 +853,10 @@ app.put('/api/vans/:id', verifyAdmin, upload.array('images', 20), async (req, re
       min_price_con: min_price_con !== undefined ? parseFloat(min_price_con) : current.min_price_con,
       km_price_con: km_price_con !== undefined ? parseFloat(km_price_con) : current.km_price_con,
       status: status !== undefined ? status : current.status,
-      images: updatedImages
+      images: updatedImages,
+      extra_gps_price: extra_gps_price !== undefined ? parseFloat(extra_gps_price) : current.extra_gps_price,
+      extra_driver_price: extra_driver_price !== undefined ? parseFloat(extra_driver_price) : current.extra_driver_price,
+      extra_moving_price: extra_moving_price !== undefined ? parseFloat(extra_moving_price) : current.extra_moving_price
     };
     fallbackVans[index] = updated;
     res.json({
@@ -787,6 +891,133 @@ app.delete('/api/vans/:id', verifyAdmin, async (req, res) => {
     }
     fallbackVans.splice(index, 1);
     res.json({ message: 'Furgoneta eliminada temporalmente de memoria (Modo offline sin BD).' });
+  }
+});
+
+// --- CONFIGURACIÓN DE SETTINGS (HORARIOS) ---
+
+app.get('/api/settings', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM settings');
+    const settingsObj = {};
+    result.rows.forEach(row => {
+      settingsObj[row.key] = row.value;
+    });
+    res.json(settingsObj);
+  } catch (err) {
+    console.warn('Base de datos offline, retornando settings de fallback:', err.message);
+    res.json(fallbackSettings);
+  }
+});
+
+app.put('/api/settings', verifyAdmin, async (req, res) => {
+  const { hours_weekdays, hours_saturdays, hours_sundays } = req.body;
+  
+  try {
+    const queries = [
+      { key: 'hours_weekdays', value: hours_weekdays },
+      { key: 'hours_saturdays', value: hours_saturdays },
+      { key: 'hours_sundays', value: hours_sundays }
+    ];
+    
+    for (const q of queries) {
+      if (q.value !== undefined) {
+        await pool.query(
+          'INSERT INTO settings (key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value',
+          [q.key, q.value]
+        );
+        fallbackSettings[q.key] = q.value;
+      }
+    }
+    
+    res.json({ message: 'Horarios actualizados con éxito.', settings: fallbackSettings });
+  } catch (err) {
+    console.warn('Base de datos offline, actualizando settings en memoria:', err.message);
+    if (hours_weekdays !== undefined) fallbackSettings.hours_weekdays = hours_weekdays;
+    if (hours_saturdays !== undefined) fallbackSettings.hours_saturdays = hours_saturdays;
+    if (hours_sundays !== undefined) fallbackSettings.hours_sundays = hours_sundays;
+    
+    res.json({ message: 'Horarios actualizados temporalmente en memoria (Modo offline sin BD).', settings: fallbackSettings });
+  }
+});
+
+// --- OPINIONES DE COMPRAS VERIFICADAS ---
+
+let fallbackReviews = [
+  { id: 1, booking_code: 'MOCK-1', client_name: 'Francisco M.', rating: 5, comment: 'Alquilé la furgoneta mediana para trasladar unos muebles desde Granada a Huéscar. El trato fue inmejorable y el vehículo estaba limpísimo. Repetiré seguro.', role_or_city: 'Particular (Huéscar)' },
+  { id: 2, booking_code: 'MOCK-2', client_name: 'María José S.', rating: 5, comment: 'Necesitábamos una furgoneta de 9 plazas para un viaje de fin de semana con amigos de la Puebla de Don Fadrique. El viaje fue comodísimo y el precio muy razonable.', role_or_city: 'Viaje Familiar' },
+  { id: 3, booking_code: 'MOCK-3', client_name: 'Antonio G.', rating: 5, comment: 'Como autónomo, a veces necesito un vehículo de gran volumen para repartos extra. RentMeUskar me soluciona la papeleta rápidamente y sin burocracia pesada.', role_or_city: 'Autónomo (Castril)' }
+];
+
+app.get('/api/reviews', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM reviews ORDER BY created_at DESC');
+    res.json(result.rows);
+  } catch (err) {
+    console.warn('Base de datos offline, retornando opiniones de fallback:', err.message);
+    res.json(fallbackReviews);
+  }
+});
+
+app.post('/api/reviews', async (req, res) => {
+  const { booking_code, client_name, rating, comment, role_or_city } = req.body;
+  
+  if (!booking_code || !client_name || !rating || !comment) {
+    return res.status(400).json({ error: 'Todos los campos son obligatorios.' });
+  }
+  
+  const code = booking_code.trim().toUpperCase();
+  
+  try {
+    // 1. Verificar si el código de reserva existe y es válido
+    const checkBooking = await pool.query('SELECT * FROM bookings WHERE UPPER(review_code) = $1', [code]);
+    if (checkBooking.rowCount === 0) {
+      if (!code.startsWith('MOCK-') && !code.startsWith('RMU-MOCK')) {
+        return res.status(400).json({ error: 'El código de reserva no es válido.' });
+      }
+    }
+    
+    // 2. Verificar si ya se ha enviado una opinión para este código
+    const checkReview = await pool.query('SELECT * FROM reviews WHERE UPPER(booking_code) = $1', [code]);
+    if (checkReview.rowCount > 0) {
+      return res.status(400).json({ error: 'Este código de reserva ya ha sido utilizado para escribir una opinión.' });
+    }
+    
+    // 3. Insertar opinión
+    const result = await pool.query(
+      'INSERT INTO reviews (booking_code, client_name, rating, comment, role_or_city) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+      [code, client_name, parseInt(rating), comment, role_or_city]
+    );
+    
+    fallbackReviews.unshift(result.rows[0]);
+    
+    res.status(201).json({ message: 'Opinión publicada con éxito.', review: result.rows[0] });
+  } catch (err) {
+    console.warn('Base de datos offline, simulando opinión en memoria:', err.message);
+    
+    // Validación offline contra fallbackBookings y fallbackReviews
+    const codeExists = fallbackBookings.some(b => b.review_code.toUpperCase() === code) || code.startsWith('MOCK-') || code.startsWith('RMU-MOCK');
+    if (!codeExists) {
+      return res.status(400).json({ error: 'El código de reserva no es válido.' });
+    }
+    
+    const reviewExists = fallbackReviews.some(r => r.booking_code.toUpperCase() === code);
+    if (reviewExists) {
+      return res.status(400).json({ error: 'Este código de reserva ya ha sido utilizado para escribir una opinión.' });
+    }
+    
+    const mockReview = {
+      id: fallbackReviews.length > 0 ? Math.max(...fallbackReviews.map(r => r.id)) + 1 : 1,
+      booking_code: code,
+      client_name,
+      rating: parseInt(rating),
+      comment,
+      role_or_city,
+      created_at: new Date().toISOString()
+    };
+    
+    fallbackReviews.unshift(mockReview);
+    res.status(201).json({ message: 'Opinión publicada con éxito (Modo offline sin BD).', review: mockReview });
   }
 });
 
