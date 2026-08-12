@@ -182,6 +182,7 @@ const initApp = () => {
     /* ==========================================================================
        2. REVELADO AL HACER SCROLL (INTERSECTION OBSERVER)
        ========================================================================== */
+    document.documentElement.classList.add('js');
     const revealElements = document.querySelectorAll('.reveal');
     
     const revealObserver = new IntersectionObserver((entries, observer) => {

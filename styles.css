@@ -1607,13 +1607,13 @@ a.contact-method-card:hover {
 }
 
 /* Animations Trigger */
-.reveal {
+.js .reveal {
     opacity: 0;
     transform: translateY(30px);
     transition: opacity 0.8s ease, transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
-.reveal.active {
+.js .reveal.active {
     opacity: 1;
     transform: translateY(0);
 }
