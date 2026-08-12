@@ -101,12 +101,25 @@ const initDb = async () => {
     "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS estimated_kms INTEGER DEFAULT 0;",
     "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS waiting_hours NUMERIC(5, 2) DEFAULT 0.00;",
     "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS van_plate VARCHAR(50);",
-    "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS van_m3 VARCHAR(50);"
+    "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS van_m3 VARCHAR(50);",
+    "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS review_code VARCHAR(50) UNIQUE;"
   ];
 
   const alterVansQueries = [
     "ALTER TABLE vans ADD COLUMN IF NOT EXISTS images TEXT[] DEFAULT '{}';"
   ];
+
+  const createReviewsTableQuery = `
+    CREATE TABLE IF NOT EXISTS reviews (
+      id SERIAL PRIMARY KEY,
+      booking_code VARCHAR(100) UNIQUE NOT NULL,
+      client_name VARCHAR(255) NOT NULL,
+      rating INTEGER CHECK (rating >= 1 AND rating <= 5) NOT NULL,
+      comment TEXT NOT NULL,
+      role_or_city VARCHAR(255),
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    );
+  `;
 
   try {
     const client = await pool.connect();
@@ -124,6 +137,10 @@ const initDb = async () => {
     await client.query(createVansTableQuery);
     console.log('Tabla "vans" verificada/creada.');
 
+    // Crear tabla de opiniones
+    await client.query(createReviewsTableQuery);
+    console.log('Tabla "reviews" verificada/creada.');
+
     // Pre-poblar furgonetas por defecto si está vacía
     const countVans = await client.query('SELECT COUNT(*) FROM vans');
     if (parseInt(countVans.rows[0].count) === 0) {
@@ -133,6 +150,18 @@ const initDb = async () => {
         ('large', 'MAN TGE L4H3 Gran Volumen (14m³)', '3758 MDW', '14m³', 107.44, 60.00, 1.40, 'active')
       `);
       console.log('Furgonetas por defecto insertadas.');
+    }
+
+    // Pre-poblar opiniones por defecto si está vacía
+    const countReviews = await client.query('SELECT COUNT(*) FROM reviews');
+    if (parseInt(countReviews.rows[0].count) === 0) {
+      await client.query(`
+        INSERT INTO reviews (booking_code, client_name, rating, comment, role_or_city) VALUES
+        ('MOCK-1', 'Francisco M.', 5, 'Alquilé la furgoneta mediana para trasladar unos muebles desde Granada a Huéscar. El trato fue inmejorable y el vehículo estaba limpísimo. Repetiré seguro.', 'Particular (Huéscar)'),
+        ('MOCK-2', 'María José S.', 5, 'Necesitábamos una furgoneta de 9 plazas para un viaje de fin de semana con amigos de la Puebla de Don Fadrique. El viaje fue comodísimo y el precio muy razonable.', 'Viaje Familiar'),
+        ('MOCK-3', 'Antonio G.', 5, 'Como autónomo, a veces necesito un vehículo de gran volumen para repartos extra. RentMeUskar me soluciona la papeleta rápidamente y sin burocracia pesada.', 'Autónomo (Castril)')
+      `);
+      console.log('Opiniones por defecto insertadas.');
     }
 
     // Alterar tabla de reservas para añadir columnas adicionales
