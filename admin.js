@@ -86,12 +86,23 @@ const initAdmin = () => {
     const vanFormPriceSin = document.getElementById('van-form-price-sin');
     const vanFormMinPriceCon = document.getElementById('van-form-min-price-con');
     const vanFormKmPriceCon = document.getElementById('van-form-km-price-con');
+    const vanFormExtraGps = document.getElementById('van-form-extra-gps');
+    const vanFormExtraDriver = document.getElementById('van-form-extra-driver');
+    const vanFormExtraMoving = document.getElementById('van-form-extra-moving');
     const vanFormStatus = document.getElementById('van-form-status');
     const vanBtnCancel = document.getElementById('van-btn-cancel');
     const vanModalTitle = document.getElementById('van-modal-title');
     const vanFormImagesInput = document.getElementById('van-form-images-input');
     const vanBtnUploadTrigger = document.getElementById('van-btn-upload-trigger');
     const vanImagesPreviewGrid = document.getElementById('van-images-preview-grid');
+
+    // Elementos de la Pestaña de Configuración
+    const tabSettings = document.getElementById('tab-settings');
+    const sectionSettings = document.getElementById('section-settings');
+    const settingsHoursForm = document.getElementById('settings-hours-form');
+    const settingHoursWeekdays = document.getElementById('setting-hours-weekdays');
+    const settingHoursSaturdays = document.getElementById('setting-hours-saturdays');
+    const settingHoursSundays = document.getElementById('setting-hours-sundays');
     
     // Variables de Estado de Flota
     let fleet = [];
@@ -673,23 +684,44 @@ const initAdmin = () => {
     
     // Alternar pestañas
     const switchTab = (tab) => {
+        tabBookings.classList.remove('btn-primary');
+        tabBookings.style.borderColor = 'rgba(255,255,255,0.08)';
+        tabFleet.classList.remove('btn-primary');
+        tabFleet.style.borderColor = 'rgba(255,255,255,0.08)';
+        tabSettings.classList.remove('btn-primary');
+        tabSettings.style.borderColor = 'rgba(255,255,255,0.08)';
+        
+        sectionBookings.style.display = 'none';
+        sectionFleet.style.display = 'none';
+        sectionSettings.style.display = 'none';
+        
         if (tab === 'bookings') {
             tabBookings.classList.add('btn-primary');
             tabBookings.style.borderColor = 'var(--color-neon)';
-            tabFleet.classList.remove('btn-primary');
-            tabFleet.style.borderColor = 'rgba(255,255,255,0.08)';
-            
             sectionBookings.style.display = 'block';
-            sectionFleet.style.display = 'none';
-        } else {
+        } else if (tab === 'fleet') {
             tabFleet.classList.add('btn-primary');
             tabFleet.style.borderColor = 'var(--color-neon)';
-            tabBookings.classList.remove('btn-primary');
-            tabBookings.style.borderColor = 'rgba(255,255,255,0.08)';
-            
-            sectionBookings.style.display = 'none';
             sectionFleet.style.display = 'block';
             fetchFleet();
+        } else if (tab === 'settings') {
+            tabSettings.classList.add('btn-primary');
+            tabSettings.style.borderColor = 'var(--color-neon)';
+            sectionSettings.style.display = 'block';
+            fetchSettings();
+        }
+    };
+
+    const fetchSettings = async () => {
+        try {
+            const res = await fetch('/api/settings');
+            const data = await res.json();
+            settingHoursWeekdays.value = data.hours_weekdays || '';
+            settingHoursSaturdays.value = data.hours_saturdays || '';
+            settingHoursSundays.value = data.hours_sundays || '';
+        } catch (err) {
+            console.error('Error al obtener configuraciones:', err);
+            showToast('Error al conectar con la API de configuración.', 'error');
         }
     };
 
@@ -971,6 +1003,9 @@ const initAdmin = () => {
             vanFormPriceSin.value = van.price_sin;
             vanFormMinPriceCon.value = van.min_price_con;
             vanFormKmPriceCon.value = van.km_price_con;
+            vanFormExtraGps.value = van.extra_gps_price !== undefined ? van.extra_gps_price : 5.00;
+            vanFormExtraDriver.value = van.extra_driver_price !== undefined ? van.extra_driver_price : 10.00;
+            vanFormExtraMoving.value = van.extra_moving_price !== undefined ? van.extra_moving_price : 10.00;
             vanFormStatus.value = van.status;
             
             // Cargar imágenes
@@ -988,6 +1023,9 @@ const initAdmin = () => {
             vanFormPriceSin.value = '';
             vanFormMinPriceCon.value = '';
             vanFormKmPriceCon.value = '';
+            vanFormExtraGps.value = '5.00';
+            vanFormExtraDriver.value = '10.00';
+            vanFormExtraMoving.value = '10.00';
             vanFormStatus.value = 'active';
             
             currentVanImages = [];
@@ -1008,12 +1046,44 @@ const initAdmin = () => {
     // Event listeners de la pestaña
     tabBookings.addEventListener('click', () => switchTab('bookings'));
     tabFleet.addEventListener('click', () => switchTab('fleet'));
+    tabSettings.addEventListener('click', () => switchTab('settings'));
     btnAddVan.addEventListener('click', () => openVanModal());
     vanModalCloseBtn.addEventListener('click', closeVanModal);
     vanBtnCancel.addEventListener('click', closeVanModal);
     
     vanModal.addEventListener('click', (e) => {
         if (e.target === vanModal) closeVanModal();
+    });
+
+    // Guardar horarios settings
+    settingsHoursForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const token = localStorage.getItem('admin_token');
+        
+        try {
+            const res = await fetch('/api/settings', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    hours_weekdays: settingHoursWeekdays.value.trim(),
+                    hours_saturdays: settingHoursSaturdays.value.trim(),
+                    hours_sundays: settingHoursSundays.value.trim()
+                })
+            });
+            
+            const data = await res.json();
+            if (res.ok) {
+                showToast('Horarios actualizados con éxito.', 'success');
+            } else {
+                showToast(data.error || 'Error al actualizar horarios.', 'error');
+            }
+        } catch (err) {
+            console.error(err);
+            showToast('Error de conexión con el servidor.', 'error');
+        }
     });
 
     // Envío del formulario de furgoneta
@@ -1029,6 +1099,9 @@ const initAdmin = () => {
         formData.append('price_sin', parseFloat(vanFormPriceSin.value));
         formData.append('min_price_con', parseFloat(vanFormMinPriceCon.value));
         formData.append('km_price_con', parseFloat(vanFormKmPriceCon.value));
+        formData.append('extra_gps_price', parseFloat(vanFormExtraGps.value));
+        formData.append('extra_driver_price', parseFloat(vanFormExtraDriver.value));
+        formData.append('extra_moving_price', parseFloat(vanFormExtraMoving.value));
         formData.append('status', vanFormStatus.value);
         formData.append('existing_images', JSON.stringify(currentVanImages));
         
