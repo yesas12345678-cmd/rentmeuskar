@@ -355,31 +355,10 @@
                         <!-- Step 3: Extras (Only for Sin Conductor) -->
                         <div class="form-group" id="calc-extras-section">
                             <label><i class="fa-solid fa-circle-plus"></i> ¿Necesitas algún extra?</label>
-                            <div class="extras-grid">
-                                <label class="extra-checkbox-card" id="card-extra-gps">
-                                    <input type="checkbox" id="calc-extra-gps" value="5">
-                                    <div class="extra-content">
-                                        <i class="fa-solid fa-map-location-dot"></i>
-                                        <span class="extra-name">GPS Navegador</span>
-                                        <span class="extra-price">+5€ / día</span>
-                                    </div>
-                                </label>
-                                <label class="extra-checkbox-card" id="card-extra-driver">
-                                    <input type="checkbox" id="calc-extra-driver" value="8">
-                                    <div class="extra-content">
-                                        <i class="fa-solid fa-user-plus"></i>
-                                        <span class="extra-name">2º Conductor</span>
-                                        <span class="extra-price">+8€ / día</span>
-                                    </div>
-                                </label>
-                                <label class="extra-checkbox-card" id="card-extra-moving">
-                                    <input type="checkbox" id="calc-extra-moving" value="10">
-                                    <div class="extra-content">
-                                        <i class="fa-solid fa-boxes-packing"></i>
-                                        <span class="extra-name">Kit Mudanza</span>
-                                        <span class="extra-price">+10€ total</span>
-                                    </div>
-                                </label>
+                            <div class="extras-grid" id="calc-dynamic-extras-container">
+                                <p style="grid-column: 1 / -1; color: var(--text-secondary); font-size: 0.85rem; text-align: center; padding: 1rem 0; margin: 0;">
+                                    Elige un tipo de furgoneta para ver sus extras disponibles.
+                                </p>
                             </div>
                         </div>
 

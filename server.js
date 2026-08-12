@@ -112,7 +112,8 @@ const initDb = async () => {
     "ALTER TABLE vans ADD COLUMN IF NOT EXISTS images TEXT[] DEFAULT '{}';",
     "ALTER TABLE vans ADD COLUMN IF NOT EXISTS extra_gps_price NUMERIC(10, 2) DEFAULT 5.00;",
     "ALTER TABLE vans ADD COLUMN IF NOT EXISTS extra_driver_price NUMERIC(10, 2) DEFAULT 10.00;",
-    "ALTER TABLE vans ADD COLUMN IF NOT EXISTS extra_moving_price NUMERIC(10, 2) DEFAULT 10.00;"
+    "ALTER TABLE vans ADD COLUMN IF NOT EXISTS extra_moving_price NUMERIC(10, 2) DEFAULT 10.00;",
+    "ALTER TABLE vans ADD COLUMN IF NOT EXISTS custom_extras JSONB DEFAULT '[]'::jsonb;"
   ];
 
   const createSettingsTableQuery = `
@@ -660,8 +661,16 @@ let fallbackSettings = {
 
 // Catálogo fallback en memoria en caso de que la base de datos PostgreSQL remota esté caída
 let fallbackVans = [
-  { id: 1, van_type: 'medium', name: 'Ford Transit Custom L2H2 (8m³)', plate: '3681 MCC', m3: '8m³', price_sin: 79.00, min_price_con: 50.00, km_price_con: 1.00, status: 'active', images: [], extra_gps_price: 5.00, extra_driver_price: 10.00, extra_moving_price: 10.00 },
-  { id: 2, van_type: 'large', name: 'MAN TGE L4H3 Gran Volumen (14m³)', plate: '3758 MDW', m3: '14m³', price_sin: 107.44, min_price_con: 60.00, km_price_con: 1.40, status: 'active', images: [], extra_gps_price: 5.00, extra_driver_price: 10.00, extra_moving_price: 10.00 }
+  { id: 1, van_type: 'medium', name: 'Ford Transit Custom L2H2 (8m³)', plate: '3681 MCC', m3: '8m³', price_sin: 79.00, min_price_con: 50.00, km_price_con: 1.00, status: 'active', images: [], custom_extras: [
+    { name: 'GPS Navegador', price: 5.00, type: 'daily' },
+    { name: 'Segundo Conductor', price: 8.00, type: 'daily' },
+    { name: 'Kit Mudanza', price: 10.00, type: 'once' }
+  ]},
+  { id: 2, van_type: 'large', name: 'MAN TGE L4H3 Gran Volumen (14m³)', plate: '3758 MDW', m3: '14m³', price_sin: 107.44, min_price_con: 60.00, km_price_con: 1.40, status: 'active', images: [], custom_extras: [
+    { name: 'GPS Navegador', price: 5.00, type: 'daily' },
+    { name: 'Segundo Conductor', price: 8.00, type: 'daily' },
+    { name: 'Kit Mudanza', price: 10.00, type: 'once' }
+  ]}
 ];
 
 // Middleware de verificación de Administrador
@@ -701,12 +710,21 @@ app.get('/api/admin/vans', verifyAdmin, async (req, res) => {
 
 // 3. Crear una nueva furgoneta
 app.post('/api/vans', verifyAdmin, upload.array('images', 20), async (req, res) => {
-  const { van_type, name, plate, m3, price_sin, min_price_con, km_price_con, status, extra_gps_price, extra_driver_price, extra_moving_price } = req.body;
+  const { van_type, name, plate, m3, price_sin, min_price_con, km_price_con, status } = req.body;
   if (!van_type || !name || !plate || !m3 || price_sin === undefined || min_price_con === undefined || km_price_con === undefined) {
     return res.status(400).json({ error: 'Faltan campos obligatorios para registrar la furgoneta.' });
   }
 
   const newImages = req.files ? req.files.map(f => '/uploads/' + f.filename) : [];
+  
+  let customExtras = [];
+  if (req.body.custom_extras) {
+    try {
+      customExtras = typeof req.body.custom_extras === 'string' ? JSON.parse(req.body.custom_extras) : req.body.custom_extras;
+    } catch (e) {
+      console.error('Error parsing custom_extras:', e);
+    }
+  }
 
   try {
     // Comprobar si ya existe el tipo
@@ -716,8 +734,8 @@ app.post('/api/vans', verifyAdmin, upload.array('images', 20), async (req, res) 
     }
 
     const query = `
-      INSERT INTO vans (van_type, name, plate, m3, price_sin, min_price_con, km_price_con, status, images, extra_gps_price, extra_driver_price, extra_moving_price)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *;
+      INSERT INTO vans (van_type, name, plate, m3, price_sin, min_price_con, km_price_con, status, images, custom_extras)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *;
     `;
     const values = [
       van_type, 
@@ -729,9 +747,7 @@ app.post('/api/vans', verifyAdmin, upload.array('images', 20), async (req, res) 
       parseFloat(km_price_con), 
       status || 'active', 
       newImages,
-      extra_gps_price !== undefined ? parseFloat(extra_gps_price) : 5.00,
-      extra_driver_price !== undefined ? parseFloat(extra_driver_price) : 10.00,
-      extra_moving_price !== undefined ? parseFloat(extra_moving_price) : 10.00
+      JSON.stringify(customExtras)
     ];
     const result = await pool.query(query, values);
     
@@ -763,9 +779,7 @@ app.post('/api/vans', verifyAdmin, upload.array('images', 20), async (req, res) 
       km_price_con: parseFloat(km_price_con),
       status: status || 'active',
       images: newImages,
-      extra_gps_price: extra_gps_price !== undefined ? parseFloat(extra_gps_price) : 5.00,
-      extra_driver_price: extra_driver_price !== undefined ? parseFloat(extra_driver_price) : 10.00,
-      extra_moving_price: extra_moving_price !== undefined ? parseFloat(extra_moving_price) : 10.00
+      custom_extras: customExtras
     };
     fallbackVans.push(newVan);
     res.status(201).json({
@@ -778,7 +792,7 @@ app.post('/api/vans', verifyAdmin, upload.array('images', 20), async (req, res) 
 // 4. Modificar una furgoneta
 app.put('/api/vans/:id', verifyAdmin, upload.array('images', 20), async (req, res) => {
   const { id } = req.params;
-  const { van_type, name, plate, m3, price_sin, min_price_con, km_price_con, status, extra_gps_price, extra_driver_price, extra_moving_price } = req.body;
+  const { van_type, name, plate, m3, price_sin, min_price_con, km_price_con, status } = req.body;
 
   let existingImages = [];
   if (req.body.existing_images) {
@@ -795,6 +809,15 @@ app.put('/api/vans/:id', verifyAdmin, upload.array('images', 20), async (req, re
   const newImages = req.files ? req.files.map(f => '/uploads/' + f.filename) : [];
   const updatedImages = [...existingImages, ...newImages];
 
+  let customExtras = [];
+  if (req.body.custom_extras) {
+    try {
+      customExtras = typeof req.body.custom_extras === 'string' ? JSON.parse(req.body.custom_extras) : req.body.custom_extras;
+    } catch (e) {
+      console.error('Error parsing custom_extras:', e);
+    }
+  }
+
   try {
     const checkRes = await pool.query('SELECT * FROM vans WHERE id = $1', [id]);
     if (checkRes.rowCount === 0) {
@@ -805,8 +828,8 @@ app.put('/api/vans/:id', verifyAdmin, upload.array('images', 20), async (req, re
     const query = `
       UPDATE vans 
       SET van_type = $1, name = $2, plate = $3, m3 = $4, price_sin = $5, min_price_con = $6, km_price_con = $7, status = $8, images = $9,
-          extra_gps_price = $10, extra_driver_price = $11, extra_moving_price = $12
-      WHERE id = $13 RETURNING *;
+          custom_extras = $10
+      WHERE id = $11 RETURNING *;
     `;
     const values = [
       van_type !== undefined ? van_type : current.van_type,
@@ -818,9 +841,7 @@ app.put('/api/vans/:id', verifyAdmin, upload.array('images', 20), async (req, re
       km_price_con !== undefined ? parseFloat(km_price_con) : current.km_price_con,
       status !== undefined ? status : current.status,
       updatedImages,
-      extra_gps_price !== undefined ? parseFloat(extra_gps_price) : current.extra_gps_price,
-      extra_driver_price !== undefined ? parseFloat(extra_driver_price) : current.extra_driver_price,
-      extra_moving_price !== undefined ? parseFloat(extra_moving_price) : current.extra_moving_price,
+      JSON.stringify(customExtras),
       id
     ];
 
@@ -854,9 +875,7 @@ app.put('/api/vans/:id', verifyAdmin, upload.array('images', 20), async (req, re
       km_price_con: km_price_con !== undefined ? parseFloat(km_price_con) : current.km_price_con,
       status: status !== undefined ? status : current.status,
       images: updatedImages,
-      extra_gps_price: extra_gps_price !== undefined ? parseFloat(extra_gps_price) : current.extra_gps_price,
-      extra_driver_price: extra_driver_price !== undefined ? parseFloat(extra_driver_price) : current.extra_driver_price,
-      extra_moving_price: extra_moving_price !== undefined ? parseFloat(extra_moving_price) : current.extra_moving_price
+      custom_extras: customExtras
     };
     fallbackVans[index] = updated;
     res.json({
@@ -1018,6 +1037,70 @@ app.post('/api/reviews', async (req, res) => {
     
     fallbackReviews.unshift(mockReview);
     res.status(201).json({ message: 'Opinión publicada con éxito (Modo offline sin BD).', review: mockReview });
+  }
+});
+
+// 11. Eliminar una opinión (admin)
+app.delete('/api/admin/reviews/:id', verifyAdmin, async (req, res) => {
+  const { id } = req.params;
+  
+  try {
+    const result = await pool.query('DELETE FROM reviews WHERE id = $1 RETURNING *', [id]);
+    
+    // Sincronizar catálogo local
+    const index = fallbackReviews.findIndex(r => r.id == id);
+    if (index !== -1) {
+      fallbackReviews.splice(index, 1);
+    }
+    
+    if (result.rowCount === 0) {
+      if (index !== -1) {
+        return res.json({ message: 'Opinión eliminada de memoria local (Modo offline).' });
+      }
+      return res.status(404).json({ error: 'Opinión no encontrada.' });
+    }
+    
+    res.json({ message: 'Opinión eliminada con éxito.' });
+  } catch (err) {
+    console.warn('Base de datos offline, simulando borrado de opinión en memoria:', err.message);
+    const index = fallbackReviews.findIndex(r => r.id == id);
+    if (index === -1) {
+      return res.status(404).json({ error: 'Opinión no encontrada.' });
+    }
+    fallbackReviews.splice(index, 1);
+    res.json({ message: 'Opinión eliminada de memoria local (Modo offline).' });
+  }
+});
+
+// 12. Generar un código de opinión verificado manualmente (admin)
+app.post('/api/admin/generate-review-code', verifyAdmin, async (req, res) => {
+  const code = 'RMU-CODE-' + Math.random().toString(36).substring(2, 6).toUpperCase();
+  try {
+    const query = `
+      INSERT INTO bookings (name, van_type, van_name, pickup_date, pickup_time, return_date, return_time, total_price, review_code, status)
+      VALUES ($1, $2, $3, CURRENT_DATE, '09:00', CURRENT_DATE, '19:00', 0.00, $4, 'confirmed')
+      RETURNING *;
+    `;
+    const result = await pool.query(query, ['Código Manual (Admin)', 'medium', 'Generador Manual', code]);
+    fallbackBookings.push(result.rows[0]);
+    res.json({ message: 'Código generado con éxito.', code });
+  } catch (err) {
+    console.warn('Base de datos offline, simulando código manual en memoria:', err.message);
+    const mockBooking = {
+      id: fallbackBookings.length + 1000,
+      name: 'Código Manual (Admin)',
+      van_type: 'medium',
+      van_name: 'Generador Manual',
+      pickup_date: new Date().toISOString().split('T')[0],
+      pickup_time: '09:00',
+      return_date: new Date().toISOString().split('T')[0],
+      return_time: '19:00',
+      total_price: 0.00,
+      review_code: code,
+      status: 'confirmed'
+    };
+    fallbackBookings.push(mockBooking);
+    res.json({ message: 'Código generado con éxito (Modo offline sin BD).', code });
   }
 });
 

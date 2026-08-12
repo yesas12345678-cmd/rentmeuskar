@@ -86,9 +86,11 @@ const initAdmin = () => {
     const vanFormPriceSin = document.getElementById('van-form-price-sin');
     const vanFormMinPriceCon = document.getElementById('van-form-min-price-con');
     const vanFormKmPriceCon = document.getElementById('van-form-km-price-con');
-    const vanFormExtraGps = document.getElementById('van-form-extra-gps');
-    const vanFormExtraDriver = document.getElementById('van-form-extra-driver');
-    const vanFormExtraMoving = document.getElementById('van-form-extra-moving');
+    const vanFormExtraName = document.getElementById('van-form-extra-name');
+    const vanFormExtraPrice = document.getElementById('van-form-extra-price');
+    const vanFormExtraType = document.getElementById('van-form-extra-type');
+    const btnAddVanExtra = document.getElementById('btn-add-van-extra');
+    const vanExtrasPreviewTbody = document.getElementById('van-extras-preview-tbody');
     const vanFormStatus = document.getElementById('van-form-status');
     const vanBtnCancel = document.getElementById('van-btn-cancel');
     const vanModalTitle = document.getElementById('van-modal-title');
@@ -104,10 +106,17 @@ const initAdmin = () => {
     const settingHoursSaturdays = document.getElementById('setting-hours-saturdays');
     const settingHoursSundays = document.getElementById('setting-hours-sundays');
     
+    // Elementos de Reseñas / Códigos
+    const btnGenerateCode = document.getElementById('btn-generate-code');
+    const generatedCodeBox = document.getElementById('generated-code-box');
+    const generatedCodeText = document.getElementById('generated-code-text');
+    const adminReviewsTbody = document.getElementById('admin-reviews-tbody');
+    
     // Variables de Estado de Flota
     let fleet = [];
     let currentVanImages = [];
     let newVanFiles = [];
+    let currentVanExtras = [];
 
     /* ==========================================================================
        1. AUTENTICACIÓN
@@ -709,6 +718,7 @@ const initAdmin = () => {
             tabSettings.style.borderColor = 'var(--color-neon)';
             sectionSettings.style.display = 'block';
             fetchSettings();
+            fetchReviews();
         }
     };
 
@@ -724,6 +734,127 @@ const initAdmin = () => {
             showToast('Error al conectar con la API de configuración.', 'error');
         }
     };
+
+    // Obtener opiniones de compras verificadas para moderación
+    const fetchReviews = async () => {
+        try {
+            const res = await fetch('/api/reviews');
+            if (res.ok) {
+                const reviews = await res.json();
+                renderReviewsList(reviews);
+            }
+        } catch (err) {
+            console.error('Error al obtener opiniones:', err);
+            adminReviewsTbody.innerHTML = `
+                <tr>
+                    <td colspan="5" style="text-align: center; padding: 2rem; color: var(--color-danger);">
+                        Error al cargar opiniones.
+                    </td>
+                </tr>
+            `;
+        }
+    };
+
+    const renderReviewsList = (reviews) => {
+        if (!adminReviewsTbody) return;
+        
+        if (reviews.length === 0) {
+            adminReviewsTbody.innerHTML = `
+                <tr>
+                    <td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+                        No hay opiniones registradas.
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+        
+        adminReviewsTbody.innerHTML = '';
+        reviews.forEach(review => {
+            const tr = document.createElement('tr');
+            const starsHtml = '★'.repeat(review.rating) + '☆'.repeat(5 - review.rating);
+            
+            tr.innerHTML = `
+                <td><strong>${review.client_name}</strong><br><small style="color:var(--text-muted);">${review.role_or_city || ''}</small></td>
+                <td style="color:#ffb703; font-weight:bold; font-size:1.1rem; white-space:nowrap;">${starsHtml}</td>
+                <td><code style="background:rgba(255,255,255,0.05); padding: 2px 6px; border-radius: 4px; color:var(--color-info);">${review.booking_code}</code></td>
+                <td style="max-width:250px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${review.comment}">${review.comment}</td>
+                <td>
+                    <button class="btn-icon delete delete-review" data-id="${review.id}" title="Eliminar reseña" style="padding: 4px 8px; font-size: 0.85rem;">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </td>
+            `;
+            
+            tr.querySelector('.delete-review').addEventListener('click', async function() {
+                const id = this.getAttribute('data-id');
+                if (confirm('¿Estás seguro de que deseas eliminar esta opinión permanentemente de la web?')) {
+                    await deleteReview(id);
+                }
+            });
+            
+            adminReviewsTbody.appendChild(tr);
+        });
+    };
+
+    const deleteReview = async (id) => {
+        const token = localStorage.getItem('admin_token');
+        if (!token) return;
+        
+        try {
+            const res = await fetch(`/api/admin/reviews/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            
+            const data = await res.json();
+            if (res.ok) {
+                showToast('Opinión eliminada correctamente.', 'success');
+                fetchReviews();
+            } else {
+                showToast(data.error || 'Error al eliminar opinión.', 'error');
+            }
+        } catch (err) {
+            console.error(err);
+            showToast('Error de conexión al eliminar opinión.', 'error');
+        }
+    };
+
+    // Generador de códigos manuales
+    if (btnGenerateCode) {
+        btnGenerateCode.addEventListener('click', async () => {
+            const token = localStorage.getItem('admin_token');
+            if (!token) return;
+            
+            btnGenerateCode.disabled = true;
+            btnGenerateCode.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generando...';
+            
+            try {
+                const res = await fetch('/api/admin/generate-review-code', {
+                    method: 'POST',
+                    headers: { 
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await res.json();
+                if (res.ok) {
+                    generatedCodeBox.style.display = 'block';
+                    generatedCodeText.textContent = data.code;
+                    showToast('Código de opinión verificado generado con éxito.', 'success');
+                } else {
+                    showToast(data.error || 'Error al generar código.', 'error');
+                }
+            } catch (err) {
+                console.error(err);
+                showToast('Error de conexión al generar código.', 'error');
+            } finally {
+                btnGenerateCode.disabled = false;
+                btnGenerateCode.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Generar Nuevo Código';
+            }
+        });
+    }
 
     // Obtener la flota de furgonetas
     const fetchFleet = async () => {
@@ -800,8 +931,8 @@ const initAdmin = () => {
                 <td>${formatCurrency(van.min_price_con)}</td>
                 <td>${formatCurrency(van.km_price_con)}/km</td>
                 <td>
-                    <span class="status-badge ${van.status === 'active' ? 'confirmed' : 'cancelled'}" style="font-size: 0.7rem; padding: 2px 8px;">
-                        ${van.status === 'active' ? 'Activo' : 'Inactivo'}
+                    <span class="status-badge ${van.status === 'active' ? 'confirmed' : 'pending'}" style="font-size: 0.7rem; padding: 2px 8px;">
+                        ${van.status === 'active' ? 'Activo' : 'Borrador'}
                     </span>
                 </td>
                 <td>
@@ -990,6 +1121,44 @@ const initAdmin = () => {
         renderVanImagesPreview();
     });
 
+    const renderVanExtrasPreview = () => {
+        if (!vanExtrasPreviewTbody) return;
+        
+        if (currentVanExtras.length === 0) {
+            vanExtrasPreviewTbody.innerHTML = `
+                <tr>
+                    <td colspan="4" style="text-align: center; padding: 1rem; color: var(--text-muted);">
+                        No se han añadido extras para este vehículo.
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+        
+        vanExtrasPreviewTbody.innerHTML = '';
+        currentVanExtras.forEach((extra, idx) => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><strong>${extra.name}</strong></td>
+                <td><strong>${parseFloat(extra.price).toFixed(2)} €</strong></td>
+                <td>${extra.type === 'daily' ? 'Por día' : 'Pago único'}</td>
+                <td>
+                    <button type="button" class="btn-icon delete remove-extra-btn" data-index="${idx}" style="padding: 2px 6px;">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </td>
+            `;
+            
+            tr.querySelector('.remove-extra-btn').addEventListener('click', function() {
+                const index = parseInt(this.getAttribute('data-index'));
+                currentVanExtras.splice(index, 1);
+                renderVanExtrasPreview();
+            });
+            
+            vanExtrasPreviewTbody.appendChild(tr);
+        });
+    };
+
     // Abrir modal de furgonetas para añadir o editar
     const openVanModal = (van = null) => {
         if (van) {
@@ -1003,15 +1172,23 @@ const initAdmin = () => {
             vanFormPriceSin.value = van.price_sin;
             vanFormMinPriceCon.value = van.min_price_con;
             vanFormKmPriceCon.value = van.km_price_con;
-            vanFormExtraGps.value = van.extra_gps_price !== undefined ? van.extra_gps_price : 5.00;
-            vanFormExtraDriver.value = van.extra_driver_price !== undefined ? van.extra_driver_price : 10.00;
-            vanFormExtraMoving.value = van.extra_moving_price !== undefined ? van.extra_moving_price : 10.00;
             vanFormStatus.value = van.status;
             
             // Cargar imágenes
             currentVanImages = Array.isArray(van.images) ? [...van.images] : [];
             newVanFiles = [];
             renderVanImagesPreview();
+
+            // Cargar extras
+            currentVanExtras = Array.isArray(van.custom_extras) ? [...van.custom_extras] : [];
+            if (currentVanExtras.length === 0) {
+                currentVanExtras = [
+                    { name: 'GPS Navegador', price: van.extra_gps_price !== undefined ? parseFloat(van.extra_gps_price) : 5.00, type: 'daily' },
+                    { name: 'Segundo Conductor', price: van.extra_driver_price !== undefined ? parseFloat(van.extra_driver_price) : 8.00, type: 'daily' },
+                    { name: 'Kit Mudanza', price: van.extra_moving_price !== undefined ? parseFloat(van.extra_moving_price) : 10.00, type: 'once' }
+                ];
+            }
+            renderVanExtrasPreview();
         } else {
             vanModalTitle.textContent = 'Añadir Nueva Furgoneta';
             vanFormId.value = '';
@@ -1023,14 +1200,18 @@ const initAdmin = () => {
             vanFormPriceSin.value = '';
             vanFormMinPriceCon.value = '';
             vanFormKmPriceCon.value = '';
-            vanFormExtraGps.value = '5.00';
-            vanFormExtraDriver.value = '10.00';
-            vanFormExtraMoving.value = '10.00';
             vanFormStatus.value = 'active';
             
             currentVanImages = [];
             newVanFiles = [];
             renderVanImagesPreview();
+
+            currentVanExtras = [
+                { name: 'GPS Navegador', price: 5.00, type: 'daily' },
+                { name: 'Segundo Conductor', price: 8.00, type: 'daily' },
+                { name: 'Kit Mudanza', price: 10.00, type: 'once' }
+            ];
+            renderVanExtrasPreview();
         }
         vanModal.classList.add('active');
     };
@@ -1041,6 +1222,8 @@ const initAdmin = () => {
         currentVanImages = [];
         newVanFiles = [];
         renderVanImagesPreview();
+        currentVanExtras = [];
+        renderVanExtrasPreview();
     };
 
     // Event listeners de la pestaña
@@ -1050,6 +1233,31 @@ const initAdmin = () => {
     btnAddVan.addEventListener('click', () => openVanModal());
     vanModalCloseBtn.addEventListener('click', closeVanModal);
     vanBtnCancel.addEventListener('click', closeVanModal);
+    
+    // Listener botón Añadir Extra en el formulario furgoneta
+    if (btnAddVanExtra) {
+        btnAddVanExtra.addEventListener('click', () => {
+            const name = vanFormExtraName.value.trim();
+            const price = parseFloat(vanFormExtraPrice.value);
+            const type = vanFormExtraType.value;
+            
+            if (!name) {
+                showToast('Introduce un nombre para el extra.', 'error');
+                vanFormExtraName.focus();
+                return;
+            }
+            if (isNaN(price) || price < 0) {
+                showToast('Introduce un precio válido.', 'error');
+                vanFormExtraPrice.focus();
+                return;
+            }
+            
+            currentVanExtras.push({ name, price, type });
+            vanFormExtraName.value = '';
+            vanFormExtraPrice.value = '';
+            renderVanExtrasPreview();
+        });
+    }
     
     vanModal.addEventListener('click', (e) => {
         if (e.target === vanModal) closeVanModal();
@@ -1099,11 +1307,9 @@ const initAdmin = () => {
         formData.append('price_sin', parseFloat(vanFormPriceSin.value));
         formData.append('min_price_con', parseFloat(vanFormMinPriceCon.value));
         formData.append('km_price_con', parseFloat(vanFormKmPriceCon.value));
-        formData.append('extra_gps_price', parseFloat(vanFormExtraGps.value));
-        formData.append('extra_driver_price', parseFloat(vanFormExtraDriver.value));
-        formData.append('extra_moving_price', parseFloat(vanFormExtraMoving.value));
         formData.append('status', vanFormStatus.value);
         formData.append('existing_images', JSON.stringify(currentVanImages));
+        formData.append('custom_extras', JSON.stringify(currentVanExtras));
         
         newVanFiles.forEach(file => {
             formData.append('images', file);

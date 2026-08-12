@@ -927,6 +927,60 @@
                         </button>
                     </form>
                 </div>
+
+                <div style="display: grid; grid-template-columns: 1.2fr 1.8fr; gap: 2rem; max-width: 1200px; margin: 0 auto 3rem auto; padding: 0 1.5rem;">
+                    <!-- Columna izquierda: Generador de Códigos -->
+                    <div>
+                        <div class="table-card" style="padding: 2rem; text-align: left; height: 100%;">
+                            <h3 style="font-size: 1.1rem; color: #fff; margin-bottom: 1rem; font-family: var(--font-heading); display: flex; align-items: center; gap: 0.5rem; margin-top: 0;">
+                                <i class="fa-solid fa-ticket" style="color: var(--color-neon);"></i> Generar Código de Reseña
+                            </h3>
+                            <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1.5rem; line-height: 1.5;">
+                                Genera un código de reserva verificado de forma manual para entregárselo a un cliente y que pueda publicar su opinión en la web.
+                            </p>
+                            
+                            <button type="button" class="btn btn-primary" id="btn-generate-code" style="width: 100%; height: 46px; margin-bottom: 1.5rem;">
+                                <i class="fa-solid fa-wand-magic-sparkles"></i> Generar Nuevo Código
+                            </button>
+                            
+                            <div id="generated-code-box" style="display: none; background: rgba(130, 209, 5, 0.08); border: 1px dashed var(--color-neon); border-radius: var(--border-radius-sm); padding: 1rem; text-align: center; margin-top: 1rem;">
+                                <span style="font-size: 0.8rem; color: var(--text-secondary); display: block; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.3rem;">Código Creado</span>
+                                <strong id="generated-code-text" style="font-size: 1.6rem; color: var(--color-neon); font-family: var(--font-heading); letter-spacing: 2px;">RMU-XXXX</strong>
+                                <span style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-top: 0.5rem;">(Copia este código y envíaselo al cliente)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Columna derecha: Listado y borrado de Reseñas -->
+                    <div>
+                        <div class="table-card" style="padding: 2rem; text-align: left; height: 100%;">
+                            <h3 style="font-size: 1.1rem; color: #fff; margin-bottom: 1.5rem; font-family: var(--font-heading); display: flex; align-items: center; gap: 0.5rem; margin-top: 0;">
+                                <i class="fa-solid fa-comments" style="color: var(--color-neon);"></i> Moderar Reseñas y Opiniones
+                            </h3>
+                            
+                            <div class="table-responsive" style="max-height: 350px; overflow-y: auto;">
+                                <table class="bookings-table" style="font-size: 0.85rem;">
+                                    <thead>
+                                        <tr>
+                                            <th>Cliente</th>
+                                            <th>Rating</th>
+                                            <th>Código</th>
+                                            <th>Comentario</th>
+                                            <th>Acción</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="admin-reviews-tbody">
+                                        <tr>
+                                            <td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+                                                Cargando reseñas...
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
         </div>
@@ -1092,25 +1146,60 @@
                         <input type="number" step="0.01" id="van-form-km-price-con" class="search-input" style="padding-left: 1rem;" required placeholder="1.00">
                     </div>
                 </div>
-                <div class="custom-form-group" style="margin-bottom: 1rem; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; text-align: left;">
-                    <div>
-                        <label style="display: block; font-size: 0.8rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 0.3rem; font-weight: 600; letter-spacing: 0.05em;">Extra GPS (€/día)</label>
-                        <input type="number" step="0.01" id="van-form-extra-gps" class="search-input" style="padding-left: 1rem;" required placeholder="5.00">
+
+                <!-- Extras del Vehículo Dinámicos -->
+                <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); padding: 1.2rem; border-radius: var(--border-radius-sm); margin-bottom: 1.5rem; text-align: left;">
+                    <label style="display: block; font-size: 0.85rem; text-transform: uppercase; color: #fff; margin-bottom: 0.8rem; font-weight: 700; letter-spacing: 0.05em; margin-top: 0;">
+                        <i class="fa-solid fa-list-check" style="color: var(--color-neon);"></i> Extras del Vehículo (Gestionar Manualmente)
+                    </label>
+                    
+                    <div style="display: grid; grid-template-columns: 1.5fr 1fr 1fr auto; gap: 0.8rem; align-items: flex-end; margin-bottom: 1rem;">
+                        <div>
+                            <label style="font-size: 0.75rem; color: var(--text-secondary); display: block; margin-bottom: 0.2rem;">Nombre del Extra</label>
+                            <input type="text" id="van-form-extra-name" class="search-input" style="padding-left: 0.8rem;" placeholder="Ej: GPS Navegador">
+                        </div>
+                        <div>
+                            <label style="font-size: 0.75rem; color: var(--text-secondary); display: block; margin-bottom: 0.2rem;">Precio (€)</label>
+                            <input type="number" step="0.01" id="van-form-extra-price" class="search-input" style="padding-left: 0.8rem;" placeholder="Ej: 5.00">
+                        </div>
+                        <div>
+                            <label style="font-size: 0.75rem; color: var(--text-secondary); display: block; margin-bottom: 0.2rem;">Tipo de Cálculo</label>
+                            <select id="van-form-extra-type" class="select-filter" style="width: 100%; height: 42px; background: rgba(7, 14, 36, 0.5); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: var(--border-radius-sm); color: #fff;">
+                                <option value="daily">Por día</option>
+                                <option value="once">Pago único</option>
+                            </select>
+                        </div>
+                        <button type="button" class="btn btn-primary" id="btn-add-van-extra" style="height: 42px; padding: 0 1rem; font-weight: 700;">
+                            <i class="fa-solid fa-plus"></i>
+                        </button>
                     </div>
-                    <div>
-                        <label style="display: block; font-size: 0.8rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 0.3rem; font-weight: 600; letter-spacing: 0.05em;">Extra Chófer (€/día)</label>
-                        <input type="number" step="0.01" id="van-form-extra-driver" class="search-input" style="padding-left: 1rem;" required placeholder="10.00">
-                    </div>
-                    <div>
-                        <label style="display: block; font-size: 0.8rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 0.3rem; font-weight: 600; letter-spacing: 0.05em;">Extra Mudanza (€/tot.)</label>
-                        <input type="number" step="0.01" id="van-form-extra-moving" class="search-input" style="padding-left: 1rem;" required placeholder="10.00">
+                    
+                    <div style="max-height: 150px; overflow-y: auto; border: 1px solid rgba(255,255,255,0.05); border-radius: var(--border-radius-sm); background: rgba(0,0,0,0.2);">
+                        <table class="bookings-table" style="font-size: 0.8rem; margin: 0;">
+                            <thead>
+                                <tr>
+                                    <th>Extra</th>
+                                    <th>Precio</th>
+                                    <th>Cálculo</th>
+                                    <th style="width: 60px;">Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="van-extras-preview-tbody">
+                                <tr>
+                                    <td colspan="4" style="text-align: center; padding: 1rem; color: var(--text-muted);">
+                                        No se han añadido extras para este vehículo.
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
+
                 <div class="custom-form-group" style="margin-bottom: 1.5rem; text-align: left;">
                     <label style="display: block; font-size: 0.8rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 0.3rem; font-weight: 600; letter-spacing: 0.05em;">Estado del Vehículo</label>
                     <select id="van-form-status" class="select-filter" style="width: 100%; height: 42px; background: rgba(7, 14, 36, 0.5); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: var(--border-radius-sm); color: #fff;">
-                        <option value="active">Activo (Disponible en Calculadora)</option>
-                        <option value="inactive">Inactivo (Ocultar en Calculadora)</option>
+                        <option value="active">Activo</option>
+                        <option value="inactive">Borrador</option>
                     </select>
                 </div>
                 <div class="custom-form-group" style="margin-bottom: 1.5rem; text-align: left;">

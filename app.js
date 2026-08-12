@@ -50,9 +50,7 @@ const initApp = () => {
     const timeStart = document.getElementById('calc-time-start');
     const dateEnd = document.getElementById('calc-date-end');
     const timeEnd = document.getElementById('calc-time-end');
-    const extraGps = document.getElementById('calc-extra-gps');
-    const extraDriver = document.getElementById('calc-extra-driver');
-    const extraMoving = document.getElementById('calc-extra-moving');
+    const dynamicExtrasContainer = document.getElementById('calc-dynamic-extras-container');
     const clientName = document.getElementById('calc-name');
     
     // Resumen de la Calculadora
@@ -279,6 +277,72 @@ const initApp = () => {
 
     initFlatpickr();
 
+    // Renderizar extras dinámicamente según la furgoneta seleccionada
+    const renderDynamicExtras = () => {
+        if (!dynamicExtrasContainer) return;
+        const vanType = vanSelect.value;
+        if (!vanType) return;
+        
+        const van = databaseVans.find(v => v.van_type === vanType);
+        if (!van) return;
+        
+        let extras = van.custom_extras;
+        if (!Array.isArray(extras) || extras.length === 0) {
+            extras = [
+                { name: 'GPS Navegador', price: 5.00, type: 'daily' },
+                { name: 'Segundo Conductor', price: 8.00, type: 'daily' },
+                { name: 'Kit Mudanza', price: 10.00, type: 'once' }
+            ];
+        }
+        
+        dynamicExtrasContainer.innerHTML = '';
+        extras.forEach((extra, index) => {
+            const label = document.createElement('label');
+            label.className = 'extra-checkbox-card';
+            label.id = `card-dynamic-extra-${index}`;
+            
+            let icon = 'fa-circle-plus';
+            const nameLower = extra.name.toLowerCase();
+            if (nameLower.includes('gps') || nameLower.includes('navegador') || nameLower.includes('mapa')) {
+                icon = 'fa-map-location-dot';
+            } else if (nameLower.includes('conductor') || nameLower.includes('chofer') || nameLower.includes('chófer')) {
+                icon = 'fa-user-plus';
+            } else if (nameLower.includes('mudanza') || nameLower.includes('caja') || nameLower.includes('kit')) {
+                icon = 'fa-boxes-packing';
+            } else if (nameLower.includes('seguro') || nameLower.includes('cobertura')) {
+                icon = 'fa-shield-halved';
+            } else if (nameLower.includes('cadenas') || nameLower.includes('nieve')) {
+                icon = 'fa-snowflake';
+            }
+            
+            const priceText = extra.type === 'daily' ? `+${parseFloat(extra.price).toFixed(2)}€ / día` : `+${parseFloat(extra.price).toFixed(2)}€ total`;
+            
+            label.innerHTML = `
+                <input type="checkbox" class="calc-dynamic-extra-checkbox" data-index="${index}" data-price="${extra.price}" data-type="${extra.type}" data-name="${extra.name}">
+                <div class="extra-content">
+                    <i class="fa-solid ${icon}"></i>
+                    <span class="extra-name">${extra.name}</span>
+                    <span class="extra-price">${priceText}</span>
+                </div>
+            `;
+            
+            label.querySelector('input').addEventListener('change', function() {
+                if (this.checked) {
+                    label.classList.add('active');
+                    label.style.borderColor = 'var(--color-neon)';
+                    label.style.background = 'rgba(130, 209, 5, 0.05)';
+                } else {
+                    label.classList.remove('active');
+                    label.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                    label.style.background = 'rgba(255, 255, 255, 0.02)';
+                }
+                calculatePrice();
+            });
+            
+            dynamicExtrasContainer.appendChild(label);
+        });
+    };
+
     // Cargar catálogo de furgonetas desde la API
     const loadVans = async () => {
         try {
@@ -375,6 +439,8 @@ const initApp = () => {
                         }
                     }
                 });
+                
+                renderDynamicExtras();
             } else {
                 console.error('Error al descargar catálogo de furgonetas.');
                 useStaticVansFallback();
@@ -387,8 +453,16 @@ const initApp = () => {
 
     const useStaticVansFallback = () => {
         databaseVans = [
-            { van_type: 'medium', name: 'Ford Transit Custom L2H2 (8m³)', plate: '3681 MCC', m3: '8m³', price_sin: 79.00, min_price_con: 50.00, km_price_con: 1.00 },
-            { van_type: 'large', name: 'MAN TGE L4H3 Gran Volumen (14m³)', plate: '3758 MDW', m3: '14m³', price_sin: 107.44, min_price_con: 60.00, km_price_con: 1.40 }
+            { van_type: 'medium', name: 'Ford Transit Custom L2H2 (8m³)', plate: '3681 MCC', m3: '8m³', price_sin: 79.00, min_price_con: 50.00, km_price_con: 1.00, custom_extras: [
+                { name: 'GPS Navegador', price: 5.00, type: 'daily' },
+                { name: 'Segundo Conductor', price: 8.00, type: 'daily' },
+                { name: 'Kit Mudanza', price: 10.00, type: 'once' }
+            ]},
+            { van_type: 'large', name: 'MAN TGE L4H3 Gran Volumen (14m³)', plate: '3758 MDW', m3: '14m³', price_sin: 107.44, min_price_con: 60.00, km_price_con: 1.40, custom_extras: [
+                { name: 'GPS Navegador', price: 5.00, type: 'daily' },
+                { name: 'Segundo Conductor', price: 8.00, type: 'daily' },
+                { name: 'Kit Mudanza', price: 10.00, type: 'once' }
+            ]}
         ];
     };
 
@@ -507,31 +581,18 @@ const initApp = () => {
                 totalBase = totalBase * 0.95;
             }
 
-            // Precios de extras editables
-            const extraGpsPrice = van && van.extra_gps_price !== undefined ? parseFloat(van.extra_gps_price) : 5.00;
-            const extraDriverPrice = van && van.extra_driver_price !== undefined ? parseFloat(van.extra_driver_price) : 8.00;
-            const extraMovingPrice = van && van.extra_moving_price !== undefined ? parseFloat(van.extra_moving_price) : 10.00;
-            
-            // Actualizar etiquetas en la interfaz
-            const gpsLabel = document.querySelector('#calc-extra-gps').parentElement.querySelector('.extra-price');
-            const driverLabel = document.querySelector('#calc-extra-driver').parentElement.querySelector('.extra-price');
-            const movingLabel = document.querySelector('#calc-extra-moving').parentElement.querySelector('.extra-price');
-            
-            if (gpsLabel) gpsLabel.textContent = `+${extraGpsPrice.toFixed(2)}€/día`;
-            if (driverLabel) driverLabel.textContent = `+${extraDriverPrice.toFixed(2)}€/día`;
-            if (movingLabel) movingLabel.textContent = `+${extraMovingPrice.toFixed(2)} total`;
-
-            // Calcular extras
+            // Calcular extras dinámicos
             let totalExtras = 0;
-            if (extraGps.checked) {
-                totalExtras += extraGpsPrice * days;
-            }
-            if (extraDriver.checked) {
-                totalExtras += extraDriverPrice * days;
-            }
-            if (extraMoving.checked) {
-                totalExtras += extraMovingPrice;
-            }
+            const checkedBoxes = document.querySelectorAll('.calc-dynamic-extra-checkbox:checked');
+            checkedBoxes.forEach(box => {
+                const price = parseFloat(box.getAttribute('data-price')) || 0;
+                const type = box.getAttribute('data-type');
+                if (type === 'daily') {
+                    totalExtras += price * days;
+                } else {
+                    totalExtras += price;
+                }
+            });
 
             baseTaxable = totalBase + totalExtras;
             vatAmount = baseTaxable * 0.21;
@@ -629,12 +690,14 @@ const initApp = () => {
     waitHours.addEventListener('input', calculatePrice);
 
     // Event listeners para recálculo instantáneo
-    vanSelect.addEventListener('change', calculatePrice);
+    // Event listeners para recálculo instantáneo
+    vanSelect.addEventListener('change', () => {
+        renderDynamicExtras();
+        updateCalendarAvailability();
+        calculatePrice();
+    });
     timeStart.addEventListener('change', calculatePrice);
     timeEnd.addEventListener('change', calculatePrice);
-    extraGps.addEventListener('change', calculatePrice);
-    extraDriver.addEventListener('change', calculatePrice);
-    extraMoving.addEventListener('change', calculatePrice);
 
     /* ==========================================================================
        5. BOTONES SELECCIONAR FLOTA -> FORMULARIO
@@ -915,12 +978,17 @@ const initApp = () => {
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
         const days = diffDays > 0 ? diffDays : 1;
 
-        // Recopilar extras activos
+        // Recopilar extras activos dinámicamente
         const selectedExtras = [];
         if (rentalMode === 'sin') {
-            if (extraGps.checked) selectedExtras.push('GPS Navegador');
-            if (extraDriver.checked) selectedExtras.push('Segundo Conductor');
-            if (extraMoving.checked) selectedExtras.push('Kit Mudanza');
+            const checkedBoxes = document.querySelectorAll('.calc-dynamic-extra-checkbox:checked');
+            checkedBoxes.forEach(box => {
+                const name = box.getAttribute('data-name');
+                const price = parseFloat(box.getAttribute('data-price')) || 0;
+                const type = box.getAttribute('data-type');
+                const label = type === 'daily' ? `(+${price.toFixed(2)}€/día)` : `(+${price.toFixed(2)}€ pago único)`;
+                selectedExtras.push(`${name} ${label}`);
+            });
         }
         
         const totalPriceText = summaryTotalPrice.textContent;
