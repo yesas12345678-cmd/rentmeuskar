@@ -776,11 +776,13 @@ const initApp = () => {
     };
 
     // Forzar el click manual en las etiquetas en lugar del radio por bugs de navegadores móviles
-    labelModeSin.addEventListener('click', () => {
+    labelModeSin.addEventListener('click', (e) => {
+        e.preventDefault();
         modeSin.checked = true;
         handleModeChange();
     });
-    labelModeCon.addEventListener('click', () => {
+    labelModeCon.addEventListener('click', (e) => {
+        e.preventDefault();
         modeCon.checked = true;
         handleModeChange();
     });
