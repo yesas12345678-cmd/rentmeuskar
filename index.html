@@ -223,14 +223,14 @@
                             <label><i class="fa-solid fa-user-gear"></i> Modalidad de Alquiler</label>
                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 0.5rem; margin-bottom: 0.5rem;">
                                 <label class="extra-checkbox-card mode-selector-card active" id="label-mode-sin" style="cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0.8rem; border-radius: 8px; border: 2px solid var(--color-neon); background: rgba(130, 209, 5, 0.05); transition: all 0.2s; user-select: none;">
-                                    <input type="radio" name="rental-mode" id="mode-sin-conductor" value="sin" checked style="display: none;">
+                                    <input type="radio" name="rental-mode" id="mode-sin-conductor" value="sin" checked style="position: absolute; opacity: 0; pointer-events: none; width: 0; height: 0;">
                                     <div style="text-align: center;">
                                         <i class="fa-solid fa-key" style="font-size: 1.3rem; color: var(--color-neon); margin-bottom: 0.3rem; display: block;"></i>
                                         <span style="font-weight: 700; display: block; color: #fff; font-size: 0.85rem;">SIN CONDUCTOR</span>
                                     </div>
                                 </label>
                                 <label class="extra-checkbox-card mode-selector-card" id="label-mode-con" style="cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0.8rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.02); transition: all 0.2s; user-select: none;">
-                                    <input type="radio" name="rental-mode" id="mode-con-conductor" value="con" style="display: none;">
+                                    <input type="radio" name="rental-mode" id="mode-con-conductor" value="con" style="position: absolute; opacity: 0; pointer-events: none; width: 0; height: 0;">
                                     <div style="text-align: center;">
                                         <i class="fa-solid fa-user-tie" style="font-size: 1.3rem; color: var(--text-secondary); margin-bottom: 0.3rem; display: block;"></i>
                                         <span style="font-weight: 700; display: block; color: var(--text-secondary); font-size: 0.85rem;">CON CONDUCTOR</span>
