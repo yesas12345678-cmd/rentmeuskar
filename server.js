@@ -188,6 +188,17 @@ const initDb = async () => {
     "ALTER TABLE reviews ALTER COLUMN comment DROP NOT NULL;"
   ];
 
+  const createBlockagesTableQuery = `
+    CREATE TABLE IF NOT EXISTS van_blockages (
+      id SERIAL PRIMARY KEY,
+      van_type VARCHAR(50) NOT NULL REFERENCES vans(van_type) ON DELETE CASCADE,
+      start_date DATE NOT NULL,
+      end_date DATE NOT NULL,
+      reason VARCHAR(255) NOT NULL,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    );
+  `;
+
   try {
     const client = await pool.connect();
     console.log('Conectado a la base de datos PostgreSQL.');
@@ -203,6 +214,10 @@ const initDb = async () => {
     // Crear tabla de furgonetas
     await client.query(createVansTableQuery);
     console.log('Tabla "vans" verificada/creada.');
+
+    // Crear tabla de bloqueos
+    await client.query(createBlockagesTableQuery);
+    console.log('Tabla "van_blockages" verificada/creada.');
 
     // Crear tabla de opiniones
     await client.query(createReviewsTableQuery);

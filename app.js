@@ -1368,16 +1368,16 @@ const initApp = () => {
     faqQuestions.forEach(question => {
         question.addEventListener('click', () => {
             const faqItem = question.parentElement;
-            const isActive = faqItem.classList.contains('active');
+            const isActive = faqItem.classList.contains('faq-expanded');
             
             // Cerrar todas las FAQ primero para efecto acordeón exclusivo
             document.querySelectorAll('.faq-item').forEach(item => {
-                item.classList.remove('active');
+                item.classList.remove('faq-expanded');
             });
             
             // Si la FAQ cliqueada no estaba activa, la abrimos
             if (!isActive) {
-                faqItem.classList.add('active');
+                faqItem.classList.add('faq-expanded');
             }
         });
     });

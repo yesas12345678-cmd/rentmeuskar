@@ -1326,7 +1326,7 @@ input[type="date"].form-control {
     transition: var(--transition-smooth);
 }
 
-.faq-item.active {
+.faq-item.faq-expanded {
     border-color: var(--color-neon-border);
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
 }
@@ -1357,7 +1357,7 @@ input[type="date"].form-control {
     transition: var(--transition-smooth);
 }
 
-.faq-item.active .faq-toggle-icon {
+.faq-item.faq-expanded .faq-toggle-icon {
     transform: rotate(180deg);
 }
 
@@ -1374,7 +1374,7 @@ input[type="date"].form-control {
     line-height: 1.6;
 }
 
-.faq-item.active .faq-answer {
+.faq-item.faq-expanded .faq-answer {
     max-height: 500px;
     transition: max-height 0.4s cubic-bezier(0.85, 0, 0.15, 1);
 }
