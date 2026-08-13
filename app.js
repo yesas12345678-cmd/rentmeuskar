@@ -1287,12 +1287,9 @@ const initApp = () => {
             setTimeout(async () => {
                 try {
                     const paymentId = 'TPV_' + Math.random().toString(36).substr(2, 9).toUpperCase();
-                    const isCon = pendingBookingData.rental_mode === 'con';
-                    const fianzaStatus = isCon ? 'refunded' : 'paid';
-                    
-                    const finalBookingData = {
+                             const finalBookingData = {
                         ...pendingBookingData,
-                        status: 'confirmed',
+                        status: 'paid_pending',
                         payment_status: 'paid',
                         fianza_status: fianzaStatus,
                         payment_id: paymentId
@@ -1300,21 +1297,15 @@ const initApp = () => {
                     
                     const response = await fetch('/api/bookings', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(finalBookingData)
-                    });
-                    
-                    const data = await response.json();
+                                           const data = await response.json();
                     if (!response.ok) {
                         throw new Error(data.error || 'Error al guardar reserva.');
                     }
                     
-                    alert(`¡PAGO AUTORIZADO CORRECTAMENTE!\nReserva #${data.booking.id} confirmada con éxito.\nReferencia de operación: ${paymentId}`);
+                    alert(`¡PAGO AUTORIZADO CORRECTAMENTE!\nReserva #${data.booking.id} registrada correctamente.\n\nEl propietario ha recibido la notificación y confirmará o cancelará (con devolución de dinero) su reserva a la brevedad.\n\nReferencia de operación: ${paymentId}`);
                     
                     window.closeAuthModal('tpv-modal');
                     tpvForm.reset();
-                    
-                    // Bloquear fechas ocupadas inmediatamente
                     updateCalendarAvailability();
                     
                     // Abrir WhatsApp con el recibo
@@ -1324,24 +1315,22 @@ const initApp = () => {
                           `\n- *Espera:* ${finalBookingData.waiting_hours} h de espera`
                         : (finalBookingData.extras.length > 0 ? '\n- *Extras:* ' + finalBookingData.extras.join(', ') : '');
                     
-                    const messageText = `Hola *RentMeUskar*, he completado una reserva y pago online en la web:
+                    const messageText = `Hola *RentMeUskar*, he realizado un pago online para mi reserva:
                     
-*Reserva Confirmada #${data.booking.id}*
+*NUEVA RESERVA PAGADA - PENDIENTE APROBACIÓN #${data.booking.id}*
 - *Cliente:* ${finalBookingData.name}
 - *Modalidad:* ${modeLabelText}
 - *Vehículo:* ${finalBookingData.van_name}
 - *Recogida:* ${finalBookingData.pickup_date} a las ${finalBookingData.pickup_time}
 - *Devolución:* ${finalBookingData.return_date} a las ${finalBookingData.return_time}${extraDetailsText}
 - *Duración:* ${isCon ? '-' : finalBookingData.days + ' días'}
+- *Importe Pagado:* ${(finalBookingData.total_price + (isCon ? 0 : 500)).toFixed(2)} €
+- *Referencia TPV:* ${paymentId}
 
-*Pago Confirmado:*
-- *Alquiler:* ${finalBookingData.total_price.toFixed(2)} €
-- *Fianza:* ${isCon ? '0,00 € (No aplica)' : '500,00 € (Retenida en TPV)'}
-- *Total Operación:* ${(finalBookingData.total_price + (isCon ? 0 : 500)).toFixed(2)} €
-- *Código de Operación:* ${paymentId}`;
+_Por favor, accede al panel de administración de RentMeUskar para Aprobar o Cancelar/Reembolsar esta reserva._`;
                     
                     const encodedText = encodeURIComponent(messageText);
-                    const whatsappUrl = `https://api.whatsapp.com/send?phone=${CONFIG.whatsappNumber}&text=${encodedText}`;
+                    const whatsappUrl = `https://api.whatsapp.com/send?phone=34614767411&text=${encodedText}`;
                     window.open(whatsappUrl, '_blank');
                     
                 } catch (err) {
@@ -1362,25 +1351,25 @@ const initApp = () => {
         }
     };
 
-    /* ==========================================================================
-       8. PREGUNTAS FRECUENTES (FAQ ACORDEÓN)
-       ========================================================================== */
-    faqQuestions.forEach(question => {
-        question.addEventListener('click', () => {
-            const faqItem = question.parentElement;
-            const isActive = faqItem.classList.contains('faq-expanded');
-            
-            // Cerrar todas las FAQ primero para efecto acordeón exclusivo
-            document.querySelectorAll('.faq-item').forEach(item => {
-                item.classList.remove('faq-expanded');
+    const bindFaqAccordion = () => {
+        const questions = document.querySelectorAll('.faq-question');
+        questions.forEach(question => {
+            question.addEventListener('click', () => {
+                const faqItem = question.parentElement;
+                const isActive = faqItem.classList.contains('faq-expanded');
+                
+                // Cerrar todas las FAQ primero para efecto acordeón exclusivo
+                document.querySelectorAll('.faq-item').forEach(item => {
+                    item.classList.remove('faq-expanded');
+                });
+                
+                // Si la FAQ cliqueada no estaba activa, la abrimos
+                if (!isActive) {
+                    faqItem.classList.add('faq-expanded');
+                }
             });
-            
-            // Si la FAQ cliqueada no estaba activa, la abrimos
-            if (!isActive) {
-                faqItem.classList.add('faq-expanded');
-            }
         });
-    });
+    };
 
     /* ==========================================================================
        9. OPINIONES VERIFICADAS E INTEGRACIÓN DE DETALLES DE VEHÍCULOS
@@ -1728,6 +1717,42 @@ const initApp = () => {
         });
     }
 
+    // Cargar FAQs dinámicamente desde la API
+    const loadFaqs = async () => {
+        const faqListContainer = document.querySelector('.faq-list');
+        if (!faqListContainer) return;
+        
+        try {
+            const res = await fetch('/api/faqs');
+            if (res.ok) {
+                const faqs = await res.json();
+                if (faqs.length > 0) {
+                    faqListContainer.innerHTML = '';
+                    faqs.forEach((faq) => {
+                        const item = document.createElement('div');
+                        item.className = 'faq-item reveal';
+                        item.id = `faq-${faq.id}`;
+                        item.innerHTML = `
+                            <button class="faq-question" id="faq-q-${faq.id}">
+                                <span>${faq.question}</span>
+                                <i class="fa-solid fa-chevron-down faq-toggle-icon"></i>
+                            </button>
+                            <div class="faq-answer" id="faq-a-${faq.id}">
+                                <p>${faq.answer}</p>
+                            </div>
+                        `;
+                        faqListContainer.appendChild(item);
+                    });
+                    
+                    // Rebind event listeners for accordion
+                    bindFaqAccordion();
+                }
+            }
+        } catch (err) {
+            console.error('Error al cargar FAQs:', err);
+        }
+    };
+
     // Cargar configuraciones de horario y de visualización del badge de opiniones
     const loadSettings = async () => {
         try {
@@ -1778,6 +1803,7 @@ const initApp = () => {
 
     // Ejecutar inicializaciones dinámicas
     loadReviews();
+    loadFaqs();
     loadSettings();
     initStarRating();
 };

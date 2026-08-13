@@ -199,6 +199,15 @@ const initDb = async () => {
     );
   `;
 
+  const createFaqsTableQuery = `
+    CREATE TABLE IF NOT EXISTS faqs (
+      id SERIAL PRIMARY KEY,
+      question TEXT NOT NULL,
+      answer TEXT NOT NULL,
+      display_order INTEGER DEFAULT 0
+    );
+  `;
+
   try {
     const client = await pool.connect();
     console.log('Conectado a la base de datos PostgreSQL.');
@@ -219,6 +228,10 @@ const initDb = async () => {
     await client.query(createBlockagesTableQuery);
     console.log('Tabla "van_blockages" verificada/creada.');
 
+    // Crear tabla de FAQs
+    await client.query(createFaqsTableQuery);
+    console.log('Tabla "faqs" verificada/creada.');
+
     // Crear tabla de opiniones
     await client.query(createReviewsTableQuery);
     console.log('Tabla "reviews" verificada/creada.');
@@ -236,6 +249,20 @@ const initDb = async () => {
         ('large', 'MAN TGE L4H3 Gran Volumen (14m³)', '3758 MDW', '14m³', 107.44, 60.00, 1.40, 'active')
       `);
       console.log('Furgonetas por defecto insertadas.');
+    }
+
+    // Pre-poblar FAQs por defecto si está vacía
+    const countFaqs = await client.query('SELECT COUNT(*) FROM faqs');
+    if (parseInt(countFaqs.rows[0].count) === 0) {
+      await client.query(`
+        INSERT INTO faqs (question, answer, display_order) VALUES
+        ('¿Qué requisitos necesito cumplir para alquilar sin conductor?', 'Necesitas tener al menos 23 años (21 para furgonetas compactas) y estar en posesión del permiso de conducir tipo B vigente con una antigüedad mínima de 2 años. Deberás presentar el DNI/NIE y el carnet de conducir originales al retirar el vehículo.', 1),
+        ('¿Hay que dejar alguna fianza o depósito?', 'Sí, se requiere una fianza de 500€ que se retiene o paga mediante tarjeta en la web (para reservas de una semana o menos) o se gestiona manualmente. Esta fianza se reembolsará íntegramente tras revisar que el vehículo se devuelve en las mismas condiciones, limpio y sin daños.', 2),
+        ('¿Cómo funciona la política de combustible?', 'Nuestra política es Lleno-Lleno (Full-to-Full). Te entregamos la furgoneta con el depósito de combustible lleno (diésel) y debes devolverla de la misma forma. De lo contrario, se cobrará el coste del combustible faltante más un cargo de gestión de repostaje.', 3),
+        ('¿Qué seguro está incluido en el precio base?', 'El precio incluye seguro obligatorio de responsabilidad civil y seguro de colisión básico con franquicia. Esto significa que en caso de accidente o daños, la responsabilidad máxima del cliente está limitada al importe de la franquicia establecida (salvo negligencia).', 4),
+        ('¿Puedo viajar fuera de España con la furgoneta?', 'Por defecto, el uso de las furgonetas está autorizada en territorio nacional (Península Ibérica). Si tienes pensado viajar a Portugal, Francia u otros países de Europa, debes comunicarlo con antelación para tramitar la cobertura del seguro correspondiente y asistencia en el extranjero.', 5)
+      `);
+      console.log('FAQs por defecto insertadas.');
     }
 
     // Pre-poblar opiniones por defecto si está vacía
@@ -336,7 +363,7 @@ app.post('/api/auth/login', async (req, res) => {
   if (email === 'zVaito' && password === 'Manuel1214$') {
     return res.json({
       token: 'admin_token_rentmeuskar',
-      user: { id: 0, name: 'Admin', email: 'rentmeuskar@gmail.com', is_admin: true }
+      user: { id: 0, name: 'Admin', email: 'info@rentmeuskar.com', is_admin: true }
     });
   }
   
@@ -372,7 +399,7 @@ app.get('/api/auth/me', async (req, res) => {
   
   const token = authHeader.replace('Bearer ', '');
   if (token === 'admin_token_rentmeuskar') {
-    return res.json({ id: 0, name: 'Admin', email: 'rentmeuskar@gmail.com', is_admin: true });
+    return res.json({ id: 0, name: 'Admin', email: 'info@rentmeuskar.com', is_admin: true });
   }
   
   if (token.startsWith('user_')) {
@@ -410,24 +437,32 @@ app.get('/api/bookings/unavailable-dates', async (req, res) => {
     return res.status(400).json({ error: 'El parámetro van_type es obligatorio.' });
   }
   
+  let ranges = [];
   try {
     const query = `
-      SELECT pickup_date, return_date FROM bookings 
+      SELECT pickup_date AS from_date, return_date AS to_date FROM bookings 
       WHERE van_type = $1 AND status != 'cancelled'
+      UNION ALL
+      SELECT start_date AS from_date, end_date AS to_date FROM van_blockages 
+      WHERE van_type = $1
     `;
     const result = await pool.query(query, [van_type]);
     
-    // Mapear cada reserva a un rango { from, to }
-    const ranges = result.rows.map(row => ({
-      from: formatDateISO(row.pickup_date),
-      to: formatDateISO(row.return_date)
+    ranges = result.rows.map(row => ({
+      from: formatDateISO(row.from_date),
+      to: formatDateISO(row.to_date)
     }));
-    
-    res.json(ranges);
   } catch (err) {
-    console.error('Error al obtener fechas ocupadas:', err);
-    res.status(500).json({ error: 'Error del servidor al obtener disponibilidad.' });
+    console.warn('Base de datos offline al obtener disponibilidad, usando fallback:', err.message);
+    const bookingsRange = fallbackBookings
+      .filter(b => b.van_type === van_type && b.status !== 'cancelled')
+      .map(b => ({ from: b.pickup_date, to: b.return_date }));
+    const blockagesRange = fallbackBlockages
+      .filter(b => b.van_type === van_type)
+      .map(b => ({ from: b.start_date, to: b.end_date }));
+    ranges = [...bookingsRange, ...blockagesRange];
   }
+  res.json(ranges);
 });
 
 // 5. Crear una nueva reserva
@@ -772,6 +807,9 @@ let fallbackBookings = [
   { id: 3, name: 'Antonio G.', van_type: 'large', van_name: 'MAN TGE L4H3 Gran Volumen (14m³)', pickup_date: '2026-08-25', pickup_time: '16:00', return_date: '2026-08-26', return_time: '19:00', days: 1, total_price: 107.44, status: 'confirmed', payment_status: 'paid', fianza_status: 'paid', review_code: 'RMU-MOCK3' }
 ];
 
+// Bloqueos de furgonetas fallback en memoria
+let fallbackBlockages = [];
+
 // Configuraciones de horario fallback en memoria
 let fallbackSettings = {
   hours_weekdays: '08:00 - 14:00, 16:00 - 20:00',
@@ -1113,13 +1151,14 @@ app.get('/api/settings', async (req, res) => {
 });
 
 app.put('/api/settings', verifyAdmin, async (req, res) => {
-  const { hours_weekdays, hours_saturdays, hours_sundays } = req.body;
+  const { hours_weekdays, hours_saturdays, hours_sundays, show_reviews_count } = req.body;
   
   try {
     const queries = [
       { key: 'hours_weekdays', value: hours_weekdays },
       { key: 'hours_saturdays', value: hours_saturdays },
-      { key: 'hours_sundays', value: hours_sundays }
+      { key: 'hours_sundays', value: hours_sundays },
+      { key: 'show_reviews_count', value: show_reviews_count }
     ];
     
     for (const q of queries) {
@@ -1138,6 +1177,7 @@ app.put('/api/settings', verifyAdmin, async (req, res) => {
     if (hours_weekdays !== undefined) fallbackSettings.hours_weekdays = hours_weekdays;
     if (hours_saturdays !== undefined) fallbackSettings.hours_saturdays = hours_saturdays;
     if (hours_sundays !== undefined) fallbackSettings.hours_sundays = hours_sundays;
+    if (show_reviews_count !== undefined) fallbackSettings.show_reviews_count = show_reviews_count;
     
     res.json({ message: 'Horarios actualizados temporalmente en memoria (Modo offline sin BD).', settings: fallbackSettings });
   }
@@ -1284,6 +1324,242 @@ app.post('/api/admin/generate-review-code', verifyAdmin, async (req, res) => {
     };
     fallbackBookings.push(mockBooking);
     res.json({ message: 'Código generado con éxito (Modo offline sin BD).', code });
+  }
+});
+
+// --- RUTAS DE BLOQUEO DE DISPONIBILIDAD (VAN BLOCKAGES) ---
+
+// 1. Obtener todos los bloqueos
+app.get('/api/blockages', async (req, res) => {
+  const { van_type } = req.query;
+  try {
+    let query = 'SELECT * FROM van_blockages ORDER BY start_date ASC';
+    let params = [];
+    if (van_type) {
+      query = 'SELECT * FROM van_blockages WHERE van_type = $1 ORDER BY start_date ASC';
+      params = [van_type];
+    }
+    const result = await pool.query(query, params);
+    
+    // Mapear fechas a formato YYYY-MM-DD
+    const mapped = result.rows.map(row => ({
+      ...row,
+      start_date: formatDateISO(row.start_date),
+      end_date: formatDateISO(row.end_date)
+    }));
+    
+    res.json(mapped);
+  } catch (err) {
+    console.warn('Base de datos offline al obtener bloqueos, usando fallback:', err.message);
+    let filtered = fallbackBlockages;
+    if (van_type) {
+      filtered = fallbackBlockages.filter(b => b.van_type === van_type);
+    }
+    res.json(filtered);
+  }
+});
+
+// 2. Crear un bloqueo
+app.post('/api/blockages', verifyAdmin, async (req, res) => {
+  const { van_type, start_date, end_date, reason } = req.body;
+  if (!van_type || !start_date || !end_date || !reason) {
+    return res.status(400).json({ error: 'Todos los campos son obligatorios (van_type, start_date, end_date, reason).' });
+  }
+  
+  try {
+    const query = `
+      INSERT INTO van_blockages (van_type, start_date, end_date, reason)
+      VALUES ($1, $2, $3, $4)
+      RETURNING *
+    `;
+    const result = await pool.query(query, [van_type, start_date, end_date, reason]);
+    const created = {
+      ...result.rows[0],
+      start_date: formatDateISO(result.rows[0].start_date),
+      end_date: formatDateISO(result.rows[0].end_date)
+    };
+    
+    // Sincronizar en fallback
+    fallbackBlockages.push(created);
+    
+    res.status(201).json({ message: 'Bloqueo registrado correctamente.', blockage: created });
+  } catch (err) {
+    console.warn('Base de datos offline al crear bloqueo, usando fallback:', err.message);
+    const mockId = fallbackBlockages.length > 0 ? Math.max(...fallbackBlockages.map(b => b.id)) + 1 : 1;
+    const mockBlock = {
+      id: mockId,
+      van_type,
+      start_date,
+      end_date,
+      reason,
+      created_at: new Date().toISOString()
+    };
+    fallbackBlockages.push(mockBlock);
+    res.status(201).json({ message: 'Bloqueo registrado correctamente en memoria fallback.', blockage: mockBlock });
+  }
+});
+
+// 3. Eliminar un bloqueo
+app.delete('/api/blockages/:id', verifyAdmin, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const query = 'DELETE FROM van_blockages WHERE id = $1 RETURNING *';
+    const result = await pool.query(query, [id]);
+    
+    // Eliminar de fallback
+    const index = fallbackBlockages.findIndex(b => b.id == id);
+    if (index !== -1) {
+      fallbackBlockages.splice(index, 1);
+    }
+    
+    if (result.rowCount === 0) {
+      // Intentar en fallback si no existía en BD
+      if (index !== -1) {
+        return res.json({ message: 'Bloqueo eliminado correctamente de memoria fallback.' });
+      }
+      return res.status(404).json({ error: 'Bloqueo no encontrado.' });
+    }
+    
+    res.json({ message: 'Bloqueo eliminado correctamente.' });
+  } catch (err) {
+    console.warn('Base de datos offline al eliminar bloqueo, intentando en memoria:', err.message);
+    const index = fallbackBlockages.findIndex(b => b.id == id);
+    if (index !== -1) {
+      fallbackBlockages.splice(index, 1);
+      return res.json({ message: 'Bloqueo eliminado correctamente de memoria fallback (offline).' });
+    }
+    res.status(500).json({ error: 'Error del servidor al eliminar el bloqueo.' });
+  }
+});
+
+// Fallback FAQs en memoria
+let fallbackFaqs = [
+  { id: 1, question: '¿Qué requisitos necesito cumplir para alquilar sin conductor?', answer: 'Necesitas tener al menos 23 años (21 para furgonetas compactas) y estar en posesión del permiso de conducir tipo B vigente con una antigüedad mínima de 2 años. Deberás presentar el DNI/NIE y el carnet de conducir originales al retirar el vehículo.', display_order: 1 },
+  { id: 2, question: '¿Hay que dejar alguna fianza o depósito?', answer: 'Sí, se requiere una fianza de 500€ que se retiene o paga mediante tarjeta en la web (para reservas de una semana o menos) o se gestiona manualmente. Esta fianza se reembolsará íntegramente tras revisar que el vehículo se devuelve en las mismas condiciones, limpio y sin daños.', display_order: 2 },
+  { id: 3, question: '¿Cómo funciona la política de combustible?', answer: 'Nuestra política es Lleno-Lleno (Full-to-Full). Te entregamos la furgoneta con el depósito de combustible lleno (diésel) y debes devolverla de la misma forma. De lo contrario, se cobrará el coste del combustible faltante más un cargo de gestión de repostaje.', display_order: 3 },
+  { id: 4, question: '¿Qué seguro está incluido en el precio base?', answer: 'El precio incluye seguro obligatorio de responsabilidad civil y seguro de colisión básico con franquicia. Esto significa que en caso de accidente o daños, la responsabilidad máxima del cliente está limitada al importe de la franquicia establecida (salvo negligencia).', display_order: 4 },
+  { id: 5, question: '¿Puedo viajar fuera de España con la furgoneta?', answer: 'Por defecto, el uso de las furgonetas está autorizada en territorio nacional (Península Ibérica). Si tienes pensado viajar a Portugal, Francia u otros países de Europa, debes comunicarlo con antelación para tramitar la cobertura del seguro correspondiente y asistencia en el extranjero.', display_order: 5 }
+];
+
+// --- RUTAS DE PREGUNTAS FRECUENTES (FAQS) ---
+
+// 1. Obtener todas las FAQs
+app.get('/api/faqs', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM faqs ORDER BY display_order ASC, id ASC');
+    res.json(result.rows);
+  } catch (err) {
+    console.warn('Base de datos offline al obtener FAQs, usando fallback:', err.message);
+    res.json(fallbackFaqs);
+  }
+});
+
+// 2. Crear una nueva FAQ
+app.post('/api/faqs', verifyAdmin, async (req, res) => {
+  const { question, answer, display_order } = req.body;
+  if (!question || !answer) {
+    return res.status(400).json({ error: 'La pregunta y respuesta son obligatorias.' });
+  }
+  
+  try {
+    const query = `
+      INSERT INTO faqs (question, answer, display_order)
+      VALUES ($1, $2, $3)
+      RETURNING *
+    `;
+    const result = await pool.query(query, [question, answer, parseInt(display_order) || 0]);
+    fallbackFaqs.push(result.rows[0]);
+    res.status(201).json({ message: 'FAQ creada con éxito.', faq: result.rows[0] });
+  } catch (err) {
+    console.warn('Base de datos offline al crear FAQ, usando fallback:', err.message);
+    const mockId = fallbackFaqs.length > 0 ? Math.max(...fallbackFaqs.map(f => f.id)) + 1 : 1;
+    const mockFaq = {
+      id: mockId,
+      question,
+      answer,
+      display_order: parseInt(display_order) || 0
+    };
+    fallbackFaqs.push(mockFaq);
+    res.status(201).json({ message: 'FAQ creada con éxito en memoria fallback.', faq: mockFaq });
+  }
+});
+
+// 3. Modificar una FAQ
+app.put('/api/faqs/:id', verifyAdmin, async (req, res) => {
+  const { id } = req.params;
+  const { question, answer, display_order } = req.body;
+  if (!question || !answer) {
+    return res.status(400).json({ error: 'La pregunta y respuesta son obligatorias.' });
+  }
+  
+  try {
+    const query = `
+      UPDATE faqs 
+      SET question = $1, answer = $2, display_order = $3
+      WHERE id = $4
+      RETURNING *
+    `;
+    const result = await pool.query(query, [question, answer, parseInt(display_order) || 0, id]);
+    
+    // Sincronizar fallback
+    const index = fallbackFaqs.findIndex(f => f.id == id);
+    if (index !== -1) {
+      fallbackFaqs[index] = result.rows[0];
+    }
+    
+    if (result.rowCount === 0) {
+      if (index !== -1) {
+        return res.json({ message: 'FAQ actualizada en memoria fallback.' });
+      }
+      return res.status(404).json({ error: 'FAQ no encontrada.' });
+    }
+    
+    res.json({ message: 'FAQ actualizada con éxito.', faq: result.rows[0] });
+  } catch (err) {
+    console.warn('Base de datos offline al modificar FAQ, usando fallback:', err.message);
+    const index = fallbackFaqs.findIndex(f => f.id == id);
+    if (index !== -1) {
+      const updated = {
+        ...fallbackFaqs[index],
+        question,
+        answer,
+        display_order: parseInt(display_order) || 0
+      };
+      fallbackFaqs[index] = updated;
+      return res.json({ message: 'FAQ actualizada con éxito en memoria fallback.', faq: updated });
+    }
+    res.status(500).json({ error: 'Error del servidor al actualizar FAQ.' });
+  }
+});
+
+// 4. Eliminar una FAQ
+app.delete('/api/faqs/:id', verifyAdmin, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const query = 'DELETE FROM faqs WHERE id = $1 RETURNING *';
+    const result = await pool.query(query, [id]);
+    
+    const index = fallbackFaqs.findIndex(f => f.id == id);
+    if (index !== -1) {
+      fallbackFaqs.splice(index, 1);
+    }
+    
+    if (result.rowCount === 0) {
+      if (index !== -1) {
+        return res.json({ message: 'FAQ eliminada de memoria fallback.' });
+      }
+      return res.status(404).json({ error: 'FAQ no encontrada.' });
+    }
+    
+    res.json({ message: 'FAQ eliminada con éxito.' });
+  } catch (err) {
+    console.warn('Base de datos offline al eliminar FAQ, intentando en memoria:', err.message);
+    const index = fallbackFaqs.findIndex(f => f.id == id);
+    if (index !== -1) {
+      fallbackFaqs.splice(index, 1);
+      return res.json({ message: 'FAQ eliminada de memoria fallback (offline).' });
+    }
+    res.status(500).json({ error: 'Error del servidor al eliminar FAQ.' });
   }
 });
 

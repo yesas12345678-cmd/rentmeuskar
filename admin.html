@@ -425,6 +425,19 @@
             box-shadow: 0 0 10px rgba(255, 183, 3, 0.05);
         }
 
+        .status-badge.paid_pending {
+            background: rgba(255, 140, 0, 0.15);
+            color: #ff8c00;
+            border: 1px solid rgba(255, 140, 0, 0.3);
+            box-shadow: 0 0 10px rgba(255, 140, 0, 0.1);
+            animation: pulse-orange 2s infinite alternate;
+        }
+
+        @keyframes pulse-orange {
+            0% { box-shadow: 0 0 5px rgba(255, 140, 0, 0.1); }
+            100% { box-shadow: 0 0 15px rgba(255, 140, 0, 0.4); }
+        }
+
         .status-badge.confirmed {
             background: rgba(130, 209, 5, 0.1);
             color: var(--color-neon);
@@ -793,6 +806,12 @@
                 <button class="btn" id="tab-fleet" style="border-radius: var(--border-radius-sm) var(--border-radius-sm) 0 0; border-bottom: none; margin-bottom: -0.6rem; border-color: rgba(255,255,255,0.08);">
                     <i class="fa-solid fa-truck"></i> Gestionar Flota
                 </button>
+                <button class="btn" id="tab-availability" style="border-radius: var(--border-radius-sm) var(--border-radius-sm) 0 0; border-bottom: none; margin-bottom: -0.6rem; border-color: rgba(255,255,255,0.08);">
+                    <i class="fa-solid fa-calendar-minus"></i> Disponibilidad
+                </button>
+                <button class="btn" id="tab-faqs" style="border-radius: var(--border-radius-sm) var(--border-radius-sm) 0 0; border-bottom: none; margin-bottom: -0.6rem; border-color: rgba(255,255,255,0.08);">
+                    <i class="fa-solid fa-circle-question"></i> FAQs
+                </button>
                 <button class="btn" id="tab-settings" style="border-radius: var(--border-radius-sm) var(--border-radius-sm) 0 0; border-bottom: none; margin-bottom: -0.6rem; border-color: rgba(255,255,255,0.08);">
                     <i class="fa-solid fa-gears"></i> Ajustes / Horarios
                 </button>
@@ -985,6 +1004,126 @@
                                 </table>
                             </div>
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION AVAILABILITY -->
+            <div id="section-availability" style="display: none;">
+                <div class="controls-row" style="padding: 1rem 1.5rem; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.05); margin-bottom: 1.5rem;">
+                    <div class="header-title">
+                        <h2 style="font-size: 1.2rem; font-family: var(--font-heading); color: #fff; margin-bottom: 0.1rem;"><i class="fa-solid fa-calendar-minus"></i> Disponibilidad de Furgonetas</h2>
+                        <p style="color: var(--text-secondary); font-size: 0.8rem; margin: 0;">Marca periodos no disponibles por vacaciones, mantenimiento, reservas manuales o de larga duración</p>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 2rem; max-width: 1200px; margin: 0 auto 3rem auto; padding: 0 1.5rem;">
+                    <!-- Columna izquierda: Registrar Bloqueo -->
+                    <div>
+                        <div class="table-card" style="padding: 2rem; text-align: left;">
+                            <h3 style="font-size: 1.1rem; color: #fff; margin-bottom: 1.5rem; font-family: var(--font-heading); display: flex; align-items: center; gap: 0.5rem; margin-top: 0;">
+                                <i class="fa-solid fa-ban" style="color: var(--color-neon);"></i> Bloquear Fechas
+                            </h3>
+                            <form id="availability-blockage-form">
+                                <div class="custom-form-group" style="margin-bottom: 1.2rem;">
+                                    <label style="display: block; font-size: 0.8rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 0.5rem; font-weight: 600; letter-spacing: 0.05em;">Furgoneta / Modelo</label>
+                                    <select id="block-van-type" class="select-filter" style="width: 100%; height: 42px; background: rgba(7, 14, 36, 0.5); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: var(--border-radius-sm); color: #fff;" required>
+                                        <option value="" disabled selected>-- Selecciona un vehículo --</option>
+                                        <option value="medium">Ford Transit Custom L2H2 (Mediana)</option>
+                                        <option value="large">MAN TGE Gran Volumen (Grande)</option>
+                                    </select>
+                                </div>
+                                <div class="custom-form-group" style="margin-bottom: 1.2rem; display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                                    <div>
+                                        <label style="display: block; font-size: 0.8rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 0.5rem; font-weight: 600; letter-spacing: 0.05em;">Desde el día</label>
+                                        <input type="date" id="block-start-date" class="search-input" style="padding-left: 1rem; height: 42px;" required>
+                                    </div>
+                                    <div>
+                                        <label style="display: block; font-size: 0.8rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 0.5rem; font-weight: 600; letter-spacing: 0.05em;">Hasta el día (inclusive)</label>
+                                        <input type="date" id="block-end-date" class="search-input" style="padding-left: 1rem; height: 42px;" required>
+                                    </div>
+                                </div>
+                                <div class="custom-form-group" style="margin-bottom: 1.5rem;">
+                                    <label style="display: block; font-size: 0.8rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 0.5rem; font-weight: 600; letter-spacing: 0.05em;">Motivo del Bloqueo</label>
+                                    <select id="block-reason" class="select-filter" style="width: 100%; height: 42px; background: rgba(7, 14, 36, 0.5); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: var(--border-radius-sm); color: #fff;" required>
+                                        <option value="Vacaciones">Vacaciones</option>
+                                        <option value="Reserva Manual">Reserva Manual</option>
+                                        <option value="Reserva de más de un mes">Reserva de más de un mes</option>
+                                        <option value="Mantenimiento / Taller">Mantenimiento / Taller</option>
+                                    </select>
+                                </div>
+                                <button type="submit" class="btn btn-primary" style="width: 100%; height: 46px;">
+                                    <i class="fa-solid fa-lock"></i> Aplicar Bloqueo de Disponibilidad
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Columna derecha: Listado de Bloqueos -->
+                    <div>
+                        <div class="table-card" style="padding: 2rem; text-align: left; height: 100%;">
+                            <h3 style="font-size: 1.1rem; color: #fff; margin-bottom: 1.5rem; font-family: var(--font-heading); display: flex; align-items: center; gap: 0.5rem; margin-top: 0;">
+                                <i class="fa-solid fa-list-ul" style="color: var(--color-neon);"></i> Rango de Bloqueos Activos
+                            </h3>
+                            
+                            <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                                <table class="bookings-table" style="font-size: 0.85rem;">
+                                    <thead>
+                                        <tr>
+                                            <th>Furgoneta</th>
+                                            <th>Inicio</th>
+                                            <th>Fin</th>
+                                            <th>Motivo</th>
+                                            <th style="text-align: center;">Acción</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="admin-blockages-tbody">
+                                        <tr>
+                                            <td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+                                                No hay bloqueos activos de disponibilidad.
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION FAQS -->
+            <div id="section-faqs" style="display: none;">
+                <div class="controls-row" style="padding: 1rem 1.5rem; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.05); margin-bottom: 1.5rem;">
+                    <div class="header-title" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                        <div>
+                            <h2 style="font-size: 1.2rem; font-family: var(--font-heading); color: #fff; margin-bottom: 0.1rem;"><i class="fa-solid fa-circle-question"></i> Preguntas Frecuentes (FAQs)</h2>
+                            <p style="color: var(--text-secondary); font-size: 0.8rem; margin: 0;">Gestiona las preguntas y respuestas que ven los clientes en la web principal</p>
+                        </div>
+                        <button class="btn btn-primary" id="btn-add-faq" style="background: var(--color-neon); border-color: var(--color-neon); color: #000;">
+                            <i class="fa-solid fa-plus"></i> Añadir Nueva FAQ
+                        </button>
+                    </div>
+                </div>
+
+                <div class="table-card" style="padding: 2rem; max-width: 1200px; margin: 0 auto 3rem auto; text-align: left;">
+                    <div class="table-responsive">
+                        <table class="bookings-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 80px; text-align: center;">Orden</th>
+                                    <th>Pregunta</th>
+                                    <th>Respuesta</th>
+                                    <th style="width: 150px; text-align: center;">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-faqs-tbody">
+                                <tr>
+                                    <td colspan="4" style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+                                        Cargando preguntas frecuentes...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -1405,7 +1544,7 @@
                     </div>
                     <div>
                         <label style="display: block; font-size: 0.8rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 0.3rem; font-weight: 600; letter-spacing: 0.05em;">Volumen (m³)</label>
-                        <input type="text" id="van-form-m3" class="search-input" style="padding-left: 1rem;" required placeholder="Ej: 8m³">
+                        <input type="number" id="van-form-m3" class="search-input" style="padding-left: 1rem;" required placeholder="Ej: 8">
                     </div>
                 </div>
                 <div class="custom-form-group" style="margin-bottom: 1rem; text-align: left;">
@@ -1521,6 +1660,35 @@
                 <div class="modal-footer">
                     <button type="button" class="btn" id="van-btn-cancel" style="border-color: rgba(255,255,255,0.1);">Cancelar</button>
                     <button type="submit" class="btn btn-primary" id="van-btn-submit">Guardar Vehículo</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- FAQ Modal -->
+    <div class="modal" id="faq-modal" style="display: none; align-items: center; justify-content: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); z-index: 1000;">
+        <div class="modal-content" style="max-width: 600px; width: 90%; background: var(--bg-secondary); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 2rem; position: relative;">
+            <span class="modal-close" id="faq-modal-close-btn" style="position: absolute; top: 1rem; right: 1.5rem; font-size: 1.8rem; cursor: pointer; color: var(--text-secondary);">&times;</span>
+            <div class="modal-header" style="margin-bottom: 1.5rem; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 1rem;">
+                <h2 id="faq-modal-title" style="font-family: var(--font-heading); color: #fff; font-size: 1.3rem; margin: 0;">Añadir Pregunta Frecuente</h2>
+            </div>
+            <form id="faq-form" style="text-align: left;">
+                <input type="hidden" id="faq-form-id">
+                <div class="custom-form-group" style="margin-bottom: 1.2rem;">
+                    <label style="display: block; font-size: 0.8rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 0.5rem; font-weight: 600; letter-spacing: 0.05em;">Pregunta</label>
+                    <input type="text" id="faq-form-question" class="search-input" style="padding-left: 1rem; width: 100%; height: 42px; background: rgba(7, 14, 36, 0.5); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: var(--border-radius-sm); color: #fff;" required placeholder="Ej: ¿Se puede pagar con tarjeta al retirar?">
+                </div>
+                <div class="custom-form-group" style="margin-bottom: 1.2rem;">
+                    <label style="display: block; font-size: 0.8rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 0.5rem; font-weight: 600; letter-spacing: 0.05em;">Respuesta</label>
+                    <textarea id="faq-form-answer" class="search-input" style="padding: 0.8rem 1rem; width: 100%; height: 120px; background: rgba(7, 14, 36, 0.5); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: var(--border-radius-sm); color: #fff; font-family: inherit; resize: vertical;" required placeholder="Escribe la respuesta detallada aquí..."></textarea>
+                </div>
+                <div class="custom-form-group" style="margin-bottom: 1.5rem;">
+                    <label style="display: block; font-size: 0.8rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 0.5rem; font-weight: 600; letter-spacing: 0.05em;">Orden de Visualización</label>
+                    <input type="number" id="faq-form-order" class="search-input" style="padding-left: 1rem; width: 100%; height: 42px; background: rgba(7, 14, 36, 0.5); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: var(--border-radius-sm); color: #fff;" required placeholder="Ej: 1" value="0">
+                </div>
+                <div class="modal-footer" style="padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.05); display: flex; gap: 1rem; justify-content: flex-end;">
+                    <button type="button" class="btn btn-secondary" id="faq-btn-cancel" style="border-color: rgba(255,255,255,0.1);">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" id="faq-btn-save" style="background: var(--color-neon); border-color: var(--color-neon); color: #000;">Guardar Pregunta</button>
                 </div>
             </form>
         </div>

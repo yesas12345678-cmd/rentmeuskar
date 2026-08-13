@@ -164,6 +164,33 @@ const initAdmin = () => {
     const settingHoursSundays = document.getElementById('setting-hours-sundays');
     const settingShowReviewsCount = document.getElementById('setting-show-reviews-count');
     
+    // Elementos de la Pestaña de Disponibilidad
+    const tabAvailability = document.getElementById('tab-availability');
+    const sectionAvailability = document.getElementById('section-availability');
+    const blockageForm = document.getElementById('availability-blockage-form');
+    const blockVanType = document.getElementById('block-van-type');
+    const blockStartDate = document.getElementById('block-start-date');
+    const blockEndDate = document.getElementById('block-end-date');
+    const blockReason = document.getElementById('block-reason');
+    const adminBlockagesTbody = document.getElementById('admin-blockages-tbody');
+
+    // Elementos de la Pestaña de FAQs
+    const tabFaqs = document.getElementById('tab-faqs');
+    const sectionFaqs = document.getElementById('section-faqs');
+    const btnAddFaq = document.getElementById('btn-add-faq');
+    const adminFaqsTbody = document.getElementById('admin-faqs-tbody');
+
+    // Modal de FAQs
+    const faqModal = document.getElementById('faq-modal');
+    const faqModalCloseBtn = document.getElementById('faq-modal-close-btn');
+    const faqForm = document.getElementById('faq-form');
+    const faqFormId = document.getElementById('faq-form-id');
+    const faqFormQuestion = document.getElementById('faq-form-question');
+    const faqFormAnswer = document.getElementById('faq-form-answer');
+    const faqFormOrder = document.getElementById('faq-form-order');
+    const faqBtnCancel = document.getElementById('faq-btn-cancel');
+    const faqModalTitle = document.getElementById('faq-modal-title');
+
     // Elementos de Reseñas / Códigos
     const btnGenerateCode = document.getElementById('btn-generate-code');
     const generatedCodeBox = document.getElementById('generated-code-box');
@@ -325,7 +352,7 @@ const initAdmin = () => {
     };
 
     // Actualizar Estado en la API (soporta status, fianza_status, payment_status)
-    const updateBookingInApi = async (id, fields) => {
+    const updateBookingInApi = async (id, fields, customToastMsg = null) => {
         const token = localStorage.getItem('admin_token');
         try {
             const response = await fetch(`/api/bookings/${id}`, {
@@ -352,7 +379,7 @@ const initAdmin = () => {
                 openModal(updated);
             }
             
-            showToast(`Reserva #${id} actualizada con éxito.`, 'success');
+            showToast(customToastMsg || `Reserva #${id} actualizada con éxito.`, 'success');
         } catch (err) {
             console.error(err);
             showToast('No se pudo actualizar la reserva.', 'error');
@@ -463,7 +490,7 @@ const initAdmin = () => {
                 </td>
                 <td>
                     <span class="status-badge ${booking.status}">
-                        ${booking.status === 'pending' ? 'Pendiente' : booking.status === 'confirmed' ? 'Confirmado' : 'Cancelado'}
+                        ${booking.status === 'pending' ? 'Pendiente' : booking.status === 'paid_pending' ? 'Pendiente Aprobación (Pagada)' : booking.status === 'confirmed' ? 'Confirmado' : 'Cancelado'}
                     </span>
                 </td>
                 <td>
@@ -525,7 +552,7 @@ const initAdmin = () => {
         modalBookingId.textContent = `#${booking.id}`;
         
         modalStatusBadge.className = `status-badge ${booking.status}`;
-        modalStatusBadge.textContent = booking.status === 'pending' ? 'Pendiente' : booking.status === 'confirmed' ? 'Confirmado' : 'Cancelado';
+        modalStatusBadge.textContent = booking.status === 'pending' ? 'Pendiente' : booking.status === 'paid_pending' ? 'Pendiente Aprobación (Pagada)' : booking.status === 'confirmed' ? 'Confirmado' : 'Cancelado';
         
         modalVanName.textContent = booking.van_name;
         modalPickupDate.innerHTML = `${formatDate(booking.pickup_date)} a las <strong>${booking.pickup_time}</strong>`;
@@ -650,41 +677,63 @@ const initAdmin = () => {
             <a href="https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(`Hola ${booking.client_name || booking.name}, te escribo de RentMeUskar acerca de tu reserva #${booking.id}...`)}" target="_blank" class="btn" style="background: rgba(37, 211, 102, 0.1); border-color: rgba(37, 211, 102, 0.3); color: #25d366;">
                 <i class="fa-brands fa-whatsapp"></i> WhatsApp
             </a>
-            ${booking.status !== 'confirmed' ? `
-                <button class="btn btn-primary" id="modal-btn-confirm">
-                    <i class="fa-solid fa-check"></i> Confirmar
-                </button>
-            ` : ''}
             
-            ${booking.fianza_status === 'paid' ? `
-                <button class="btn" style="border-color: var(--color-info); color: var(--color-info);" id="modal-btn-refund-fianza">
-                    <i class="fa-solid fa-hand-holding-dollar"></i> Devolver Fianza
+            ${booking.status === 'paid_pending' ? `
+                <button class="btn btn-primary" id="modal-btn-approve-paid" style="background: var(--color-neon); border-color: var(--color-neon); color: #000;">
+                    <i class="fa-solid fa-circle-check"></i> Aprobar Reserva
                 </button>
-            ` : ''}
+                <button class="btn" style="border-color: var(--color-danger); color: var(--color-danger); background: rgba(255, 77, 109, 0.05);" id="modal-btn-refund-cancel">
+                    <i class="fa-solid fa-rotate-left"></i> Cancelar y Reembolsar
+                </button>
+            ` : `
+                ${booking.status !== 'confirmed' ? `
+                    <button class="btn btn-primary" id="modal-btn-confirm">
+                        <i class="fa-solid fa-check"></i> Confirmar
+                    </button>
+                ` : ''}
+                
+                ${booking.fianza_status === 'paid' ? `
+                    <button class="btn" style="border-color: var(--color-info); color: var(--color-info);" id="modal-btn-refund-fianza">
+                        <i class="fa-solid fa-hand-holding-dollar"></i> Devolver Fianza
+                    </button>
+                ` : ''}
 
-            ${booking.payment_status === 'pending' ? `
-                <button class="btn" style="border-color: var(--color-neon); color: var(--color-neon);" id="modal-btn-pay">
-                    <i class="fa-solid fa-money-bill-wave"></i> Marcar Pagado
-                </button>
-            ` : ''}
-            
-            ${booking.status !== 'cancelled' ? `
-                <button class="btn" style="border-color: var(--color-warning); color: var(--color-warning);" id="modal-btn-cancel">
-                    <i class="fa-solid fa-ban"></i> Cancelar
-                </button>
-            ` : ''}
+                ${booking.payment_status === 'pending' ? `
+                    <button class="btn" style="border-color: var(--color-neon); color: var(--color-neon);" id="modal-btn-pay">
+                        <i class="fa-solid fa-money-bill-wave"></i> Marcar Pagado
+                    </button>
+                ` : ''}
+                
+                ${booking.status !== 'cancelled' ? `
+                    <button class="btn" style="border-color: var(--color-warning); color: var(--color-warning);" id="modal-btn-cancel">
+                        <i class="fa-solid fa-ban"></i> Cancelar
+                    </button>
+                ` : ''}
+            `}
             <button class="btn" style="border-color: var(--color-danger); color: var(--color-danger);" id="modal-btn-delete">
                 <i class="fa-solid fa-trash-can"></i> Eliminar
             </button>
         `;
         
         // Listeners footer modal
+        const btnAppPaid = document.getElementById('modal-btn-approve-paid');
+        const btnRefCanc = document.getElementById('modal-btn-refund-cancel');
         const btnConf = document.getElementById('modal-btn-confirm');
         const btnRefund = document.getElementById('modal-btn-refund-fianza');
         const btnPay = document.getElementById('modal-btn-pay');
         const btnCanc = document.getElementById('modal-btn-cancel');
         const btnDel = document.getElementById('modal-btn-delete');
         
+        if (btnAppPaid) btnAppPaid.addEventListener('click', () => updateBookingInApi(booking.id, { status: 'confirmed' }));
+        if (btnRefCanc) btnRefCanc.addEventListener('click', () => {
+            if (confirm('¿Estás seguro de que deseas cancelar la reserva y realizar el reembolso total al cliente?')) {
+                updateBookingInApi(booking.id, { 
+                    status: 'cancelled',
+                    payment_status: 'refunded',
+                    fianza_status: 'refunded'
+                }, 'Reserva cancelada y pago online de furgoneta reembolsado con éxito.');
+            }
+        });
         if (btnConf) btnConf.addEventListener('click', () => updateBookingInApi(booking.id, { status: 'confirmed' }));
         if (btnRefund) btnRefund.addEventListener('click', () => updateBookingInApi(booking.id, { fianza_status: 'refunded' }));
         if (btnPay) btnPay.addEventListener('click', () => updateBookingInApi(booking.id, { payment_status: 'paid' }));
@@ -878,11 +927,17 @@ const initAdmin = () => {
         tabBookings.style.borderColor = 'rgba(255,255,255,0.08)';
         tabFleet.classList.remove('btn-primary');
         tabFleet.style.borderColor = 'rgba(255,255,255,0.08)';
+        tabAvailability.classList.remove('btn-primary');
+        tabAvailability.style.borderColor = 'rgba(255,255,255,0.08)';
+        tabFaqs.classList.remove('btn-primary');
+        tabFaqs.style.borderColor = 'rgba(255,255,255,0.08)';
         tabSettings.classList.remove('btn-primary');
         tabSettings.style.borderColor = 'rgba(255,255,255,0.08)';
         
         sectionBookings.style.display = 'none';
         sectionFleet.style.display = 'none';
+        sectionAvailability.style.display = 'none';
+        sectionFaqs.style.display = 'none';
         sectionSettings.style.display = 'none';
         
         if (tab === 'bookings') {
@@ -894,6 +949,17 @@ const initAdmin = () => {
             tabFleet.style.borderColor = 'var(--color-neon)';
             sectionFleet.style.display = 'block';
             fetchFleet();
+        } else if (tab === 'availability') {
+            tabAvailability.classList.add('btn-primary');
+            tabAvailability.style.borderColor = 'var(--color-neon)';
+            sectionAvailability.style.display = 'block';
+            fetchBlockages();
+            populateBlockVanSelect();
+        } else if (tab === 'faqs') {
+            tabFaqs.classList.add('btn-primary');
+            tabFaqs.style.borderColor = 'var(--color-neon)';
+            sectionFaqs.style.display = 'block';
+            fetchFaqs();
         } else if (tab === 'settings') {
             tabSettings.classList.add('btn-primary');
             tabSettings.style.borderColor = 'var(--color-neon)';
@@ -1390,7 +1456,7 @@ const initAdmin = () => {
             vanFormType.disabled = true;
             vanFormName.value = van.name;
             vanFormPlate.value = van.plate;
-            vanFormM3.value = van.m3;
+            vanFormM3.value = van.m3 ? van.m3.replace(/[^0-9]/g, '') : '';
             vanFormPriceSin.value = van.price_sin;
             vanFormMinPriceCon.value = van.min_price_con;
             vanFormKmPriceCon.value = van.km_price_con;
@@ -1522,7 +1588,11 @@ const initAdmin = () => {
         formData.append('van_type', vanFormType.value.trim());
         formData.append('name', vanFormName.value.trim());
         formData.append('plate', vanFormPlate.value.trim());
-        formData.append('m3', vanFormM3.value.trim());
+        let m3Val = vanFormM3.value.trim();
+        if (m3Val && !m3Val.endsWith('m³')) {
+            m3Val += 'm³';
+        }
+        formData.append('m3', m3Val);
         formData.append('price_sin', parseFloat(vanFormPriceSin.value));
         formData.append('min_price_con', parseFloat(vanFormMinPriceCon.value));
         formData.append('km_price_con', parseFloat(vanFormKmPriceCon.value));
@@ -1580,6 +1650,326 @@ const initAdmin = () => {
             showToast('Error de red al guardar furgoneta.', 'error');
         }
     });
+
+    /* ==========================================================================
+       9. GESTIÓN DE DISPONIBILIDAD Y BLOQUEOS
+       ========================================================================== */
+
+    // Rellenar selector de furgonetas en el formulario de bloqueo
+    const populateBlockVanSelect = () => {
+        if (!blockVanType) return;
+        blockVanType.innerHTML = '<option value="" disabled selected>-- Selecciona un vehículo --</option>';
+        fleet.forEach(van => {
+            const opt = document.createElement('option');
+            opt.value = van.van_type;
+            opt.textContent = `${van.name} (${van.plate})`;
+            blockVanType.appendChild(opt);
+        });
+    };
+
+    // Obtener y listar bloqueos activos
+    const fetchBlockages = async () => {
+        if (!adminBlockagesTbody) return;
+        
+        adminBlockagesTbody.innerHTML = `
+            <tr>
+                <td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+                    Cargando bloqueos...
+                </td>
+            </tr>
+        `;
+
+        try {
+            const res = await fetch('/api/blockages');
+            if (res.ok) {
+                const blockages = await res.json();
+                if (blockages.length === 0) {
+                    adminBlockagesTbody.innerHTML = `
+                        <tr>
+                            <td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+                                No hay bloqueos activos de disponibilidad.
+                            </td>
+                        </tr>
+                    `;
+                } else {
+                    adminBlockagesTbody.innerHTML = '';
+                    blockages.forEach(block => {
+                        const tr = document.createElement('tr');
+                        // Buscar el nombre del vehículo
+                        const van = fleet.find(v => v.van_type === block.van_type);
+                        const vanName = van ? van.name : block.van_type;
+                        
+                        tr.innerHTML = `
+                            <td><strong>${vanName}</strong></td>
+                            <td>${block.start_date}</td>
+                            <td>${block.end_date}</td>
+                            <td><span class="status-badge" style="background: rgba(255,193,7,0.1); color: #ffc107; border: 1px solid rgba(255,193,7,0.2); font-size: 0.75rem; padding: 2px 8px; border-radius: 4px;">${block.reason}</span></td>
+                            <td style="text-align: center;">
+                                <button class="btn btn-secondary btn-sm btn-delete-blockage" data-id="${block.id}" style="color: var(--color-neon); border-color: rgba(130, 209, 5, 0.2); background: rgba(130, 209, 5, 0.05); padding: 4px 8px;">
+                                    <i class="fa-solid fa-trash-can"></i> Eliminar
+                                </button>
+                            </td>
+                        `;
+                        adminBlockagesTbody.appendChild(tr);
+                    });
+
+                    // Añadir listeners para borrar bloqueos
+                    document.querySelectorAll('.btn-delete-blockage').forEach(btn => {
+                        btn.addEventListener('click', async (e) => {
+                            const id = e.currentTarget.getAttribute('data-id');
+                            if (confirm('¿Estás seguro de que deseas eliminar este bloqueo de disponibilidad? La furgoneta volverá a estar disponible para esas fechas.')) {
+                                await deleteBlockage(id);
+                            }
+                        });
+                    });
+                }
+            }
+        } catch (err) {
+            console.error('Error al obtener bloqueos:', err);
+            showToast('Error al conectar con la API de disponibilidad.', 'error');
+        }
+    };
+
+    // Crear bloqueo de disponibilidad
+    blockageForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const token = localStorage.getItem('admin_token');
+        if (!token) return;
+
+        const body = {
+            van_type: blockVanType.value,
+            start_date: blockStartDate.value,
+            end_date: blockEndDate.value,
+            reason: blockReason.value
+        };
+
+        try {
+            const res = await fetch('/api/blockages', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(body)
+            });
+            const data = await res.json();
+            if (res.ok) {
+                showToast('Bloqueo de disponibilidad registrado con éxito.', 'success');
+                blockageForm.reset();
+                fetchBlockages();
+            } else {
+                showToast(data.error || 'Error al guardar el bloqueo.', 'error');
+            }
+        } catch (err) {
+            console.error(err);
+            showToast('Error de red al registrar el bloqueo.', 'error');
+        }
+    });
+
+    // Eliminar bloqueo de disponibilidad
+    const deleteBlockage = async (id) => {
+        const token = localStorage.getItem('admin_token');
+        if (!token) return;
+
+        try {
+            const res = await fetch(`/api/blockages/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            if (res.ok) {
+                showToast('Bloqueo eliminado correctamente.', 'success');
+                fetchBlockages();
+            } else {
+                const data = await res.json();
+                showToast(data.error || 'Error al eliminar el bloqueo.', 'error');
+            }
+        } catch (err) {
+            console.error(err);
+            showToast('Error de red al eliminar el bloqueo.', 'error');
+        }
+    };
+
+    /* ==========================================================================
+       10. GESTIÓN DE PREGUNTAS FRECUENTES (FAQS)
+       ========================================================================== */
+
+    // Obtener y listar FAQs
+    const fetchFaqs = async () => {
+        if (!adminFaqsTbody) return;
+
+        adminFaqsTbody.innerHTML = `
+            <tr>
+                <td colspan="4" style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+                    Cargando preguntas frecuentes...
+                </td>
+            </tr>
+        `;
+
+        try {
+            const res = await fetch('/api/faqs');
+            if (res.ok) {
+                const faqs = await res.json();
+                if (faqs.length === 0) {
+                    adminFaqsTbody.innerHTML = `
+                        <tr>
+                            <td colspan="4" style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+                                No hay preguntas frecuentes registradas.
+                            </td>
+                        </tr>
+                    `;
+                } else {
+                    adminFaqsTbody.innerHTML = '';
+                    faqs.forEach(faq => {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td style="text-align: center; font-weight: 700; color: var(--color-neon);">${faq.display_order}</td>
+                            <td><strong>${faq.question}</strong></td>
+                            <td style="color: var(--text-secondary); max-width: 400px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${faq.answer}</td>
+                            <td style="text-align: center; display: flex; gap: 0.5rem; justify-content: center; align-items: center;">
+                                <button class="btn btn-secondary btn-sm btn-edit-faq" data-id="${faq.id}" style="padding: 4px 8px; border-color: rgba(255,255,255,0.1);">
+                                    <i class="fa-solid fa-pen-to-square"></i> Editar
+                                </button>
+                                <button class="btn btn-secondary btn-sm btn-delete-faq" data-id="${faq.id}" style="color: #ff3838; border-color: rgba(255,56,56,0.2); background: rgba(255,56,56,0.05); padding: 4px 8px;">
+                                    <i class="fa-solid fa-trash-can"></i> Borrar
+                                </button>
+                            </td>
+                        `;
+                        adminFaqsTbody.appendChild(tr);
+                    });
+
+                    // Listeners de edición
+                    document.querySelectorAll('.btn-edit-faq').forEach(btn => {
+                        btn.addEventListener('click', (e) => {
+                            const id = e.currentTarget.getAttribute('data-id');
+                            const faq = faqs.find(f => f.id == id);
+                            if (faq) openFaqModal(faq);
+                        });
+                    });
+
+                    // Listeners de borrado
+                    document.querySelectorAll('.btn-delete-faq').forEach(btn => {
+                        btn.addEventListener('click', async (e) => {
+                            const id = e.currentTarget.getAttribute('data-id');
+                            if (confirm('¿Estás seguro de que deseas eliminar esta pregunta frecuente?')) {
+                                await deleteFaq(id);
+                            }
+                        });
+                    });
+                }
+            }
+        } catch (err) {
+            console.error('Error al obtener FAQs:', err);
+            showToast('Error al conectar con la API de FAQs.', 'error');
+        }
+    };
+
+    // Abrir modal FAQ
+    const openFaqModal = (faq = null) => {
+        if (!faqModal) return;
+        
+        faqModal.style.display = 'flex';
+        if (faq) {
+            faqModalTitle.textContent = 'Editar Pregunta Frecuente';
+            faqFormId.value = faq.id;
+            faqFormQuestion.value = faq.question;
+            faqFormAnswer.value = faq.answer;
+            faqFormOrder.value = faq.display_order;
+        } else {
+            faqModalTitle.textContent = 'Añadir Pregunta Frecuente';
+            faqFormId.value = '';
+            faqFormQuestion.value = '';
+            faqFormAnswer.value = '';
+            faqFormOrder.value = '0';
+        }
+    };
+
+    // Cerrar modal FAQ
+    const closeFaqModal = () => {
+        if (faqModal) faqModal.style.display = 'none';
+    };
+
+    // Cerrar modal al hacer clic en cruz o cancelar
+    if (faqModalCloseBtn) faqModalCloseBtn.addEventListener('click', closeFaqModal);
+    if (faqBtnCancel) faqBtnCancel.addEventListener('click', closeFaqModal);
+    
+    faqModal.addEventListener('click', (e) => {
+        if (e.target === faqModal) closeFaqModal();
+    });
+
+    // Guardar / Editar FAQ Form Submit
+    faqForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const token = localStorage.getItem('admin_token');
+        if (!token) return;
+
+        const id = faqFormId.value;
+        const body = {
+            question: faqFormQuestion.value.trim(),
+            answer: faqFormAnswer.value.trim(),
+            display_order: parseInt(faqFormOrder.value) || 0
+        };
+
+        const url = id ? `/api/faqs/${id}` : '/api/faqs';
+        const method = id ? 'PUT' : 'POST';
+
+        try {
+            const res = await fetch(url, {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(body)
+            });
+            const data = await res.json();
+            if (res.ok) {
+                showToast(id ? 'FAQ actualizada con éxito.' : 'Nueva FAQ añadida con éxito.', 'success');
+                closeFaqModal();
+                fetchFaqs();
+            } else {
+                showToast(data.error || 'Error al guardar la FAQ.', 'error');
+            }
+        } catch (err) {
+            console.error(err);
+            showToast('Error de red al guardar la FAQ.', 'error');
+        }
+    });
+
+    // Eliminar FAQ
+    const deleteFaq = async (id) => {
+        const token = localStorage.getItem('admin_token');
+        if (!token) return;
+
+        try {
+            const res = await fetch(`/api/faqs/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            if (res.ok) {
+                showToast('Pregunta frecuente eliminada con éxito.', 'success');
+                fetchFaqs();
+            } else {
+                const data = await res.json();
+                showToast(data.error || 'Error al eliminar la FAQ.', 'error');
+            }
+        } catch (err) {
+            console.error(err);
+            showToast('Error de red al eliminar la FAQ.', 'error');
+        }
+    };
+
+    // Añadir listener para abrir modal FAQ nuevo
+    if (btnAddFaq) {
+        btnAddFaq.addEventListener('click', () => openFaqModal());
+    }
+
+    // Registrar event listeners de pestañas de Disponibilidad y FAQs
+    tabAvailability.addEventListener('click', () => switchTab('availability'));
+    tabFaqs.addEventListener('click', () => switchTab('faqs'));
     
     // Inicializar página
     checkAuth();
