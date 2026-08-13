@@ -105,7 +105,51 @@ const initDb = async () => {
     "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS waiting_hours NUMERIC(5, 2) DEFAULT 0.00;",
     "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS van_plate VARCHAR(50);",
     "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS van_m3 VARCHAR(50);",
-    "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS review_code VARCHAR(50) UNIQUE;"
+    "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS review_code VARCHAR(50) UNIQUE;",
+    "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS contract_applied_rate VARCHAR(100) DEFAULT '1 dia';",
+    "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS client_birthdate DATE;",
+    "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS client_address TEXT;",
+    "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS client_postal_code VARCHAR(50);",
+    "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS client_city VARCHAR(255);",
+    "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS client_province VARCHAR(255);",
+    "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS client_license_num VARCHAR(100);",
+    "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS client_license_exp DATE;",
+    "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS second_driver_name VARCHAR(255);",
+    "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS second_driver_dni VARCHAR(100);",
+    "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS second_driver_phone VARCHAR(100);",
+    "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS second_driver_license_num VARCHAR(100);",
+    "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS second_driver_license_exp DATE;",
+    "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS km_out INTEGER DEFAULT 0;",
+    "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS km_in INTEGER DEFAULT 0;",
+    "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS km_included INTEGER DEFAULT 350;",
+    "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS km_price_extra NUMERIC(10, 2) DEFAULT 0.28;",
+    "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS km_extra_package BOOLEAN DEFAULT FALSE;",
+    "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS fuel_out VARCHAR(50) DEFAULT 'Lleno';",
+    "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS fuel_in VARCHAR(50) DEFAULT 'Lleno';",
+    "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS adblue_out VARCHAR(50) DEFAULT 'Lleno';",
+    "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS adblue_in VARCHAR(50) DEFAULT 'Lleno';",
+    "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS payment_method VARCHAR(100) DEFAULT 'tarjeta';",
+    "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS fianza_returned_full BOOLEAN DEFAULT FALSE;",
+    "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS fianza_returned_partial BOOLEAN DEFAULT FALSE;",
+    "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS fianza_retained_amount NUMERIC(10, 2) DEFAULT 0.00;",
+    "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS fianza_retained_reason TEXT;",
+    "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS clean_interior_yes BOOLEAN DEFAULT FALSE;",
+    "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS clean_interior_no BOOLEAN DEFAULT FALSE;",
+    "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS clean_exterior_yes BOOLEAN DEFAULT FALSE;",
+    "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS clean_exterior_no BOOLEAN DEFAULT FALSE;",
+    "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS cleaning_price NUMERIC(10, 2) DEFAULT 0.00;",
+    "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS accessory_permiso BOOLEAN DEFAULT FALSE;",
+    "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS accessory_ficha BOOLEAN DEFAULT FALSE;",
+    "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS accessory_llave BOOLEAN DEFAULT FALSE;",
+    "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS accessory_llave_repuesto BOOLEAN DEFAULT FALSE;",
+    "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS accessory_v16 BOOLEAN DEFAULT FALSE;",
+    "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS accessory_adaptador BOOLEAN DEFAULT FALSE;",
+    "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS accessory_gancho BOOLEAN DEFAULT FALSE;",
+    "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS accessory_chaleco BOOLEAN DEFAULT FALSE;",
+    "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS accessory_rueda BOOLEAN DEFAULT FALSE;",
+    "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS accessory_gato BOOLEAN DEFAULT FALSE;",
+    "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS accessory_manual BOOLEAN DEFAULT FALSE;",
+    "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS accessory_others TEXT;"
   ];
 
   const alterVansQueries = [
@@ -113,7 +157,12 @@ const initDb = async () => {
     "ALTER TABLE vans ADD COLUMN IF NOT EXISTS extra_gps_price NUMERIC(10, 2) DEFAULT 5.00;",
     "ALTER TABLE vans ADD COLUMN IF NOT EXISTS extra_driver_price NUMERIC(10, 2) DEFAULT 10.00;",
     "ALTER TABLE vans ADD COLUMN IF NOT EXISTS extra_moving_price NUMERIC(10, 2) DEFAULT 10.00;",
-    "ALTER TABLE vans ADD COLUMN IF NOT EXISTS custom_extras JSONB DEFAULT '[]'::jsonb;"
+    "ALTER TABLE vans ADD COLUMN IF NOT EXISTS custom_extras JSONB DEFAULT '[]'::jsonb;",
+    "ALTER TABLE vans ADD COLUMN IF NOT EXISTS max_occupants INTEGER DEFAULT 3;",
+    "ALTER TABLE vans ADD COLUMN IF NOT EXISTS eco_label VARCHAR(100) DEFAULT 'C';",
+    "ALTER TABLE vans ADD COLUMN IF NOT EXISTS daily_km_limit INTEGER DEFAULT 350;",
+    "ALTER TABLE vans ADD COLUMN IF NOT EXISTS max_mass INTEGER DEFAULT 2800;",
+    "ALTER TABLE vans ADD COLUMN IF NOT EXISTS fuel_type VARCHAR(100) DEFAULT 'GASOIL';"
   ];
 
   const createSettingsTableQuery = `
@@ -129,11 +178,15 @@ const initDb = async () => {
       booking_code VARCHAR(100) UNIQUE NOT NULL,
       client_name VARCHAR(255) NOT NULL,
       rating INTEGER CHECK (rating >= 1 AND rating <= 5) NOT NULL,
-      comment TEXT NOT NULL,
+      comment TEXT,
       role_or_city VARCHAR(255),
       created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
     );
   `;
+
+  const alterReviewsQueries = [
+    "ALTER TABLE reviews ALTER COLUMN comment DROP NOT NULL;"
+  ];
 
   try {
     const client = await pool.connect();
@@ -205,6 +258,16 @@ const initDb = async () => {
       await client.query(query);
     }
     console.log('Columnas de "vans" verificadas/actualizadas.');
+
+    // Alterar tabla de opiniones para permitir comentarios opcionales
+    for (const query of alterReviewsQueries) {
+      try {
+        await client.query(query);
+      } catch (err) {
+        // Ignorar si ya se quitó la restricción
+      }
+    }
+    console.log('Restricción de comentarios de "reviews" verificada/actualizada.');
     
     client.release();
   } catch (err) {
@@ -506,7 +569,7 @@ app.get('/api/bookings/:id', async (req, res) => {
   try {
     const query = `
       SELECT b.*, u.name as user_name, u.email as user_email, u.phone as user_phone, u.dni as user_dni,
-             v.price_sin, v.min_price_con, v.km_price_con
+             v.price_sin, v.min_price_con, v.km_price_con, v.max_occupants, v.eco_label, v.daily_km_limit, v.max_mass, v.fuel_type
       FROM bookings b
       LEFT JOIN users u ON b.user_id = u.id
       LEFT JOIN vans v ON b.van_type = v.van_type
@@ -560,6 +623,22 @@ app.put('/api/bookings/:id', async (req, res) => {
     // Obtener la reserva actual
     const checkRes = await pool.query('SELECT * FROM bookings WHERE id = $1', [id]);
     if (checkRes.rowCount === 0) {
+      // Intentar actualizar en memoria fallbackBookings
+      const index = fallbackBookings.findIndex(b => b.id == id);
+      if (index !== -1) {
+        const current = fallbackBookings[index];
+        const updated = {
+          ...current,
+          status: status !== undefined ? status : current.status,
+          fianza_status: fianza_status !== undefined ? fianza_status : current.fianza_status,
+          payment_status: payment_status !== undefined ? payment_status : current.payment_status
+        };
+        fallbackBookings[index] = updated;
+        return res.json({
+          message: 'Reserva actualizada en memoria fallback.',
+          booking: updated
+        });
+      }
       return res.status(404).json({ error: 'Reserva no encontrada.' });
     }
     const current = checkRes.rows[0];
@@ -581,7 +660,22 @@ app.put('/api/bookings/:id', async (req, res) => {
       booking: result.rows[0]
     });
   } catch (err) {
-    console.error('Error al actualizar reserva:', err);
+    console.error('Error al actualizar reserva, intentando en memoria:', err);
+    const index = fallbackBookings.findIndex(b => b.id == id);
+    if (index !== -1) {
+      const current = fallbackBookings[index];
+      const updated = {
+        ...current,
+        status: status !== undefined ? status : current.status,
+        fianza_status: fianza_status !== undefined ? fianza_status : current.fianza_status,
+        payment_status: payment_status !== undefined ? payment_status : current.payment_status
+      };
+      fallbackBookings[index] = updated;
+      return res.json({
+        message: 'Reserva actualizada en memoria fallback (offline).',
+        booking: updated
+      });
+    }
     res.status(500).json({ error: 'Error del servidor al actualizar la reserva.' });
   }
 });
@@ -633,12 +727,23 @@ app.delete('/api/bookings/:id', async (req, res) => {
     const result = await pool.query('DELETE FROM bookings WHERE id = $1 RETURNING *', [id]);
 
     if (result.rowCount === 0) {
+      // Intentar eliminar de memoria fallbackBookings
+      const index = fallbackBookings.findIndex(b => b.id == id);
+      if (index !== -1) {
+        fallbackBookings.splice(index, 1);
+        return res.json({ message: 'Reserva eliminada de memoria fallback.' });
+      }
       return res.status(404).json({ error: 'Reserva no encontrada.' });
     }
 
     res.json({ message: 'Reserva eliminada con éxito.' });
   } catch (err) {
-    console.error('Error al eliminar reserva:', err);
+    console.error('Error al eliminar reserva, intentando en memoria:', err);
+    const index = fallbackBookings.findIndex(b => b.id == id);
+    if (index !== -1) {
+      fallbackBookings.splice(index, 1);
+      return res.json({ message: 'Reserva eliminada de memoria fallback (offline).' });
+    }
     res.status(500).json({ error: 'Error del servidor al eliminar la reserva.' });
   }
 });
@@ -710,12 +815,32 @@ app.get('/api/admin/vans', verifyAdmin, async (req, res) => {
 
 // 3. Crear una nueva furgoneta
 app.post('/api/vans', verifyAdmin, upload.array('images', 20), async (req, res) => {
-  const { van_type, name, plate, m3, price_sin, min_price_con, km_price_con, status } = req.body;
+  const { van_type, name, plate, m3, price_sin, min_price_con, km_price_con, status, max_occupants, eco_label, daily_km_limit, max_mass, fuel_type } = req.body;
   if (!van_type || !name || !plate || !m3 || price_sin === undefined || min_price_con === undefined || km_price_con === undefined) {
     return res.status(400).json({ error: 'Faltan campos obligatorios para registrar la furgoneta.' });
   }
 
   const newImages = req.files ? req.files.map(f => '/uploads/' + f.filename) : [];
+  
+  let finalImages = [];
+  if (req.body.image_order) {
+    try {
+      const order = JSON.parse(req.body.image_order);
+      finalImages = order.map(item => {
+        if (item.startsWith('server:')) {
+          return item.substring(7);
+        } else if (item.startsWith('file:')) {
+          const fileIndex = parseInt(item.substring(5));
+          return newImages[fileIndex];
+        }
+      }).filter(Boolean);
+    } catch (e) {
+      console.error('Error parsing image_order:', e);
+      finalImages = newImages;
+    }
+  } else {
+    finalImages = newImages;
+  }
   
   let customExtras = [];
   if (req.body.custom_extras) {
@@ -734,8 +859,8 @@ app.post('/api/vans', verifyAdmin, upload.array('images', 20), async (req, res) 
     }
 
     const query = `
-      INSERT INTO vans (van_type, name, plate, m3, price_sin, min_price_con, km_price_con, status, images, custom_extras)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *;
+      INSERT INTO vans (van_type, name, plate, m3, price_sin, min_price_con, km_price_con, status, images, custom_extras, max_occupants, eco_label, daily_km_limit, max_mass, fuel_type)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) RETURNING *;
     `;
     const values = [
       van_type, 
@@ -746,8 +871,13 @@ app.post('/api/vans', verifyAdmin, upload.array('images', 20), async (req, res) 
       parseFloat(min_price_con), 
       parseFloat(km_price_con), 
       status || 'active', 
-      newImages,
-      JSON.stringify(customExtras)
+      finalImages,
+      JSON.stringify(customExtras),
+      parseInt(max_occupants) || 3,
+      eco_label || 'C',
+      parseInt(daily_km_limit) || 350,
+      parseInt(max_mass) || 2800,
+      fuel_type || 'GASOIL'
     ];
     const result = await pool.query(query, values);
     
@@ -778,8 +908,13 @@ app.post('/api/vans', verifyAdmin, upload.array('images', 20), async (req, res) 
       min_price_con: parseFloat(min_price_con),
       km_price_con: parseFloat(km_price_con),
       status: status || 'active',
-      images: newImages,
-      custom_extras: customExtras
+      images: finalImages,
+      custom_extras: customExtras,
+      max_occupants: parseInt(max_occupants) || 3,
+      eco_label: eco_label || 'C',
+      daily_km_limit: parseInt(daily_km_limit) || 350,
+      max_mass: parseInt(max_mass) || 2800,
+      fuel_type: fuel_type || 'GASOIL'
     };
     fallbackVans.push(newVan);
     res.status(201).json({
@@ -792,22 +927,45 @@ app.post('/api/vans', verifyAdmin, upload.array('images', 20), async (req, res) 
 // 4. Modificar una furgoneta
 app.put('/api/vans/:id', verifyAdmin, upload.array('images', 20), async (req, res) => {
   const { id } = req.params;
-  const { van_type, name, plate, m3, price_sin, min_price_con, km_price_con, status } = req.body;
-
-  let existingImages = [];
-  if (req.body.existing_images) {
-    try {
-      existingImages = JSON.parse(req.body.existing_images);
-      if (!Array.isArray(existingImages)) {
-        existingImages = [existingImages];
-      }
-    } catch (e) {
-      existingImages = req.body.existing_images.split(',').filter(Boolean);
-    }
-  }
+  const { van_type, name, plate, m3, price_sin, min_price_con, km_price_con, status, max_occupants, eco_label, daily_km_limit, max_mass, fuel_type } = req.body;
 
   const newImages = req.files ? req.files.map(f => '/uploads/' + f.filename) : [];
-  const updatedImages = [...existingImages, ...newImages];
+  
+  let finalImages = [];
+  if (req.body.image_order) {
+    try {
+      const order = JSON.parse(req.body.image_order);
+      finalImages = order.map(item => {
+        if (item.startsWith('server:')) {
+          return item.substring(7);
+        } else if (item.startsWith('file:')) {
+          const fileIndex = parseInt(item.substring(5));
+          return newImages[fileIndex];
+        }
+      }).filter(Boolean);
+    } catch (e) {
+      console.error('Error parsing image_order:', e);
+      let existingImages = [];
+      if (req.body.existing_images) {
+        try {
+          existingImages = JSON.parse(req.body.existing_images);
+        } catch (err) {
+          existingImages = req.body.existing_images.split(',').filter(Boolean);
+        }
+      }
+      finalImages = [...existingImages, ...newImages];
+    }
+  } else {
+    let existingImages = [];
+    if (req.body.existing_images) {
+      try {
+        existingImages = JSON.parse(req.body.existing_images);
+      } catch (err) {
+        existingImages = req.body.existing_images.split(',').filter(Boolean);
+      }
+    }
+    finalImages = [...existingImages, ...newImages];
+  }
 
   let customExtras = [];
   if (req.body.custom_extras) {
@@ -828,8 +986,8 @@ app.put('/api/vans/:id', verifyAdmin, upload.array('images', 20), async (req, re
     const query = `
       UPDATE vans 
       SET van_type = $1, name = $2, plate = $3, m3 = $4, price_sin = $5, min_price_con = $6, km_price_con = $7, status = $8, images = $9,
-          custom_extras = $10
-      WHERE id = $11 RETURNING *;
+          custom_extras = $10, max_occupants = $11, eco_label = $12, daily_km_limit = $13, max_mass = $14, fuel_type = $15
+      WHERE id = $16 RETURNING *;
     `;
     const values = [
       van_type !== undefined ? van_type : current.van_type,
@@ -840,8 +998,13 @@ app.put('/api/vans/:id', verifyAdmin, upload.array('images', 20), async (req, re
       min_price_con !== undefined ? parseFloat(min_price_con) : current.min_price_con,
       km_price_con !== undefined ? parseFloat(km_price_con) : current.km_price_con,
       status !== undefined ? status : current.status,
-      updatedImages,
+      finalImages,
       JSON.stringify(customExtras),
+      max_occupants !== undefined ? parseInt(max_occupants) : current.max_occupants,
+      eco_label !== undefined ? eco_label : current.eco_label,
+      daily_km_limit !== undefined ? parseInt(daily_km_limit) : current.daily_km_limit,
+      max_mass !== undefined ? parseInt(max_mass) : current.max_mass,
+      fuel_type !== undefined ? fuel_type : current.fuel_type,
       id
     ];
 
@@ -874,8 +1037,13 @@ app.put('/api/vans/:id', verifyAdmin, upload.array('images', 20), async (req, re
       min_price_con: min_price_con !== undefined ? parseFloat(min_price_con) : current.min_price_con,
       km_price_con: km_price_con !== undefined ? parseFloat(km_price_con) : current.km_price_con,
       status: status !== undefined ? status : current.status,
-      images: updatedImages,
-      custom_extras: customExtras
+      images: finalImages,
+      custom_extras: customExtras,
+      max_occupants: max_occupants !== undefined ? parseInt(max_occupants) : current.max_occupants,
+      eco_label: eco_label !== undefined ? eco_label : current.eco_label,
+      daily_km_limit: daily_km_limit !== undefined ? parseInt(daily_km_limit) : current.daily_km_limit,
+      max_mass: max_mass !== undefined ? parseInt(max_mass) : current.max_mass,
+      fuel_type: fuel_type !== undefined ? fuel_type : current.fuel_type
     };
     fallbackVans[index] = updated;
     res.json({

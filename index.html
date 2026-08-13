@@ -172,58 +172,8 @@
                     <p class="section-desc">Elige la furgoneta que mejor se adapte a tu mudanza, portes o viaje grupal. Todos nuestros vehículos se conducen con carnet B habitual.</p>
                 </div>
                 
-                <div class="fleet-grid">
-                    <!-- Van Card 1: Ford Transit Custom -->
-                    <article class="van-card reveal" id="card-van-medium">
-                        <div class="van-image-container">
-                            <img src="assets/ford_transit_custom.png" alt="Ford Transit Custom" class="van-image" id="img-van-medium">
-                            <div class="van-tag highlight">Más Popular</div>
-                        </div>
-                        <div class="van-details">
-                            <h3 class="van-name">Ford Transit Custom L2H2</h3>
-                            <p class="van-model-example">Capacidad de carga mediana y ágil</p>
-                            <ul class="van-specs">
-                                <li><i class="fa-solid fa-box"></i> <strong>8 m³</strong> de capacidad</li>
-                                <li><i class="fa-solid fa-weight-hanging"></i> Carga útil: <strong>1.000 kg</strong></li>
-                                <li><i class="fa-solid fa-user"></i> <strong>3 plazas</strong> delanteras</li>
-                                <li><i class="fa-solid fa-door-open"></i> Puerta lateral corredera</li>
-                            </ul>
-                            <div class="van-footer">
-                                <div class="van-price">
-                                    <span class="price-from">Desde</span>
-                                    <span class="price-amount">79,00 €</span>
-                                    <span class="price-unit">+ IVA / día</span>
-                                </div>
-                                <a href="#calculadora" class="btn btn-secondary btn-sm select-van-btn" data-van="medium" id="btn-select-medium">Seleccionar</a>
-                            </div>
-                        </div>
-                    </article>
-
-                    <!-- Van Card 2: MAN TGE -->
-                    <article class="van-card reveal delay-1" id="card-van-large">
-                        <div class="van-image-container">
-                            <img src="assets/man_tge.png" alt="MAN TGE Gran Volumen" class="van-image" id="img-van-large">
-                            <div class="van-tag">Gran Volumen</div>
-                        </div>
-                        <div class="van-details">
-                            <h3 class="van-name">MAN TGE L4H3 Gran Volumen</h3>
-                            <p class="van-model-example">Máxima capacidad para grandes portes</p>
-                            <ul class="van-specs">
-                                <li><i class="fa-solid fa-box"></i> <strong>14 m³</strong> de capacidad</li>
-                                <li><i class="fa-solid fa-weight-hanging"></i> Carga útil: <strong>1.400 kg</strong></li>
-                                <li><i class="fa-solid fa-user"></i> <strong>3 plazas</strong> con cabina amplia</li>
-                                <li><i class="fa-solid fa-arrows-up-down-left-right"></i> Altura interior para estar de pie</li>
-                            </ul>
-                            <div class="van-footer">
-                                <div class="van-price">
-                                    <span class="price-from">Desde</span>
-                                    <span class="price-amount">107,44 €</span>
-                                    <span class="price-unit">+ IVA / día</span>
-                                </div>
-                                <a href="#calculadora" class="btn btn-secondary btn-sm select-van-btn" data-van="large" id="btn-select-large">Seleccionar</a>
-                            </div>
-                        </div>
-                    </article>
+                <div class="fleet-grid" id="fleet-grid-container">
+                    <!-- Inyectado dinámicamente desde app.js -->
                 </div>
             </div>
         </section>
@@ -233,7 +183,7 @@
             <div class="container">
                 <div class="calculator-wrapper reveal">
                     <div class="calculator-info">
-                        <img src="assets/logo.png" alt="RentMeUskar Logo" style="height: 65px; width: auto; margin-bottom: 1.5rem; display: block; filter: drop-shadow(0 0 10px rgba(130, 209, 5, 0.2)); -webkit-user-drag: none; user-select: none;">
+                        <img src="assets/logo.png" alt="RentMeUskar Logo" style="height: 65px; width: auto; align-self: flex-start; margin-bottom: 1.5rem; display: block; filter: drop-shadow(0 0 10px rgba(130, 209, 5, 0.2)); -webkit-user-drag: none; user-select: none;">
                         <span class="subtitle">Calcula en 1 Minuto</span>
                         <h2 class="calculator-title">Simulador de Presupuesto</h2>
                         <p class="calculator-text">
@@ -302,7 +252,7 @@
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="calc-date-start"><i class="fa-regular fa-calendar"></i> Recogida</label>
-                                <input type="date" id="calc-date-start" class="form-control" required>
+                                <input type="text" id="calc-date-start" class="form-control" placeholder="Pincha aquí para elegir..." required readonly style="cursor: pointer;">
                             </div>
                             <div class="form-group">
                                 <label for="calc-time-start"><i class="fa-regular fa-clock"></i> Hora</label>
@@ -320,7 +270,7 @@
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="calc-date-end"><i class="fa-regular fa-calendar"></i> Devolución</label>
-                                <input type="date" id="calc-date-end" class="form-control" required>
+                                <input type="text" id="calc-date-end" class="form-control" placeholder="Pincha aquí para elegir..." required readonly style="cursor: pointer;">
                             </div>
                             <div class="form-group">
                                 <label for="calc-time-end"><i class="fa-regular fa-clock"></i> Hora</label>
@@ -450,42 +400,60 @@
         <!-- Testimonials -->
         <section class="testimonials-section" id="testimonios">
             <div class="container">
-                <div class="section-header reveal">
+                <div class="section-header reveal" style="text-align: center;">
                     <span class="subtitle">Opiniones</span>
+                    <div id="reviews-count-badge" style="display: none; justify-content: center; align-items: center; gap: 0.4rem; background: rgba(130, 209, 5, 0.1); color: var(--color-neon); font-size: 0.85rem; font-weight: 700; padding: 6px 14px; border-radius: 20px; border: 1px solid rgba(130, 209, 5, 0.3); width: fit-content; margin: 0.5rem auto 1.5rem auto;">
+                        <i class="fa-solid fa-circle-check"></i> Más de <span id="reviews-count-placeholder">0</span> reseñas verificadas
+                    </div>
                     <h2 class="section-title">Lo Que Dicen Nuestros Vecinos</h2>
                     <p class="section-desc">La confianza de nuestros clientes en Huéscar y comarca es nuestra mayor garantía.</p>
                 </div>
                 
-                <div class="testimonials-grid" id="testimonials-grid">
-                    <div class="testimonial-card reveal">
-                        <div class="stars"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i></div>
-                        <p class="testimonial-text">"Alquilé la furgoneta mediana para trasladar unos muebles desde Granada a Huéscar. El trato fue inmejorable y el vehículo estaba limpísimo. Repetiré seguro."</p>
-                        <div class="testimonial-author">
-                            <div class="author-info">
-                                <h4 class="author-name">Francisco M.</h4>
-                                <p class="author-role">Particular (Huéscar)</p>
+                <div class="testimonials-carousel-container reveal" style="position: relative; max-width: 800px; margin: 0 auto; overflow: hidden; padding: 1rem 0;">
+                    <div class="testimonials-track" id="testimonials-grid" style="display: flex; transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1); width: 100%;">
+                        <div class="testimonial-card reveal" style="flex: 0 0 100%; box-sizing: border-box; margin: 0;">
+                            <div class="stars"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i></div>
+                            <p class="testimonial-text">"Alquilé la furgoneta mediana para trasladar unos muebles desde Granada a Huéscar. El trato fue inmejorable y el vehículo estaba limpísimo. Repetiré seguro."</p>
+                            <div class="testimonial-author">
+                                <div class="author-info">
+                                    <h4 class="author-name">Francisco M.</h4>
+                                    <p class="author-role">Particular (Huéscar)</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="testimonial-card reveal delay-1" style="flex: 0 0 100%; box-sizing: border-box; margin: 0;">
+                            <div class="stars"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i></div>
+                            <p class="testimonial-text">"Necesitábamos una furgoneta de 9 plazas para un viaje de fin de semana con amigos de la Puebla de Don Fadrique. El viaje fue comodísimo y el precio muy razonable."</p>
+                            <div class="testimonial-author">
+                                <div class="author-info">
+                                    <h4 class="author-name">María José S.</h4>
+                                    <p class="author-role">Viaje Familiar</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="testimonial-card reveal delay-2" style="flex: 0 0 100%; box-sizing: border-box; margin: 0;">
+                            <div class="stars"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i></div>
+                            <p class="testimonial-text">"Como autónomo, a veces necesito un vehículo de gran volumen para repartos extra. RentMeUskar me soluciona la papeleta rápidamente y sin burocracia pesada."</p>
+                            <div class="testimonial-author">
+                                <div class="author-info">
+                                    <h4 class="author-name">Antonio G.</h4>
+                                    <p class="author-role">Autónomo (Castril)</p>
+                                </div>
                             </div>
                         </div>
                     </div>
-                    <div class="testimonial-card reveal delay-1">
-                        <div class="stars"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i></div>
-                        <p class="testimonial-text">"Necesitábamos una furgoneta de 9 plazas para un viaje de fin de semana con amigos de la Puebla de Don Fadrique. El viaje fue comodísimo y el precio muy razonable."</p>
-                        <div class="testimonial-author">
-                            <div class="author-info">
-                                <h4 class="author-name">María José S.</h4>
-                                <p class="author-role">Viaje Familiar</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="testimonial-card reveal delay-2">
-                        <div class="stars"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i></div>
-                        <p class="testimonial-text">"Como autónomo, a veces necesito un vehículo de gran volumen para repartos extra. RentMeUskar me soluciona la papeleta rápidamente y sin burocracia pesada."</p>
-                        <div class="testimonial-author">
-                            <div class="author-info">
-                                <h4 class="author-name">Antonio G.</h4>
-                                <p class="author-role">Autónomo (Castril)</p>
-                            </div>
-                        </div>
+                    
+                    <!-- Flechas de navegación -->
+                    <button class="carousel-control prev" id="reviews-carousel-prev" style="position: absolute; top: 50%; left: -3.5rem; transform: translateY(-50%); background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); color: #fff; width: 44px; height: 44px; border-radius: 50%; cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center; z-index: 5; transition: all 0.3s ease;">
+                        <i class="fa-solid fa-chevron-left"></i>
+                    </button>
+                    <button class="carousel-control next" id="reviews-carousel-next" style="position: absolute; top: 50%; right: -3.5rem; transform: translateY(-50%); background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); color: #fff; width: 44px; height: 44px; border-radius: 50%; cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center; z-index: 5; transition: all 0.3s ease;">
+                        <i class="fa-solid fa-chevron-right"></i>
+                    </button>
+                    
+                    <!-- Indicadores de puntos -->
+                    <div id="reviews-carousel-dots" style="display: flex; justify-content: center; gap: 0.6rem; margin-top: 2rem;">
+                        <!-- Insertado dinámicamente -->
                     </div>
                 </div>
                 
@@ -510,7 +478,7 @@
                     <div class="faq-item reveal" id="faq-1">
                         <button class="faq-question" id="faq-q-1">
                             <span>¿Qué requisitos necesito cumplir para alquilar sin conductor?</span>
-                            <i class="fa-solid fa-plus faq-toggle-icon"></i>
+                            <i class="fa-solid fa-chevron-down faq-toggle-icon"></i>
                         </button>
                         <div class="faq-answer" id="faq-a-1">
                             <p>Necesitas tener al menos 23 años (21 para furgonetas compactas) y estar en posesión del permiso de conducir tipo B vigente con una antigüedad mínima de 2 años. Deberás presentar el DNI/NIE y el carnet de conducir originales al retirar el vehículo.</p>
@@ -520,7 +488,7 @@
                     <div class="faq-item reveal" id="faq-2">
                         <button class="faq-question" id="faq-q-2">
                             <span>¿Hay que dejar alguna fianza o depósito?</span>
-                            <i class="fa-solid fa-plus faq-toggle-icon"></i>
+                            <i class="fa-solid fa-chevron-down faq-toggle-icon"></i>
                         </button>
                         <div class="faq-answer" id="faq-a-2">
                             <p>Sí, se requiere una fianza de 500€ que se retiene o paga mediante tarjeta en la web (para reservas de una semana o menos) o se gestiona manualmente. Esta fianza se reembolsará íntegramente tras revisar que el vehículo se devuelve en las mismas condiciones, limpio y sin daños.</p>
@@ -530,7 +498,7 @@
                     <div class="faq-item reveal" id="faq-3">
                         <button class="faq-question" id="faq-q-3">
                             <span>¿Cómo funciona la política de combustible?</span>
-                            <i class="fa-solid fa-plus faq-toggle-icon"></i>
+                            <i class="fa-solid fa-chevron-down faq-toggle-icon"></i>
                         </button>
                         <div class="faq-answer" id="faq-a-3">
                             <p>Nuestra política es Lleno-Lleno (Full-to-Full). Te entregamos la furgoneta con el depósito de combustible lleno (diésel) y debes devolverla de la misma forma. De lo contrario, se cobrará el coste del combustible faltante más un cargo de gestión de repostaje.</p>
@@ -540,7 +508,7 @@
                     <div class="faq-item reveal" id="faq-4">
                         <button class="faq-question" id="faq-q-4">
                             <span>¿Qué seguro está incluido en el precio base?</span>
-                            <i class="fa-solid fa-plus faq-toggle-icon"></i>
+                            <i class="fa-solid fa-chevron-down faq-toggle-icon"></i>
                         </button>
                         <div class="faq-answer" id="faq-a-4">
                             <p>El precio incluye seguro obligatorio de responsabilidad civil y seguro de colisión básico con franquicia. Esto significa que en caso de accidente o daños, la responsabilidad máxima del cliente está limitada al importe de la franquicia establecida (salvo negligencia).</p>
@@ -550,7 +518,7 @@
                     <div class="faq-item reveal" id="faq-5">
                         <button class="faq-question" id="faq-q-5">
                             <span>¿Puedo viajar fuera de España con la furgoneta?</span>
-                            <i class="fa-solid fa-plus faq-toggle-icon"></i>
+                            <i class="fa-solid fa-chevron-down faq-toggle-icon"></i>
                         </button>
                         <div class="faq-answer" id="faq-a-5">
                             <p>Por defecto, el uso de las furgonetas está autorizada en territorio nacional (Península Ibérica). Si tienes pensado viajar a Portugal, Francia u otros países de Europa, debes comunicarlo con antelación para tramitar la cobertura del seguro correspondiente y asistencia en el extranjero.</p>
@@ -564,13 +532,13 @@
         <section class="contact-section" id="contacto">
             <div class="container">
                 <div class="contact-wrapper">
-                    <!-- Contact Form & Info -->
+                    <!-- Column 1: Contact Info & Map -->
                     <div class="contact-info-area reveal">
                         <span class="subtitle">Contacta Con Nosotros</span>
                         <h2 class="contact-section-title">¿Tienes Alguna Pregunta?</h2>
-                        <p class="contact-section-desc">Escríbenos, llámanos o visítanos en Huéscar. Estaremos encantados de resolver tus dudas y ayudarte a elegir el vehículo ideal.</p>
+                        <p class="contact-section-desc" style="margin-bottom: 2rem;">Escríbenos, llámanos o visítanos en Huéscar. Estaremos encantados de resolver tus dudas y ayudarte a elegir el vehículo ideal.</p>
                         
-                        <div class="contact-methods">
+                        <div class="contact-methods" style="margin-bottom: 3rem;">
                             <a href="tel:+34614767411" class="contact-method-card" id="contact-phone-link">
                                 <div class="method-icon"><i class="fa-solid fa-phone"></i></div>
                                 <div class="method-details">
@@ -600,14 +568,11 @@
                                 </div>
                             </div>
                         </div>
-                    </div>
 
-                    <!-- Map Display Area -->
-                    <div class="contact-map-area reveal delay-1">
+                        <!-- Dónde Estamos Card -->
                         <div class="map-card-container">
-                            <h3 class="map-card-title"><i class="fa-solid fa-compass"></i> Dónde Estamos</h3>
-                            <p class="map-card-subtitle">Servicio de recogida en Huéscar, Granada</p>
-                            <!-- Embedded OpenStreetMap / Stylized Iframe Map -->
+                            <h3 class="map-card-title" style="margin-top: 0; color: #fff; font-family: var(--font-heading); font-size: 1.1rem; display: flex; align-items: center; gap: 0.5rem;"><i class="fa-solid fa-compass" style="color: var(--color-neon);"></i> Dónde Estamos</h3>
+                            <p class="map-card-subtitle" style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 1rem;">Servicio de recogida en Huéscar, Granada</p>
                             <div class="map-iframe-wrapper">
                                 <iframe 
                                     id="google-map"
@@ -616,11 +581,49 @@
                                     style="border: 0; width: 100%; height: 100%; border-radius: 12px; filter: grayscale(1) invert(0.9) contrast(1.2);">
                                 </iframe>
                             </div>
-                            <div class="map-card-footer">
+                            <div class="map-card-footer" style="margin-top: 1rem;">
                                 <a href="https://www.google.com/maps/search/?api=1&amp;query=Pol%C3%ADgono+Industrial+La+Sagra,+Calle+A,+Hu%C3%A9scar,+Granada" target="_blank" class="btn btn-secondary btn-block btn-sm" id="btn-view-large-map">
                                     <i class="fa-solid fa-map-pin"></i> Ver Mapa Ampliado
                                 </a>
                             </div>
+                        </div>
+                    </div>
+
+                    <!-- Column 2: Premium Contact Form -->
+                    <div class="contact-form-area reveal delay-1">
+                        <div class="table-card" style="padding: 2.5rem; text-align: left; background: #0f1c3f; border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; box-shadow: 0 20px 40px rgba(0,0,0,0.5);">
+                            <h3 style="font-family: var(--font-heading); color: #fff; margin-top: 0; margin-bottom: 0.5rem; font-size: 1.4rem; display: flex; align-items: center; gap: 0.5rem;">
+                                <i class="fa-solid fa-envelope" style="color: var(--color-neon);"></i> Envíanos un Mensaje
+                            </h3>
+                            <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 2rem;">Rellena el formulario y envíalo directamente a nuestro WhatsApp oficial.</p>
+                            
+                            <form id="contact-whatsapp-form">
+                                <div class="custom-form-group" style="margin-bottom: 1.25rem;">
+                                    <label for="contact-form-name" style="display: block; font-size: 0.8rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 0.4rem; font-weight: 600;">Tu Nombre</label>
+                                    <input type="text" id="contact-form-name" class="search-input" style="padding-left: 1rem; width: 100%;" placeholder="" required>
+                                </div>
+                                <div class="custom-form-group" style="margin-bottom: 1.25rem;">
+                                    <label for="contact-form-phone" style="display: block; font-size: 0.8rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 0.4rem; font-weight: 600;">Teléfono o Email de Contacto</label>
+                                    <input type="text" id="contact-form-phone" class="search-input" style="padding-left: 1rem; width: 100%;" placeholder="" required>
+                                </div>
+                                <div class="custom-form-group" style="margin-bottom: 1.25rem;">
+                                    <label for="contact-form-reason" style="display: block; font-size: 0.8rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 0.4rem; font-weight: 600;">Motivo de Consulta</label>
+                                    <select id="contact-form-reason" class="select-filter" style="width: 100%; height: 42px; background: rgba(7, 14, 36, 0.5); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: var(--border-radius-sm); color: #fff;">
+                                        <option value="Duda sobre alquiler">Duda sobre alquiler</option>
+                                        <option value="Presupuesto a medida">Presupuesto a medida</option>
+                                        <option value="Problema con reserva">Problema con mi reserva</option>
+                                        <option value="Otro motivo">Otro motivo</option>
+                                    </select>
+                                </div>
+                                <div class="custom-form-group" style="margin-bottom: 1.5rem;">
+                                    <label for="contact-form-message" style="display: block; font-size: 0.8rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 0.4rem; font-weight: 600;">Tu Mensaje</label>
+                                    <textarea id="contact-form-message" class="custom-form-control" rows="4" placeholder="" required style="resize: vertical; min-height: 100px; padding: 0.8rem 1rem;"></textarea>
+                                </div>
+                                
+                                <button type="submit" class="btn btn-primary btn-block" style="background: var(--color-neon); color: #000; border-color: var(--color-neon); font-weight: 800; font-size: 0.95rem; height: 48px; justify-content: center;">
+                                    <i class="fa-brands fa-whatsapp" style="font-size: 1.2rem; margin-right: 0.4rem;"></i> Enviar por WhatsApp
+                                </button>
+                            </form>
                         </div>
                     </div>
                 </div>
@@ -634,7 +637,7 @@
         <div class="footer-top container">
             <div class="footer-brand-info">
                 <img src="assets/logo.png" alt="RentMeUskar Logotipo" class="footer-logo" id="footer-logo">
-                <p class="footer-brand-desc">Alquiler local de furgonetas de carga y pasajeros sin conductor. Comprometidos con el desarrollo y la movilidad del Altiplano Granadino.</p>
+                <p class="footer-brand-desc">Alquiler local de furgonetas con y sin conductor. Comprometidos con el desarrollo y la movilidad del Altiplano Granadino.</p>
                 <div class="social-links-premium" style="display: flex; align-items: center; gap: 1rem; margin-top: 1.2rem;">
                     <a href="https://facebook.com/rentmeuskar" target="_blank" style="display: flex; align-items: center; gap: 0.5rem; text-decoration: none; color: #fff; font-size: 0.9rem;" id="social-fb">
                         <span style="display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; border: 1.5px solid var(--color-neon); color: var(--color-neon);"><i class="fa-brands fa-facebook-f"></i></span>
@@ -769,17 +772,17 @@
                 
                 <div class="custom-form-group" style="text-align: left;">
                     <label for="review-code-input"><i class="fa-solid fa-ticket"></i> Código de Reserva (Verificado)</label>
-                    <input type="text" id="review-code-input" class="custom-form-control" placeholder="Ej: RMU-A39X" required style="text-transform: uppercase;">
+                    <input type="text" id="review-code-input" class="custom-form-control" placeholder="" required style="text-transform: uppercase;">
                 </div>
                 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                     <div class="custom-form-group" style="text-align: left;">
                         <label for="review-name-input"><i class="fa-solid fa-user"></i> Tu Nombre</label>
-                        <input type="text" id="review-name-input" class="custom-form-control" placeholder="Ej: Juan P." required>
+                        <input type="text" id="review-name-input" class="custom-form-control" placeholder="" required>
                     </div>
                     <div class="custom-form-group" style="text-align: left;">
-                        <label for="review-city-input"><i class="fa-solid fa-location-dot"></i> Ciudad / Rol</label>
-                        <input type="text" id="review-city-input" class="custom-form-control" placeholder="Ej: Galera" required>
+                        <label for="review-city-input"><i class="fa-solid fa-location-dot"></i> Ciudad</label>
+                        <input type="text" id="review-city-input" class="custom-form-control" placeholder="" required>
                     </div>
                 </div>
                 
@@ -797,7 +800,7 @@
                 
                 <div class="custom-form-group" style="text-align: left;">
                     <label for="review-comment-input"><i class="fa-solid fa-comment-dots"></i> Comentario / Reseña</label>
-                    <textarea id="review-comment-input" class="custom-form-control" rows="3" placeholder="Cuéntanos tu experiencia con el alquiler..." required style="resize: vertical; min-height: 80px;"></textarea>
+                    <textarea id="review-comment-input" class="custom-form-control" rows="3" placeholder="" style="resize: vertical; min-height: 80px;"></textarea>
                 </div>
                 
                 <button type="submit" class="btn btn-primary btn-block" style="margin-top: 1rem;">
@@ -903,6 +906,31 @@
             <div class="client-modal-actions" style="margin-top: 1.5rem; display: flex; justify-content: space-between; align-items: center;">
                 <span id="client-user-info" style="font-size: 0.85rem; color: var(--text-secondary);"></span>
                 <button class="btn" id="btn-client-logout" style="border-color: var(--color-danger); color: var(--color-danger);"><i class="fa-solid fa-power-off"></i> Cerrar Sesión</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Fotos de Inspección de Reserva (Cliente) -->
+    <div class="custom-modal-backdrop" id="client-photos-modal" style="display: none;">
+        <div class="custom-modal-card" style="max-width: 550px;">
+            <span class="custom-modal-close" onclick="closeAuthModal('client-photos-modal')">&times;</span>
+            <div class="custom-modal-header" style="text-align: left; margin-bottom: 1.5rem;">
+                <h2 style="font-family: var(--font-heading); color:#fff; font-size:1.3rem; margin-top:0; margin-bottom:0.3rem;"><i class="fa-solid fa-camera" style="color: var(--color-neon); margin-right: 0.3rem;"></i> Inspección del Vehículo</h2>
+                <p style="color: var(--text-secondary); font-size: 0.85rem; margin: 0;">Comprueba el estado de la furgoneta antes de la entrega y al devolverla.</p>
+            </div>
+            
+            <div style="margin-bottom: 1.5rem; text-align: left;">
+                <h3 style="font-size: 0.8rem; text-transform: uppercase; color: #fff; margin-bottom: 0.5rem; font-weight: 700; letter-spacing: 0.05em;">Antes de la Entrega</h3>
+                <div id="client-photos-before-container" style="display: flex; flex-wrap: wrap; gap: 8px; padding: 10px; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; min-height: 50px;">
+                    <!-- Inyectado por JS -->
+                </div>
+            </div>
+            
+            <div style="margin-bottom: 1rem; text-align: left;">
+                <h3 style="font-size: 0.8rem; text-transform: uppercase; color: #fff; margin-bottom: 0.5rem; font-weight: 700; letter-spacing: 0.05em;">Al Devolver</h3>
+                <div id="client-photos-after-container" style="display: flex; flex-wrap: wrap; gap: 8px; padding: 10px; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; min-height: 50px;">
+                    <!-- Inyectado por JS -->
+                </div>
             </div>
         </div>
     </div>

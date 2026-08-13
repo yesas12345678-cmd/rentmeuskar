@@ -715,11 +715,11 @@
             <form id="admin-login-form">
                 <div class="custom-form-group" style="margin-bottom: 1rem; text-align: left;">
                     <label style="display: block; font-size: 0.8rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 0.3rem; font-weight: 600; letter-spacing: 0.05em;">Usuario</label>
-                    <input type="text" id="admin-username" class="search-input" style="padding-left: 1rem;" required placeholder="zVaito">
+                    <input type="text" id="admin-username" class="search-input" style="padding-left: 1rem;" required placeholder="">
                 </div>
                 <div class="custom-form-group" style="margin-bottom: 1.5rem; text-align: left;">
                     <label style="display: block; font-size: 0.8rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 0.3rem; font-weight: 600; letter-spacing: 0.05em;">Contraseña</label>
-                    <input type="password" id="admin-password" class="search-input" style="padding-left: 1rem;" required placeholder="******">
+                    <input type="password" id="admin-password" class="search-input" style="padding-left: 1rem;" required placeholder="">
                 </div>
                 <button type="submit" class="btn btn-primary" style="width: 100%; padding: 0.8rem; justify-content: center;">Iniciar Sesión</button>
             </form>
@@ -922,6 +922,12 @@
                             <label style="display: block; font-size: 0.8rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 0.5rem; font-weight: 600; letter-spacing: 0.05em;">Domingos</label>
                             <input type="text" id="setting-hours-sundays" class="search-input" style="padding-left: 1rem;" required placeholder="Ej: Cerrado (Devoluciones pactadas)">
                         </div>
+                        <div class="custom-form-group" style="margin-bottom: 2rem; display: flex; align-items: center; gap: 0.5rem; justify-content: flex-start;">
+                            <input type="checkbox" id="setting-show-reviews-count" style="width: 18px; height: 18px; cursor: pointer; margin: 0; filter: accent-color(var(--color-neon));">
+                            <label for="setting-show-reviews-count" style="font-size: 0.85rem; color: #fff; cursor: pointer; user-select: none; margin: 0;">
+                                Mostrar mensaje de total de opiniones verificadas en la web pública
+                            </label>
+                        </div>
                         <button type="submit" class="btn btn-primary" style="width: 100%; height: 46px;">
                             <i class="fa-solid fa-floppy-disk"></i> Guardar Configuración
                         </button>
@@ -1071,6 +1077,276 @@
                     </div>
                 </div>
 
+                <!-- Formulario del Contrato Colapsable -->
+                <div style="margin-top: 1.2rem; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 1rem;">
+                    <button type="button" class="btn" id="btn-toggle-contract-form" style="width: 100%; justify-content: space-between; font-size: 0.8rem; padding: 6px 12px; background: rgba(0, 210, 255, 0.05); border-color: rgba(0, 210, 255, 0.15); color: var(--color-info); margin-bottom: 0.5rem;">
+                        <span><i class="fa-solid fa-file-contract"></i> Rellenar Datos del Contrato</span>
+                        <i class="fa-solid fa-chevron-down" id="contract-form-chevron"></i>
+                    </button>
+                    
+                    <div id="contract-form-container" style="display: none; margin-top: 0.8rem; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 12px; text-align: left;">
+                        <form id="contract-data-form">
+                            <!-- Sección 1: Datos de Arrendatario -->
+                            <h4 style="font-size: 0.8rem; color: var(--color-neon); margin-top: 0; margin-bottom: 0.6rem; border-bottom: 1px dashed rgba(255,255,255,0.1); padding-bottom: 3px;">1. Datos del Arrendatario</h4>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 0.8rem;">
+                                <div>
+                                    <label style="font-size: 0.7rem; color: var(--text-secondary); display: block; margin-bottom: 2px;">Tarifa Aplicada</label>
+                                    <input type="text" id="contract-applied-rate" class="search-input" style="height: 32px; font-size: 0.8rem; padding-left: 8px;" placeholder="Ej: 1 día / Fin de semana">
+                                </div>
+                                <div>
+                                    <label style="font-size: 0.7rem; color: var(--text-secondary); display: block; margin-bottom: 2px;">Fecha Nacimiento</label>
+                                    <input type="date" id="contract-client-birthdate" class="search-input" style="height: 32px; font-size: 0.8rem; padding-left: 8px;">
+                                </div>
+                            </div>
+                            <div style="margin-bottom: 0.8rem;">
+                                <label style="font-size: 0.7rem; color: var(--text-secondary); display: block; margin-bottom: 2px;">Dirección Completa</label>
+                                <input type="text" id="contract-client-address" class="search-input" style="height: 32px; font-size: 0.8rem; padding-left: 8px;" placeholder="Calle, Número, Piso">
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 0.8rem;">
+                                <div>
+                                    <label style="font-size: 0.7rem; color: var(--text-secondary); display: block; margin-bottom: 2px;">Cód. Postal</label>
+                                    <input type="text" id="contract-client-postal-code" class="search-input" style="height: 32px; font-size: 0.8rem; padding-left: 8px;" placeholder="18830">
+                                </div>
+                                <div>
+                                    <label style="font-size: 0.7rem; color: var(--text-secondary); display: block; margin-bottom: 2px;">Población</label>
+                                    <input type="text" id="contract-client-city" class="search-input" style="height: 32px; font-size: 0.8rem; padding-left: 8px;" placeholder="Huéscar">
+                                </div>
+                                <div>
+                                    <label style="font-size: 0.7rem; color: var(--text-secondary); display: block; margin-bottom: 2px;">Provincia</label>
+                                    <input type="text" id="contract-client-province" class="search-input" style="height: 32px; font-size: 0.8rem; padding-left: 8px;" placeholder="Granada">
+                                </div>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 0.8rem;">
+                                <div>
+                                    <label style="font-size: 0.7rem; color: var(--text-secondary); display: block; margin-bottom: 2px;">Nº Permiso Conducir</label>
+                                    <input type="text" id="contract-client-license-num" class="search-input" style="height: 32px; font-size: 0.8rem; padding-left: 8px;">
+                                </div>
+                                <div>
+                                    <label style="font-size: 0.7rem; color: var(--text-secondary); display: block; margin-bottom: 2px;">Fecha Expedición</label>
+                                    <input type="date" id="contract-client-license-exp" class="search-input" style="height: 32px; font-size: 0.8rem; padding-left: 8px;">
+                                </div>
+                            </div>
+
+                            <!-- Sección 2: Segundo Conductor -->
+                            <h4 style="font-size: 0.8rem; color: var(--color-neon); margin-top: 0.8rem; margin-bottom: 0.6rem; border-bottom: 1px dashed rgba(255,255,255,0.1); padding-bottom: 3px;">2. Segundo Conductor (Opcional)</h4>
+                            <div style="margin-bottom: 0.8rem;">
+                                <label style="font-size: 0.7rem; color: var(--text-secondary); display: block; margin-bottom: 2px;">Nombre y Apellidos</label>
+                                <input type="text" id="contract-second-driver-name" class="search-input" style="height: 32px; font-size: 0.8rem; padding-left: 8px;">
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 0.8rem;">
+                                <div>
+                                    <label style="font-size: 0.7rem; color: var(--text-secondary); display: block; margin-bottom: 2px;">DNI / NIE</label>
+                                    <input type="text" id="contract-second-driver-dni" class="search-input" style="height: 32px; font-size: 0.8rem; padding-left: 8px;">
+                                </div>
+                                <div>
+                                    <label style="font-size: 0.7rem; color: var(--text-secondary); display: block; margin-bottom: 2px;">Teléfono</label>
+                                    <input type="text" id="contract-second-driver-phone" class="search-input" style="height: 32px; font-size: 0.8rem; padding-left: 8px;">
+                                </div>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 0.8rem;">
+                                <div>
+                                    <label style="font-size: 0.7rem; color: var(--text-secondary); display: block; margin-bottom: 2px;">Nº Permiso Conducir</label>
+                                    <input type="text" id="contract-second-driver-license-num" class="search-input" style="height: 32px; font-size: 0.8rem; padding-left: 8px;">
+                                </div>
+                                <div>
+                                    <label style="font-size: 0.7rem; color: var(--text-secondary); display: block; margin-bottom: 2px;">Fecha Expedición</label>
+                                    <input type="date" id="contract-second-driver-license-exp" class="search-input" style="height: 32px; font-size: 0.8rem; padding-left: 8px;">
+                                </div>
+                            </div>
+
+                            <!-- Sección 3: Kilómetros, Combustible y Adblue -->
+                            <h4 style="font-size: 0.8rem; color: var(--color-neon); margin-top: 0.8rem; margin-bottom: 0.6rem; border-bottom: 1px dashed rgba(255,255,255,0.1); padding-bottom: 3px;">3. Control de Km y Combustible</h4>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 0.8rem;">
+                                <div>
+                                    <label style="font-size: 0.7rem; color: var(--text-secondary); display: block; margin-bottom: 2px;">Km Salida</label>
+                                    <input type="number" id="contract-km-out" class="search-input" style="height: 32px; font-size: 0.8rem; padding-left: 8px;" placeholder="0">
+                                </div>
+                                <div>
+                                    <label style="font-size: 0.7rem; color: var(--text-secondary); display: block; margin-bottom: 2px;">Km Devolución</label>
+                                    <input type="number" id="contract-km-in" class="search-input" style="height: 32px; font-size: 0.8rem; padding-left: 8px;" placeholder="0">
+                                </div>
+                                <div>
+                                    <label style="font-size: 0.7rem; color: var(--text-secondary); display: block; margin-bottom: 2px;">Km Incluidos</label>
+                                    <input type="number" id="contract-km-included" class="search-input" style="height: 32px; font-size: 0.8rem; padding-left: 8px;" placeholder="350">
+                                </div>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr 1.2fr; gap: 8px; margin-bottom: 0.8rem; align-items: center;">
+                                <div>
+                                    <label style="font-size: 0.7rem; color: var(--text-secondary); display: block; margin-bottom: 2px;">Precio / Km Extra (€)</label>
+                                    <input type="number" step="0.01" id="contract-km-price-extra" class="search-input" style="height: 32px; font-size: 0.8rem; padding-left: 8px;" placeholder="0.28">
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 6px; margin-top: 15px;">
+                                    <input type="checkbox" id="contract-km-extra-package" style="cursor: pointer; width: 14px; height: 14px;">
+                                    <label for="contract-km-extra-package" style="font-size: 0.75rem; color: #fff; cursor: pointer;">Paquete 100km / 20€+IVA</label>
+                                </div>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 0.8rem;">
+                                <div>
+                                    <label style="font-size: 0.7rem; color: var(--text-secondary); display: block; margin-bottom: 2px;">Combustible Entrega</label>
+                                    <select id="contract-fuel-out" class="search-input" style="height: 32px; font-size: 0.8rem; padding-left: 8px; background: #0f172a; border: 1px solid rgba(255,255,255,0.1);">
+                                        <option value="Lleno">Lleno</option>
+                                        <option value="3/4">3/4</option>
+                                        <option value="1/2">1/2</option>
+                                        <option value="1/4">1/4</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label style="font-size: 0.7rem; color: var(--text-secondary); display: block; margin-bottom: 2px;">Combustible Devolución</label>
+                                    <select id="contract-fuel-in" class="search-input" style="height: 32px; font-size: 0.8rem; padding-left: 8px; background: #0f172a; border: 1px solid rgba(255,255,255,0.1);">
+                                        <option value="Lleno">Lleno</option>
+                                        <option value="3/4">3/4</option>
+                                        <option value="1/2">1/2</option>
+                                        <option value="1/4">1/4</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 0.8rem;">
+                                <div>
+                                    <label style="font-size: 0.7rem; color: var(--text-secondary); display: block; margin-bottom: 2px;">AdBlue Entrega</label>
+                                    <select id="contract-adblue-out" class="search-input" style="height: 32px; font-size: 0.8rem; padding-left: 8px; background: #0f172a; border: 1px solid rgba(255,255,255,0.1);">
+                                        <option value="Lleno">Lleno</option>
+                                        <option value="3/4">3/4</option>
+                                        <option value="1/2">1/2</option>
+                                        <option value="1/4">1/4</option>
+                                        <option value="No aplica">No aplica</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label style="font-size: 0.7rem; color: var(--text-secondary); display: block; margin-bottom: 2px;">AdBlue Devolución</label>
+                                    <select id="contract-adblue-in" class="search-input" style="height: 32px; font-size: 0.8rem; padding-left: 8px; background: #0f172a; border: 1px solid rgba(255,255,255,0.1);">
+                                        <option value="Lleno">Lleno</option>
+                                        <option value="3/4">3/4</option>
+                                        <option value="1/2">1/2</option>
+                                        <option value="1/4">1/4</option>
+                                        <option value="No aplica">No aplica</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Sección 4: Condiciones Económicas -->
+                            <h4 style="font-size: 0.8rem; color: var(--color-neon); margin-top: 0.8rem; margin-bottom: 0.6rem; border-bottom: 1px dashed rgba(255,255,255,0.1); padding-bottom: 3px;">4. Condiciones Económicas</h4>
+                            <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 8px; margin-bottom: 0.8rem;">
+                                <div>
+                                    <label style="font-size: 0.7rem; color: var(--text-secondary); display: block; margin-bottom: 2px;">Método de Pago</label>
+                                    <select id="contract-payment-method" class="search-input" style="height: 32px; font-size: 0.8rem; padding-left: 8px; background: #0f172a; border: 1px solid rgba(255,255,255,0.1);">
+                                        <option value="tarjeta">Tarjeta</option>
+                                        <option value="efectivo">Efectivo</option>
+                                        <option value="transferencia">Transferencia</option>
+                                        <option value="bizum">Bizum</option>
+                                        <option value="otro">Otro</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label style="font-size: 0.7rem; color: var(--text-secondary); display: block; margin-bottom: 2px;">Precio Limpieza (€)</label>
+                                    <input type="number" step="0.01" id="contract-cleaning-price" class="search-input" style="height: 32px; font-size: 0.8rem; padding-left: 8px;" placeholder="0.00">
+                                </div>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 0.8rem;">
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <input type="checkbox" id="contract-fianza-returned-full" style="cursor: pointer; width: 14px; height: 14px;">
+                                    <label for="contract-fianza-returned-full" style="font-size: 0.75rem; color: #fff; cursor: pointer;">Fianza Devuelta Íntegra</label>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <input type="checkbox" id="contract-fianza-returned-partial" style="cursor: pointer; width: 14px; height: 14px;">
+                                    <label for="contract-fianza-returned-partial" style="font-size: 0.75rem; color: #fff; cursor: pointer;">Devuelta Parcialmente</label>
+                                </div>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 8px; margin-bottom: 0.8rem;">
+                                <div>
+                                    <label style="font-size: 0.7rem; color: var(--text-secondary); display: block; margin-bottom: 2px;">Importe Retenido (€)</label>
+                                    <input type="number" step="0.01" id="contract-fianza-retained-amount" class="search-input" style="height: 32px; font-size: 0.8rem; padding-left: 8px;" placeholder="0.00">
+                                </div>
+                                <div>
+                                    <label style="font-size: 0.7rem; color: var(--text-secondary); display: block; margin-bottom: 2px;">Motivo Retención</label>
+                                    <input type="text" id="contract-fianza-retained-reason" class="search-input" style="height: 32px; font-size: 0.8rem; padding-left: 8px;" placeholder="Desperfectos, retraso...">
+                                </div>
+                            </div>
+
+                            <!-- Sección 5: Estado de Limpieza -->
+                            <h4 style="font-size: 0.8rem; color: var(--color-neon); margin-top: 0.8rem; margin-bottom: 0.6rem; border-bottom: 1px dashed rgba(255,255,255,0.1); padding-bottom: 3px;">5. Estado del Vehículo en Entrega</h4>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 0.8rem;">
+                                <div style="display: flex; flex-direction: column; gap: 6px;">
+                                    <div style="display: flex; align-items: center; gap: 6px;">
+                                        <input type="checkbox" id="contract-clean-interior-yes" style="cursor: pointer; width: 14px; height: 14px;">
+                                        <label for="contract-clean-interior-yes" style="font-size: 0.75rem; color: #fff; cursor: pointer;">Interior Limpio</label>
+                                    </div>
+                                    <div style="display: flex; align-items: center; gap: 6px;">
+                                        <input type="checkbox" id="contract-clean-interior-no" style="cursor: pointer; width: 14px; height: 14px;">
+                                        <label for="contract-clean-interior-no" style="font-size: 0.75rem; color: #fff; cursor: pointer;">Interior Sucio</label>
+                                    </div>
+                                </div>
+                                <div style="display: flex; flex-direction: column; gap: 6px;">
+                                    <div style="display: flex; align-items: center; gap: 6px;">
+                                        <input type="checkbox" id="contract-clean-exterior-yes" style="cursor: pointer; width: 14px; height: 14px;">
+                                        <label for="contract-clean-exterior-yes" style="font-size: 0.75rem; color: #fff; cursor: pointer;">Exterior Limpio</label>
+                                    </div>
+                                    <div style="display: flex; align-items: center; gap: 6px;">
+                                        <input type="checkbox" id="contract-clean-exterior-no" style="cursor: pointer; width: 14px; height: 14px;">
+                                        <label for="contract-clean-exterior-no" style="font-size: 0.75rem; color: #fff; cursor: pointer;">Exterior Sucio</label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Sección 6: Accesorios Entregados -->
+                            <h4 style="font-size: 0.8rem; color: var(--color-neon); margin-top: 0.8rem; margin-bottom: 0.6rem; border-bottom: 1px dashed rgba(255,255,255,0.1); padding-bottom: 3px;">6. Accesorios Entregados</h4>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 0.8rem;">
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <input type="checkbox" id="contract-accessory-permiso" style="cursor: pointer; width: 13px; height: 13px;">
+                                    <label for="contract-accessory-permiso" style="font-size: 0.7rem; color: #fff; cursor: pointer;">Permiso Circulación</label>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <input type="checkbox" id="contract-accessory-ficha" style="cursor: pointer; width: 13px; height: 13px;">
+                                    <label for="contract-accessory-ficha" style="font-size: 0.7rem; color: #fff; cursor: pointer;">Ficha Técnica</label>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <input type="checkbox" id="contract-accessory-llave" style="cursor: pointer; width: 13px; height: 13px;">
+                                    <label for="contract-accessory-llave" style="font-size: 0.7rem; color: #fff; cursor: pointer;">Llave Principal</label>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <input type="checkbox" id="contract-accessory-llave-repuesto" style="cursor: pointer; width: 13px; height: 13px;">
+                                    <label for="contract-accessory-llave-repuesto" style="font-size: 0.7rem; color: #fff; cursor: pointer;">Llave Repuesto</label>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <input type="checkbox" id="contract-accessory-v16" style="cursor: pointer; width: 13px; height: 13px;">
+                                    <label for="contract-accessory-v16" style="font-size: 0.7rem; color: #fff; cursor: pointer;">Baliza V16</label>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <input type="checkbox" id="contract-accessory-adaptador" style="cursor: pointer; width: 13px; height: 13px;">
+                                    <label for="contract-accessory-adaptador" style="font-size: 0.7rem; color: #fff; cursor: pointer;">Adaptador 13->7 polos</label>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <input type="checkbox" id="contract-accessory-gancho" style="cursor: pointer; width: 13px; height: 13px;">
+                                    <label for="contract-accessory-gancho" style="font-size: 0.7rem; color: #fff; cursor: pointer;">Gancho Remolque</label>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <input type="checkbox" id="contract-accessory-chaleco" style="cursor: pointer; width: 13px; height: 13px;">
+                                    <label for="contract-accessory-chaleco" style="font-size: 0.7rem; color: #fff; cursor: pointer;">Chaleco Reflectante</label>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <input type="checkbox" id="contract-accessory-rueda" style="cursor: pointer; width: 13px; height: 13px;">
+                                    <label for="contract-accessory-rueda" style="font-size: 0.7rem; color: #fff; cursor: pointer;">Rueda Repuesto/Kit</label>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <input type="checkbox" id="contract-accessory-gato" style="cursor: pointer; width: 13px; height: 13px;">
+                                    <label for="contract-accessory-gato" style="font-size: 0.7rem; color: #fff; cursor: pointer;">Gato y Herramientas</label>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <input type="checkbox" id="contract-accessory-manual" style="cursor: pointer; width: 13px; height: 13px;">
+                                    <label for="contract-accessory-manual" style="font-size: 0.7rem; color: #fff; cursor: pointer;">Manual Vehículo</label>
+                                </div>
+                            </div>
+                            <div style="margin-bottom: 0.8rem;">
+                                <label style="font-size: 0.7rem; color: var(--text-secondary); display: block; margin-bottom: 2px;">Otros Accesorios / Comentarios</label>
+                                <input type="text" id="contract-accessory-others" class="search-input" style="height: 32px; font-size: 0.8rem; padding-left: 8px;" placeholder="Ej: Cinchas de amarre">
+                            </div>
+
+                            <button type="button" class="btn btn-primary" id="btn-save-contract-data" style="width: 100%; justify-content: center; font-size: 0.85rem; padding: 8px; margin-top: 0.5rem; background: var(--color-neon); color: #000;">
+                                <i class="fa-solid fa-floppy-disk"></i> Guardar Cambios Contrato
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
                 <!-- Inspección del vehículo y fotos -->
                 <div style="margin-top: 1.2rem; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 1rem;">
                     <h3 style="font-size: 0.95rem; font-family: var(--font-heading); margin-bottom: 0.8rem; color: #fff;"><i class="fa-solid fa-camera"></i> Inspección (Fotos de Control)</h3>
@@ -1104,7 +1380,7 @@
 
     <!-- Add/Edit Van Modal -->
     <div class="modal" id="van-modal">
-        <div class="modal-content" style="max-width: 500px;">
+        <div class="modal-content" style="max-width: 650px; width: 95%;">
             <span class="modal-close" id="van-modal-close-btn">&times;</span>
             <div class="modal-header">
                 <h2 id="van-modal-title">Añadir Nueva Furgoneta</h2>
@@ -1135,6 +1411,35 @@
                 <div class="custom-form-group" style="margin-bottom: 1rem; text-align: left;">
                     <label style="display: block; font-size: 0.8rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 0.3rem; font-weight: 600; letter-spacing: 0.05em;">Tarifa Diaria (Sin Conductor)</label>
                     <input type="number" step="0.01" id="van-form-price-sin" class="search-input" style="padding-left: 1rem;" required placeholder="79.00">
+                </div>
+                <div class="custom-form-group" style="margin-bottom: 1rem; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; text-align: left;">
+                    <div>
+                        <label style="display: block; font-size: 0.8rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 0.3rem; font-weight: 600; letter-spacing: 0.05em;">Ocupantes Máx.</label>
+                        <input type="number" id="van-form-occupants" class="search-input" style="padding-left: 1rem;" required placeholder="3">
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 0.8rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 0.3rem; font-weight: 600; letter-spacing: 0.05em;">Etiqueta ECO/C</label>
+                        <input type="text" id="van-form-eco-label" class="search-input" style="padding-left: 1rem;" required placeholder="C">
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 0.8rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 0.3rem; font-weight: 600; letter-spacing: 0.05em;">Combustible</label>
+                        <select id="van-form-fuel-type" class="search-input" style="padding-left: 1rem; background: #0f172a; border: 1px solid rgba(255,255,255,0.1); height: 42px;">
+                            <option value="GASOIL">Gasoil</option>
+                            <option value="GASOLINA">Gasolina</option>
+                            <option value="ELÉCTRICO">Eléctrico</option>
+                            <option value="HÍBRIDO">Híbrido</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="custom-form-group" style="margin-bottom: 1rem; display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; text-align: left;">
+                    <div>
+                        <label style="display: block; font-size: 0.8rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 0.3rem; font-weight: 600; letter-spacing: 0.05em;">KM/Día Incluidos</label>
+                        <input type="number" id="van-form-km-limit" class="search-input" style="padding-left: 1rem;" required placeholder="350">
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 0.8rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 0.3rem; font-weight: 600; letter-spacing: 0.05em;">Masa Máx. (MMA kg)</label>
+                        <input type="number" id="van-form-max-mass" class="search-input" style="padding-left: 1rem;" required placeholder="2800">
+                    </div>
                 </div>
                 <div class="custom-form-group" style="margin-bottom: 1rem; display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; text-align: left;">
                     <div>
@@ -1174,14 +1479,14 @@
                         </button>
                     </div>
                     
-                    <div style="max-height: 150px; overflow-y: auto; border: 1px solid rgba(255,255,255,0.05); border-radius: var(--border-radius-sm); background: rgba(0,0,0,0.2);">
-                        <table class="bookings-table" style="font-size: 0.8rem; margin: 0;">
+                    <div style="border: 1px solid rgba(255,255,255,0.05); border-radius: var(--border-radius-sm); background: rgba(0,0,0,0.2); overflow-x: hidden; width: 100%;">
+                        <table style="width: 100%; font-size: 0.85rem; margin: 0; border-collapse: collapse; background: transparent;">
                             <thead>
-                                <tr>
-                                    <th>Extra</th>
-                                    <th>Precio</th>
-                                    <th>Cálculo</th>
-                                    <th style="width: 60px;">Acción</th>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.02);">
+                                    <th style="padding: 10px; text-align: left; color: var(--text-secondary); font-weight: 600;">Extra</th>
+                                    <th style="padding: 10px; text-align: left; color: var(--text-secondary); font-weight: 600;">Precio</th>
+                                    <th style="padding: 10px; text-align: left; color: var(--text-secondary); font-weight: 600;">Tipo</th>
+                                    <th style="padding: 10px; text-align: center; color: var(--text-secondary); font-weight: 600; width: 60px;">Acción</th>
                                 </tr>
                             </thead>
                             <tbody id="van-extras-preview-tbody">

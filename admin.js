@@ -59,6 +59,58 @@ const initAdmin = () => {
     const btnTriggerBefore = document.getElementById('btn-trigger-before');
     const btnTriggerAfter = document.getElementById('btn-trigger-after');
 
+    // Elementos del formulario de contrato colapsable
+    const btnToggleContractForm = document.getElementById('btn-toggle-contract-form');
+    const contractFormContainer = document.getElementById('contract-form-container');
+    const contractFormChevron = document.getElementById('contract-form-chevron');
+    const btnSaveContractData = document.getElementById('btn-save-contract-data');
+    
+    // Inputs del contrato
+    const contractAppliedRate = document.getElementById('contract-applied-rate');
+    const contractClientBirthdate = document.getElementById('contract-client-birthdate');
+    const contractClientAddress = document.getElementById('contract-client-address');
+    const contractClientPostalCode = document.getElementById('contract-client-postal-code');
+    const contractClientCity = document.getElementById('contract-client-city');
+    const contractClientProvince = document.getElementById('contract-client-province');
+    const contractClientLicenseNum = document.getElementById('contract-client-license-num');
+    const contractClientLicenseExp = document.getElementById('contract-client-license-exp');
+    const contractSecondDriverName = document.getElementById('contract-second-driver-name');
+    const contractSecondDriverDni = document.getElementById('contract-second-driver-dni');
+    const contractSecondDriverPhone = document.getElementById('contract-second-driver-phone');
+    const contractSecondDriverLicenseNum = document.getElementById('contract-second-driver-license-num');
+    const contractSecondDriverLicenseExp = document.getElementById('contract-second-driver-license-exp');
+    const contractKmOut = document.getElementById('contract-km-out');
+    const contractKmIn = document.getElementById('contract-km-in');
+    const contractKmIncluded = document.getElementById('contract-km-included');
+    const contractKmPriceExtra = document.getElementById('contract-km-price-extra');
+    const contractKmExtraPackage = document.getElementById('contract-km-extra-package');
+    const contractFuelOut = document.getElementById('contract-fuel-out');
+    const contractFuelIn = document.getElementById('contract-fuel-in');
+    const contractAdblueOut = document.getElementById('contract-adblue-out');
+    const contractAdblueIn = document.getElementById('contract-adblue-in');
+    const contractPaymentMethod = document.getElementById('contract-payment-method');
+    const contractCleaningPrice = document.getElementById('contract-cleaning-price');
+    const contractFianzaReturnedFull = document.getElementById('contract-fianza-returned-full');
+    const contractFianzaReturnedPartial = document.getElementById('contract-fianza-returned-partial');
+    const contractFianzaRetainedAmount = document.getElementById('contract-fianza-retained-amount');
+    const contractFianzaRetainedReason = document.getElementById('contract-fianza-retained-reason');
+    const contractCleanInteriorYes = document.getElementById('contract-clean-interior-yes');
+    const contractCleanInteriorNo = document.getElementById('contract-clean-interior-no');
+    const contractCleanExteriorYes = document.getElementById('contract-clean-exterior-yes');
+    const contractCleanExteriorNo = document.getElementById('contract-clean-exterior-no');
+    const contractAccessoryPermiso = document.getElementById('contract-accessory-permiso');
+    const contractAccessoryFicha = document.getElementById('contract-accessory-ficha');
+    const contractAccessoryLlave = document.getElementById('contract-accessory-llave');
+    const contractAccessoryLlaveRepuesto = document.getElementById('contract-accessory-llave-repuesto');
+    const contractAccessoryV16 = document.getElementById('contract-accessory-v16');
+    const contractAccessoryAdaptador = document.getElementById('contract-accessory-adaptador');
+    const contractAccessoryGancho = document.getElementById('contract-accessory-gancho');
+    const contractAccessoryChaleco = document.getElementById('contract-accessory-chaleco');
+    const contractAccessoryRueda = document.getElementById('contract-accessory-rueda');
+    const contractAccessoryGato = document.getElementById('contract-accessory-gato');
+    const contractAccessoryManual = document.getElementById('contract-accessory-manual');
+    const contractAccessoryOthers = document.getElementById('contract-accessory-others');
+
     const modalCreatedAt = document.getElementById('modal-created-at');
     const modalTotalPrice = document.getElementById('modal-total-price');
     const modalActionsFooter = document.getElementById('modal-actions-footer');
@@ -92,6 +144,11 @@ const initAdmin = () => {
     const btnAddVanExtra = document.getElementById('btn-add-van-extra');
     const vanExtrasPreviewTbody = document.getElementById('van-extras-preview-tbody');
     const vanFormStatus = document.getElementById('van-form-status');
+    const vanFormOccupants = document.getElementById('van-form-occupants');
+    const vanFormEcoLabel = document.getElementById('van-form-eco-label');
+    const vanFormFuelType = document.getElementById('van-form-fuel-type');
+    const vanFormKmLimit = document.getElementById('van-form-km-limit');
+    const vanFormMaxMass = document.getElementById('van-form-max-mass');
     const vanBtnCancel = document.getElementById('van-btn-cancel');
     const vanModalTitle = document.getElementById('van-modal-title');
     const vanFormImagesInput = document.getElementById('van-form-images-input');
@@ -105,6 +162,7 @@ const initAdmin = () => {
     const settingHoursWeekdays = document.getElementById('setting-hours-weekdays');
     const settingHoursSaturdays = document.getElementById('setting-hours-saturdays');
     const settingHoursSundays = document.getElementById('setting-hours-sundays');
+    const settingShowReviewsCount = document.getElementById('setting-show-reviews-count');
     
     // Elementos de Reseñas / Códigos
     const btnGenerateCode = document.getElementById('btn-generate-code');
@@ -114,8 +172,7 @@ const initAdmin = () => {
     
     // Variables de Estado de Flota
     let fleet = [];
-    let currentVanImages = [];
-    let newVanFiles = [];
+    let currentFormPhotos = [];
     let currentVanExtras = [];
 
     /* ==========================================================================
@@ -530,6 +587,62 @@ const initAdmin = () => {
         // Cargar fotos antes/después
         renderPhotosList(booking.photos_before || [], modalPhotosBefore);
         renderPhotosList(booking.photos_after || [], modalPhotosAfter);
+
+        // Resetear colapsable contrato
+        contractFormContainer.style.display = 'none';
+        contractFormChevron.className = 'fa-solid fa-chevron-down';
+
+        // Rellenar formulario contrato
+        contractAppliedRate.value = booking.contract_applied_rate || '';
+        contractClientBirthdate.value = booking.client_birthdate ? booking.client_birthdate.split('T')[0] : '';
+        contractClientAddress.value = booking.client_address || '';
+        contractClientPostalCode.value = booking.client_postal_code || '';
+        contractClientCity.value = booking.client_city || '';
+        contractClientProvince.value = booking.client_province || '';
+        contractClientLicenseNum.value = booking.client_license_num || '';
+        contractClientLicenseExp.value = booking.client_license_exp ? booking.client_license_exp.split('T')[0] : '';
+        
+        contractSecondDriverName.value = booking.second_driver_name || '';
+        contractSecondDriverDni.value = booking.second_driver_dni || '';
+        contractSecondDriverPhone.value = booking.second_driver_phone || '';
+        contractSecondDriverLicenseNum.value = booking.second_driver_license_num || '';
+        contractSecondDriverLicenseExp.value = booking.second_driver_license_exp ? booking.second_driver_license_exp.split('T')[0] : '';
+        
+        contractKmOut.value = booking.km_out !== undefined && booking.km_out !== null ? booking.km_out : 0;
+        contractKmIn.value = booking.km_in !== undefined && booking.km_in !== null ? booking.km_in : 0;
+        contractKmIncluded.value = booking.km_included !== undefined && booking.km_included !== null ? booking.km_included : 350;
+        contractKmPriceExtra.value = booking.km_price_extra !== undefined && booking.km_price_extra !== null ? booking.km_price_extra : 0.28;
+        contractKmExtraPackage.checked = !!booking.km_extra_package;
+        
+        contractFuelOut.value = booking.fuel_out || 'Lleno';
+        contractFuelIn.value = booking.fuel_in || 'Lleno';
+        contractAdblueOut.value = booking.adblue_out || 'Lleno';
+        contractAdblueIn.value = booking.adblue_in || 'Lleno';
+        
+        contractPaymentMethod.value = booking.payment_method || 'tarjeta';
+        contractCleaningPrice.value = booking.cleaning_price !== undefined && booking.cleaning_price !== null ? booking.cleaning_price : 0.00;
+        contractFianzaReturnedFull.checked = !!booking.fianza_returned_full;
+        contractFianzaReturnedPartial.checked = !!booking.fianza_returned_partial;
+        contractFianzaRetainedAmount.value = booking.fianza_retained_amount !== undefined && booking.fianza_retained_amount !== null ? booking.fianza_retained_amount : 0.00;
+        contractFianzaRetainedReason.value = booking.fianza_retained_reason || '';
+        
+        contractCleanInteriorYes.checked = !!booking.clean_interior_yes;
+        contractCleanInteriorNo.checked = !!booking.clean_interior_no;
+        contractCleanExteriorYes.checked = !!booking.clean_exterior_yes;
+        contractCleanExteriorNo.checked = !!booking.clean_exterior_no;
+        
+        contractAccessoryPermiso.checked = !!booking.accessory_permiso;
+        contractAccessoryFicha.checked = !!booking.accessory_ficha;
+        contractAccessoryLlave.checked = !!booking.accessory_llave;
+        contractAccessoryLlaveRepuesto.checked = !!booking.accessory_llave_repuesto;
+        contractAccessoryV16.checked = !!booking.accessory_v16;
+        contractAccessoryAdaptador.checked = !!booking.accessory_adaptador;
+        contractAccessoryGancho.checked = !!booking.accessory_gancho;
+        contractAccessoryChaleco.checked = !!booking.accessory_chaleco;
+        contractAccessoryRueda.checked = !!booking.accessory_rueda;
+        contractAccessoryGato.checked = !!booking.accessory_gato;
+        contractAccessoryManual.checked = !!booking.accessory_manual;
+        contractAccessoryOthers.value = booking.accessory_others || '';
         
         // Inyectar botones dinámicos en el footer
         const phone = booking.client_phone || '34614767411';
@@ -661,6 +774,74 @@ const initAdmin = () => {
     inputUploadBefore.addEventListener('change', () => uploadFiles('before'));
     inputUploadAfter.addEventListener('change', () => uploadFiles('after'));
 
+    // Toggle colapsable formulario contrato
+    btnToggleContractForm.addEventListener('click', (e) => {
+        e.preventDefault();
+        const isHidden = contractFormContainer.style.display === 'none';
+        contractFormContainer.style.display = isHidden ? 'block' : 'none';
+        contractFormChevron.className = isHidden ? 'fa-solid fa-chevron-up' : 'fa-solid fa-chevron-down';
+    });
+
+    // Guardar cambios del contrato
+    btnSaveContractData.addEventListener('click', async () => {
+        if (!selectedBooking) return;
+        
+        const fields = {
+            contract_applied_rate: contractAppliedRate.value.trim(),
+            client_birthdate: contractClientBirthdate.value ? contractClientBirthdate.value : null,
+            client_address: contractClientAddress.value.trim(),
+            client_postal_code: contractClientPostalCode.value.trim(),
+            client_city: contractClientCity.value.trim(),
+            client_province: contractClientProvince.value.trim(),
+            client_license_num: contractClientLicenseNum.value.trim(),
+            client_license_exp: contractClientLicenseExp.value ? contractClientLicenseExp.value : null,
+            
+            second_driver_name: contractSecondDriverName.value.trim(),
+            second_driver_dni: contractSecondDriverDni.value.trim(),
+            second_driver_phone: contractSecondDriverPhone.value.trim(),
+            second_driver_license_num: contractSecondDriverLicenseNum.value.trim(),
+            second_driver_license_exp: contractSecondDriverLicenseExp.value ? contractSecondDriverLicenseExp.value : null,
+            
+            km_out: parseInt(contractKmOut.value) || 0,
+            km_in: parseInt(contractKmIn.value) || 0,
+            km_included: parseInt(contractKmIncluded.value) || 350,
+            km_price_extra: parseFloat(contractKmPriceExtra.value) || 0.28,
+            km_extra_package: contractKmExtraPackage.checked,
+            
+            fuel_out: contractFuelOut.value,
+            fuel_in: contractFuelIn.value,
+            adblue_out: contractAdblueOut.value,
+            adblue_in: contractAdblueIn.value,
+            
+            payment_method: contractPaymentMethod.value,
+            cleaning_price: parseFloat(contractCleaningPrice.value) || 0.00,
+            fianza_returned_full: contractFianzaReturnedFull.checked,
+            fianza_returned_partial: contractFianzaReturnedPartial.checked,
+            fianza_retained_amount: parseFloat(contractFianzaRetainedAmount.value) || 0.00,
+            fianza_retained_reason: contractFianzaRetainedReason.value.trim(),
+            
+            clean_interior_yes: contractCleanInteriorYes.checked,
+            clean_interior_no: contractCleanInteriorNo.checked,
+            clean_exterior_yes: contractCleanExteriorYes.checked,
+            clean_exterior_no: contractCleanExteriorNo.checked,
+            
+            accessory_permiso: contractAccessoryPermiso.checked,
+            accessory_ficha: contractAccessoryFicha.checked,
+            accessory_llave: contractAccessoryLlave.checked,
+            accessory_llave_repuesto: contractAccessoryLlaveRepuesto.checked,
+            accessory_v16: contractAccessoryV16.checked,
+            accessory_adaptador: contractAccessoryAdaptador.checked,
+            accessory_gancho: contractAccessoryGancho.checked,
+            accessory_chaleco: contractAccessoryChaleco.checked,
+            accessory_rueda: contractAccessoryRueda.checked,
+            accessory_gato: contractAccessoryGato.checked,
+            accessory_manual: contractAccessoryManual.checked,
+            accessory_others: contractAccessoryOthers.value.trim()
+        };
+        
+        await updateBookingInApi(selectedBooking.id, fields);
+    });
+
     const closeModal = () => {
         modal.classList.remove('active');
         selectedBooking = null;
@@ -729,6 +910,9 @@ const initAdmin = () => {
             settingHoursWeekdays.value = data.hours_weekdays || '';
             settingHoursSaturdays.value = data.hours_saturdays || '';
             settingHoursSundays.value = data.hours_sundays || '';
+            if (settingShowReviewsCount) {
+                settingShowReviewsCount.checked = data.show_reviews_count === 'true';
+            }
         } catch (err) {
             console.error('Error al obtener configuraciones:', err);
             showToast('Error al conectar con la API de configuración.', 'error');
@@ -991,120 +1175,152 @@ const initAdmin = () => {
         }
     };
 
-    // Renderizar la previsualización de imágenes de furgonetas en el modal
+    // Renderizar la previsualización de imágenes de furgonetas en el modal con soporte de ordenación
     const renderVanImagesPreview = () => {
         vanImagesPreviewGrid.innerHTML = '';
         
-        const totalImages = currentVanImages.length + newVanFiles.length;
-        if (totalImages === 0) {
+        if (currentFormPhotos.length === 0) {
             vanImagesPreviewGrid.innerHTML = '<span style="grid-column: 1 / -1; font-size: 0.75rem; color: var(--text-muted); text-align: center; width: 100%; padding: 0.5rem 0;">Sin imágenes (se usará silueta genérica)</span>';
             return;
         }
 
-        // 1. Mostrar imágenes existentes cargadas de la base de datos
-        currentVanImages.forEach((imgUrl, index) => {
-            const container = document.createElement('div');
-            container.style.position = 'relative';
-            container.style.width = '100%';
-            container.style.height = '60px';
-            container.style.borderRadius = '4px';
-            container.style.overflow = 'hidden';
-            container.style.border = '1px solid rgba(255,255,255,0.1)';
+        currentFormPhotos.forEach((photo, index) => {
+            const card = document.createElement('div');
+            card.style.display = 'flex';
+            card.style.flexDirection = 'column';
+            card.style.width = '100px';
+            card.style.gap = '4px';
+            card.style.background = 'rgba(255, 255, 255, 0.03)';
+            card.style.borderRadius = '8px';
+            card.style.padding = '4px';
+            card.style.border = index === 0 ? '2px solid var(--color-neon)' : '1px solid rgba(255, 255, 255, 0.1)';
+
+            const imgContainer = document.createElement('div');
+            imgContainer.style.position = 'relative';
+            imgContainer.style.width = '100%';
+            imgContainer.style.height = '65px';
+            imgContainer.style.borderRadius = '6px';
+            imgContainer.style.overflow = 'hidden';
 
             const img = document.createElement('img');
-            img.src = imgUrl;
+            img.src = photo.type === 'server' ? photo.url : photo.previewUrl;
             img.style.width = '100%';
             img.style.height = '100%';
             img.style.objectFit = 'cover';
+            imgContainer.appendChild(img);
 
-            const deleteBtn = document.createElement('button');
-            deleteBtn.type = 'button';
-            deleteBtn.innerHTML = '&times;';
-            deleteBtn.style.position = 'absolute';
-            deleteBtn.style.top = '2px';
-            deleteBtn.style.right = '2px';
-            deleteBtn.style.background = 'rgba(239, 68, 68, 0.85)';
-            deleteBtn.style.color = '#fff';
-            deleteBtn.style.border = 'none';
-            deleteBtn.style.borderRadius = '50%';
-            deleteBtn.style.width = '18px';
-            deleteBtn.style.height = '18px';
-            deleteBtn.style.display = 'flex';
-            deleteBtn.style.alignItems = 'center';
-            deleteBtn.style.justifyContent = 'center';
-            deleteBtn.style.fontSize = '12px';
-            deleteBtn.style.cursor = 'pointer';
-            deleteBtn.style.padding = '0';
-            deleteBtn.style.lineHeight = '1';
+            // Badge de Portada
+            if (index === 0) {
+                const coverBadge = document.createElement('span');
+                coverBadge.textContent = 'PORTADA';
+                coverBadge.style.position = 'absolute';
+                coverBadge.style.top = '3px';
+                coverBadge.style.left = '3px';
+                coverBadge.style.background = 'var(--color-neon)';
+                coverBadge.style.color = '#000';
+                coverBadge.style.fontSize = '7px';
+                coverBadge.style.fontWeight = '900';
+                coverBadge.style.padding = '1px 3px';
+                coverBadge.style.borderRadius = '2px';
+                coverBadge.style.zIndex = '2';
+                imgContainer.appendChild(coverBadge);
+            } else if (photo.type === 'file') {
+                const newBadge = document.createElement('span');
+                newBadge.textContent = 'NUEVA';
+                newBadge.style.position = 'absolute';
+                newBadge.style.bottom = '3px';
+                newBadge.style.left = '3px';
+                newBadge.style.background = 'rgba(255, 255, 255, 0.15)';
+                newBadge.style.color = '#fff';
+                newBadge.style.fontSize = '7px';
+                newBadge.style.fontWeight = '700';
+                newBadge.style.padding = '1px 3px';
+                newBadge.style.borderRadius = '2px';
+                newBadge.style.zIndex = '2';
+                imgContainer.appendChild(newBadge);
+            }
 
-            deleteBtn.addEventListener('click', () => {
-                currentVanImages.splice(index, 1);
+            card.appendChild(imgContainer);
+
+            // Botones de Ordenación y Borrado siempre visibles
+            const btnRow = document.createElement('div');
+            btnRow.style.display = 'flex';
+            btnRow.style.justifyContent = 'space-between';
+            btnRow.style.gap = '2px';
+            btnRow.style.marginTop = '2px';
+
+            // Flecha Izquierda
+            const leftBtn = document.createElement('button');
+            leftBtn.type = 'button';
+            leftBtn.innerHTML = '<i class="fa-solid fa-chevron-left"></i>';
+            leftBtn.style.background = 'rgba(255,255,255,0.05)';
+            leftBtn.style.border = 'none';
+            leftBtn.style.color = '#fff';
+            leftBtn.style.flex = '1';
+            leftBtn.style.height = '20px';
+            leftBtn.style.borderRadius = '4px';
+            leftBtn.style.cursor = index === 0 ? 'not-allowed' : 'pointer';
+            leftBtn.style.opacity = index === 0 ? '0.2' : '0.8';
+            leftBtn.style.padding = '0';
+            leftBtn.style.fontSize = '0.75rem';
+            if (index > 0) {
+                leftBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const temp = currentFormPhotos[index];
+                    currentFormPhotos[index] = currentFormPhotos[index - 1];
+                    currentFormPhotos[index - 1] = temp;
+                    renderVanImagesPreview();
+                });
+            }
+            btnRow.appendChild(leftBtn);
+
+            // Borrar
+            const delBtn = document.createElement('button');
+            delBtn.type = 'button';
+            delBtn.innerHTML = '<i class="fa-solid fa-trash"></i>';
+            delBtn.style.background = 'rgba(239, 68, 68, 0.2)';
+            delBtn.style.border = 'none';
+            delBtn.style.color = '#ef4444';
+            delBtn.style.flex = '1';
+            delBtn.style.height = '20px';
+            delBtn.style.borderRadius = '4px';
+            delBtn.style.cursor = 'pointer';
+            delBtn.style.padding = '0';
+            delBtn.style.fontSize = '0.75rem';
+            delBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                currentFormPhotos.splice(index, 1);
                 renderVanImagesPreview();
             });
+            btnRow.appendChild(delBtn);
 
-            container.appendChild(img);
-            container.appendChild(deleteBtn);
-            vanImagesPreviewGrid.appendChild(container);
-        });
+            // Flecha Derecha
+            const rightBtn = document.createElement('button');
+            rightBtn.type = 'button';
+            rightBtn.innerHTML = '<i class="fa-solid fa-chevron-right"></i>';
+            rightBtn.style.background = 'rgba(255,255,255,0.05)';
+            rightBtn.style.border = 'none';
+            rightBtn.style.color = '#fff';
+            rightBtn.style.flex = '1';
+            rightBtn.style.height = '20px';
+            rightBtn.style.borderRadius = '4px';
+            rightBtn.style.cursor = index === currentFormPhotos.length - 1 ? 'not-allowed' : 'pointer';
+            rightBtn.style.opacity = index === currentFormPhotos.length - 1 ? '0.2' : '0.8';
+            rightBtn.style.padding = '0';
+            rightBtn.style.fontSize = '0.75rem';
+            if (index < currentFormPhotos.length - 1) {
+                rightBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const temp = currentFormPhotos[index];
+                    currentFormPhotos[index] = currentFormPhotos[index + 1];
+                    currentFormPhotos[index + 1] = temp;
+                    renderVanImagesPreview();
+                });
+            }
+            btnRow.appendChild(rightBtn);
 
-        // 2. Mostrar imágenes nuevas seleccionadas pendientes de subir
-        newVanFiles.forEach((file, index) => {
-            const container = document.createElement('div');
-            container.style.position = 'relative';
-            container.style.width = '100%';
-            container.style.height = '60px';
-            container.style.borderRadius = '4px';
-            container.style.overflow = 'hidden';
-            container.style.border = '1px dashed var(--color-neon)';
-
-            const img = document.createElement('img');
-            img.src = URL.createObjectURL(file);
-            img.style.width = '100%';
-            img.style.height = '100%';
-            img.style.objectFit = 'cover';
-
-            const deleteBtn = document.createElement('button');
-            deleteBtn.type = 'button';
-            deleteBtn.innerHTML = '&times;';
-            deleteBtn.style.position = 'absolute';
-            deleteBtn.style.top = '2px';
-            deleteBtn.style.right = '2px';
-            deleteBtn.style.background = 'rgba(239, 68, 68, 0.85)';
-            deleteBtn.style.color = '#fff';
-            deleteBtn.style.border = 'none';
-            deleteBtn.style.borderRadius = '50%';
-            deleteBtn.style.width = '18px';
-            deleteBtn.style.height = '18px';
-            deleteBtn.style.display = 'flex';
-            deleteBtn.style.alignItems = 'center';
-            deleteBtn.style.justifyContent = 'center';
-            deleteBtn.style.fontSize = '12px';
-            deleteBtn.style.cursor = 'pointer';
-            deleteBtn.style.padding = '0';
-            deleteBtn.style.lineHeight = '1';
-
-            // Etiqueta indicando que es nueva
-            const newBadge = document.createElement('span');
-            newBadge.textContent = 'NUEVA';
-            newBadge.style.position = 'absolute';
-            newBadge.style.bottom = '2px';
-            newBadge.style.left = '2px';
-            newBadge.style.background = 'var(--color-neon)';
-            newBadge.style.color = '#000';
-            newBadge.style.fontSize = '8px';
-            newBadge.style.fontWeight = '700';
-            newBadge.style.padding = '1px 3px';
-            newBadge.style.borderRadius = '2px';
-
-            deleteBtn.addEventListener('click', () => {
-                newVanFiles.splice(index, 1);
-                renderVanImagesPreview();
-            });
-
-            container.appendChild(img);
-            container.appendChild(deleteBtn);
-            container.appendChild(newBadge);
-            vanImagesPreviewGrid.appendChild(container);
+            card.appendChild(btnRow);
+            vanImagesPreviewGrid.appendChild(card);
         });
     };
 
@@ -1116,8 +1332,14 @@ const initAdmin = () => {
     // Control del cambio en la selección de archivos
     vanFormImagesInput.addEventListener('change', (e) => {
         const files = Array.from(e.target.files);
-        newVanFiles = [...newVanFiles, ...files];
-        vanFormImagesInput.value = ''; // Resetear para permitir seleccionar los mismos archivos
+        files.forEach(file => {
+            currentFormPhotos.push({
+                type: 'file',
+                file: file,
+                previewUrl: URL.createObjectURL(file)
+            });
+        });
+        vanFormImagesInput.value = ''; // Resetear
         renderVanImagesPreview();
     });
 
@@ -1127,7 +1349,7 @@ const initAdmin = () => {
         if (currentVanExtras.length === 0) {
             vanExtrasPreviewTbody.innerHTML = `
                 <tr>
-                    <td colspan="4" style="text-align: center; padding: 1rem; color: var(--text-muted);">
+                    <td colspan="4" style="text-align: center; padding: 1.5rem; color: var(--text-muted); font-size: 0.85rem;">
                         No se han añadido extras para este vehículo.
                     </td>
                 </tr>
@@ -1139,11 +1361,11 @@ const initAdmin = () => {
         currentVanExtras.forEach((extra, idx) => {
             const tr = document.createElement('tr');
             tr.innerHTML = `
-                <td><strong>${extra.name}</strong></td>
-                <td><strong>${parseFloat(extra.price).toFixed(2)} €</strong></td>
-                <td>${extra.type === 'daily' ? 'Por día' : 'Pago único'}</td>
-                <td>
-                    <button type="button" class="btn-icon delete remove-extra-btn" data-index="${idx}" style="padding: 2px 6px;">
+                <td style="padding: 8px 10px; border-bottom: 1px solid rgba(255,255,255,0.05); color:#fff;"><strong>${extra.name}</strong></td>
+                <td style="padding: 8px 10px; border-bottom: 1px solid rgba(255,255,255,0.05); color:var(--color-neon);"><strong>${parseFloat(extra.price).toFixed(2)} €</strong></td>
+                <td style="padding: 8px 10px; border-bottom: 1px solid rgba(255,255,255,0.05); color:var(--text-secondary);">${extra.type === 'daily' ? 'Por día' : 'Pago único'}</td>
+                <td style="padding: 8px 10px; border-bottom: 1px solid rgba(255,255,255,0.05); text-align: center;">
+                    <button type="button" class="btn-icon delete remove-extra-btn" data-index="${idx}" style="padding: 4px 8px; font-size: 0.8rem; background: var(--color-danger); border: none; border-radius: 4px; color: #fff; cursor: pointer;">
                         <i class="fa-solid fa-trash"></i>
                     </button>
                 </td>
@@ -1173,21 +1395,18 @@ const initAdmin = () => {
             vanFormMinPriceCon.value = van.min_price_con;
             vanFormKmPriceCon.value = van.km_price_con;
             vanFormStatus.value = van.status;
+            vanFormOccupants.value = van.max_occupants !== undefined ? van.max_occupants : 3;
+            vanFormEcoLabel.value = van.eco_label || 'C';
+            vanFormFuelType.value = van.fuel_type || 'GASOIL';
+            vanFormKmLimit.value = van.daily_km_limit !== undefined ? van.daily_km_limit : 350;
+            vanFormMaxMass.value = van.max_mass !== undefined ? van.max_mass : 2800;
             
             // Cargar imágenes
-            currentVanImages = Array.isArray(van.images) ? [...van.images] : [];
-            newVanFiles = [];
+            currentFormPhotos = Array.isArray(van.images) ? van.images.map(img => ({ type: 'server', url: img })) : [];
             renderVanImagesPreview();
 
             // Cargar extras
             currentVanExtras = Array.isArray(van.custom_extras) ? [...van.custom_extras] : [];
-            if (currentVanExtras.length === 0) {
-                currentVanExtras = [
-                    { name: 'GPS Navegador', price: van.extra_gps_price !== undefined ? parseFloat(van.extra_gps_price) : 5.00, type: 'daily' },
-                    { name: 'Segundo Conductor', price: van.extra_driver_price !== undefined ? parseFloat(van.extra_driver_price) : 8.00, type: 'daily' },
-                    { name: 'Kit Mudanza', price: van.extra_moving_price !== undefined ? parseFloat(van.extra_moving_price) : 10.00, type: 'once' }
-                ];
-            }
             renderVanExtrasPreview();
         } else {
             vanModalTitle.textContent = 'Añadir Nueva Furgoneta';
@@ -1201,16 +1420,16 @@ const initAdmin = () => {
             vanFormMinPriceCon.value = '';
             vanFormKmPriceCon.value = '';
             vanFormStatus.value = 'active';
+            vanFormOccupants.value = 3;
+            vanFormEcoLabel.value = 'C';
+            vanFormFuelType.value = 'GASOIL';
+            vanFormKmLimit.value = 350;
+            vanFormMaxMass.value = 2800;
             
-            currentVanImages = [];
-            newVanFiles = [];
+            currentFormPhotos = [];
             renderVanImagesPreview();
 
-            currentVanExtras = [
-                { name: 'GPS Navegador', price: 5.00, type: 'daily' },
-                { name: 'Segundo Conductor', price: 8.00, type: 'daily' },
-                { name: 'Kit Mudanza', price: 10.00, type: 'once' }
-            ];
+            currentVanExtras = [];
             renderVanExtrasPreview();
         }
         vanModal.classList.add('active');
@@ -1219,8 +1438,7 @@ const initAdmin = () => {
     const closeVanModal = () => {
         vanModal.classList.remove('active');
         vanForm.reset();
-        currentVanImages = [];
-        newVanFiles = [];
+        currentFormPhotos = [];
         renderVanImagesPreview();
         currentVanExtras = [];
         renderVanExtrasPreview();
@@ -1278,7 +1496,8 @@ const initAdmin = () => {
                 body: JSON.stringify({
                     hours_weekdays: settingHoursWeekdays.value.trim(),
                     hours_saturdays: settingHoursSaturdays.value.trim(),
-                    hours_sundays: settingHoursSundays.value.trim()
+                    hours_sundays: settingHoursSundays.value.trim(),
+                    show_reviews_count: settingShowReviewsCount.checked ? 'true' : 'false'
                 })
             });
             
@@ -1308,12 +1527,30 @@ const initAdmin = () => {
         formData.append('min_price_con', parseFloat(vanFormMinPriceCon.value));
         formData.append('km_price_con', parseFloat(vanFormKmPriceCon.value));
         formData.append('status', vanFormStatus.value);
-        formData.append('existing_images', JSON.stringify(currentVanImages));
-        formData.append('custom_extras', JSON.stringify(currentVanExtras));
+        formData.append('max_occupants', parseInt(vanFormOccupants.value) || 3);
+        formData.append('eco_label', vanFormEcoLabel.value.trim() || 'C');
+        formData.append('fuel_type', vanFormFuelType.value);
+        formData.append('daily_km_limit', parseInt(vanFormKmLimit.value) || 350);
+        formData.append('max_mass', parseInt(vanFormMaxMass.value) || 2800);
         
-        newVanFiles.forEach(file => {
+        // Mapear fotos con su orden
+        const imageOrder = [];
+        const filesToUpload = [];
+        currentFormPhotos.forEach(photo => {
+            if (photo.type === 'server') {
+                imageOrder.push(`server:${photo.url}`);
+            } else if (photo.type === 'file') {
+                imageOrder.push(`file:${filesToUpload.length}`);
+                filesToUpload.push(photo.file);
+            }
+        });
+        
+        formData.append('image_order', JSON.stringify(imageOrder));
+        filesToUpload.forEach(file => {
             formData.append('images', file);
         });
+
+        formData.append('custom_extras', JSON.stringify(currentVanExtras));
 
         const token = localStorage.getItem('admin_token');
         if (!token) return;

@@ -51,6 +51,7 @@ const initApp = () => {
     const dateEnd = document.getElementById('calc-date-end');
     const timeEnd = document.getElementById('calc-time-end');
     const dynamicExtrasContainer = document.getElementById('calc-dynamic-extras-container');
+    const fleetGridContainer = document.getElementById('fleet-grid-container');
     const clientName = document.getElementById('calc-name');
     
     // Resumen de la Calculadora
@@ -343,7 +344,7 @@ const initApp = () => {
         });
     };
 
-    // Cargar catálogo de furgonetas desde la API
+    // Cargar catálogo de furgonetas desde la API y renderizar tarjetas públicas dinámicamente
     const loadVans = async () => {
         try {
             const response = await fetch('/api/vans');
@@ -352,7 +353,6 @@ const initApp = () => {
                 
                 // Repoblar el selector calc-van-select
                 const selectedVal = vanSelect.value;
-                
                 vanSelect.innerHTML = '<option value="" disabled selected>-- Elige un modelo --</option>';
                 databaseVans.forEach(van => {
                     const opt = document.createElement('option');
@@ -366,7 +366,114 @@ const initApp = () => {
                     vanSelect.value = selectedVal;
                 }
 
-                // Vincular imágenes subidas a las tarjetas públicas de furgonetas en el DOM
+                // Renderizar tarjetas de furgonetas activas dinámicamente en el DOM de la página principal
+                if (fleetGridContainer) {
+                    fleetGridContainer.innerHTML = '';
+                    const activeVans = databaseVans.filter(v => v.status === 'active');
+                    
+                    activeVans.forEach((van, index) => {
+                        const article = document.createElement('article');
+                        article.className = `van-card reveal${index > 0 ? ' delay-' + index : ''}`;
+                        article.id = `card-van-${van.van_type}`;
+                        article.style.cursor = 'pointer';
+                        
+                        const mainImg = (van.images && van.images.length > 0) ? van.images[0] : 'assets/ford_transit_custom.png';
+                        
+                        let tag = 'Furgoneta';
+                        let desc = 'Capacidad de carga y comodidad';
+                        let specPayload = '1.000 kg';
+                        let specPlazas = '3 plazas';
+                        let specExtra = 'Puerta lateral corredera';
+                        
+                        if (van.van_type === 'medium') {
+                            tag = 'Más Popular';
+                            desc = 'Capacidad de carga mediana y ágil';
+                            specPayload = '1.000 kg';
+                            specPlazas = '3 plazas delanteras';
+                            specExtra = 'Puerta lateral corredera';
+                        } else if (van.van_type === 'large') {
+                            tag = 'Gran Volumen';
+                            desc = 'Máxima capacidad para grandes portes';
+                            specPayload = '1.400 kg';
+                            specPlazas = '3 plazas con cabina amplia';
+                            specExtra = 'Altura interior para estar de pie';
+                        } else {
+                            const m3Num = parseFloat(van.m3) || 10;
+                            if (m3Num < 6) {
+                                tag = 'Compacta';
+                                desc = 'Ideal para pequeños traslados urbanos';
+                                specPayload = '600 kg';
+                                specPlazas = '2 plazas';
+                                specExtra = 'Fácil de aparcar';
+                            } else if (m3Num > 12) {
+                                tag = 'Súper Volumen';
+                                desc = 'Para grandes mudanzas y largos trayectos';
+                                specPayload = '1.500 kg';
+                                specPlazas = '3 plazas';
+                                specExtra = 'Espacio de carga optimizado';
+                            } else {
+                                tag = 'Versátil';
+                                desc = 'Perfecto equilibrio entre tamaño y potencia';
+                                specPayload = '1.200 kg';
+                                specPlazas = '3 plazas';
+                                specExtra = 'Fácil conducción';
+                            }
+                        }
+                        
+                        article.innerHTML = `
+                            <div class="van-image-container" style="position: relative;">
+                                <img src="${mainImg}" alt="${van.name}" class="van-image" id="img-van-${van.van_type}">
+                                <div class="van-tag ${van.van_type === 'medium' ? 'highlight' : ''}">${tag}</div>
+                            </div>
+                            <div class="van-details">
+                                <h3 class="van-name">${van.name}</h3>
+                                <p class="van-model-example">${desc}</p>
+                                <ul class="van-specs">
+                                    <li><i class="fa-solid fa-box"></i> <strong>${van.m3}</strong> de capacidad</li>
+                                    <li><i class="fa-solid fa-weight-hanging"></i> Carga útil: <strong>${specPayload}</strong></li>
+                                    <li><i class="fa-solid fa-user"></i> <strong>${specPlazas}</strong></li>
+                                    <li><i class="fa-solid fa-circle-check"></i> ${specExtra}</li>
+                                </ul>
+                                <div class="van-footer">
+                                    <div class="van-price">
+                                        <span class="price-from">Desde</span>
+                                        <span class="price-amount">${parseFloat(van.price_sin).toFixed(2).replace('.', ',')} €</span>
+                                        <span class="price-unit">+ IVA / día</span>
+                                    </div>
+                                    <a href="#calculadora" class="btn btn-secondary btn-sm select-van-btn" data-van="${van.van_type}" id="btn-select-${van.van_type}">Seleccionar</a>
+                                </div>
+                            </div>
+                        `;
+                        
+                        // Clicar en la tarjeta abre el detalle ampliado
+                        article.addEventListener('click', (e) => {
+                            if (e.target.closest('.select-van-btn')) return;
+                            openVanDetailsModal(van.van_type);
+                        });
+                        
+                        // Clicar en el botón Seleccionar rellena el simulador
+                        const selectBtn = article.querySelector('.select-van-btn');
+                        if (selectBtn) {
+                            selectBtn.addEventListener('click', (e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                vanSelect.value = van.van_type;
+                                renderDynamicExtras();
+                                updateCalendarAvailability();
+                                calculatePrice();
+                                
+                                const calcSection = document.getElementById('calculadora');
+                                if (calcSection) {
+                                    calcSection.scrollIntoView({ behavior: 'smooth' });
+                                }
+                            });
+                        }
+                        
+                        fleetGridContainer.appendChild(article);
+                    });
+                }
+
+                // Vincular galerías de imágenes de puntitos interactivos en el DOM recién creado
                 databaseVans.forEach(van => {
                     const card = document.getElementById('card-van-' + van.van_type);
                     if (!card) return;
@@ -377,10 +484,8 @@ const initApp = () => {
                     imgEl.style.transition = 'opacity 0.15s ease-in-out';
 
                     if (van.images && van.images.length > 0) {
-                        // Cambiar la imagen principal por la primera subida
                         imgEl.src = van.images[0];
 
-                        // Si hay múltiples imágenes, añadir galería interactiva de puntitos
                         if (van.images.length > 1) {
                             let dotsContainer = card.querySelector('.van-gallery-dots');
                             if (!dotsContainer) {
@@ -420,14 +525,12 @@ const initApp = () => {
                                     e.preventDefault();
                                     e.stopPropagation();
 
-                                    // Transición de cambio de imagen
                                     imgEl.style.opacity = '0';
                                     setTimeout(() => {
                                         imgEl.src = imgUrl;
                                         imgEl.style.opacity = '1';
                                     }, 150);
 
-                                    // Resaltar el puntito activo
                                     Array.from(dotsContainer.children).forEach((d, idx) => {
                                         d.style.background = idx === imgIndex ? 'var(--color-neon)' : 'rgba(255, 255, 255, 0.4)';
                                         d.style.transform = idx === imgIndex ? 'scale(1.2)' : 'scale(1)';
@@ -897,6 +1000,10 @@ const initApp = () => {
                         return `${day}/${month}/${year}`;
                     };
                     
+                    const photosBtn = (b.photos_before && b.photos_before.length > 0) || (b.photos_after && b.photos_after.length > 0)
+                        ? `<button class="client-doc-btn" onclick='window.openClientPhotosModal(${JSON.stringify(b.photos_before || [])}, ${JSON.stringify(b.photos_after || [])})'><i class="fa-solid fa-camera"></i> Fotos</button>`
+                        : '';
+                    
                     tr.innerHTML = `
                         <td>#${b.id}</td>
                         <td><strong>${b.van_name.split(' ')[0]} ${b.van_name.split(' ')[1] || ''}</strong></td>
@@ -909,6 +1016,7 @@ const initApp = () => {
                             ${b.status === 'confirmed' ? `
                                 <button class="client-doc-btn" onclick="window.open('/contract/${b.id}', '_blank')"><i class="fa-solid fa-file-signature"></i> Contrato</button>
                                 <button class="client-doc-btn" onclick="window.open('/invoice/${b.id}', '_blank')"><i class="fa-solid fa-file-invoice-dollar"></i> Factura</button>
+                                ${photosBtn}
                             ` : '<span style="color: var(--text-muted); font-size: 0.75rem;">Pendiente</span>'}
                         </td>
                     `;
@@ -922,6 +1030,52 @@ const initApp = () => {
             localStorage.removeItem('user_token');
             updateAuthUI();
         }
+    };
+
+    // Modal de Fotos de Inspección para el Cliente
+    window.openClientPhotosModal = (beforeUrls, afterUrls) => {
+        const beforeContainer = document.getElementById('client-photos-before-container');
+        const afterContainer = document.getElementById('client-photos-after-container');
+        if (!beforeContainer || !afterContainer) return;
+        
+        beforeContainer.innerHTML = '';
+        afterContainer.innerHTML = '';
+        
+        if (!beforeUrls || beforeUrls.length === 0) {
+            beforeContainer.innerHTML = '<span style="font-size: 0.75rem; color: var(--text-muted);">Sin fotos registradas de antes del alquiler.</span>';
+        } else {
+            beforeUrls.forEach(url => {
+                const img = document.createElement('img');
+                img.src = url;
+                img.style.width = '60px';
+                img.style.height = '60px';
+                img.style.objectFit = 'cover';
+                img.style.borderRadius = '6px';
+                img.style.cursor = 'pointer';
+                img.style.border = '1px solid rgba(255, 255, 255, 0.1)';
+                img.onclick = () => window.open(url, '_blank');
+                beforeContainer.appendChild(img);
+            });
+        }
+        
+        if (!afterUrls || afterUrls.length === 0) {
+            afterContainer.innerHTML = '<span style="font-size: 0.75rem; color: var(--text-muted);">Sin fotos de devolución registradas.</span>';
+        } else {
+            afterUrls.forEach(url => {
+                const img = document.createElement('img');
+                img.src = url;
+                img.style.width = '60px';
+                img.style.height = '60px';
+                img.style.objectFit = 'cover';
+                img.style.borderRadius = '6px';
+                img.style.cursor = 'pointer';
+                img.style.border = '1px solid rgba(255, 255, 255, 0.1)';
+                img.onclick = () => window.open(url, '_blank');
+                afterContainer.appendChild(img);
+            });
+        }
+        
+        window.openAuthModal('client-photos-modal');
     };
 
     // Cerrar sesión
@@ -1331,39 +1485,147 @@ const initApp = () => {
         });
     });
 
-    // Cargar opiniones de compras verificadas
+    let reviewsInterval;
+
+    // Cargar opiniones de compras verificadas e inicializar el carrusel deslizante
     const loadReviews = async () => {
         try {
             const res = await fetch('/api/reviews');
             if (res.ok) {
                 const reviews = await res.json();
+                
+                // Actualizar contador dinámico de reseñas
+                const reviewsCountPlaceholder = document.getElementById('reviews-count-placeholder');
+                if (reviewsCountPlaceholder) {
+                    reviewsCountPlaceholder.textContent = reviews.length;
+                }
+                
                 if (reviews.length > 0) {
                     testimonialsGrid.innerHTML = '';
+                    
                     reviews.forEach(review => {
-                        const starsHtml = '<i class="fa-solid fa-star"></i>'.repeat(review.rating) + 
-                                          '<i class="fa-regular fa-star" style="color: rgba(255,255,255,0.15);"></i>'.repeat(5 - review.rating);
+                        const rating = parseInt(review.rating) || 5;
+                        const starsHtml = '<i class="fa-solid fa-star"></i>'.repeat(rating) + 
+                                          '<i class="fa-regular fa-star" style="color: rgba(255,255,255,0.15);"></i>'.repeat(Math.max(0, 5 - rating));
                                           
                         const card = document.createElement('div');
-                        card.className = 'testimonial-card reveal';
+                        card.className = 'testimonial-card';
+                        card.style.flex = '0 0 100%';
+                        card.style.boxSizing = 'border-box';
+                        card.style.margin = '0';
                         card.innerHTML = `
                             <div class="stars">${starsHtml}</div>
-                            <p class="testimonial-text">"${review.comment}"</p>
+                            <p class="testimonial-text">"${review.comment || 'Sin comentario.'}"</p>
                             <div class="testimonial-author">
                                 <div class="author-info">
                                     <h4 class="author-name">${review.client_name}</h4>
-                                    <p class="author-role">${review.role_or_city || 'Particular'}</p>
+                                    <p class="author-role">Particular (${review.role_or_city || 'Huéscar'})</p>
                                 </div>
                             </div>
-                            <div class="verified-badge" style="display: inline-flex; align-items: center; gap: 0.3rem; background: rgba(130, 209, 5, 0.08); color: var(--color-neon); font-size: 0.75rem; font-weight: 700; padding: 4px 10px; border-radius: 20px; margin-top: 1rem; border: 1px solid rgba(130, 209, 5, 0.2);">
+                            <div class="verified-badge" style="display: inline-flex; align-items: center; gap: 0.3rem; background: rgba(130, 209, 5, 0.08); color: var(--color-neon); font-size: 0.75rem; font-weight: 700; padding: 4px 10px; border-radius: 20px; margin-top: 1rem; border: 1px solid rgba(130, 209, 5, 0.2); align-self: flex-start;">
                                 <i class="fa-solid fa-circle-check"></i> Compra Verificada
                             </div>
                         `;
                         testimonialsGrid.appendChild(card);
                     });
+                    
+                    // Inicializar controles del carrusel deslizante
+                    initReviewsCarousel(reviews.length);
                 }
             }
         } catch (err) {
             console.error('Error al cargar opiniones:', err);
+        }
+    };
+
+    const initReviewsCarousel = (totalSlides) => {
+        const track = document.getElementById('testimonials-grid');
+        const prevBtn = document.getElementById('reviews-carousel-prev');
+        const nextBtn = document.getElementById('reviews-carousel-next');
+        const dotsContainer = document.getElementById('reviews-carousel-dots');
+        
+        if (!track || totalSlides <= 1) {
+            if (prevBtn) prevBtn.style.display = 'none';
+            if (nextBtn) nextBtn.style.display = 'none';
+            if (dotsContainer) dotsContainer.innerHTML = '';
+            return;
+        }
+        
+        if (prevBtn) prevBtn.style.display = 'flex';
+        if (nextBtn) nextBtn.style.display = 'flex';
+        
+        let activeIdx = 0;
+        
+        // Generar puntitos indicadores del carrusel
+        if (dotsContainer) {
+            dotsContainer.innerHTML = '';
+            for (let i = 0; i < totalSlides; i++) {
+                const dot = document.createElement('span');
+                dot.className = `reviews-carousel-dot${i === 0 ? ' active' : ''}`;
+                dot.addEventListener('click', () => {
+                    goToSlide(i);
+                    resetAutoSlide();
+                });
+                dotsContainer.appendChild(dot);
+            }
+        }
+        
+        const updateCarouselPosition = () => {
+            track.style.transform = `translateX(-${activeIdx * 100}%)`;
+            if (dotsContainer) {
+                Array.from(dotsContainer.children).forEach((dot, idx) => {
+                    if (idx === activeIdx) {
+                        dot.classList.add('active');
+                    } else {
+                        dot.classList.remove('active');
+                    }
+                });
+            }
+        };
+        
+        const goToSlide = (index) => {
+            activeIdx = (index + totalSlides) % totalSlides;
+            updateCarouselPosition();
+        };
+        
+        if (prevBtn) {
+            prevBtn.onclick = (e) => {
+                e.preventDefault();
+                goToSlide(activeIdx - 1);
+                resetAutoSlide();
+            };
+        }
+        if (nextBtn) {
+            nextBtn.onclick = (e) => {
+                e.preventDefault();
+                goToSlide(activeIdx + 1);
+                resetAutoSlide();
+            };
+        }
+        
+        // Deslizamiento automático cada 6 segundos
+        const startAutoSlide = () => {
+            reviewsInterval = setInterval(() => {
+                goToSlide(activeIdx + 1);
+            }, 6000);
+        };
+        
+        const resetAutoSlide = () => {
+            if (reviewsInterval) clearInterval(reviewsInterval);
+            startAutoSlide();
+        };
+        
+        resetAutoSlide();
+        
+        // Pausa al hacer hover en el contenedor
+        const container = track.closest('.testimonials-carousel-container');
+        if (container) {
+            container.onmouseenter = () => {
+                if (reviewsInterval) clearInterval(reviewsInterval);
+            };
+            container.onmouseleave = () => {
+                startAutoSlide();
+            };
         }
     };
 
@@ -1438,7 +1700,7 @@ const initApp = () => {
                         booking_code: reviewCodeInput.value.trim(),
                         client_name: reviewNameInput.value.trim(),
                         rating: parseInt(reviewRatingInput.value),
-                        comment: reviewCommentInput.value.trim(),
+                        comment: reviewCommentInput.value.trim() || "",
                         role_or_city: reviewCityInput.value.trim()
                     })
                 });
@@ -1466,7 +1728,7 @@ const initApp = () => {
         });
     }
 
-    // Cargar configuraciones de horario
+    // Cargar configuraciones de horario y de visualización del badge de opiniones
     const loadSettings = async () => {
         try {
             const res = await fetch('/api/settings');
@@ -1479,11 +1741,40 @@ const initApp = () => {
                 if (week && data.hours_weekdays) week.textContent = data.hours_weekdays;
                 if (sat && data.hours_saturdays) sat.textContent = data.hours_saturdays;
                 if (sun && data.hours_sundays) sun.textContent = data.hours_sundays;
+                
+                // Mostrar/ocultar placa de cantidad de opiniones verificadas
+                const badge = document.getElementById('reviews-count-badge');
+                if (badge) {
+                    if (data.show_reviews_count === 'true') {
+                        badge.style.display = 'inline-flex';
+                    } else {
+                        badge.style.display = 'none';
+                    }
+                }
             }
         } catch (err) {
             console.error('Error al cargar horarios:', err);
         }
     };
+
+    // Formulario de Contacto directo a WhatsApp
+    const contactForm = document.getElementById('contact-whatsapp-form');
+    if (contactForm) {
+        contactForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const name = document.getElementById('contact-form-name').value.trim();
+            const contact = document.getElementById('contact-form-phone').value.trim();
+            const reason = document.getElementById('contact-form-reason').value;
+            const message = document.getElementById('contact-form-message').value.trim();
+            
+            const text = `Hola RentMeUskar, me llamo *${name}*.\n\n*Contacto:* ${contact}\n*Motivo:* ${reason}\n\n*Mensaje:*\n${message}`;
+            const encodedText = encodeURIComponent(text);
+            const whatsappUrl = `https://wa.me/34614767411?text=${encodedText}`;
+            
+            window.open(whatsappUrl, '_blank');
+            contactForm.reset();
+        });
+    }
 
     // Ejecutar inicializaciones dinámicas
     loadReviews();
