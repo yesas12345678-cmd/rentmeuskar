@@ -51,6 +51,7 @@ const initApp = () => {
     const dateEnd = document.getElementById('calc-date-end');
     const timeEnd = document.getElementById('calc-time-end');
     const dynamicExtrasContainer = document.getElementById('calc-dynamic-extras-container');
+    const vanSpecsContainer = document.getElementById('calc-van-specs-container');
     const fleetGridContainer = document.getElementById('fleet-grid-container');
     const clientName = document.getElementById('calc-name');
     
@@ -344,6 +345,54 @@ const initApp = () => {
         });
     };
 
+    // Renderizar especificaciones y condiciones consolidadas de la furgoneta seleccionada
+    const renderVanSpecs = () => {
+        if (!vanSpecsContainer) return;
+        const vanType = vanSelect.value;
+        if (!vanType) {
+            vanSpecsContainer.style.display = 'none';
+            return;
+        }
+
+        const van = databaseVans.find(v => v.van_type === vanType);
+        if (!van) {
+            vanSpecsContainer.style.display = 'none';
+            return;
+        }
+
+        // Obtener valores con fallbacks por si la DB no los tiene
+        const m3 = van.m3 || '8m³';
+        const maxMass = van.max_mass || 2800;
+        const maxOccupants = van.max_occupants || 3;
+        const fuelType = van.fuel_type || 'Diesel (Gasoil)';
+        const ecoLabel = van.eco_label || 'C';
+        const dailyKmLimit = van.daily_km_limit || 350;
+        const fianzaAmount = '500,00'; // Constante estipulada en la web
+
+        vanSpecsContainer.innerHTML = `
+            <h4 style="margin-top: 0; margin-bottom: 0.8rem; font-size: 0.95rem; color: var(--color-neon); display: flex; align-items: center; gap: 0.4rem;">
+                <i class="fa-solid fa-circle-info"></i> Características y Condiciones
+            </h4>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; font-size: 0.82rem; line-height: 1.4;">
+                <div>
+                    <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-box text-neon" style="width: 16px;"></i> <strong>Volumen:</strong> ${m3}</p>
+                    <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-weight-hanging text-neon" style="width: 16px;"></i> <strong>M.M.A:</strong> ${maxMass} kg</p>
+                    <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-user text-neon" style="width: 16px;"></i> <strong>Plazas:</strong> ${maxOccupants} plazas</p>
+                    <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-gas-pump text-neon" style="width: 16px;"></i> <strong>Combustible:</strong> ${fuelType}</p>
+                    <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-leaf text-neon" style="width: 16px;"></i> <strong>Distintivo Eco:</strong> Etiqueta ${ecoLabel}</p>
+                </div>
+                <div>
+                    <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-shield-halved text-neon" style="width: 16px;"></i> <strong>Fianza obligatoria:</strong> ${fianzaAmount} €</p>
+                    <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-road text-neon" style="width: 16px;"></i> <strong>Km Incluidos:</strong> ${dailyKmLimit} km/día</p>
+                    <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-money-bill-transfer text-neon" style="width: 16px;"></i> <strong>Km Extra:</strong> 0,28 € + IVA/km</p>
+                    <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-triangle-exclamation text-neon" style="width: 16px;"></i> <strong>Política de Combustible:</strong> Lleno/Lleno</p>
+                    <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-bottle-droplet text-neon" style="width: 16px;"></i> <strong>AdBlue:</strong> No incluido (se abona el consumido)</p>
+                </div>
+            </div>
+        `;
+        vanSpecsContainer.style.display = 'block';
+    };
+
     // Cargar catálogo de furgonetas desde la API y renderizar tarjetas públicas dinámicamente
     const loadVans = async () => {
         try {
@@ -364,6 +413,7 @@ const initApp = () => {
                 
                 if (selectedVal && databaseVans.some(v => v.van_type === selectedVal)) {
                     vanSelect.value = selectedVal;
+                    renderVanSpecs();
                 }
 
                 // Renderizar tarjetas de furgonetas activas dinámicamente en el DOM de la página principal
@@ -459,6 +509,7 @@ const initApp = () => {
                                 e.stopPropagation();
                                 vanSelect.value = van.van_type;
                                 renderDynamicExtras();
+                                renderVanSpecs();
                                 updateCalendarAvailability();
                                 calculatePrice();
                                 
@@ -777,6 +828,20 @@ const initApp = () => {
 
     modeSin.addEventListener('change', handleModeChange);
     modeCon.addEventListener('change', handleModeChange);
+
+    // Asegurar selección robusta al hacer clic en las tarjetas de opción
+    labelModeSin.addEventListener('click', (e) => {
+        if (e.target !== modeSin) {
+            modeSin.checked = true;
+            handleModeChange();
+        }
+    });
+    labelModeCon.addEventListener('click', (e) => {
+        if (e.target !== modeCon) {
+            modeCon.checked = true;
+            handleModeChange();
+        }
+    });
     
     // Inputs de con conductor
     kmsEstimate.addEventListener('input', calculatePrice);
@@ -786,6 +851,7 @@ const initApp = () => {
     // Event listeners para recálculo instantáneo
     vanSelect.addEventListener('change', () => {
         renderDynamicExtras();
+        renderVanSpecs();
         updateCalendarAvailability();
         calculatePrice();
     });
@@ -802,6 +868,8 @@ const initApp = () => {
             
             // Seleccionar en el dropdown
             vanSelect.value = vanType;
+            renderDynamicExtras();
+            renderVanSpecs();
             
             // Actualizar disponibilidad del calendario para esa furgoneta
             updateCalendarAvailability();
@@ -1287,7 +1355,10 @@ const initApp = () => {
                     
                     const response = await fetch('/api/bookings', {
                         method: 'POST',
-                                           const data = await response.json();
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(finalBookingData)
+                    });
+                    const data = await response.json();
                     if (!response.ok) {
                         throw new Error(data.error || 'Error al guardar reserva.');
                     }
