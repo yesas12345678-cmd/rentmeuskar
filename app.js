@@ -386,7 +386,7 @@ const initApp = () => {
                     <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-shield-halved text-neon" style="width: 16px;"></i> <strong>Fianza obligatoria:</strong> ${fianzaAmount} €</p>
                     <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-road text-neon" style="width: 16px;"></i> <strong>Km Incluidos:</strong> ${dailyKmLimit} km/día</p>
                     <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-money-bill-transfer text-neon" style="width: 16px;"></i> <strong>Km Extra:</strong> 0,28 € + IVA/km</p>
-                    <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-triangle-exclamation text-neon" style="width: 16px;"></i> <strong>Política de Combustible:</strong> Lleno/Lleno</p>
+                    <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-triangle-exclamation text-neon" style="width: 16px;"></i> <strong>Política de Combustible:</strong> Mismo Nivel</p>
                     <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-bottle-droplet text-neon" style="width: 16px;"></i> <strong>AdBlue:</strong> No incluido (se abona el consumido)</p>
                 </div>
             </div>
@@ -1454,6 +1454,13 @@ _Por favor, accede al panel de administración de RentMeUskar para Aprobar o Can
         document.getElementById('detail-van-m3').textContent = `${van.m3} de volumen`;
         document.getElementById('detail-van-price').innerHTML = `${parseFloat(van.price_sin).toFixed(2)}€<span style="font-size: 1rem; font-weight: normal; color: var(--text-secondary);">/día</span>`;
         document.getElementById('detail-spec-plate').textContent = van.plate || '-';
+        
+        // Cargar especificaciones dinámicas reales desde la base de datos
+        document.getElementById('detail-spec-mass').textContent = `${van.max_mass || 2800} kg`;
+        document.getElementById('detail-spec-occupants').textContent = `${van.max_occupants || 3} plazas`;
+        document.getElementById('detail-spec-fuel').textContent = van.fuel_type || 'Diesel';
+        document.getElementById('detail-spec-eco').textContent = `Etiqueta ${van.eco_label || 'C'}`;
+        document.getElementById('detail-spec-kmlimit').textContent = `${van.daily_km_limit || 350} km/día`;
         
         // Carrusel de imágenes
         const slidesContainer = document.getElementById('detail-carousel-slides');
