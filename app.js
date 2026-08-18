@@ -370,27 +370,60 @@ const initApp = () => {
         const dailyKmLimit = van.daily_km_limit || 350;
         const fianzaAmount = '500,00'; // Constante estipulada en la web
 
-        vanSpecsContainer.innerHTML = `
-            <h4 style="margin-top: 0; margin-bottom: 0.8rem; font-size: 0.95rem; color: var(--color-neon); display: flex; align-items: center; gap: 0.4rem;">
-                <i class="fa-solid fa-circle-info"></i> Características y Condiciones
-            </h4>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; font-size: 0.82rem; line-height: 1.4;">
-                <div>
-                    <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-box text-neon" style="width: 16px;"></i> <strong>Volumen:</strong> ${m3}</p>
-                    <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-weight-hanging text-neon" style="width: 16px;"></i> <strong>M.M.A:</strong> ${maxMass} kg</p>
-                    <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-user text-neon" style="width: 16px;"></i> <strong>Plazas:</strong> ${maxOccupants} plazas</p>
-                    <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-gas-pump text-neon" style="width: 16px;"></i> <strong>Combustible:</strong> ${fuelType}</p>
-                    <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-leaf text-neon" style="width: 16px;"></i> <strong>Distintivo Eco:</strong> Etiqueta ${ecoLabel}</p>
+        // Detectar modo actual
+        const modeInput = document.querySelector('input[name="rental-mode"]:checked');
+        const mode = modeInput ? modeInput.value : 'sin';
+
+        if (mode === 'sin') {
+            vanSpecsContainer.innerHTML = `
+                <h4 style="margin-top: 0; margin-bottom: 0.8rem; font-size: 0.95rem; color: var(--color-neon); display: flex; align-items: center; gap: 0.4rem;">
+                    <i class="fa-solid fa-circle-info"></i> Características y Condiciones (Sin Conductor)
+                </h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; font-size: 0.82rem; line-height: 1.4;">
+                    <div>
+                        <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-box text-neon" style="width: 16px;"></i> <strong>Volumen:</strong> ${m3}</p>
+                        <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-weight-hanging text-neon" style="width: 16px;"></i> <strong>M.M.A:</strong> ${maxMass} kg</p>
+                        <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-user text-neon" style="width: 16px;"></i> <strong>Plazas:</strong> ${maxOccupants} plazas</p>
+                        <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-gas-pump text-neon" style="width: 16px;"></i> <strong>Combustible:</strong> ${fuelType}</p>
+                        <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-leaf text-neon" style="width: 16px;"></i> <strong>Distintivo Eco:</strong> Etiqueta ${ecoLabel}</p>
+                    </div>
+                    <div>
+                        <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-shield-halved text-neon" style="width: 16px;"></i> <strong>Fianza obligatoria:</strong> ${fianzaAmount} €</p>
+                        <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-road text-neon" style="width: 16px;"></i> <strong>Km Incluidos:</strong> ${dailyKmLimit} km/día</p>
+                        <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-money-bill-transfer text-neon" style="width: 16px;"></i> <strong>Km Extra:</strong> 0,28 € + IVA/km</p>
+                        <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-triangle-exclamation text-neon" style="width: 16px;"></i> <strong>Política de Combustible:</strong> Mismo Nivel</p>
+                        <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-bottle-droplet text-neon" style="width: 16px;"></i> <strong>AdBlue:</strong> No incluido (se abona el consumido)</p>
+                    </div>
                 </div>
-                <div>
-                    <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-shield-halved text-neon" style="width: 16px;"></i> <strong>Fianza obligatoria:</strong> ${fianzaAmount} €</p>
-                    <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-road text-neon" style="width: 16px;"></i> <strong>Km Incluidos:</strong> ${dailyKmLimit} km/día</p>
-                    <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-money-bill-transfer text-neon" style="width: 16px;"></i> <strong>Km Extra:</strong> 0,28 € + IVA/km</p>
-                    <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-triangle-exclamation text-neon" style="width: 16px;"></i> <strong>Política de Combustible:</strong> Mismo Nivel</p>
-                    <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-bottle-droplet text-neon" style="width: 16px;"></i> <strong>AdBlue:</strong> No incluido (se abona el consumido)</p>
+            `;
+        } else {
+            // Con Conductor
+            const minCon = van.min_price_con !== undefined ? parseFloat(van.min_price_con).toFixed(2) : (vanType === 'medium' ? '50.00' : '60.00');
+            const kmCon = van.km_price_con !== undefined ? parseFloat(van.km_price_con).toFixed(2) : (vanType === 'medium' ? '1.00' : '1.40');
+            const waitCon = van.waiting_hour_price !== undefined ? parseFloat(van.waiting_hour_price).toFixed(2) : '30.00';
+
+            vanSpecsContainer.innerHTML = `
+                <h4 style="margin-top: 0; margin-bottom: 0.8rem; font-size: 0.95rem; color: var(--color-neon); display: flex; align-items: center; gap: 0.4rem;">
+                    <i class="fa-solid fa-circle-info"></i> Características y Condiciones (Con Conductor)
+                </h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; font-size: 0.82rem; line-height: 1.4;">
+                    <div>
+                        <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-box text-neon" style="width: 16px;"></i> <strong>Volumen:</strong> ${m3}</p>
+                        <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-weight-hanging text-neon" style="width: 16px;"></i> <strong>M.M.A:</strong> ${maxMass} kg</p>
+                        <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-user text-neon" style="width: 16px;"></i> <strong>Plazas:</strong> ${maxOccupants} plazas</p>
+                        <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-gas-pump text-neon" style="width: 16px;"></i> <strong>Combustible:</strong> ${fuelType}</p>
+                        <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-leaf text-neon" style="width: 16px;"></i> <strong>Distintivo Eco:</strong> Etiqueta ${ecoLabel}</p>
+                    </div>
+                    <div>
+                        <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-receipt text-neon" style="width: 16px;"></i> <strong>Tarifa mínima:</strong> ${minCon} € + IVA (incluye 20km / 1 hora)</p>
+                        <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-money-bill-transfer text-neon" style="width: 16px;"></i> <strong>Precio km extra:</strong> ${kmCon} € + IVA/km</p>
+                        <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-hourglass-half text-neon" style="width: 16px;"></i> <strong>Hora de espera:</strong> ${waitCon} € + IVA/hora</p>
+                        <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-handshake-angle text-neon" style="width: 16px;"></i> <strong>Servicio Incluido:</strong> Ayuda de carga y descarga ligera</p>
+                        <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-circle-check text-neon" style="width: 16px;"></i> <strong>Fianza y Combustible:</strong> Incluidos en la tarifa</p>
+                    </div>
                 </div>
-            </div>
-        `;
+            `;
+        }
         vanSpecsContainer.style.display = 'block';
     };
 
@@ -773,7 +806,8 @@ const initApp = () => {
                 extraKmCost = (kms - 20) * kmRate;
             }
             
-            const waitCost = wait * 30.00;
+            const waitingRate = van && van.waiting_hour_price !== undefined ? parseFloat(van.waiting_hour_price) : 30.00;
+            const waitCost = wait * waitingRate;
             
             baseTaxable = baseMinRate + extraKmCost + waitCost;
             vatAmount = baseTaxable * 0.21;
@@ -830,6 +864,7 @@ const initApp = () => {
         }
         
         updateCalendarAvailability();
+        renderVanSpecs();
         calculatePrice();
     };
 

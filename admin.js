@@ -138,6 +138,7 @@ const initAdmin = () => {
     const vanFormPriceSin = document.getElementById('van-form-price-sin');
     const vanFormMinPriceCon = document.getElementById('van-form-min-price-con');
     const vanFormKmPriceCon = document.getElementById('van-form-km-price-con');
+    const vanFormWaitingHourPrice = document.getElementById('van-form-waiting-hour-price');
     const vanFormExtraName = document.getElementById('van-form-extra-name');
     const vanFormExtraPrice = document.getElementById('van-form-extra-price');
     const vanFormExtraType = document.getElementById('van-form-extra-type');
@@ -1460,6 +1461,7 @@ const initAdmin = () => {
             vanFormPriceSin.value = van.price_sin;
             vanFormMinPriceCon.value = van.min_price_con;
             vanFormKmPriceCon.value = van.km_price_con;
+            vanFormWaitingHourPrice.value = van.waiting_hour_price !== undefined ? van.waiting_hour_price : 30.00;
             vanFormStatus.value = van.status;
             vanFormOccupants.value = van.max_occupants !== undefined ? van.max_occupants : 3;
             vanFormEcoLabel.value = van.eco_label || 'C';
@@ -1485,6 +1487,7 @@ const initAdmin = () => {
             vanFormPriceSin.value = '';
             vanFormMinPriceCon.value = '';
             vanFormKmPriceCon.value = '';
+            vanFormWaitingHourPrice.value = '';
             vanFormStatus.value = 'active';
             vanFormOccupants.value = 3;
             vanFormEcoLabel.value = 'C';
@@ -1596,6 +1599,7 @@ const initAdmin = () => {
         formData.append('price_sin', parseFloat(vanFormPriceSin.value));
         formData.append('min_price_con', parseFloat(vanFormMinPriceCon.value));
         formData.append('km_price_con', parseFloat(vanFormKmPriceCon.value));
+        formData.append('waiting_hour_price', parseFloat(vanFormWaitingHourPrice.value) || 30.00);
         formData.append('status', vanFormStatus.value);
         formData.append('max_occupants', parseInt(vanFormOccupants.value) || 3);
         formData.append('eco_label', vanFormEcoLabel.value.trim() || 'C');

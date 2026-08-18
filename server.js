@@ -162,7 +162,8 @@ const initDb = async () => {
     "ALTER TABLE vans ADD COLUMN IF NOT EXISTS eco_label VARCHAR(100) DEFAULT 'C';",
     "ALTER TABLE vans ADD COLUMN IF NOT EXISTS daily_km_limit INTEGER DEFAULT 350;",
     "ALTER TABLE vans ADD COLUMN IF NOT EXISTS max_mass INTEGER DEFAULT 2800;",
-    "ALTER TABLE vans ADD COLUMN IF NOT EXISTS fuel_type VARCHAR(100) DEFAULT 'GASOIL';"
+    "ALTER TABLE vans ADD COLUMN IF NOT EXISTS fuel_type VARCHAR(100) DEFAULT 'GASOIL';",
+    "ALTER TABLE vans ADD COLUMN IF NOT EXISTS waiting_hour_price NUMERIC(10, 2) DEFAULT 30.00;"
   ];
 
   const createSettingsTableQuery = `
@@ -868,7 +869,7 @@ app.get('/api/admin/vans', verifyAdmin, async (req, res) => {
 
 // 3. Crear una nueva furgoneta
 app.post('/api/vans', verifyAdmin, upload.array('images', 20), async (req, res) => {
-  const { van_type, name, plate, m3, price_sin, min_price_con, km_price_con, status, max_occupants, eco_label, daily_km_limit, max_mass, fuel_type } = req.body;
+  const { van_type, name, plate, m3, price_sin, min_price_con, km_price_con, status, max_occupants, eco_label, daily_km_limit, max_mass, fuel_type, waiting_hour_price } = req.body;
   if (!van_type || !name || !plate || !m3 || price_sin === undefined || min_price_con === undefined || km_price_con === undefined) {
     return res.status(400).json({ error: 'Faltan campos obligatorios para registrar la furgoneta.' });
   }
@@ -912,8 +913,8 @@ app.post('/api/vans', verifyAdmin, upload.array('images', 20), async (req, res) 
     }
 
     const query = `
-      INSERT INTO vans (van_type, name, plate, m3, price_sin, min_price_con, km_price_con, status, images, custom_extras, max_occupants, eco_label, daily_km_limit, max_mass, fuel_type)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) RETURNING *;
+      INSERT INTO vans (van_type, name, plate, m3, price_sin, min_price_con, km_price_con, status, images, custom_extras, max_occupants, eco_label, daily_km_limit, max_mass, fuel_type, waiting_hour_price)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16) RETURNING *;
     `;
     const values = [
       van_type, 
@@ -930,7 +931,8 @@ app.post('/api/vans', verifyAdmin, upload.array('images', 20), async (req, res) 
       eco_label || 'C',
       parseInt(daily_km_limit) || 350,
       parseInt(max_mass) || 2800,
-      fuel_type || 'GASOIL'
+      fuel_type || 'GASOIL',
+      parseFloat(waiting_hour_price) || 30.00
     ];
     const result = await pool.query(query, values);
     
@@ -967,7 +969,8 @@ app.post('/api/vans', verifyAdmin, upload.array('images', 20), async (req, res) 
       eco_label: eco_label || 'C',
       daily_km_limit: parseInt(daily_km_limit) || 350,
       max_mass: parseInt(max_mass) || 2800,
-      fuel_type: fuel_type || 'GASOIL'
+      fuel_type: fuel_type || 'GASOIL',
+      waiting_hour_price: parseFloat(waiting_hour_price) || 30.00
     };
     fallbackVans.push(newVan);
     res.status(201).json({
@@ -980,7 +983,7 @@ app.post('/api/vans', verifyAdmin, upload.array('images', 20), async (req, res) 
 // 4. Modificar una furgoneta
 app.put('/api/vans/:id', verifyAdmin, upload.array('images', 20), async (req, res) => {
   const { id } = req.params;
-  const { van_type, name, plate, m3, price_sin, min_price_con, km_price_con, status, max_occupants, eco_label, daily_km_limit, max_mass, fuel_type } = req.body;
+  const { van_type, name, plate, m3, price_sin, min_price_con, km_price_con, status, max_occupants, eco_label, daily_km_limit, max_mass, fuel_type, waiting_hour_price } = req.body;
 
   const newImages = req.files ? req.files.map(f => '/uploads/' + f.filename) : [];
   
@@ -1039,8 +1042,8 @@ app.put('/api/vans/:id', verifyAdmin, upload.array('images', 20), async (req, re
     const query = `
       UPDATE vans 
       SET van_type = $1, name = $2, plate = $3, m3 = $4, price_sin = $5, min_price_con = $6, km_price_con = $7, status = $8, images = $9,
-          custom_extras = $10, max_occupants = $11, eco_label = $12, daily_km_limit = $13, max_mass = $14, fuel_type = $15
-      WHERE id = $16 RETURNING *;
+          custom_extras = $10, max_occupants = $11, eco_label = $12, daily_km_limit = $13, max_mass = $14, fuel_type = $15, waiting_hour_price = $16
+      WHERE id = $17 RETURNING *;
     `;
     const values = [
       van_type !== undefined ? van_type : current.van_type,
@@ -1058,6 +1061,7 @@ app.put('/api/vans/:id', verifyAdmin, upload.array('images', 20), async (req, re
       daily_km_limit !== undefined ? parseInt(daily_km_limit) : current.daily_km_limit,
       max_mass !== undefined ? parseInt(max_mass) : current.max_mass,
       fuel_type !== undefined ? fuel_type : current.fuel_type,
+      waiting_hour_price !== undefined ? parseFloat(waiting_hour_price) : current.waiting_hour_price,
       id
     ];
 
@@ -1096,7 +1100,8 @@ app.put('/api/vans/:id', verifyAdmin, upload.array('images', 20), async (req, re
       eco_label: eco_label !== undefined ? eco_label : current.eco_label,
       daily_km_limit: daily_km_limit !== undefined ? parseInt(daily_km_limit) : current.daily_km_limit,
       max_mass: max_mass !== undefined ? parseInt(max_mass) : current.max_mass,
-      fuel_type: fuel_type !== undefined ? fuel_type : current.fuel_type
+      fuel_type: fuel_type !== undefined ? fuel_type : current.fuel_type,
+      waiting_hour_price: waiting_hour_price !== undefined ? parseFloat(waiting_hour_price) : current.waiting_hour_price
     };
     fallbackVans[index] = updated;
     res.json({
