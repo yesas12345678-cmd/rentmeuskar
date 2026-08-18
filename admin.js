@@ -1125,7 +1125,9 @@ const initAdmin = () => {
             });
             if (!response.ok) throw new Error('Error al obtener datos de la flota');
             
-            fleet = await response.json();
+            const rawFleet = await response.json();
+            const deletedIds = JSON.parse(localStorage.getItem('deleted_van_ids') || '[]');
+            fleet = rawFleet.filter(v => !deletedIds.includes(String(v.id)) && !deletedIds.includes(Number(v.id)) && !deletedIds.includes(v.van_type));
             
             // Actualizar selector de filtrado de reservas dinámicamente
             updateFilterVanSelect();
@@ -1238,6 +1240,16 @@ const initAdmin = () => {
             });
             const data = await response.json();
             if (response.ok) {
+                // Persistir eliminación de la furgoneta en localStorage
+                const deletedIds = JSON.parse(localStorage.getItem('deleted_van_ids') || '[]');
+                if (!deletedIds.includes(String(id))) {
+                    deletedIds.push(String(id));
+                    if (vanObj && vanObj.van_type) {
+                        deletedIds.push(vanObj.van_type);
+                    }
+                    localStorage.setItem('deleted_van_ids', JSON.stringify(deletedIds));
+                }
+
                 showToast('Furgoneta eliminada correctamente.', 'success');
                 fetchFleet();
             } else {

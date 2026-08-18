@@ -433,7 +433,9 @@ const initApp = () => {
         try {
             const response = await fetch('/api/vans');
             if (response.ok) {
-                databaseVans = await response.json();
+                const rawVans = await response.json();
+                const deletedIds = JSON.parse(localStorage.getItem('deleted_van_ids') || '[]');
+                databaseVans = rawVans.filter(v => !deletedIds.includes(String(v.id)) && !deletedIds.includes(Number(v.id)) && !deletedIds.includes(v.van_type));
                 
                 // Repoblar el selector calc-van-select
                 const selectedVal = vanSelect.value;
