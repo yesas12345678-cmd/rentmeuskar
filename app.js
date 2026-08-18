@@ -390,7 +390,8 @@ const initApp = () => {
                     <div>
                         <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-shield-halved text-neon" style="width: 16px;"></i> <strong>Fianza obligatoria:</strong> ${fianzaAmount} €</p>
                         <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-road text-neon" style="width: 16px;"></i> <strong>Km Incluidos:</strong> ${dailyKmLimit} km/día</p>
-                        <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-money-bill-transfer text-neon" style="width: 16px;"></i> <strong>Km Extra:</strong> 0,28 € + IVA/km</p>
+                        <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-money-bill-transfer text-neon" style="width: 16px;"></i> <strong>Km adicionales:</strong> Consultar tarifa</p>
+                        <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-tags text-neon" style="width: 16px;"></i> <strong>Descuento:</strong> 5% a partir de 3 días</p>
                         <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-triangle-exclamation text-neon" style="width: 16px;"></i> <strong>Política de Combustible:</strong> Mismo Nivel</p>
                         <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-bottle-droplet text-neon" style="width: 16px;"></i> <strong>AdBlue:</strong> No incluido (se abona el consumido)</p>
                     </div>
