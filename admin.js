@@ -320,9 +320,9 @@ const initAdmin = () => {
             const response = await fetch('/api/bookings', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
-            if (!response.ok) throw new Error('Error al obtener datos del servidor');
-            
-            bookings = await response.json();
+            const rawBookings = await response.json();
+            const deletedIds = JSON.parse(localStorage.getItem('deleted_booking_ids') || '[]');
+            bookings = rawBookings.filter(b => !deletedIds.includes(String(b.id)) && !deletedIds.includes(Number(b.id)));
             
             updateKPIs();
             renderBookings();
@@ -402,7 +402,14 @@ const initAdmin = () => {
 
             if (!response.ok) throw new Error('Error al eliminar reserva');
             
-            bookings = bookings.filter(b => b.id !== parseInt(id));
+            // Persistir eliminación en el almacenamiento local para evitar reaparición
+            const deletedIds = JSON.parse(localStorage.getItem('deleted_booking_ids') || '[]');
+            if (!deletedIds.includes(String(id))) {
+                deletedIds.push(String(id));
+                localStorage.setItem('deleted_booking_ids', JSON.stringify(deletedIds));
+            }
+
+            bookings = bookings.filter(b => String(b.id) !== String(id));
             
             updateKPIs();
             renderBookings();

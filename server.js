@@ -777,13 +777,12 @@ app.delete('/api/bookings/:id', async (req, res) => {
   try {
     const result = await pool.query('DELETE FROM bookings WHERE id = $1 RETURNING *', [id]);
 
-    if (result.rowCount === 0) {
-      // Intentar eliminar de memoria fallbackBookings
-      const index = fallbackBookings.findIndex(b => b.id == id);
-      if (index !== -1) {
-        fallbackBookings.splice(index, 1);
-        return res.json({ message: 'Reserva eliminada de memoria fallback.' });
-      }
+    const fbIndex = fallbackBookings.findIndex(b => b.id == id);
+    if (fbIndex !== -1) {
+      fallbackBookings.splice(fbIndex, 1);
+    }
+
+    if (result.rowCount === 0 && fbIndex === -1) {
       return res.status(404).json({ error: 'Reserva no encontrada.' });
     }
 
