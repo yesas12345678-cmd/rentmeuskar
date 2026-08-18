@@ -213,7 +213,8 @@ const initApp = () => {
 
     // Fallback robusto usando scroll clásico y getBoundingClientRect
     const checkRevealFallback = () => {
-        revealElements.forEach(element => {
+        const elements = document.querySelectorAll('.reveal');
+        elements.forEach(element => {
             if (element.classList.contains('active')) return;
             const rect = element.getBoundingClientRect();
             // Si el elemento entra en la pantalla
@@ -521,7 +522,13 @@ const initApp = () => {
                         }
                         
                         fleetGridContainer.appendChild(article);
+                        if (typeof revealObserver !== 'undefined' && revealObserver) {
+                            revealObserver.observe(article);
+                        }
                     });
+                    
+                    // Asegurar que se revelan si ya están en pantalla
+                    checkRevealFallback();
                 }
 
                 // Vincular galerías de imágenes de puntitos interactivos en el DOM recién creado
