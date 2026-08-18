@@ -155,6 +155,10 @@ const initAdmin = () => {
     const vanFormImagesInput = document.getElementById('van-form-images-input');
     const vanBtnUploadTrigger = document.getElementById('van-btn-upload-trigger');
     const vanImagesPreviewGrid = document.getElementById('van-images-preview-grid');
+    const vanFormFeatureInput = document.getElementById('van-form-feature-input');
+    const btnAddVanFeature = document.getElementById('btn-add-van-feature');
+    const vanFeaturesPreviewContainer = document.getElementById('van-features-preview-container');
+    let currentFormFeatures = [];
 
     // Elementos de la Pestaña de Configuración
     const tabSettings = document.getElementById('tab-settings');
@@ -1495,6 +1499,10 @@ const initAdmin = () => {
             // Cargar extras
             currentVanExtras = Array.isArray(van.custom_extras) ? [...van.custom_extras] : [];
             renderVanExtrasPreview();
+
+            // Cargar características personalizadas
+            currentFormFeatures = Array.isArray(van.custom_features) ? [...van.custom_features] : [];
+            renderVanFeaturesPreview();
         } else {
             vanModalTitle.textContent = 'Añadir Nueva Furgoneta';
             vanFormId.value = '';
@@ -1519,9 +1527,51 @@ const initAdmin = () => {
 
             currentVanExtras = [];
             renderVanExtrasPreview();
+
+            currentFormFeatures = [];
+            if (vanFormFeatureInput) vanFormFeatureInput.value = '';
+            renderVanFeaturesPreview();
         }
         vanModal.classList.add('active');
     };
+
+    // Renderizar características personalizadas en el modal del formulario
+    const renderVanFeaturesPreview = () => {
+        if (!vanFeaturesPreviewContainer) return;
+        vanFeaturesPreviewContainer.innerHTML = '';
+        if (currentFormFeatures.length === 0) {
+            vanFeaturesPreviewContainer.innerHTML = '<span style="color: var(--text-muted); font-size: 0.8rem;">No hay características personalizadas añadidas.</span>';
+            return;
+        }
+
+        currentFormFeatures.forEach((feat, idx) => {
+            const chip = document.createElement('div');
+            chip.style.cssText = 'background: rgba(130, 209, 5, 0.12); border: 1px solid rgba(130, 209, 5, 0.3); color: #fff; font-size: 0.82rem; padding: 4px 10px; border-radius: 20px; display: inline-flex; align-items: center; gap: 6px;';
+            chip.innerHTML = `
+                <span><i class="fa-solid fa-check text-neon" style="font-size: 0.75rem;"></i> ${feat}</span>
+                <i class="fa-solid fa-xmark remove-feat-btn" data-idx="${idx}" style="cursor: pointer; color: var(--color-danger); margin-left: 4px;"></i>
+            `;
+            chip.querySelector('.remove-feat-btn').addEventListener('click', () => {
+                currentFormFeatures.splice(idx, 1);
+                renderVanFeaturesPreview();
+            });
+            vanFeaturesPreviewContainer.appendChild(chip);
+        });
+    };
+
+    if (btnAddVanFeature) {
+        btnAddVanFeature.addEventListener('click', () => {
+            const featText = vanFormFeatureInput.value.trim();
+            if (!featText) return;
+            if (currentFormFeatures.includes(featText)) {
+                showToast('Esa característica ya ha sido añadida.', 'warning');
+                return;
+            }
+            currentFormFeatures.push(featText);
+            vanFormFeatureInput.value = '';
+            renderVanFeaturesPreview();
+        });
+    }
 
     const closeVanModal = () => {
         vanModal.classList.remove('active');
@@ -1659,6 +1709,7 @@ const initAdmin = () => {
         });
 
         formData.append('custom_extras', JSON.stringify(currentVanExtras));
+        formData.append('custom_features', JSON.stringify(currentFormFeatures));
 
         const token = localStorage.getItem('admin_token');
         if (!token) return;

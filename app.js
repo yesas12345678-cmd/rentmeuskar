@@ -425,6 +425,17 @@ const initApp = () => {
                 </div>
             `;
         }
+
+        if (Array.isArray(van.custom_features) && van.custom_features.length > 0) {
+            const featHtml = van.custom_features.map(f => `<span style="background: rgba(130, 209, 5, 0.1); border: 1px solid rgba(130, 209, 5, 0.3); color: #fff; font-size: 0.78rem; padding: 3px 8px; border-radius: 12px; display: inline-flex; align-items: center; gap: 4px;"><i class="fa-solid fa-check text-neon"></i> ${f}</span>`).join(' ');
+            vanSpecsContainer.innerHTML += `
+                <div style="margin-top: 0.8rem; padding-top: 0.8rem; border-top: 1px solid rgba(255,255,255,0.08);">
+                    <strong style="font-size: 0.8rem; color: var(--color-neon); display: block; margin-bottom: 0.4rem;"><i class="fa-solid fa-star"></i> Equipamiento Destacado:</strong>
+                    <div style="display: flex; flex-wrap: wrap; gap: 0.4rem;">${featHtml}</div>
+                </div>
+            `;
+        }
+
         vanSpecsContainer.style.display = 'block';
     };
 
@@ -1499,6 +1510,22 @@ _Por favor, accede al panel de administración de RentMeUskar para Aprobar o Can
         document.getElementById('detail-spec-fuel').textContent = van.fuel_type || 'Diesel';
         document.getElementById('detail-spec-eco').textContent = `Etiqueta ${van.eco_label || 'C'}`;
         document.getElementById('detail-spec-kmlimit').textContent = `${van.daily_km_limit || 350} km/día`;
+        
+        // Cargar características personalizadas
+        const featContainer = document.getElementById('detail-custom-features-container');
+        const featList = document.getElementById('detail-custom-features-list');
+        if (featContainer && featList) {
+            if (Array.isArray(van.custom_features) && van.custom_features.length > 0) {
+                featList.innerHTML = van.custom_features.map(f => `
+                    <span style="background: rgba(130, 209, 5, 0.12); border: 1px solid rgba(130, 209, 5, 0.3); color: #fff; font-size: 0.85rem; padding: 5px 12px; border-radius: 20px; display: inline-flex; align-items: center; gap: 6px;">
+                        <i class="fa-solid fa-check text-neon" style="font-size: 0.8rem;"></i> ${f}
+                    </span>
+                `).join('');
+                featContainer.style.display = 'block';
+            } else {
+                featContainer.style.display = 'none';
+            }
+        }
         
         // Carrusel de imágenes
         const slidesContainer = document.getElementById('detail-carousel-slides');

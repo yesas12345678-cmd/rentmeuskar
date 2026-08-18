@@ -163,7 +163,8 @@ const initDb = async () => {
     "ALTER TABLE vans ADD COLUMN IF NOT EXISTS daily_km_limit INTEGER DEFAULT 350;",
     "ALTER TABLE vans ADD COLUMN IF NOT EXISTS max_mass INTEGER DEFAULT 2800;",
     "ALTER TABLE vans ADD COLUMN IF NOT EXISTS fuel_type VARCHAR(100) DEFAULT 'GASOIL';",
-    "ALTER TABLE vans ADD COLUMN IF NOT EXISTS waiting_hour_price NUMERIC(10, 2) DEFAULT 30.00;"
+    "ALTER TABLE vans ADD COLUMN IF NOT EXISTS waiting_hour_price NUMERIC(10, 2) DEFAULT 30.00;",
+    "ALTER TABLE vans ADD COLUMN IF NOT EXISTS custom_features JSONB DEFAULT '[]'::jsonb;"
   ];
 
   const createSettingsTableQuery = `
@@ -904,6 +905,15 @@ app.post('/api/vans', verifyAdmin, upload.array('images', 20), async (req, res) 
     }
   }
 
+  let customFeatures = [];
+  if (req.body.custom_features) {
+    try {
+      customFeatures = typeof req.body.custom_features === 'string' ? JSON.parse(req.body.custom_features) : req.body.custom_features;
+    } catch (e) {
+      console.error('Error parsing custom_features:', e);
+    }
+  }
+
   try {
     // Comprobar si ya existe el tipo
     const checkRes = await pool.query('SELECT id FROM vans WHERE van_type = $1', [van_type]);
@@ -912,8 +922,8 @@ app.post('/api/vans', verifyAdmin, upload.array('images', 20), async (req, res) 
     }
 
     const query = `
-      INSERT INTO vans (van_type, name, plate, m3, price_sin, min_price_con, km_price_con, status, images, custom_extras, max_occupants, eco_label, daily_km_limit, max_mass, fuel_type, waiting_hour_price)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16) RETURNING *;
+      INSERT INTO vans (van_type, name, plate, m3, price_sin, min_price_con, km_price_con, status, images, custom_extras, max_occupants, eco_label, daily_km_limit, max_mass, fuel_type, waiting_hour_price, custom_features)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17) RETURNING *;
     `;
     const values = [
       van_type, 
@@ -931,7 +941,8 @@ app.post('/api/vans', verifyAdmin, upload.array('images', 20), async (req, res) 
       parseInt(daily_km_limit) || 350,
       parseInt(max_mass) || 2800,
       fuel_type || 'GASOIL',
-      parseFloat(waiting_hour_price) || 30.00
+      parseFloat(waiting_hour_price) || 30.00,
+      JSON.stringify(customFeatures)
     ];
     const result = await pool.query(query, values);
     
@@ -969,7 +980,8 @@ app.post('/api/vans', verifyAdmin, upload.array('images', 20), async (req, res) 
       daily_km_limit: parseInt(daily_km_limit) || 350,
       max_mass: parseInt(max_mass) || 2800,
       fuel_type: fuel_type || 'GASOIL',
-      waiting_hour_price: parseFloat(waiting_hour_price) || 30.00
+      waiting_hour_price: parseFloat(waiting_hour_price) || 30.00,
+      custom_features: customFeatures
     };
     fallbackVans.push(newVan);
     res.status(201).json({
@@ -1031,6 +1043,15 @@ app.put('/api/vans/:id', verifyAdmin, upload.array('images', 20), async (req, re
     }
   }
 
+  let customFeatures = [];
+  if (req.body.custom_features) {
+    try {
+      customFeatures = typeof req.body.custom_features === 'string' ? JSON.parse(req.body.custom_features) : req.body.custom_features;
+    } catch (e) {
+      console.error('Error parsing custom_features:', e);
+    }
+  }
+
   try {
     const checkRes = await pool.query('SELECT * FROM vans WHERE id = $1', [id]);
     if (checkRes.rowCount === 0) {
@@ -1041,8 +1062,9 @@ app.put('/api/vans/:id', verifyAdmin, upload.array('images', 20), async (req, re
     const query = `
       UPDATE vans 
       SET van_type = $1, name = $2, plate = $3, m3 = $4, price_sin = $5, min_price_con = $6, km_price_con = $7, status = $8, images = $9,
-          custom_extras = $10, max_occupants = $11, eco_label = $12, daily_km_limit = $13, max_mass = $14, fuel_type = $15, waiting_hour_price = $16
-      WHERE id = $17 RETURNING *;
+          custom_extras = $10, max_occupants = $11, eco_label = $12, daily_km_limit = $13, max_mass = $14, fuel_type = $15, waiting_hour_price = $16,
+          custom_features = $17
+      WHERE id = $18 RETURNING *;
     `;
     const values = [
       van_type !== undefined ? van_type : current.van_type,
@@ -1061,6 +1083,7 @@ app.put('/api/vans/:id', verifyAdmin, upload.array('images', 20), async (req, re
       max_mass !== undefined ? parseInt(max_mass) : current.max_mass,
       fuel_type !== undefined ? fuel_type : current.fuel_type,
       waiting_hour_price !== undefined ? parseFloat(waiting_hour_price) : current.waiting_hour_price,
+      JSON.stringify(customFeatures),
       id
     ];
 
@@ -1100,7 +1123,8 @@ app.put('/api/vans/:id', verifyAdmin, upload.array('images', 20), async (req, re
       daily_km_limit: daily_km_limit !== undefined ? parseInt(daily_km_limit) : current.daily_km_limit,
       max_mass: max_mass !== undefined ? parseInt(max_mass) : current.max_mass,
       fuel_type: fuel_type !== undefined ? fuel_type : current.fuel_type,
-      waiting_hour_price: waiting_hour_price !== undefined ? parseFloat(waiting_hour_price) : current.waiting_hour_price
+      waiting_hour_price: waiting_hour_price !== undefined ? parseFloat(waiting_hour_price) : current.waiting_hour_price,
+      custom_features: customFeatures
     };
     fallbackVans[index] = updated;
     res.json({

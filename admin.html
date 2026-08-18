@@ -1640,6 +1640,22 @@
                     </div>
                 </div>
 
+                <!-- Características Personalizadas Dinámicas -->
+                <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); padding: 1.2rem; border-radius: var(--border-radius-sm); margin-bottom: 1.5rem; text-align: left;">
+                    <label style="display: block; font-size: 0.85rem; text-transform: uppercase; color: #fff; margin-bottom: 0.8rem; font-weight: 700; letter-spacing: 0.05em; margin-top: 0;">
+                        <i class="fa-solid fa-tags" style="color: var(--color-neon);"></i> Características Personalizadas
+                    </label>
+                    <div style="display: flex; gap: 0.8rem; align-items: center; margin-bottom: 0.8rem;">
+                        <input type="text" id="van-form-feature-input" class="search-input" style="padding-left: 0.8rem; flex: 1;" placeholder="Ej: Cámara trasera, Sensores de parking, Control de crucero...">
+                        <button type="button" class="btn btn-primary" id="btn-add-van-feature" style="height: 42px; padding: 0 1rem; font-weight: 700;">
+                            <i class="fa-solid fa-plus"></i> Añadir
+                        </button>
+                    </div>
+                    <div id="van-features-preview-container" style="display: flex; flex-wrap: wrap; gap: 0.5rem; min-height: 38px; padding: 0.4rem; background: rgba(0,0,0,0.2); border: 1px dashed rgba(255,255,255,0.1); border-radius: var(--border-radius-sm); align-items: center;">
+                        <span style="color: var(--text-muted); font-size: 0.8rem;">No hay características personalizadas añadidas.</span>
+                    </div>
+                </div>
+
                 <div class="custom-form-group" style="margin-bottom: 1.5rem; text-align: left;">
                     <label style="display: block; font-size: 0.8rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 0.3rem; font-weight: 600; letter-spacing: 0.05em;">Estado del Vehículo</label>
                     <select id="van-form-status" class="select-filter" style="width: 100%; height: 42px; background: rgba(7, 14, 36, 0.5); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: var(--border-radius-sm); color: #fff;">
