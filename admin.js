@@ -1587,8 +1587,23 @@ const initAdmin = () => {
         e.preventDefault();
         const id = vanFormId.value;
         
+        const slugify = (text) => {
+            return text.toString().toLowerCase()
+                .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                .replace(/\s+/g, '-')
+                .replace(/[^\w\-]+/g, '')
+                .replace(/\-\-+/g, '-')
+                .replace(/^-+/, '')
+                .replace(/-+$/, '');
+        };
+
+        let typeVal = vanFormType.value.trim();
+        if (!id) {
+            typeVal = slugify(vanFormName.value.trim()) + '-' + slugify(vanFormPlate.value.trim());
+        }
+        
         const formData = new FormData();
-        formData.append('van_type', vanFormType.value.trim());
+        formData.append('van_type', typeVal);
         formData.append('name', vanFormName.value.trim());
         formData.append('plate', vanFormPlate.value.trim());
         let m3Val = vanFormM3.value.trim();
