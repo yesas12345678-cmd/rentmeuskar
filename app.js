@@ -414,13 +414,13 @@ const initApp = () => {
                         <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-user text-neon" style="width: 16px;"></i> <strong>Plazas:</strong> ${maxOccupants} plazas</p>
                         <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-gas-pump text-neon" style="width: 16px;"></i> <strong>Combustible:</strong> ${fuelType}</p>
                         <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-leaf text-neon" style="width: 16px;"></i> <strong>Distintivo Eco:</strong> Etiqueta ${ecoLabel}</p>
+                        <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-circle-check text-neon" style="width: 16px;"></i> <strong>Fianza y Combustible:</strong> Incluidos</p>
                     </div>
                     <div>
-                        <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-receipt text-neon" style="width: 16px;"></i> <strong>Tarifa mínima:</strong> ${minCon} € + IVA (incluye 20km / 1 hora)</p>
+                        <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-receipt text-neon" style="width: 16px;"></i> <strong>Tarifa mínima:</strong> ${minCon} € + IVA (incluye 20km/1h)</p>
                         <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-money-bill-transfer text-neon" style="width: 16px;"></i> <strong>Precio km extra:</strong> ${kmCon} € + IVA/km</p>
-                        <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-hourglass-half text-neon" style="width: 16px;"></i> <strong>Hora de espera:</strong> ${waitCon} € + IVA/hora</p>
+                        <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-hourglass-half text-neon" style="width: 16px;"></i> <strong>Hora de espera:</strong> ${waitCon} € + IVA/h</p>
                         <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-handshake-angle text-neon" style="width: 16px;"></i> <strong>Servicio Incluido:</strong> Ayuda de carga y descarga ligera</p>
-                        <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-circle-check text-neon" style="width: 16px;"></i> <strong>Fianza y Combustible:</strong> Incluidos en la tarifa</p>
                     </div>
                 </div>
             `;
