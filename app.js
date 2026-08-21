@@ -967,6 +967,24 @@ const initApp = () => {
         window.openAuthModal(openId);
     };
 
+    // Cierre global de modales con la tecla ESC (Escape) y clic en el fondo oscuro
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' || e.key === 'Esc') {
+            const openModals = document.querySelectorAll('.custom-modal-backdrop');
+            openModals.forEach(modal => {
+                if (modal.style.display !== 'none') {
+                    modal.style.display = 'none';
+                }
+            });
+        }
+    });
+
+    document.addEventListener('click', (e) => {
+        if (e.target && e.target.classList && e.target.classList.contains('custom-modal-backdrop')) {
+            e.target.style.display = 'none';
+        }
+    });
+
     // Actualizar NavBar según estado de sesión
     const updateAuthUI = async () => {
         const token = localStorage.getItem('user_token');

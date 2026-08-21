@@ -978,6 +978,17 @@ const initAdmin = () => {
         if (e.target === modal) closeModal();
     });
 
+    // Cierre de modales con la tecla ESC (Escape) en el Panel Admin
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' || e.key === 'Esc') {
+            closeModal();
+            const modalVans = document.getElementById('van-modal');
+            if (modalVans) modalVans.classList.remove('active');
+            const modalFaq = document.getElementById('faq-modal');
+            if (modalFaq) modalFaq.classList.remove('active');
+        }
+    });
+
     /* ==========================================================================
        6. GESTIÓN DE FLOTA (FURGONETAS)
        ========================================================================== */
