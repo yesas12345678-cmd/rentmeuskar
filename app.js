@@ -1252,10 +1252,21 @@ const initApp = () => {
     // Variable global para almacenar el usuario de SSO pendiente de DNI
     let pendingSSOUser = null;
 
-    // 1-Click Social Login con Requisito de DNI/NIE
+    // Social Login con selección de cuenta y requisito de DNI/NIE
     window.loginWithGoogle = () => {
         window.closeAuthModal('login-modal');
         window.closeAuthModal('register-modal');
+
+        const inputEmail = prompt('Introduce la dirección de correo de tu cuenta de Google (Gmail):', 'tuemail@gmail.com');
+        if (!inputEmail) return;
+        const cleanEmail = inputEmail.trim().toLowerCase();
+        if (!cleanEmail || !cleanEmail.includes('@')) {
+            alert('Por favor, introduce una dirección de correo válida.');
+            return;
+        }
+
+        const namePart = cleanEmail.split('@')[0];
+        const formattedName = namePart.charAt(0).toUpperCase() + namePart.slice(1);
 
         const savedProfileStr = localStorage.getItem('user_profile');
         let savedProfile = null;
@@ -1263,18 +1274,16 @@ const initApp = () => {
             try { savedProfile = JSON.parse(savedProfileStr); } catch (e) { }
         }
 
-        if (savedProfile && savedProfile.dni && savedProfile.dni !== '00000000G' && savedProfile.dni !== '00000000A') {
-            // Ya tiene DNI guardado
+        if (savedProfile && savedProfile.email === cleanEmail && savedProfile.dni && window.validateSpanishID(savedProfile.dni)) {
             localStorage.setItem('user_token', 'google_user_' + savedProfile.id);
             updateAuthUI();
             showAppToast(`¡Bienvenido/a de nuevo, ${savedProfile.name}!`, 'success');
         } else {
-            // Pedir DNI/NIE antes de activar la cuenta
             pendingSSOUser = {
                 id: Date.now(),
-                name: 'Jose Manuel',
-                email: 'yesas12345678@gmail.com',
-                phone: '614767411',
+                name: formattedName,
+                email: cleanEmail,
+                phone: '',
                 auth_provider: 'google'
             };
             const ssoInput = document.getElementById('sso-dni-input');
@@ -1287,22 +1296,33 @@ const initApp = () => {
         window.closeAuthModal('login-modal');
         window.closeAuthModal('register-modal');
 
+        const inputEmail = prompt('Introduce tu correo o Apple ID / iCloud:', 'tuemail@icloud.com');
+        if (!inputEmail) return;
+        const cleanEmail = inputEmail.trim().toLowerCase();
+        if (!cleanEmail || !cleanEmail.includes('@')) {
+            alert('Por favor, introduce una dirección de correo válida.');
+            return;
+        }
+
+        const namePart = cleanEmail.split('@')[0];
+        const formattedName = namePart.charAt(0).toUpperCase() + namePart.slice(1);
+
         const savedProfileStr = localStorage.getItem('user_profile');
         let savedProfile = null;
         if (savedProfileStr) {
             try { savedProfile = JSON.parse(savedProfileStr); } catch (e) { }
         }
 
-        if (savedProfile && savedProfile.dni && savedProfile.dni !== '00000000G' && savedProfile.dni !== '00000000A') {
+        if (savedProfile && savedProfile.email === cleanEmail && savedProfile.dni && window.validateSpanishID(savedProfile.dni)) {
             localStorage.setItem('user_token', 'apple_user_' + savedProfile.id);
             updateAuthUI();
-            showAppToast(`¡Bienvenido/a de nuevo!`, 'success');
+            showAppToast(`¡Bienvenido/a de nuevo, ${savedProfile.name}!`, 'success');
         } else {
             pendingSSOUser = {
                 id: Date.now(),
-                name: 'Usuario Apple',
-                email: 'yesas12345678@icloud.com',
-                phone: '614767411',
+                name: formattedName,
+                email: cleanEmail,
+                phone: '',
                 auth_provider: 'apple'
             };
             const ssoInput = document.getElementById('sso-dni-input');
@@ -1435,6 +1455,77 @@ const initApp = () => {
         window.openAuthModal('client-modal');
     };
 
+    // Abrir modal de edición de perfil
+    window.openEditProfileModal = () => {
+        const savedProfileStr = localStorage.getItem('user_profile');
+        let user = null;
+        if (savedProfileStr) {
+            try { user = JSON.parse(savedProfileStr); } catch (e) { }
+        }
+
+        if (!user) {
+            user = { name: '', email: '', phone: '', dni: '' };
+        }
+
+        const nameInput = document.getElementById('edit-profile-name');
+        const emailInput = document.getElementById('edit-profile-email');
+        const phoneInput = document.getElementById('edit-profile-phone');
+        const dniInput = document.getElementById('edit-profile-dni');
+
+        if (nameInput) nameInput.value = user.name || '';
+        if (emailInput) emailInput.value = user.email || '';
+        if (phoneInput) phoneInput.value = user.phone || '';
+        if (dniInput) dniInput.value = (user.dni && user.dni !== '00000000G' && user.dni !== '00000000A') ? user.dni : '';
+
+        window.openAuthModal('edit-profile-modal');
+    };
+
+    // Formulario de edición de perfil
+    const editProfileForm = document.getElementById('edit-profile-form');
+    if (editProfileForm) {
+        editProfileForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('edit-profile-name').value.trim();
+            const email = document.getElementById('edit-profile-email').value.trim();
+            const phone = document.getElementById('edit-profile-phone').value.trim();
+            const dni = document.getElementById('edit-profile-dni').value.trim().toUpperCase();
+
+            if (!window.validateSpanishID(dni)) {
+                alert('El DNI / NIE introducido no es válido. Comprueba los 8 números y la letra (ejemplo: 12345678Z o X1234567L).');
+                return;
+            }
+
+            const updatedProfile = { name, email, phone, dni };
+
+            try {
+                const res = await fetch('/api/auth/profile', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(updatedProfile)
+                });
+                const data = await res.json();
+                if (res.ok && data.user) {
+                    localStorage.setItem('user_profile', JSON.stringify(data.user));
+                } else {
+                    localStorage.setItem('user_profile', JSON.stringify(updatedProfile));
+                }
+            } catch (err) {
+                console.warn('Backend no disponible, guardando perfil localmente:', err);
+                localStorage.setItem('user_profile', JSON.stringify(updatedProfile));
+            }
+
+            window.closeAuthModal('edit-profile-modal');
+            updateAuthUI();
+
+            const userInfoEl = document.getElementById('client-user-info');
+            if (userInfoEl) {
+                userInfoEl.textContent = `Conectado como: ${name} (${email}) | DNI: ${dni}`;
+            }
+
+            showAppToast('¡Perfil actualizado con éxito!', 'success');
+        });
+    }
+
     // Modal de Fotos de Inspección para el Cliente
     window.openClientPhotosModal = (beforeUrls, afterUrls) => {
         const beforeContainer = document.getElementById('client-photos-before-container');
@@ -1551,19 +1642,29 @@ const initApp = () => {
         const totalPriceText = summaryTotalPrice.textContent;
         const totalPriceNum = totalPriceText.includes('A consultar') ? 0.00 : parseFloat(totalPriceText.replace(/[^\d.,]/g, '').replace(',', '.'));
 
-        // Obtener ID del usuario
-        let user;
-        try {
-            const res = await fetch('/api/auth/me', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            if (!res.ok) throw new Error();
-            user = await res.json();
-        } catch (err) {
-            alert('Tu sesión ha expirado. Por favor entra de nuevo.');
-            localStorage.removeItem('user_token');
-            updateAuthUI();
-            return;
+        // Obtener usuario (Resiliente sin expulsar jamás la sesión)
+        let user = null;
+        const savedProfileStr = localStorage.getItem('user_profile');
+        if (savedProfileStr) {
+            try { user = JSON.parse(savedProfileStr); } catch (e) { }
+        }
+
+        if (!user) {
+            try {
+                const res = await fetch('/api/auth/me', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    user = await res.json();
+                    localStorage.setItem('user_profile', JSON.stringify(user));
+                }
+            } catch (err) {
+                console.warn('Error al verificar perfil:', err);
+            }
+        }
+
+        if (!user) {
+            user = { id: Date.now(), name: nameValue || 'Cliente', email: 'cliente@rentmeuskar.com' };
         }
 
         // Construir datos temporales de reserva

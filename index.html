@@ -1162,12 +1162,47 @@
             </div>
 
             <div class="client-modal-actions"
-                style="margin-top: 1.5rem; display: flex; justify-content: space-between; align-items: center;">
+                style="margin-top: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.8rem;">
                 <span id="client-user-info" style="font-size: 0.85rem; color: var(--text-secondary);"></span>
-                <button class="btn" id="btn-client-logout"
-                    style="background: rgba(255, 77, 109, 0.15); border: 1px solid #ff4d6d; color: #ff4d6d; font-weight: 600; padding: 0.5rem 1.2rem; border-radius: 8px; cursor: pointer; transition: all 0.2s ease;"><i
-                        class="fa-solid fa-power-off" style="margin-right: 0.4rem;"></i> Cerrar Sesión</button>
+                <div style="display: flex; gap: 0.5rem;">
+                    <button class="btn btn-secondary" onclick="openEditProfileModal()" style="font-size: 0.85rem; padding: 0.5rem 1rem; border-color: var(--color-neon); color: var(--color-neon);"><i class="fa-solid fa-user-pen"></i> Editar Mi Perfil</button>
+                    <button class="btn" id="btn-client-logout"
+                        style="background: rgba(255, 77, 109, 0.15); border: 1px solid #ff4d6d; color: #ff4d6d; font-weight: 600; padding: 0.5rem 1.2rem; border-radius: 8px; cursor: pointer; transition: all 0.2s ease;"><i
+                            class="fa-solid fa-power-off" style="margin-right: 0.4rem;"></i> Cerrar Sesión</button>
+                </div>
             </div>
+        </div>
+    </div>
+
+    <!-- Modal: Editar Datos de Perfil de Cliente -->
+    <div class="custom-modal-backdrop" id="edit-profile-modal" style="display: none;">
+        <div class="custom-modal-card" style="max-width: 480px;">
+            <span class="custom-modal-close" onclick="closeAuthModal('edit-profile-modal')">&times;</span>
+            <div class="custom-modal-header" style="text-align: left; margin-bottom: 1.5rem;">
+                <h2><i class="fa-solid fa-user-pen" style="color: var(--color-neon); margin-right: 0.4rem;"></i> Editar Mis Datos de Perfil</h2>
+                <p>Modifica tu información personal para tus contratos y facturas.</p>
+            </div>
+            <form id="edit-profile-form">
+                <div class="custom-form-group" style="text-align: left;">
+                    <label for="edit-profile-name">Nombre Completo</label>
+                    <input type="text" id="edit-profile-name" class="custom-form-control" required placeholder="Tu nombre completo">
+                </div>
+                <div class="custom-form-group" style="text-align: left;">
+                    <label for="edit-profile-email">Correo Electrónico (Solo lectura)</label>
+                    <input type="email" id="edit-profile-email" class="custom-form-control" readonly style="opacity: 0.7; cursor: not-allowed;">
+                </div>
+                <div class="custom-form-group" style="text-align: left;">
+                    <label for="edit-profile-phone">Teléfono de Contacto</label>
+                    <input type="tel" id="edit-profile-phone" class="custom-form-control" required placeholder="ej: 614767411">
+                </div>
+                <div class="custom-form-group" style="text-align: left;">
+                    <label for="edit-profile-dni">DNI / NIE (Verificado)</label>
+                    <input type="text" id="edit-profile-dni" class="custom-form-control" required placeholder="ej: 12345678Z" style="text-transform: uppercase;">
+                </div>
+                <button type="submit" class="btn btn-primary btn-block" style="margin-top: 1rem;">
+                    <i class="fa-solid fa-floppy-disk"></i> Guardar Cambios
+                </button>
+            </form>
         </div>
     </div>
 
