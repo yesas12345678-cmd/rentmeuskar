@@ -1268,7 +1268,7 @@ const initAdmin = () => {
         });
     };
 
-    // Eliminar furgoneta
+    // Eliminar furgoneta con opción de Deshacer (Undo) en 5 segundos
     const deleteVan = async (id) => {
         const vanObj = fleet.find(v => v.id === id);
         if (!vanObj) return;
@@ -1286,32 +1286,59 @@ const initAdmin = () => {
         const token = localStorage.getItem('admin_token');
         if (!token) return;
 
-        try {
-            const response = await fetch(`/api/vans/${id}`, {
-                method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const data = await response.json();
-            if (response.ok) {
-                // Persistir eliminación de la furgoneta en localStorage
-                const deletedIds = JSON.parse(localStorage.getItem('deleted_van_ids') || '[]');
-                if (!deletedIds.includes(String(id))) {
-                    deletedIds.push(String(id));
-                    if (vanObj && vanObj.van_type) {
-                        deletedIds.push(vanObj.van_type);
-                    }
-                    localStorage.setItem('deleted_van_ids', JSON.stringify(deletedIds));
+        // 1. Quitar la furgoneta localmente de inmediato para actualización instantánea
+        fleet = fleet.filter(v => v.id !== id);
+        renderFleet();
+
+        // 2. Guardar ID borrado en localStorage
+        const deletedIds = JSON.parse(localStorage.getItem('deleted_van_ids') || '[]');
+        if (!deletedIds.includes(String(id))) {
+            deletedIds.push(String(id));
+            if (vanObj && vanObj.van_type) {
+                deletedIds.push(vanObj.van_type);
+            }
+            localStorage.setItem('deleted_van_ids', JSON.stringify(deletedIds));
+        }
+
+        // 3. Notificar al servidor en segundo plano
+        fetch(`/api/vans/${id}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        }).catch(err => console.warn('Error al eliminar furgoneta en backend:', err));
+
+        // 4. Mostrar toast con botón Deshacer durante 5 segundos
+        showToast(`Furgoneta "${vanObj.name}" eliminada correctamente.`, 'success', {
+            text: '<i class="fa-solid fa-rotate-left"></i> Deshacer',
+            onClick: async () => {
+                // Restaurar la furgoneta en memoria
+                if (!fleet.some(v => v.id === id)) {
+                    fleet.push(vanObj);
+                    fleet.sort((a, b) => a.id - b.id);
                 }
 
-                showToast('Furgoneta eliminada correctamente.', 'success');
-                fetchFleet();
-            } else {
-                showToast(data.error || 'Error al eliminar furgoneta.', 'error');
+                // Quitar de deleted_van_ids en localStorage
+                const currentDeletedIds = JSON.parse(localStorage.getItem('deleted_van_ids') || '[]');
+                const updatedDeletedIds = currentDeletedIds.filter(dId => dId !== String(id) && dId !== vanObj.van_type);
+                localStorage.setItem('deleted_van_ids', JSON.stringify(updatedDeletedIds));
+
+                // Recrear o actualizar en el servidor backend
+                try {
+                    await fetch('/api/vans', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify(vanObj)
+                    });
+                } catch (rErr) {
+                    console.warn('Error backend al restaurar furgoneta:', rErr);
+                }
+
+                renderFleet();
+                showToast(`Furgoneta "${vanObj.name}" restaurada con éxito.`, 'info');
             }
-        } catch (err) {
-            console.error(err);
-            showToast('Error de red al conectar con el servidor.', 'error');
-        }
+        });
     };
 
     // Renderizar la previsualización de imágenes de furgonetas en el modal con soporte de ordenación
