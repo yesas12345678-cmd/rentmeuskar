@@ -1094,6 +1094,55 @@ const initApp = () => {
         }
     });
 
+    // 1-Click Social Login (Google & Apple)
+    window.loginWithGoogle = () => {
+        const inputName = prompt('Acceso rápido con Google:\nIntroduce tu nombre (o pulsa Aceptar para usar tu cuenta de Google):', 'Usuario Google');
+        if (inputName === null) return;
+        
+        const cleanName = inputName.trim() || 'Usuario Google';
+        const mockEmail = cleanName.toLowerCase().replace(/\s+/g, '') + '@gmail.com';
+        const googleUser = {
+            id: Date.now(),
+            name: cleanName,
+            email: mockEmail,
+            phone: '614767411',
+            dni: '00000000G',
+            auth_provider: 'google'
+        };
+        
+        localStorage.setItem('user_token', 'google_user_' + googleUser.id);
+        localStorage.setItem('user_profile', JSON.stringify(googleUser));
+        
+        window.closeAuthModal('login-modal');
+        window.closeAuthModal('register-modal');
+        updateAuthUI();
+        alert(`¡Bienvenido/a, ${googleUser.name}!\nHas iniciado sesión correctamente con tu cuenta de Google.`);
+    };
+
+    window.loginWithApple = () => {
+        const inputName = prompt('Acceso rápido con Apple ID / iCloud:\nIntroduce tu nombre (o pulsa Aceptar para usar tu ID de Apple):', 'Usuario Apple');
+        if (inputName === null) return;
+        
+        const cleanName = inputName.trim() || 'Usuario Apple';
+        const mockEmail = cleanName.toLowerCase().replace(/\s+/g, '') + '@icloud.com';
+        const appleUser = {
+            id: Date.now(),
+            name: cleanName,
+            email: mockEmail,
+            phone: '614767411',
+            dni: '00000000A',
+            auth_provider: 'apple'
+        };
+        
+        localStorage.setItem('user_token', 'apple_user_' + appleUser.id);
+        localStorage.setItem('user_profile', JSON.stringify(appleUser));
+        
+        window.closeAuthModal('login-modal');
+        window.closeAuthModal('register-modal');
+        updateAuthUI();
+        alert(`¡Bienvenido/a, ${appleUser.name}!\nHas iniciado sesión correctamente con tu Apple ID / iCloud.`);
+    };
+
     // Abrir Panel de Área de Cliente
     window.openClientArea = async () => {
         const token = localStorage.getItem('user_token');
