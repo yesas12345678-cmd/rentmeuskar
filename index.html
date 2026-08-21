@@ -863,18 +863,30 @@
                 <p>Tu opinión nos ayuda a mejorar y a dar confianza a otros vecinos.</p>
             </div>
             <form id="write-review-form">
-                <p
-                    style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1.5rem; line-height: 1.5; text-align: left;">
-                    <i class="fa-solid fa-circle-info" style="color: var(--color-neon);"></i> Para garantizar la
-                    veracidad de las opiniones, solo los clientes con un código de reserva válido pueden publicar una
-                    reseña. El código se le asigna al completar su reserva.
+                <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1.25rem; line-height: 1.5; text-align: left;">
+                    <i class="fa-solid fa-circle-check" style="color: var(--color-neon);"></i> Para publicar una reseña verificada debes estar identificado en tu cuenta. Selecciona la reserva realizada o introduce un código manual proporcionado por Administración.
                 </p>
 
                 <div class="custom-form-group" style="text-align: left;">
-                    <label for="review-code-input"><i class="fa-solid fa-ticket"></i> Código de Reserva
-                        (Verificado)</label>
-                    <input type="text" id="review-code-input" class="custom-form-control" placeholder="" required
-                        style="text-transform: uppercase;">
+                    <label for="review-booking-select"><i class="fa-solid fa-van-shuttle"></i> Reserva o Vehículo a Reseñar</label>
+                    <select id="review-booking-select" class="custom-form-control" style="background: rgba(255,255,255,0.05); color: #fff;">
+                        <!-- Opciones dinámicas -->
+                    </select>
+                </div>
+
+                <!-- Insignia del producto / vehículo exacto -->
+                <div id="review-vehicle-badge" style="display: flex; align-items: center; gap: 0.5rem; background: rgba(130, 209, 5, 0.1); border: 1px solid rgba(130, 209, 5, 0.3); border-radius: 8px; padding: 0.6rem 0.8rem; margin-bottom: 1rem; font-size: 0.85rem; color: #fff;">
+                    <i class="fa-solid fa-tags" style="color: var(--color-neon);"></i>
+                    <span>Vehículo Reseñado: <strong id="review-vehicle-text" style="color: var(--color-neon);">Ford Transit Custom L2H2 (8m³)</strong></span>
+                </div>
+                <input type="hidden" id="review-van-name-input" value="Ford Transit Custom L2H2 (8m³)">
+
+                <div class="custom-form-group" id="review-manual-code-group" style="text-align: left; display: none;">
+                    <label for="review-code-input"><i class="fa-solid fa-ticket"></i> Código de Reseña Manual (Admin)</label>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <input type="text" id="review-code-input" class="custom-form-control" placeholder="ej: RMU-8492" style="text-transform: uppercase;">
+                        <button type="button" class="btn btn-secondary btn-sm" id="btn-verify-manual-code" style="white-space: nowrap;">Verificar</button>
+                    </div>
                 </div>
 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">

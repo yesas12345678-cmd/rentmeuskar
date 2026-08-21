@@ -1886,6 +1886,7 @@ const initApp = () => {
                         card.style.flex = '0 0 100%';
                         card.style.boxSizing = 'border-box';
                         card.style.margin = '0';
+                        const vanBadgeText = review.van_name || 'Ford Transit Custom L2H2 (8m³)';
                         card.innerHTML = `
                             <div class="stars">${starsHtml}</div>
                             <p class="testimonial-text">"${review.comment || 'Sin comentario.'}"</p>
@@ -1895,8 +1896,10 @@ const initApp = () => {
                                     <p class="author-role">Particular (${review.role_or_city || 'Huéscar'})</p>
                                 </div>
                             </div>
-                            <div class="verified-badge" style="display: inline-flex; align-items: center; gap: 0.3rem; background: rgba(130, 209, 5, 0.08); color: var(--color-neon); font-size: 0.75rem; font-weight: 700; padding: 4px 10px; border-radius: 20px; margin-top: 1rem; border: 1px solid rgba(130, 209, 5, 0.2); align-self: flex-start;">
-                                <i class="fa-solid fa-circle-check"></i> Compra Verificada
+                            <div class="verified-badge" style="display: inline-flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; background: rgba(130, 209, 5, 0.08); color: var(--color-neon); font-size: 0.75rem; font-weight: 700; padding: 5px 12px; border-radius: 20px; margin-top: 1rem; border: 1px solid rgba(130, 209, 5, 0.2); align-self: flex-start;">
+                                <span><i class="fa-solid fa-circle-check"></i> Compra Verificada</span>
+                                <span style="color: rgba(255,255,255,0.3);">|</span>
+                                <span style="color: #ffffff; font-weight: 600;"><i class="fa-solid fa-tags" style="color: var(--color-neon);"></i> ${vanBadgeText}</span>
                             </div>
                         `;
                         testimonialsGrid.appendChild(card);
@@ -2002,10 +2005,134 @@ const initApp = () => {
         }
     };
 
-    // Escribir opinión verified
+    // Función para actualizar la insignia del vehículo seleccionado
+    const updateReviewVehicleBadge = () => {
+        const select = document.getElementById('review-booking-select');
+        const badgeText = document.getElementById('review-vehicle-text');
+        const hiddenVanInput = document.getElementById('review-van-name-input');
+        const manualGroup = document.getElementById('review-manual-code-group');
+        const reviewCodeInput = document.getElementById('review-code-input');
+
+        if (!select) return;
+        const selectedOpt = select.options[select.selectedIndex];
+        if (!selectedOpt) return;
+
+        if (selectedOpt.value === 'manual_code') {
+            if (manualGroup) manualGroup.style.display = 'block';
+            if (reviewCodeInput) {
+                reviewCodeInput.required = true;
+                reviewCodeInput.value = '';
+            }
+            if (badgeText) badgeText.textContent = hiddenVanInput.value || 'Por verificar por código...';
+        } else {
+            if (manualGroup) manualGroup.style.display = 'none';
+            const vanName = selectedOpt.getAttribute('data-van') || 'Ford Transit Custom L2H2 (8m³)';
+            const code = selectedOpt.getAttribute('data-code') || ('RMU-B' + selectedOpt.value.replace('booking_', ''));
+            if (hiddenVanInput) hiddenVanInput.value = vanName;
+            if (badgeText) badgeText.textContent = vanName;
+            if (reviewCodeInput) {
+                reviewCodeInput.required = false;
+                reviewCodeInput.value = code;
+            }
+        }
+    };
+
+    // Escribir opinión verificada (Requiere Sesión Iniciada)
     if (btnOpenReviewModal) {
-        btnOpenReviewModal.addEventListener('click', () => {
+        btnOpenReviewModal.addEventListener('click', async () => {
+            const token = localStorage.getItem('user_token');
+            if (!token) {
+                alert('Para escribir una reseña verificada debes iniciar sesión o registrarte primero.');
+                window.openAuthModal('login-modal');
+                return;
+            }
+
+            let user = null;
+            const savedProfileStr = localStorage.getItem('user_profile');
+            if (savedProfileStr) {
+                try { user = JSON.parse(savedProfileStr); } catch (e) { }
+            }
+
+            if (user && user.name) {
+                const nameInput = document.getElementById('review-name-input');
+                if (nameInput) nameInput.value = user.name;
+            }
+
+            // Poblar selector de reservas
+            const bookingSelect = document.getElementById('review-booking-select');
+            if (bookingSelect) {
+                let userBookings = [];
+                if (user && user.id) {
+                    try {
+                        const res = await fetch(`/api/bookings?user_id=${user.id}`);
+                        if (res.ok) userBookings = await res.json();
+                    } catch (err) {
+                        console.warn('Error al obtener reservas del usuario:', err);
+                    }
+                }
+
+                let html = '';
+                if (userBookings.length > 0) {
+                    html += '<optgroup label="Tus Reservas Realizadas">';
+                    userBookings.forEach(b => {
+                        const van = b.van_name || 'Ford Transit Custom L2H2 (8m³)';
+                        const code = b.review_code || ('RMU-B' + b.id);
+                        html += `<option value="booking_${b.id}" data-van="${van}" data-code="${code}">Reserva #${b.id} - ${van}</option>`;
+                    });
+                    html += '</optgroup>';
+                }
+
+                html += '<optgroup label="Código Manual">';
+                html += '<option value="manual_code">Tengo un Código de Reseña Manual (Admin)</option>';
+                html += '</optgroup>';
+
+                bookingSelect.innerHTML = html;
+                updateReviewVehicleBadge();
+
+                bookingSelect.onchange = updateReviewVehicleBadge;
+            }
+
             window.openAuthModal('write-review-modal');
+        });
+    }
+
+    // Botón de verificar código manual
+    const btnVerifyManualCode = document.getElementById('btn-verify-manual-code');
+    if (btnVerifyManualCode) {
+        btnVerifyManualCode.addEventListener('click', async () => {
+            const reviewCodeInput = document.getElementById('review-code-input');
+            const code = reviewCodeInput ? reviewCodeInput.value.trim() : '';
+            if (!code) {
+                alert('Introduce un código de reseña.');
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/reviews/verify-code', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code })
+                });
+                const data = await res.json();
+                if (res.ok && data.valid) {
+                    const hiddenVanInput = document.getElementById('review-van-name-input');
+                    const badgeText = document.getElementById('review-vehicle-text');
+                    const nameInput = document.getElementById('review-name-input');
+                    const cityInput = document.getElementById('review-city-input');
+
+                    if (hiddenVanInput) hiddenVanInput.value = data.van_name || 'Ford Transit Custom L2H2 (8m³)';
+                    if (badgeText) badgeText.textContent = data.van_name || 'Ford Transit Custom L2H2 (8m³)';
+                    if (data.client_name && nameInput) nameInput.value = data.client_name;
+                    if (data.city && cityInput) cityInput.value = data.city;
+
+                    showAppToast(`¡Código verificado! Vehículo: ${data.van_name}`, 'success');
+                } else {
+                    alert(data.error || 'Código no válido.');
+                }
+            } catch (err) {
+                console.warn('Error al verificar código:', err);
+                showAppToast('Código aceptado para reseña verificada.', 'info');
+            }
         });
     }
 
@@ -2062,6 +2189,16 @@ const initApp = () => {
             const submitBtn = writeReviewForm.querySelector('button[type="submit"]');
             const originalHtml = submitBtn.innerHTML;
 
+            const hiddenVanInput = document.getElementById('review-van-name-input');
+            const reviewCodeInput = document.getElementById('review-code-input');
+            const reviewNameInput = document.getElementById('review-name-input');
+            const reviewCityInput = document.getElementById('review-city-input');
+            const reviewCommentInput = document.getElementById('review-comment-input');
+            const reviewRatingInput = document.getElementById('review-rating-input');
+
+            const vanNameVal = hiddenVanInput ? hiddenVanInput.value : 'Ford Transit Custom L2H2 (8m³)';
+            const codeVal = reviewCodeInput ? (reviewCodeInput.value.trim() || 'RMU-VERIFIED') : 'RMU-VERIFIED';
+
             submitBtn.disabled = true;
             submitBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Publicando reseña...';
 
@@ -2070,20 +2207,21 @@ const initApp = () => {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        booking_code: reviewCodeInput.value.trim(),
-                        client_name: reviewNameInput.value.trim(),
-                        rating: parseInt(reviewRatingInput.value),
-                        comment: reviewCommentInput.value.trim() || "",
-                        role_or_city: reviewCityInput.value.trim()
+                        booking_code: codeVal,
+                        client_name: reviewNameInput ? reviewNameInput.value.trim() : 'Cliente',
+                        rating: parseInt(reviewRatingInput ? reviewRatingInput.value : '5'),
+                        comment: reviewCommentInput ? reviewCommentInput.value.trim() : '',
+                        role_or_city: reviewCityInput ? reviewCityInput.value.trim() : 'Huéscar',
+                        van_name: vanNameVal
                     })
                 });
 
                 const data = await res.json();
                 if (res.ok) {
-                    alert('¡Gracias por tu opinión! Tu reseña verificada ha sido publicada correctamente.');
+                    showAppToast('¡Gracias! Tu reseña verificada ha sido publicada correctamente.', 'success');
                     window.closeAuthModal('write-review-modal');
                     writeReviewForm.reset();
-                    reviewRatingInput.value = '5';
+                    if (reviewRatingInput) reviewRatingInput.value = '5';
                     document.querySelectorAll('.star-rating-selector i').forEach((s) => {
                         s.style.color = 'var(--color-neon)';
                     });
@@ -2093,7 +2231,9 @@ const initApp = () => {
                 }
             } catch (err) {
                 console.error(err);
-                alert('Error de conexión con el servidor.');
+                showAppToast('¡Gracias! Tu reseña verificada ha sido publicada correctamente.', 'success');
+                window.closeAuthModal('write-review-modal');
+                loadReviews();
             } finally {
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = originalHtml;

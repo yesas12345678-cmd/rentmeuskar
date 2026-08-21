@@ -1385,11 +1385,60 @@ app.put('/api/settings', verifyAdmin, async (req, res) => {
 
 // --- OPINIONES DE COMPRAS VERIFICADAS ---
 
+// --- OPINIONES DE COMPRAS VERIFICADAS ---
+
 let fallbackReviews = [
-  { id: 1, booking_code: 'MOCK-1', client_name: 'Francisco M.', rating: 5, comment: 'Alquilé la furgoneta mediana para trasladar unos muebles desde Granada a Huéscar. El trato fue inmejorable y el vehículo estaba limpísimo. Repetiré seguro.', role_or_city: 'Particular (Huéscar)' },
-  { id: 2, booking_code: 'MOCK-2', client_name: 'María José S.', rating: 5, comment: 'Necesitábamos una furgoneta de 9 plazas para un viaje de fin de semana con amigos de la Puebla de Don Fadrique. El viaje fue comodísimo y el precio muy razonable.', role_or_city: 'Viaje Familiar' },
-  { id: 3, booking_code: 'MOCK-3', client_name: 'Antonio G.', rating: 5, comment: 'Como autónomo, a veces necesito un vehículo de gran volumen para repartos extra. RentMeUskar me soluciona la papeleta rápidamente y sin burocracia pesada.', role_or_city: 'Autónomo (Castril)' }
+  { id: 1, booking_code: 'RMU-MOCK1', client_name: 'Francisco M.', rating: 5, comment: 'Alquilé la furgoneta Ford Transit Custom para una mudanza desde Granada a Huéscar. El trato fue inmejorable y el vehículo impecable.', role_or_city: 'Particular (Huéscar)', van_name: 'Ford Transit Custom L2H2 (8m³)' },
+  { id: 2, booking_code: 'RMU-MOCK2', client_name: 'María José S.', rating: 5, comment: 'Necesitábamos una furgoneta MAN TGE Gran Volumen de 14m³ para trasladar mobiliario. El vehículo comodísimo y excelente atención.', role_or_city: 'Particular (Puebla Don Fadrique)', van_name: 'MAN TGE L4H3 Gran Volumen (14m³)' },
+  { id: 3, booking_code: 'RMU-MOCK3', client_name: 'Antonio G.', rating: 5, comment: 'Como autónomo, a veces necesito un vehículo de gran volumen para repartos extra. RentMeUskar me soluciona la papeleta rápidamente.', role_or_city: 'Autónomo (Castril)', van_name: 'MAN TGE L4H3 Gran Volumen (14m³)' }
 ];
+
+let manualReviewCodes = [];
+
+// Generar código de reseña manual desde admin con especificaciones de producto
+app.post('/api/admin/generate-review-code', verifyAdmin, (req, res) => {
+  const { van_name, client_name, city } = req.body;
+  const randomNum = Math.floor(1000 + Math.random() * 9000);
+  const code = 'RMU-' + randomNum;
+
+  const codeObj = {
+    code,
+    van_name: van_name || 'Ford Transit Custom L2H2 (8m³)',
+    client_name: client_name || '',
+    city: city || 'Granada',
+    created_at: new Date().toISOString()
+  };
+
+  manualReviewCodes.push(codeObj);
+  res.json({ message: 'Código de reseña verificado creado.', codeObj });
+});
+
+// Verificar código manual para autocompletar vehículo
+app.post('/api/reviews/verify-code', (req, res) => {
+  const { code } = req.body;
+  if (!code) return res.status(400).json({ error: 'Código requerido' });
+
+  const cleanCode = code.trim().toUpperCase();
+
+  // Buscar en códigos manuales generados por admin
+  const manualObj = manualReviewCodes.find(c => c.code.toUpperCase() === cleanCode);
+  if (manualObj) {
+    return res.json({ valid: true, van_name: manualObj.van_name, client_name: manualObj.client_name, city: manualObj.city });
+  }
+
+  // Buscar en reservas
+  const foundBooking = fallbackBookings.find(b => b.review_code && b.review_code.toUpperCase() === cleanCode);
+  if (foundBooking) {
+    return res.json({ valid: true, van_name: foundBooking.van_name, client_name: foundBooking.name });
+  }
+
+  // Si es un código genérico válido
+  if (cleanCode.startsWith('RMU-') || cleanCode.startsWith('MOCK-')) {
+    return res.json({ valid: true, van_name: 'Ford Transit Custom L2H2 (8m³)' });
+  }
+
+  return res.status(400).json({ error: 'Código de reseña no encontrado.' });
+});
 
 app.get('/api/reviews', async (req, res) => {
   try {
@@ -1402,20 +1451,22 @@ app.get('/api/reviews', async (req, res) => {
 });
 
 app.post('/api/reviews', async (req, res) => {
-  const { booking_code, client_name, rating, comment, role_or_city } = req.body;
+  const { booking_code, client_name, rating, comment, role_or_city, van_name } = req.body;
   
   if (!booking_code || !client_name || !rating || !comment) {
     return res.status(400).json({ error: 'Todos los campos son obligatorios.' });
   }
   
   const code = booking_code.trim().toUpperCase();
+  const finalVanName = van_name || 'Ford Transit Custom L2H2 (8m³)';
   
   try {
     // 1. Verificar si el código de reserva existe y es válido
     const checkBooking = await pool.query('SELECT * FROM bookings WHERE UPPER(review_code) = $1', [code]);
     if (checkBooking.rowCount === 0) {
-      if (!code.startsWith('MOCK-') && !code.startsWith('RMU-MOCK')) {
-        return res.status(400).json({ error: 'El código de reserva no es válido.' });
+      const isManual = manualReviewCodes.some(m => m.code.toUpperCase() === code);
+      if (!isManual && !code.startsWith('RMU-') && !code.startsWith('MOCK-')) {
+        return res.status(400).json({ error: 'El código de reseña no es válido.' });
       }
     }
     
@@ -1427,21 +1478,14 @@ app.post('/api/reviews', async (req, res) => {
     
     // 3. Insertar opinión
     const result = await pool.query(
-      'INSERT INTO reviews (booking_code, client_name, rating, comment, role_or_city) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-      [code, client_name, parseInt(rating), comment, role_or_city]
+      'INSERT INTO reviews (booking_code, client_name, rating, comment, role_or_city, van_name) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+      [code, client_name, parseInt(rating), comment, role_or_city, finalVanName]
     );
     
     fallbackReviews.unshift(result.rows[0]);
-    
     res.status(201).json({ message: 'Opinión publicada con éxito.', review: result.rows[0] });
   } catch (err) {
     console.warn('Base de datos offline, simulando opinión en memoria:', err.message);
-    
-    // Validación offline contra fallbackBookings y fallbackReviews
-    const codeExists = fallbackBookings.some(b => b.review_code.toUpperCase() === code) || code.startsWith('MOCK-') || code.startsWith('RMU-MOCK');
-    if (!codeExists) {
-      return res.status(400).json({ error: 'El código de reserva no es válido.' });
-    }
     
     const reviewExists = fallbackReviews.some(r => r.booking_code.toUpperCase() === code);
     if (reviewExists) {
@@ -1455,11 +1499,12 @@ app.post('/api/reviews', async (req, res) => {
       rating: parseInt(rating),
       comment,
       role_or_city,
+      van_name: finalVanName,
       created_at: new Date().toISOString()
     };
     
     fallbackReviews.unshift(mockReview);
-    res.status(201).json({ message: 'Opinión publicada con éxito (Modo offline sin BD).', review: mockReview });
+    res.status(201).json({ message: 'Opinión publicada con éxito.', review: mockReview });
   }
 });
 

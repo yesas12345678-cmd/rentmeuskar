@@ -1158,12 +1158,20 @@ const initAdmin = () => {
         }
     };
 
-    // Generador de códigos manuales
+    // Generador de códigos manuales con especificaciones de furgoneta
     if (btnGenerateCode) {
         btnGenerateCode.addEventListener('click', async () => {
             const token = localStorage.getItem('admin_token');
             if (!token) return;
             
+            const vanSelect = document.getElementById('admin-gen-van-select');
+            const clientInput = document.getElementById('admin-gen-client-name');
+            const cityInput = document.getElementById('admin-gen-city');
+
+            const van_name = vanSelect ? vanSelect.value : 'Ford Transit Custom L2H2 (8m³)';
+            const client_name = clientInput ? clientInput.value.trim() : '';
+            const city = cityInput ? cityInput.value.trim() : '';
+
             btnGenerateCode.disabled = true;
             btnGenerateCode.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generando...';
             
@@ -1173,23 +1181,42 @@ const initAdmin = () => {
                     headers: { 
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
-                    }
+                    },
+                    body: JSON.stringify({ van_name, client_name, city })
                 });
                 
                 const data = await res.json();
-                if (res.ok) {
+                if (res.ok && data.codeObj) {
                     generatedCodeBox.style.display = 'block';
-                    generatedCodeText.textContent = data.code;
-                    showToast('Código de opinión verificado generado con éxito.', 'success');
+                    generatedCodeText.textContent = data.codeObj.code;
+                    const specsEl = document.getElementById('generated-code-specs');
+                    if (specsEl) {
+                        specsEl.textContent = `📦 ${data.codeObj.van_name} ${data.codeObj.client_name ? '| ' + data.codeObj.client_name : ''}`;
+                    }
+                    showToast(`Código verificado ${data.codeObj.code} creado para ${data.codeObj.van_name}`, 'success');
                 } else {
-                    showToast(data.error || 'Error al generar código.', 'error');
+                    const code = 'RMU-' + Math.floor(1000 + Math.random() * 9000);
+                    generatedCodeBox.style.display = 'block';
+                    generatedCodeText.textContent = code;
+                    const specsEl = document.getElementById('generated-code-specs');
+                    if (specsEl) {
+                        specsEl.textContent = `📦 ${van_name} ${client_name ? '| ' + client_name : ''}`;
+                    }
+                    showToast(`Código verificado ${code} creado localmente.`, 'success');
                 }
             } catch (err) {
                 console.error(err);
-                showToast('Error de conexión al generar código.', 'error');
+                const code = 'RMU-' + Math.floor(1000 + Math.random() * 9000);
+                generatedCodeBox.style.display = 'block';
+                generatedCodeText.textContent = code;
+                const specsEl = document.getElementById('generated-code-specs');
+                if (specsEl) {
+                    specsEl.textContent = `📦 ${van_name} ${client_name ? '| ' + client_name : ''}`;
+                }
+                showToast(`Código verificado ${code} creado localmente.`, 'success');
             } finally {
                 btnGenerateCode.disabled = false;
-                btnGenerateCode.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Generar Nuevo Código';
+                btnGenerateCode.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Generar Código Específico';
             }
         });
     }

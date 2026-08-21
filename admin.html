@@ -986,18 +986,40 @@
                             <h3 style="font-size: 1.1rem; color: #fff; margin-bottom: 1rem; font-family: var(--font-heading); display: flex; align-items: center; gap: 0.5rem; margin-top: 0;">
                                 <i class="fa-solid fa-ticket" style="color: var(--color-neon);"></i> Generar Código de Reseña
                             </h3>
-                            <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1.5rem; line-height: 1.5;">
-                                Genera un código de reserva verificado de forma manual para entregárselo a un cliente y que pueda publicar su opinión en la web.
+                            <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1.25rem; line-height: 1.5;">
+                                Genera un código de reseña verificado especificando el vehículo alquilado y datos del cliente.
                             </p>
+
+                            <div class="custom-form-group" style="margin-bottom: 1rem;">
+                                <label style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.3rem;">Furgoneta / Producto</label>
+                                <select id="admin-gen-van-select" class="search-input" style="width: 100%; padding-left: 0.8rem;">
+                                    <option value="Ford Transit Custom L2H2 (8m³)">Ford Transit Custom L2H2 (8m³)</option>
+                                    <option value="MAN TGE L4H3 Gran Volumen (14m³)">MAN TGE L4H3 Gran Volumen (14m³)</option>
+                                    <option value="Peugeot Boxer L3H2 (11.5m³)">Peugeot Boxer L3H2 (11.5m³)</option>
+                                    <option value="Renault Master L2H2">Renault Master L2H2</option>
+                                </select>
+                            </div>
+
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1rem;">
+                                <div class="custom-form-group">
+                                    <label style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.3rem;">Nombre Cliente</label>
+                                    <input type="text" id="admin-gen-client-name" class="search-input" placeholder="ej: Francisco M." style="width: 100%; padding-left: 0.8rem;">
+                                </div>
+                                <div class="custom-form-group">
+                                    <label style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.3rem;">Ciudad / Tipo</label>
+                                    <input type="text" id="admin-gen-city" class="search-input" placeholder="ej: Huéscar" style="width: 100%; padding-left: 0.8rem;">
+                                </div>
+                            </div>
                             
-                            <button type="button" class="btn btn-primary" id="btn-generate-code" style="width: 100%; height: 46px; margin-bottom: 1.5rem;">
-                                <i class="fa-solid fa-wand-magic-sparkles"></i> Generar Nuevo Código
+                            <button type="button" class="btn btn-primary" id="btn-generate-code" style="width: 100%; height: 44px; margin-bottom: 1rem;">
+                                <i class="fa-solid fa-wand-magic-sparkles"></i> Generar Código Específico
                             </button>
                             
                             <div id="generated-code-box" style="display: none; background: rgba(130, 209, 5, 0.08); border: 1px dashed var(--color-neon); border-radius: var(--border-radius-sm); padding: 1rem; text-align: center; margin-top: 1rem;">
                                 <span style="font-size: 0.8rem; color: var(--text-secondary); display: block; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.3rem;">Código Creado</span>
                                 <strong id="generated-code-text" style="font-size: 1.6rem; color: var(--color-neon); font-family: var(--font-heading); letter-spacing: 2px;">RMU-XXXX</strong>
-                                <span style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-top: 0.5rem;">(Copia este código y envíaselo al cliente)</span>
+                                <span id="generated-code-specs" style="font-size: 0.75rem; color: var(--color-neon); display: block; margin-top: 0.3rem;"></span>
+                                <span style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-top: 0.3rem;">(Copia este código y envíaselo al cliente)</span>
                             </div>
                         </div>
                     </div>
