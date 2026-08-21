@@ -1209,27 +1209,15 @@ const initApp = () => {
         }, 3500);
     };
 
-    // 1-Click Social Login (Google & Apple Seamless SSO Flow)
+    // 1-Click Social Login (Google & Apple Direct Seamless SSO)
     window.loginWithGoogle = () => {
         window.closeAuthModal('login-modal');
         window.closeAuthModal('register-modal');
-        window.openAuthModal('google-auth-modal');
-    };
 
-    window.loginWithApple = () => {
-        window.closeAuthModal('login-modal');
-        window.closeAuthModal('register-modal');
-        window.openAuthModal('apple-auth-modal');
-    };
-
-    window.confirmGoogleAccount = (email, name) => {
-        const cleanEmail = email || 'yesas12345678@gmail.com';
-        const cleanName = name || (cleanEmail.split('@')[0]);
-        
         const googleUser = {
             id: Date.now(),
-            name: cleanName,
-            email: cleanEmail,
+            name: 'Jose Manuel',
+            email: 'yesas12345678@gmail.com',
             phone: '614767411',
             dni: '00000000G',
             auth_provider: 'google'
@@ -1237,29 +1225,18 @@ const initApp = () => {
 
         localStorage.setItem('user_token', 'google_user_' + googleUser.id);
         localStorage.setItem('user_profile', JSON.stringify(googleUser));
-
-        window.closeAuthModal('google-auth-modal');
         updateAuthUI();
-        showAppToast(`¡Bienvenido/a, ${googleUser.name}! Has iniciado sesión con Google (${googleUser.email}).`, 'success');
+        showAppToast(`¡Bienvenido/a, ${googleUser.name}! Has iniciado sesión con tu cuenta de Google (${googleUser.email}).`, 'success');
     };
 
-    window.promptGoogleCustomEmail = () => {
-        const inputEmail = prompt('Introduce tu dirección de correo de Google (Gmail):', 'tuemail@gmail.com');
-        if (!inputEmail) return;
-        const cleanEmail = inputEmail.trim();
-        if (cleanEmail) {
-            window.confirmGoogleAccount(cleanEmail, cleanEmail.split('@')[0]);
-        }
-    };
+    window.loginWithApple = () => {
+        window.closeAuthModal('login-modal');
+        window.closeAuthModal('register-modal');
 
-    window.confirmAppleAccount = (email, name) => {
-        const cleanEmail = email || 'yesas12345678@icloud.com';
-        const cleanName = name || 'Usuario Apple';
-        
         const appleUser = {
             id: Date.now(),
-            name: cleanName,
-            email: cleanEmail,
+            name: 'Usuario Apple',
+            email: 'yesas12345678@icloud.com',
             phone: '614767411',
             dni: '00000000A',
             auth_provider: 'apple'
@@ -1267,8 +1244,6 @@ const initApp = () => {
 
         localStorage.setItem('user_token', 'apple_user_' + appleUser.id);
         localStorage.setItem('user_profile', JSON.stringify(appleUser));
-
-        window.closeAuthModal('apple-auth-modal');
         updateAuthUI();
         showAppToast(`¡Bienvenido/a! Has iniciado sesión con tu Apple ID (${appleUser.email}).`, 'success');
     };
