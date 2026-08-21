@@ -1006,41 +1006,64 @@ const initApp = () => {
         }
     });
 
-    // Actualizar NavBar según estado de sesión
+    // Actualizar NavBar según estado de sesión (Sesión Permanente sin caducidad)
     const updateAuthUI = async () => {
         const token = localStorage.getItem('user_token');
+        const savedProfileStr = localStorage.getItem('user_profile');
         const authSection = document.getElementById('user-auth-section');
 
         if (!token) {
-            authSection.innerHTML = `
-                <button class="btn btn-secondary btn-sm" onclick="openAuthModal('login-modal')" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">
-                    <i class="fa-solid fa-user-lock"></i> Entrar
-                </button>
-            `;
+            if (authSection) {
+                authSection.innerHTML = `
+                    <button class="btn btn-secondary btn-sm" onclick="openAuthModal('login-modal')" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">
+                        <i class="fa-solid fa-user-lock"></i> Entrar
+                    </button>
+                `;
+            }
             return;
         }
 
+        // Renderizar inmediatamente la sesión activa usando el perfil guardado localmente
+        let user = null;
+        if (savedProfileStr) {
+            try { user = JSON.parse(savedProfileStr); } catch (e) { }
+        }
+
+        const userNameText = (user && user.name) ? (user.name.split(' ')[0] || 'Mi Perfil') : 'Mi Perfil';
+        if (authSection) {
+            authSection.innerHTML = `
+                <button class="btn btn-secondary btn-sm" onclick="openClientArea()" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; border-color: var(--color-neon); color: var(--color-neon);">
+                    <i class="fa-solid fa-user-circle"></i> Mi Panel (${userNameText})
+                </button>
+            `;
+        }
+
+        if (user && user.name && clientName && !clientName.value) {
+            clientName.value = user.name;
+        }
+
+        // Sincronizar actualización de perfil en segundo plano sin caducar la sesión si hay error de red
         try {
             const res = await fetch('/api/auth/me', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) {
-                const user = await res.json();
-                authSection.innerHTML = `
-                    <button class="btn btn-secondary btn-sm" onclick="openClientArea()" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; border-color: var(--color-neon); color: var(--color-neon);">
-                        <i class="fa-solid fa-user-circle"></i> Mi Panel (${user.name.split(' ')[0]})
-                    </button>
-                `;
-
-                if (!clientName.value) {
-                    clientName.value = user.name;
+                const freshUser = await res.json();
+                localStorage.setItem('user_profile', JSON.stringify(freshUser));
+                const freshNameText = freshUser.name ? (freshUser.name.split(' ')[0] || 'Mi Perfil') : 'Mi Perfil';
+                if (authSection) {
+                    authSection.innerHTML = `
+                        <button class="btn btn-secondary btn-sm" onclick="openClientArea()" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; border-color: var(--color-neon); color: var(--color-neon);">
+                            <i class="fa-solid fa-user-circle"></i> Mi Panel (${freshNameText})
+                        </button>
+                    `;
                 }
-            } else {
-                localStorage.removeItem('user_token');
-                updateAuthUI();
+                if (clientName && !clientName.value) {
+                    clientName.value = freshUser.name;
+                }
             }
         } catch (err) {
-            console.error('Error al verificar perfil de sesión:', err);
+            console.warn('Sesión permanente activa (modo offline/resiliente):', err);
         }
     };
 
