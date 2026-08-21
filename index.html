@@ -1,32 +1,37 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RentMeUskar | Alquiler de Furgonetas sin Conductor en Huéscar (Granada)</title>
-    <meta name="description" content="Alquiler de furgonetas sin conductor en Huéscar y el Altiplano Granadino. Furgonetas de carga y vehículos de 9 plazas para tu mudanza o viaje. Precios sin sorpresas.">
+    <meta name="description"
+        content="Alquiler de furgonetas sin conductor en Huéscar y el Altiplano Granadino. Furgonetas de carga y vehículos de 9 plazas para tu mudanza o viaje. Precios sin sorpresas.">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/logo.png">
     <link rel="icon" type="image/png" sizes="192x192" href="assets/logo.png">
     <link rel="apple-touch-icon" href="assets/logo.png">
-    
+
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
-    
+    <link
+        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap"
+        rel="stylesheet">
+
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
+
     <!-- Flatpickr CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.css">
-    
+
     <!-- Custom CSS -->
     <link rel="stylesheet" href="styles.css?v=3.9">
-    
+
     <!-- Google Identity Services -->
     <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
+
 <body>
 
     <!-- Header / Navbar -->
@@ -35,7 +40,7 @@
             <a href="#" class="logo-area" id="logo-link">
                 <img src="assets/logo.png" alt="RentMeUskar Logo" class="nav-logo" id="nav-logo">
             </a>
-            
+
             <nav class="navbar" id="navbar">
                 <ul class="nav-menu" id="nav-menu">
                     <li><a href="#inicio" class="nav-link active" id="link-inicio">INICIO</a></li>
@@ -45,10 +50,12 @@
                     <li><a href="#contacto" class="nav-link" id="link-contacto">CONTACTO</a></li>
                 </ul>
             </nav>
-            
+
             <div class="header-actions">
-                <div class="user-auth-section" id="user-auth-section" style="display: flex; gap: 0.5rem; align-items: center;">
-                    <button class="btn btn-secondary btn-sm" id="btn-login-modal" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">
+                <div class="user-auth-section" id="user-auth-section"
+                    style="display: flex; gap: 0.5rem; align-items: center;">
+                    <button class="btn btn-secondary btn-sm" id="btn-login-modal"
+                        style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">
                         <i class="fa-solid fa-user-lock"></i> Entrar
                     </button>
                 </div>
@@ -65,7 +72,7 @@
     </header>
 
     <main>
-        
+
         <!-- Hero Section -->
         <section class="hero-section" id="inicio">
             <div class="container hero-container">
@@ -80,7 +87,7 @@
                             <p>ALQUILER DE FURGONETAS EN HUÉSCAR Y ALREDEDORES</p>
                         </div>
                     </div>
-                    
+
                     <div class="hero-badges animate-fade-in-up-delayed">
                         <div class="hero-badge-item">
                             <div class="badge-icon-circle"><i class="fa-solid fa-shield-halved"></i></div>
@@ -105,12 +112,12 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="hero-vehicle animate-slide-in-right">
                     <img src="assets/van_hero_two_vans.png" alt="Furgonetas RentMeUskar" class="hero-van-img">
                 </div>
             </div>
-            
+
             <div class="hero-footer-wrapper animate-fade-in-up-late">
                 <div class="hero-footer-bar">
                     <div class="footer-bar-container">
@@ -138,7 +145,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <div class="scroll-down-indicator">
                 <a href="#flota" id="scroll-down-link" aria-label="Ir a sección de flota" class="animate-bounce">
                     <i class="fa-solid fa-chevron-down"></i>
@@ -173,9 +180,10 @@
                 <div class="section-header reveal">
                     <span class="subtitle">Nuestra Flota</span>
                     <h2 class="section-title">Vehículos para Cualquier Tarea</h2>
-                    <p class="section-desc">Elige la furgoneta que mejor se adapte a tu mudanza, portes o viaje grupal. Todos nuestros vehículos se conducen con carnet B habitual.</p>
+                    <p class="section-desc">Elige la furgoneta que mejor se adapte a tu mudanza, portes o viaje grupal.
+                        Todos nuestros vehículos se conducen con carnet B habitual.</p>
                 </div>
-                
+
                 <div class="fleet-grid" id="fleet-grid-container">
                     <!-- Inyectado dinámicamente desde app.js -->
                 </div>
@@ -187,13 +195,16 @@
             <div class="container">
                 <div class="calculator-wrapper reveal">
                     <div class="calculator-info">
-                        <img src="assets/logo.png" alt="RentMeUskar Logo" style="height: 480px; width: auto; align-self: flex-start; margin-top: -3.5rem; margin-bottom: 1rem; display: block; filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.3)); -webkit-user-drag: none; user-select: none;">
+                        <img src="assets/logo.png" alt="RentMeUskar Logo"
+                            style="height: 480px; width: auto; align-self: flex-start; margin-top: -3.5rem; margin-bottom: 1rem; display: block; filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.3)); -webkit-user-drag: none; user-select: none;">
                         <span class="subtitle">Calcula en 1 Minuto</span>
                         <h2 class="calculator-title">Simulador de Presupuesto</h2>
                         <p class="calculator-text">
-                            Selecciona el vehículo, introduce las fechas y elige los extras que necesites. Verás el precio total estimado al instante y podrás realizar el pago o solicitar tu reserva de inmediato.
+                            Selecciona el vehículo, introduce las fechas y elige los extras que necesites. Verás el
+                            precio total estimado al instante. Si te convence, solicita la reserva y te responderemos
+                            por WhatsApp de inmediato.
                         </p>
-                        
+
                         <div class="info-checklist">
                             <div class="check-item">
                                 <i class="fa-solid fa-circle-check text-neon"></i>
@@ -205,61 +216,78 @@
                             </div>
                             <div class="check-item">
                                 <i class="fa-solid fa-circle-check text-neon"></i>
-                                <span>Pago seguro online (Tarjeta / Bizum) o al recoger</span>
+                                <span>Sin adelantos de pago online (pagas al recoger)</span>
                             </div>
                         </div>
-                        
+
                         <div class="whatsapp-disclaimer">
-                            <i class="fa-solid fa-shield-halved whatsapp-icon" style="color: var(--color-neon);"></i>
+                            <i class="fa-brands fa-whatsapp whatsapp-icon"></i>
                             <div>
-                                <h4>Reserva Directa y Pago Seguro</h4>
-                                <p>Solicita tu reserva online con pago por Tarjeta, Bizum o confirmación por WhatsApp según prefieras.</p>
+                                <h4>Reserva directa por WhatsApp</h4>
+                                <p>La solicitud se envía formateada al instante. Sin formularios complejos ni registros.
+                                </p>
                             </div>
                         </div>
                     </div>
-                    
+
                     <form class="calculator-form" id="booking-calculator-form">
                         <h3 class="form-title">Detalles del Alquiler</h3>
 
                         <!-- Step 0: Rental Modality -->
                         <div class="form-group">
                             <label><i class="fa-solid fa-user-gear"></i> Modalidad de Alquiler</label>
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 0.5rem; margin-bottom: 0.5rem;">
-                                <label class="extra-checkbox-card mode-selector-card active" id="label-mode-sin" style="cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0.8rem; border-radius: 8px; border: 2px solid var(--color-neon); background: rgba(130, 209, 5, 0.05); transition: all 0.2s; user-select: none;">
-                                    <input type="radio" name="rental-mode" id="mode-sin-conductor" value="sin" checked style="position: absolute; opacity: 0; pointer-events: none; width: 0; height: 0;">
+                            <div
+                                style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 0.5rem; margin-bottom: 0.5rem;">
+                                <label class="extra-checkbox-card mode-selector-card active" id="label-mode-sin"
+                                    style="cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0.8rem; border-radius: 8px; border: 2px solid var(--color-neon); background: rgba(130, 209, 5, 0.05); transition: all 0.2s; user-select: none;">
+                                    <input type="radio" name="rental-mode" id="mode-sin-conductor" value="sin" checked
+                                        style="position: absolute; opacity: 0; pointer-events: none; width: 0; height: 0;">
                                     <div style="text-align: center;">
-                                        <i class="fa-solid fa-key" style="font-size: 1.3rem; color: var(--color-neon); margin-bottom: 0.3rem; display: block;"></i>
-                                        <span style="font-weight: 700; display: block; color: #fff; font-size: 0.85rem;">SIN CONDUCTOR</span>
+                                        <i class="fa-solid fa-key"
+                                            style="font-size: 1.3rem; color: var(--color-neon); margin-bottom: 0.3rem; display: block;"></i>
+                                        <span
+                                            style="font-weight: 700; display: block; color: #fff; font-size: 0.85rem;">SIN
+                                            CONDUCTOR</span>
                                     </div>
                                 </label>
-                                <label class="extra-checkbox-card mode-selector-card" id="label-mode-con" style="cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0.8rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.02); transition: all 0.2s; user-select: none;">
-                                    <input type="radio" name="rental-mode" id="mode-con-conductor" value="con" style="position: absolute; opacity: 0; pointer-events: none; width: 0; height: 0;">
+                                <label class="extra-checkbox-card mode-selector-card" id="label-mode-con"
+                                    style="cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0.8rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.02); transition: all 0.2s; user-select: none;">
+                                    <input type="radio" name="rental-mode" id="mode-con-conductor" value="con"
+                                        style="position: absolute; opacity: 0; pointer-events: none; width: 0; height: 0;">
                                     <div style="text-align: center;">
-                                        <i class="fa-solid fa-user-tie" style="font-size: 1.3rem; color: var(--text-secondary); margin-bottom: 0.3rem; display: block;"></i>
-                                        <span style="font-weight: 700; display: block; color: var(--text-secondary); font-size: 0.85rem;">CON CONDUCTOR</span>
+                                        <i class="fa-solid fa-user-tie"
+                                            style="font-size: 1.3rem; color: var(--text-secondary); margin-bottom: 0.3rem; display: block;"></i>
+                                        <span
+                                            style="font-weight: 700; display: block; color: var(--text-secondary); font-size: 0.85rem;">CON
+                                            CONDUCTOR</span>
                                     </div>
                                 </label>
                             </div>
                         </div>
-                        
+
                         <!-- Step 1: Select Van -->
                         <div class="form-group">
-                            <label for="calc-van-select"><i class="fa-solid fa-truck-ramp-box"></i> Tipo de Furgoneta</label>
+                            <label for="calc-van-select"><i class="fa-solid fa-truck-ramp-box"></i> Tipo de
+                                Furgoneta</label>
                             <select id="calc-van-select" class="form-control" required>
                                 <option value="" disabled selected>-- Elige un modelo --</option>
-                                <option value="medium" data-price="79">Ford Transit Custom L2H2 (8m³) - 79€ + IVA / día</option>
-                                <option value="large" data-price="107.44">MAN TGE L4H3 Gran Volumen (14m³) - 107,44€ + IVA / día</option>
+                                <option value="medium" data-price="79">Ford Transit Custom L2H2 (8m³) - 79€ + IVA / día
+                                </option>
+                                <option value="large" data-price="107.44">MAN TGE L4H3 Gran Volumen (14m³) - 107,44€ +
+                                    IVA / día</option>
                             </select>
                         </div>
                         <!-- Dynamic Van Specifications Container -->
-                        <div id="calc-van-specs-container" style="display: none; margin-top: 0.5rem; margin-bottom: 1.2rem; padding: 1.2rem; border-radius: 8px; background: rgba(7, 14, 36, 0.4); border: 1px solid rgba(255, 255, 255, 0.08); backdrop-filter: blur(8px);">
+                        <div id="calc-van-specs-container"
+                            style="display: none; margin-top: 0.5rem; margin-bottom: 1.2rem; padding: 1.2rem; border-radius: 8px; background: rgba(7, 14, 36, 0.4); border: 1px solid rgba(255, 255, 255, 0.08); backdrop-filter: blur(8px);">
                         </div>
-                        
+
                         <!-- Step 2: Dates -->
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="calc-date-start"><i class="fa-regular fa-calendar"></i> Recogida</label>
-                                <input type="text" id="calc-date-start" class="form-control" placeholder="Pincha aquí para elegir..." required readonly style="cursor: pointer;">
+                                <input type="text" id="calc-date-start" class="form-control"
+                                    placeholder="Pincha aquí para elegir..." required readonly style="cursor: pointer;">
                             </div>
                             <div class="form-group">
                                 <label for="calc-time-start"><i class="fa-regular fa-clock"></i> Hora</label>
@@ -273,11 +301,12 @@
                                 </select>
                             </div>
                         </div>
-                        
+
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="calc-date-end"><i class="fa-regular fa-calendar"></i> Devolución</label>
-                                <input type="text" id="calc-date-end" class="form-control" placeholder="Pincha aquí para elegir..." required readonly style="cursor: pointer;">
+                                <input type="text" id="calc-date-end" class="form-control"
+                                    placeholder="Pincha aquí para elegir..." required readonly style="cursor: pointer;">
                             </div>
                             <div class="form-group">
                                 <label for="calc-time-end"><i class="fa-regular fa-clock"></i> Hora</label>
@@ -291,46 +320,60 @@
                                 </select>
                             </div>
                         </div>
-                        
+
                         <!-- Conditional Fields: With Driver parameters -->
-                        <div id="calc-con-conductor-fields" style="display: none; border-top: 1px dashed rgba(255,255,255,0.08); padding-top: 1rem; margin-top: 1rem; margin-bottom: 1rem;">
-                            <h4 style="font-size: 0.9rem; font-family: var(--font-heading); margin-bottom: 0.8rem; color: var(--color-neon);"><i class="fa-solid fa-sliders"></i> Estimaciones del Trayecto</h4>
+                        <div id="calc-con-conductor-fields"
+                            style="display: none; border-top: 1px dashed rgba(255,255,255,0.08); padding-top: 1rem; margin-top: 1rem; margin-bottom: 1rem;">
+                            <h4
+                                style="font-size: 0.9rem; font-family: var(--font-heading); margin-bottom: 0.8rem; color: var(--color-neon);">
+                                <i class="fa-solid fa-sliders"></i> Estimaciones del Trayecto</h4>
                             <div class="form-row">
                                 <div class="form-group">
-                                    <label for="calc-kms-estimate"><i class="fa-solid fa-road"></i> Kilómetros Estimados</label>
-                                    <input type="number" id="calc-kms-estimate" class="form-control" value="20" min="1" step="1">
-                                    <small style="color: var(--text-secondary); font-size: 0.75rem;">Mínimo 20 km incluidos en la tarifa</small>
+                                    <label for="calc-kms-estimate"><i class="fa-solid fa-road"></i> Kilómetros
+                                        Estimados</label>
+                                    <input type="number" id="calc-kms-estimate" class="form-control" value="20" min="1"
+                                        step="1">
+                                    <small style="color: var(--text-secondary); font-size: 0.75rem;">Mínimo 20 km
+                                        incluidos en la tarifa</small>
                                 </div>
                                 <div class="form-group">
-                                    <label for="calc-wait-hours"><i class="fa-solid fa-hourglass-half"></i> Horas de Espera</label>
-                                    <input type="number" id="calc-wait-hours" class="form-control" value="0" min="0" step="0.5">
-                                    <small style="color: var(--text-secondary); font-size: 0.75rem;">Para carga y descarga del vehículo</small>
+                                    <label for="calc-wait-hours"><i class="fa-solid fa-hourglass-half"></i> Horas de
+                                        Espera</label>
+                                    <input type="number" id="calc-wait-hours" class="form-control" value="0" min="0"
+                                        step="0.5">
+                                    <small style="color: var(--text-secondary); font-size: 0.75rem;">Para carga y
+                                        descarga del vehículo</small>
                                 </div>
                             </div>
                         </div>
-                        
+
                         <!-- Step 3: Extras (Only for Sin Conductor) -->
                         <div class="form-group" id="calc-extras-section">
                             <label><i class="fa-solid fa-circle-plus"></i> ¿Necesitas algún extra?</label>
                             <div class="extras-grid" id="calc-dynamic-extras-container">
-                                <p style="grid-column: 1 / -1; color: var(--text-secondary); font-size: 0.85rem; text-align: center; padding: 1rem 0; margin: 0;">
+                                <p
+                                    style="grid-column: 1 / -1; color: var(--text-secondary); font-size: 0.85rem; text-align: center; padding: 1rem 0; margin: 0;">
                                     Elige un tipo de furgoneta para ver sus extras disponibles.
                                 </p>
                             </div>
                         </div>
 
                         <!-- Fianza Note (Only for Sin Conductor) -->
-                        <div class="form-group" id="calc-fianza-note" style="background: rgba(130,209,5,0.05); border: 1px dashed rgba(130,209,5,0.2); border-radius: 8px; padding: 0.8rem; margin-top: 1rem; font-size: 0.8rem; color: var(--text-secondary);">
-                            <i class="fa-solid fa-shield-halved" style="color: var(--color-neon); margin-right: 0.3rem;"></i>
-                            <strong>Fianza Reembolsable de 500€:</strong> Se retendrá temporalmente en tu tarjeta y se liberará íntegra al devolver el vehículo en las mismas condiciones.
+                        <div class="form-group" id="calc-fianza-note"
+                            style="background: rgba(130,209,5,0.05); border: 1px dashed rgba(130,209,5,0.2); border-radius: 8px; padding: 0.8rem; margin-top: 1rem; font-size: 0.8rem; color: var(--text-secondary);">
+                            <i class="fa-solid fa-shield-halved"
+                                style="color: var(--color-neon); margin-right: 0.3rem;"></i>
+                            <strong>Fianza Reembolsable de 500€:</strong> Se retendrá temporalmente en tu tarjeta y se
+                            liberará íntegra al devolver el vehículo en las mismas condiciones.
                         </div>
 
                         <!-- Step 4: Contact details -->
                         <div class="form-group">
                             <label for="calc-name"><i class="fa-solid fa-user"></i> Tu Nombre</label>
-                            <input type="text" id="calc-name" class="form-control" placeholder="Escribe tu nombre completo" required>
+                            <input type="text" id="calc-name" class="form-control"
+                                placeholder="Escribe tu nombre completo" required>
                         </div>
-                        
+
                         <!-- Real-time calculation summary -->
                         <div class="price-summary-box" id="price-summary-box">
                             <div class="summary-row">
@@ -351,7 +394,7 @@
                                 <span class="summary-total" id="summary-total-price">0,00 €</span>
                             </div>
                         </div>
-                        
+
                         <button type="submit" class="btn btn-primary btn-block btn-lg" id="btn-submit-booking">
                             <i class="fa-brands fa-whatsapp"></i> Enviar Solicitud por WhatsApp
                         </button>
@@ -366,39 +409,47 @@
                 <div class="section-header reveal">
                     <span class="subtitle">Ventajas RentMeUskar</span>
                     <h2 class="section-title">¿Por Qué Alquilar Con Nosotros?</h2>
-                    <p class="section-desc">Estamos en Huéscar y conocemos el terreno. Te ofrecemos flexibilidad total y las mejores furgonetas de Granada.</p>
+                    <p class="section-desc">Estamos en Huéscar y conocemos el terreno. Te ofrecemos flexibilidad total y
+                        las mejores furgonetas de Granada.</p>
                 </div>
-                
+
                 <div class="services-grid">
                     <div class="service-card reveal">
                         <div class="service-icon"><i class="fa-solid fa-key"></i></div>
                         <h3 class="service-title">Sin Conductor</h3>
-                        <p class="service-desc-text">Conduce tú mismo. Solo necesitas tu permiso de conducir B (de coche) con al menos 2 años de antigüedad para operar cualquiera de nuestras furgonetas.</p>
+                        <p class="service-desc-text">Conduce tú mismo. Solo necesitas tu permiso de conducir B (de
+                            coche) con al menos 2 años de antigüedad para operar cualquiera de nuestras furgonetas.</p>
                     </div>
                     <div class="service-card reveal delay-1">
                         <div class="service-icon"><i class="fa-solid fa-user-tie"></i></div>
                         <h3 class="service-title">Con Conductor</h3>
-                        <p class="service-desc-text">¿No quieres conducir o no tienes el permiso necesario? Te ofrecemos un chófer profesional para el transporte de tus mercancías sin complicaciones.</p>
+                        <p class="service-desc-text">¿No quieres conducir o no tienes el permiso necesario? Te ofrecemos
+                            un chófer profesional para el transporte de tus mercancías sin complicaciones.</p>
                     </div>
                     <div class="service-card reveal delay-2">
                         <div class="service-icon"><i class="fa-solid fa-coins"></i></div>
                         <h3 class="service-title">Precios Claros</h3>
-                        <p class="service-desc-text">Lo que ves es lo que pagas. IVA, kilometraje acordado y seguro básico con franquicia incluidos. Sin sorpresas inesperadas al recoger la furgoneta.</p>
+                        <p class="service-desc-text">Lo que ves es lo que pagas. IVA, kilometraje acordado y seguro
+                            básico con franquicia incluidos. Sin sorpresas inesperadas al recoger la furgoneta.</p>
                     </div>
                     <div class="service-card reveal">
                         <div class="service-icon"><i class="fa-solid fa-clock-rotate-left"></i></div>
                         <h3 class="service-title">Flexibilidad Horaria</h3>
-                        <p class="service-desc-text">¿Necesitas recogerla a primera hora o entregarla tarde? Nos adaptamos a tus necesidades. Recogida y entrega personalizada en Huéscar.</p>
+                        <p class="service-desc-text">¿Necesitas recogerla a primera hora o entregarla tarde? Nos
+                            adaptamos a tus necesidades. Recogida y entrega personalizada en Huéscar.</p>
                     </div>
                     <div class="service-card reveal delay-1">
                         <div class="service-icon"><i class="fa-solid fa-location-arrow"></i></div>
                         <h3 class="service-title">Servicio en el Altiplano</h3>
-                        <p class="service-desc-text">Atendemos a todo el Altiplano de Granada: Huéscar, Castril, Galera, Orce, Puebla de Don Fadrique, Castilléjar, Baza, Cúllar, Benamaurel, Caniles y todos los alrededores. Tu solución logística local.</p>
+                        <p class="service-desc-text">Atendemos a todo el Altiplano de Granada: Huéscar, Castril, Galera,
+                            Orce, Puebla de Don Fadrique, Castilléjar, Baza, Cúllar, Benamaurel, Caniles y todos los
+                            alrededores. Tu solución logística local.</p>
                     </div>
                     <div class="service-card reveal delay-2">
                         <div class="service-icon"><i class="fa-solid fa-screwdriver-wrench"></i></div>
                         <h3 class="service-title">Flota Moderna y Segura</h3>
-                        <p class="service-desc-text">Todos nuestros furgones pasan revisiones estrictas y cuentan con asistencia en carretera 24/7 en toda España para tu total tranquilidad.</p>
+                        <p class="service-desc-text">Todos nuestros furgones pasan revisiones estrictas y cuentan con
+                            asistencia en carretera 24/7 en toda España para tu total tranquilidad.</p>
                     </div>
                 </div>
             </div>
@@ -409,19 +460,29 @@
             <div class="container">
                 <div class="section-header reveal" style="text-align: center;">
                     <span class="subtitle">Opiniones</span>
-                    <div id="reviews-count-badge" style="display: none; justify-content: center; align-items: center; gap: 0.4rem; background: rgba(130, 209, 5, 0.1); color: var(--color-neon); font-size: 0.85rem; font-weight: 700; padding: 6px 14px; border-radius: 20px; border: 1px solid rgba(130, 209, 5, 0.3); width: fit-content; margin: 0.5rem auto 1.5rem auto;">
-                        <i class="fa-solid fa-circle-check"></i> Más de <span id="reviews-count-placeholder">0</span> reseñas verificadas
+                    <div id="reviews-count-badge"
+                        style="display: none; justify-content: center; align-items: center; gap: 0.4rem; background: rgba(130, 209, 5, 0.1); color: var(--color-neon); font-size: 0.85rem; font-weight: 700; padding: 6px 14px; border-radius: 20px; border: 1px solid rgba(130, 209, 5, 0.3); width: fit-content; margin: 0.5rem auto 1.5rem auto;">
+                        <i class="fa-solid fa-circle-check"></i> Más de <span id="reviews-count-placeholder">0</span>
+                        reseñas verificadas
                     </div>
                     <h2 class="section-title">Lo Que Dicen Nuestros Vecinos</h2>
-                    <p class="section-desc">La confianza de nuestros clientes en Huéscar y comarca es nuestra mayor garantía.</p>
+                    <p class="section-desc">La confianza de nuestros clientes en Huéscar y comarca es nuestra mayor
+                        garantía.</p>
                 </div>
-                
-                <div class="testimonials-carousel-container reveal" style="position: relative; max-width: 900px; margin: 0 auto; padding: 1rem 50px;">
+
+                <div class="testimonials-carousel-container reveal"
+                    style="position: relative; max-width: 900px; margin: 0 auto; padding: 1rem 50px;">
                     <div style="overflow: hidden; width: 100%;">
-                        <div class="testimonials-track" id="testimonials-grid" style="display: flex; transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1); width: 100%;">
-                            <div class="testimonial-card reveal" style="flex: 0 0 100%; box-sizing: border-box; margin: 0;">
-                                <div class="stars"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i></div>
-                                <p class="testimonial-text">"Alquilé la furgoneta mediana para trasladar unos muebles desde Granada a Huéscar. El trato fue inmejorable y el vehículo estaba limpísimo. Repetiré seguro."</p>
+                        <div class="testimonials-track" id="testimonials-grid"
+                            style="display: flex; transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1); width: 100%;">
+                            <div class="testimonial-card reveal"
+                                style="flex: 0 0 100%; box-sizing: border-box; margin: 0;">
+                                <div class="stars"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i
+                                        class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i
+                                        class="fa-solid fa-star"></i></div>
+                                <p class="testimonial-text">"Alquilé la furgoneta mediana para trasladar unos muebles
+                                    desde Granada a Huéscar. El trato fue inmejorable y el vehículo estaba limpísimo.
+                                    Repetiré seguro."</p>
                                 <div class="testimonial-author">
                                     <div class="author-info">
                                         <h4 class="author-name">Francisco M.</h4>
@@ -429,9 +490,14 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="testimonial-card reveal delay-1" style="flex: 0 0 100%; box-sizing: border-box; margin: 0;">
-                                <div class="stars"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i></div>
-                                <p class="testimonial-text">"Necesitábamos una furgoneta de 9 plazas para un viaje de fin de semana con amigos de la Puebla de Don Fadrique. El viaje fue comodísimo y el precio muy razonable."</p>
+                            <div class="testimonial-card reveal delay-1"
+                                style="flex: 0 0 100%; box-sizing: border-box; margin: 0;">
+                                <div class="stars"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i
+                                        class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i
+                                        class="fa-solid fa-star"></i></div>
+                                <p class="testimonial-text">"Necesitábamos una furgoneta de 9 plazas para un viaje de
+                                    fin de semana con amigos de la Puebla de Don Fadrique. El viaje fue comodísimo y el
+                                    precio muy razonable."</p>
                                 <div class="testimonial-author">
                                     <div class="author-info">
                                         <h4 class="author-name">María José S.</h4>
@@ -439,9 +505,14 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="testimonial-card reveal delay-2" style="flex: 0 0 100%; box-sizing: border-box; margin: 0;">
-                                <div class="stars"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i></div>
-                                <p class="testimonial-text">"Como autónomo, a veces necesito un vehículo de gran volumen para repartos extra. RentMeUskar me soluciona la papeleta rápidamente y sin burocracia pesada."</p>
+                            <div class="testimonial-card reveal delay-2"
+                                style="flex: 0 0 100%; box-sizing: border-box; margin: 0;">
+                                <div class="stars"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i
+                                        class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i
+                                        class="fa-solid fa-star"></i></div>
+                                <p class="testimonial-text">"Como autónomo, a veces necesito un vehículo de gran volumen
+                                    para repartos extra. RentMeUskar me soluciona la papeleta rápidamente y sin
+                                    burocracia pesada."</p>
                                 <div class="testimonial-author">
                                     <div class="author-info">
                                         <h4 class="author-name">Antonio G.</h4>
@@ -451,21 +522,24 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <!-- Flechas de navegación -->
-                    <button class="carousel-control prev" id="reviews-carousel-prev" style="position: absolute; top: 50%; left: -2.5rem; transform: translateY(-50%); background: rgba(255,255,255,0.03); border: 1.5px solid var(--color-neon); color: #fff; width: 44px; height: 44px; border-radius: 50%; cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center; z-index: 5; transition: all 0.3s ease; box-shadow: 0 0 10px rgba(130, 209, 5, 0.2);">
+                    <button class="carousel-control prev" id="reviews-carousel-prev"
+                        style="position: absolute; top: 50%; left: -2.5rem; transform: translateY(-50%); background: rgba(255,255,255,0.03); border: 1.5px solid var(--color-neon); color: #fff; width: 44px; height: 44px; border-radius: 50%; cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center; z-index: 5; transition: all 0.3s ease; box-shadow: 0 0 10px rgba(130, 209, 5, 0.2);">
                         <i class="fa-solid fa-chevron-left" style="color: var(--color-neon);"></i>
                     </button>
-                    <button class="carousel-control next" id="reviews-carousel-next" style="position: absolute; top: 50%; right: -2.5rem; transform: translateY(-50%); background: rgba(255,255,255,0.03); border: 1.5px solid var(--color-neon); color: #fff; width: 44px; height: 44px; border-radius: 50%; cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center; z-index: 5; transition: all 0.3s ease; box-shadow: 0 0 10px rgba(130, 209, 5, 0.2);">
+                    <button class="carousel-control next" id="reviews-carousel-next"
+                        style="position: absolute; top: 50%; right: -2.5rem; transform: translateY(-50%); background: rgba(255,255,255,0.03); border: 1.5px solid var(--color-neon); color: #fff; width: 44px; height: 44px; border-radius: 50%; cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center; z-index: 5; transition: all 0.3s ease; box-shadow: 0 0 10px rgba(130, 209, 5, 0.2);">
                         <i class="fa-solid fa-chevron-right" style="color: var(--color-neon);"></i>
                     </button>
-                    
+
                     <!-- Indicadores de puntos -->
-                    <div id="reviews-carousel-dots" style="display: flex; justify-content: center; gap: 0.6rem; margin-top: 2rem;">
+                    <div id="reviews-carousel-dots"
+                        style="display: flex; justify-content: center; gap: 0.6rem; margin-top: 2rem;">
                         <!-- Insertado dinámicamente -->
                     </div>
                 </div>
-                
+
                 <div style="text-align: center; margin-top: 3rem;" class="reveal">
                     <button class="btn btn-primary" id="btn-open-review-modal">
                         <i class="fa-solid fa-pen-to-square"></i> Escribir una Opinión Verificada
@@ -482,9 +556,10 @@
                     <h2 class="section-title">Preguntas Frecuentes</h2>
                     <p class="section-desc">Todo lo que necesitas saber antes de alquilar tu furgoneta con nosotros.</p>
                 </div>
-                
+
                 <div class="faq-list">
-                    <p style="text-align: center; color: var(--text-secondary); font-size: 0.9rem;">Cargando preguntas frecuentes...</p>
+                    <p style="text-align: center; color: var(--text-secondary); font-size: 0.9rem;">Cargando preguntas
+                        frecuentes...</p>
                 </div>
             </div>
         </section>
@@ -497,8 +572,10 @@
                     <div class="contact-info-area reveal">
                         <span class="subtitle">Contacta Con Nosotros</span>
                         <h2 class="contact-section-title">¿Tienes Alguna Pregunta?</h2>
-                        <p class="contact-section-desc" style="margin-bottom: 2rem;">Escríbenos, llámanos o visítanos en Huéscar. Estaremos encantados de resolver tus dudas y ayudarte a elegir el vehículo ideal.</p>
-                        
+                        <p class="contact-section-desc" style="margin-bottom: 2rem;">Escríbenos, llámanos o visítanos en
+                            Huéscar. Estaremos encantados de resolver tus dudas y ayudarte a elegir el vehículo ideal.
+                        </p>
+
                         <div class="contact-methods" style="margin-bottom: 3rem;">
                             <a href="tel:+34614767411" class="contact-method-card" id="contact-phone-link">
                                 <div class="method-icon"><i class="fa-solid fa-phone"></i></div>
@@ -507,7 +584,8 @@
                                     <p>+34 614 767 411</p>
                                 </div>
                             </a>
-                            <a href="https://wa.me/34614767411" target="_blank" class="contact-method-card" id="contact-wa-link">
+                            <a href="https://wa.me/34614767411" target="_blank" class="contact-method-card"
+                                id="contact-wa-link">
                                 <div class="method-icon"><i class="fa-brands fa-whatsapp text-neon"></i></div>
                                 <div class="method-details">
                                     <h4>WhatsApp Directo</h4>
@@ -524,32 +602,51 @@
                         </div>
 
                         <!-- Dónde Estamos Card -->
-                        <div class="map-card-container" style="padding: 2rem; background: #0f1c3f; border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; min-height: auto;">
-                            <h3 class="map-card-title" style="margin-top: 0; color: #fff; font-family: var(--font-heading); font-size: 1.2rem; display: flex; align-items: center; gap: 0.5rem;"><i class="fa-solid fa-map-location-dot" style="color: var(--color-neon);"></i> Dónde Estamos</h3>
-                            <p style="color: #fff; font-size: 1.1rem; font-weight: 700; margin: 1rem 0 0.5rem 0;">Huéscar, Granada</p>
-                            <p style="color: var(--text-secondary); font-size: 0.9rem; line-height: 1.6; margin: 0;">Ofrecemos servicio de entrega y recogida de vehículos en el municipio de Huéscar y comarca del Altiplano Granadino.</p>
+                        <div class="map-card-container"
+                            style="padding: 2rem; background: #0f1c3f; border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; min-height: auto;">
+                            <h3 class="map-card-title"
+                                style="margin-top: 0; color: #fff; font-family: var(--font-heading); font-size: 1.2rem; display: flex; align-items: center; gap: 0.5rem;">
+                                <i class="fa-solid fa-map-location-dot" style="color: var(--color-neon);"></i> Dónde
+                                Estamos</h3>
+                            <p style="color: #fff; font-size: 1.1rem; font-weight: 700; margin: 1rem 0 0.5rem 0;">
+                                Huéscar, Granada</p>
+                            <p style="color: var(--text-secondary); font-size: 0.9rem; line-height: 1.6; margin: 0;">
+                                Ofrecemos servicio de entrega y recogida de vehículos en el municipio de Huéscar y
+                                comarca del Altiplano Granadino.</p>
                         </div>
                     </div>
 
                     <!-- Column 2: Premium Contact Form -->
                     <div class="contact-form-area reveal delay-1">
-                        <div class="table-card" style="padding: 2.5rem; text-align: left; background: #0f1c3f; border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; box-shadow: 0 20px 40px rgba(0,0,0,0.5);">
-                            <h3 style="font-family: var(--font-heading); color: #fff; margin-top: 0; margin-bottom: 0.5rem; font-size: 1.4rem; display: flex; align-items: center; gap: 0.5rem;">
-                                <i class="fa-solid fa-envelope" style="color: var(--color-neon);"></i> Envíanos un Mensaje
+                        <div class="table-card"
+                            style="padding: 2.5rem; text-align: left; background: #0f1c3f; border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; box-shadow: 0 20px 40px rgba(0,0,0,0.5);">
+                            <h3
+                                style="font-family: var(--font-heading); color: #fff; margin-top: 0; margin-bottom: 0.5rem; font-size: 1.4rem; display: flex; align-items: center; gap: 0.5rem;">
+                                <i class="fa-solid fa-envelope" style="color: var(--color-neon);"></i> Envíanos un
+                                Mensaje
                             </h3>
-                            <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 2rem;">Rellena el formulario y envíalo directamente a nuestro WhatsApp oficial.</p>
-                            
+                            <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 2rem;">Rellena el
+                                formulario y envíalo directamente a nuestro WhatsApp oficial.</p>
+
                             <form id="contact-whatsapp-form">
                                 <div class="custom-form-group" style="margin-bottom: 1.25rem;">
-                                    <label for="contact-form-name" style="display: block; font-size: 0.8rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 0.4rem; font-weight: 600;">Tu Nombre</label>
-                                    <input type="text" id="contact-form-name" class="form-control" placeholder="" required>
+                                    <label for="contact-form-name"
+                                        style="display: block; font-size: 0.8rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 0.4rem; font-weight: 600;">Tu
+                                        Nombre</label>
+                                    <input type="text" id="contact-form-name" class="form-control" placeholder=""
+                                        required>
                                 </div>
                                 <div class="custom-form-group" style="margin-bottom: 1.25rem;">
-                                    <label for="contact-form-phone" style="display: block; font-size: 0.8rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 0.4rem; font-weight: 600;">Teléfono o Email de Contacto</label>
-                                    <input type="text" id="contact-form-phone" class="form-control" placeholder="" required>
+                                    <label for="contact-form-phone"
+                                        style="display: block; font-size: 0.8rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 0.4rem; font-weight: 600;">Teléfono
+                                        o Email de Contacto</label>
+                                    <input type="text" id="contact-form-phone" class="form-control" placeholder=""
+                                        required>
                                 </div>
                                 <div class="custom-form-group" style="margin-bottom: 1.25rem;">
-                                    <label for="contact-form-reason" style="display: block; font-size: 0.8rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 0.4rem; font-weight: 600;">Motivo de Consulta</label>
+                                    <label for="contact-form-reason"
+                                        style="display: block; font-size: 0.8rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 0.4rem; font-weight: 600;">Motivo
+                                        de Consulta</label>
                                     <select id="contact-form-reason" class="form-control">
                                         <option value="Duda sobre alquiler">Duda sobre alquiler</option>
                                         <option value="Presupuesto a medida">Presupuesto a medida</option>
@@ -558,12 +655,17 @@
                                     </select>
                                 </div>
                                 <div class="custom-form-group" style="margin-bottom: 1.5rem;">
-                                    <label for="contact-form-message" style="display: block; font-size: 0.8rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 0.4rem; font-weight: 600;">Tu Mensaje</label>
-                                    <textarea id="contact-form-message" class="form-control" rows="4" placeholder="" required style="resize: vertical; min-height: 100px;"></textarea>
+                                    <label for="contact-form-message"
+                                        style="display: block; font-size: 0.8rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 0.4rem; font-weight: 600;">Tu
+                                        Mensaje</label>
+                                    <textarea id="contact-form-message" class="form-control" rows="4" placeholder=""
+                                        required style="resize: vertical; min-height: 100px;"></textarea>
                                 </div>
-                                
-                                <button type="submit" class="btn btn-primary btn-block" style="background: var(--color-neon); color: #000; border-color: var(--color-neon); font-weight: 800; font-size: 0.95rem; height: 48px; justify-content: center;">
-                                    <i class="fa-brands fa-whatsapp" style="font-size: 1.2rem; margin-right: 0.4rem;"></i> Enviar por WhatsApp
+
+                                <button type="submit" class="btn btn-primary btn-block"
+                                    style="background: var(--color-neon); color: #000; border-color: var(--color-neon); font-weight: 800; font-size: 0.95rem; height: 48px; justify-content: center;">
+                                    <i class="fa-brands fa-whatsapp"
+                                        style="font-size: 1.2rem; margin-right: 0.4rem;"></i> Enviar por WhatsApp
                                 </button>
                             </form>
                         </div>
@@ -579,20 +681,30 @@
         <div class="footer-top container">
             <div class="footer-brand-info">
                 <img src="assets/logo.png" alt="RentMeUskar Logotipo" class="footer-logo" id="footer-logo">
-                <p class="footer-brand-desc">Alquiler local de furgonetas con y sin conductor. Comprometidos con el desarrollo y la movilidad del Altiplano Granadino.</p>
-                <div class="social-links-premium" style="display: flex; align-items: center; gap: 1rem; margin-top: 1.2rem;">
-                    <a href="https://facebook.com/rentmeuskar" target="_blank" style="display: flex; align-items: center; gap: 0.5rem; text-decoration: none; color: #fff; font-size: 0.9rem;" id="social-fb">
-                        <span style="display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; border: 1.5px solid var(--color-neon); color: var(--color-neon);"><i class="fa-brands fa-facebook-f"></i></span>
+                <p class="footer-brand-desc">Alquiler local de furgonetas con y sin conductor. Comprometidos con el
+                    desarrollo y la movilidad del Altiplano Granadino.</p>
+                <div class="social-links-premium"
+                    style="display: flex; align-items: center; gap: 1rem; margin-top: 1.2rem;">
+                    <a href="https://facebook.com/rentmeuskar" target="_blank"
+                        style="display: flex; align-items: center; gap: 0.5rem; text-decoration: none; color: #fff; font-size: 0.9rem;"
+                        id="social-fb">
+                        <span
+                            style="display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; border: 1.5px solid var(--color-neon); color: var(--color-neon);"><i
+                                class="fa-brands fa-facebook-f"></i></span>
                         <span>rentmeuskar</span>
                     </a>
                     <span style="color: rgba(255,255,255,0.2); font-weight: 300;">|</span>
-                    <a href="https://instagram.com/rentmeuskar" target="_blank" style="display: flex; align-items: center; gap: 0.5rem; text-decoration: none; color: #fff; font-size: 0.9rem;" id="social-ig">
-                        <span style="display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; border: 1.5px solid var(--color-neon); color: var(--color-neon);"><i class="fa-brands fa-instagram"></i></span>
+                    <a href="https://instagram.com/rentmeuskar" target="_blank"
+                        style="display: flex; align-items: center; gap: 0.5rem; text-decoration: none; color: #fff; font-size: 0.9rem;"
+                        id="social-ig">
+                        <span
+                            style="display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; border: 1.5px solid var(--color-neon); color: var(--color-neon);"><i
+                                class="fa-brands fa-instagram"></i></span>
                         <span>@rentmeuskar</span>
                     </a>
                 </div>
             </div>
-            
+
             <div class="footer-links-col">
                 <h4>Enlaces Útiles</h4>
                 <ul>
@@ -623,10 +735,11 @@
                 </ul>
             </div>
         </div>
-        
+
         <div class="footer-bottom">
             <div class="container footer-bottom-flex">
-                <p class="copyright">&copy; 2026 RentMeUskar. Todos los derechos reservados. Diseñado para el Altiplano de Granada.</p>
+                <p class="copyright">&copy; 2026 RentMeUskar. Todos los derechos reservados. Diseñado para el Altiplano
+                    de Granada.</p>
                 <p class="developer-credit">Localidad: Huéscar (Granada)</p>
             </div>
         </div>
@@ -635,72 +748,105 @@
     <!-- ==========================================================
          MODALES Y PASARELA TPV DE LA APLICACIÓN
          ========================================================== -->
-    
+
     <!-- Modal: Detalle Ampliado de Furgoneta -->
     <div class="custom-modal-backdrop" id="van-details-modal" style="display: none;">
         <div class="custom-modal-card" style="max-width: 700px; padding: 0; overflow: hidden; background: #070e24;">
-            <span class="custom-modal-close" onclick="closeAuthModal('van-details-modal')" style="top: 1.5rem; right: 1.5rem; z-index: 10; font-size: 2rem;">&times;</span>
-            
+            <span class="custom-modal-close" onclick="closeAuthModal('van-details-modal')"
+                style="top: 1.5rem; right: 1.5rem; z-index: 10; font-size: 2rem;">&times;</span>
+
             <!-- Carrusel de fotos -->
-            <div class="modal-carousel" style="position: relative; width: 100%; height: 350px; background: #000; overflow: hidden;">
-                <div class="carousel-slides" id="detail-carousel-slides" style="display: flex; width: 100%; height: 100%; transition: transform 0.4s ease-in-out;">
+            <div class="modal-carousel"
+                style="position: relative; width: 100%; height: 350px; background: #000; overflow: hidden;">
+                <div class="carousel-slides" id="detail-carousel-slides"
+                    style="display: flex; width: 100%; height: 100%; transition: transform 0.4s ease-in-out;">
                     <!-- Insertado dinámicamente -->
                 </div>
-                <button class="carousel-control prev" id="detail-carousel-prev" style="position: absolute; top: 50%; left: 1rem; transform: translateY(-50%); background: rgba(0,0,0,0.5); border: none; color: #fff; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; z-index: 5;">
+                <button class="carousel-control prev" id="detail-carousel-prev"
+                    style="position: absolute; top: 50%; left: 1rem; transform: translateY(-50%); background: rgba(0,0,0,0.5); border: none; color: #fff; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; z-index: 5;">
                     <i class="fa-solid fa-chevron-left"></i>
                 </button>
-                <button class="carousel-control next" id="detail-carousel-next" style="position: absolute; top: 50%; right: 1rem; transform: translateY(-50%); background: rgba(0,0,0,0.5); border: none; color: #fff; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; z-index: 5;">
+                <button class="carousel-control next" id="detail-carousel-next"
+                    style="position: absolute; top: 50%; right: 1rem; transform: translateY(-50%); background: rgba(0,0,0,0.5); border: none; color: #fff; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; z-index: 5;">
                     <i class="fa-solid fa-chevron-right"></i>
                 </button>
-                <div class="carousel-dots" id="detail-carousel-dots" style="position: absolute; bottom: 1rem; left: 50%; transform: translateX(-50%); display: flex; gap: 0.5rem; z-index: 5;">
+                <div class="carousel-dots" id="detail-carousel-dots"
+                    style="position: absolute; bottom: 1rem; left: 50%; transform: translateX(-50%); display: flex; gap: 0.5rem; z-index: 5;">
                     <!-- Insertado dinámicamente -->
                 </div>
             </div>
-            
+
             <div style="padding: 2rem;">
-                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem;">
+                <div
+                    style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem;">
                     <div style="text-align: left;">
-                        <h2 id="detail-van-name" style="font-size: 1.8rem; font-family: var(--font-heading); color: #fff; margin: 0 0 0.3rem 0;">Ford Transit Custom</h2>
-                        <span id="detail-van-m3" style="background: rgba(130, 209, 5, 0.15); color: var(--color-neon); font-size: 0.8rem; font-weight: 700; padding: 4px 10px; border-radius: 4px; display: inline-block;">8m³ de volumen</span>
+                        <h2 id="detail-van-name"
+                            style="font-size: 1.8rem; font-family: var(--font-heading); color: #fff; margin: 0 0 0.3rem 0;">
+                            Ford Transit Custom</h2>
+                        <span id="detail-van-m3"
+                            style="background: rgba(130, 209, 5, 0.15); color: var(--color-neon); font-size: 0.8rem; font-weight: 700; padding: 4px 10px; border-radius: 4px; display: inline-block;">8m³
+                            de volumen</span>
                     </div>
                     <div style="text-align: right;">
                         <span style="color: var(--text-secondary); font-size: 0.8rem; display: block;">Desde solo</span>
-                        <strong id="detail-van-price" style="font-size: 2rem; color: var(--color-neon); font-family: var(--font-heading);">79€<span style="font-size: 1rem; font-weight: normal; color: var(--text-secondary);">/día</span></strong>
+                        <strong id="detail-van-price"
+                            style="font-size: 2rem; color: var(--color-neon); font-family: var(--font-heading);">79€<span
+                                style="font-size: 1rem; font-weight: normal; color: var(--text-secondary);">/día</span></strong>
                     </div>
                 </div>
-                
-                <h3 style="font-size: 1rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 0.75rem; letter-spacing: 0.05em; text-align: left;">Ficha Técnica y Condiciones</h3>
+
+                <h3
+                    style="font-size: 1rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 0.75rem; letter-spacing: 0.05em; text-align: left;">
+                    Ficha Técnica y Condiciones</h3>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 2rem;">
-                    <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); padding: 1rem; border-radius: var(--border-radius-sm); text-align: left;">
-                        <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.6rem; font-size: 0.9rem;">
-                            <li><i class="fa-solid fa-truck" style="color: var(--color-neon); width: 20px;"></i> Matrícula: <strong id="detail-spec-plate">-</strong></li>
-                            <li><i class="fa-solid fa-weight-hanging" style="color: var(--color-neon); width: 20px;"></i> M.M.A: <strong id="detail-spec-mass">-</strong></li>
-                            <li><i class="fa-solid fa-user" style="color: var(--color-neon); width: 20px;"></i> Plazas: <strong id="detail-spec-occupants">-</strong></li>
-                            <li><i class="fa-solid fa-gas-pump" style="color: var(--color-neon); width: 20px;"></i> Combustible: <strong id="detail-spec-fuel">-</strong></li>
+                    <div
+                        style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); padding: 1rem; border-radius: var(--border-radius-sm); text-align: left;">
+                        <ul
+                            style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.6rem; font-size: 0.9rem;">
+                            <li><i class="fa-solid fa-truck" style="color: var(--color-neon); width: 20px;"></i>
+                                Matrícula: <strong id="detail-spec-plate">-</strong></li>
+                            <li><i class="fa-solid fa-weight-hanging"
+                                    style="color: var(--color-neon); width: 20px;"></i> M.M.A: <strong
+                                    id="detail-spec-mass">-</strong></li>
+                            <li><i class="fa-solid fa-user" style="color: var(--color-neon); width: 20px;"></i> Plazas:
+                                <strong id="detail-spec-occupants">-</strong></li>
+                            <li><i class="fa-solid fa-gas-pump" style="color: var(--color-neon); width: 20px;"></i>
+                                Combustible: <strong id="detail-spec-fuel">-</strong></li>
                         </ul>
                     </div>
-                    <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); padding: 1rem; border-radius: var(--border-radius-sm); text-align: left;">
-                        <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.6rem; font-size: 0.9rem;">
-                            <li><i class="fa-solid fa-leaf" style="color: var(--color-neon); width: 20px;"></i> Distintivo: <strong id="detail-spec-eco">-</strong></li>
-                            <li><i class="fa-solid fa-shield-halved" style="color: var(--color-neon); width: 20px;"></i> Fianza obligatoria: <strong>500,00 €</strong></li>
-                            <li><i class="fa-solid fa-road" style="color: var(--color-neon); width: 20px;"></i> Km Incluidos: <strong id="detail-spec-kmlimit">-</strong></li>
-                            <li><i class="fa-solid fa-triangle-exclamation" style="color: var(--color-neon); width: 20px;"></i> Combustible: <strong>Mismo Nivel</strong></li>
+                    <div
+                        style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); padding: 1rem; border-radius: var(--border-radius-sm); text-align: left;">
+                        <ul
+                            style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.6rem; font-size: 0.9rem;">
+                            <li><i class="fa-solid fa-leaf" style="color: var(--color-neon); width: 20px;"></i>
+                                Distintivo: <strong id="detail-spec-eco">-</strong></li>
+                            <li><i class="fa-solid fa-shield-halved" style="color: var(--color-neon); width: 20px;"></i>
+                                Fianza obligatoria: <strong>500,00 €</strong></li>
+                            <li><i class="fa-solid fa-road" style="color: var(--color-neon); width: 20px;"></i> Km
+                                Incluidos: <strong id="detail-spec-kmlimit">-</strong></li>
+                            <li><i class="fa-solid fa-triangle-exclamation"
+                                    style="color: var(--color-neon); width: 20px;"></i> Combustible: <strong>Mismo
+                                    Nivel</strong></li>
                         </ul>
                     </div>
                 </div>
 
-                <div id="detail-custom-features-container" style="margin-bottom: 1.5rem; text-align: left; display: none;">
-                    <strong style="font-size: 0.85rem; color: var(--color-neon); display: block; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.05em;">
+                <div id="detail-custom-features-container"
+                    style="margin-bottom: 1.5rem; text-align: left; display: none;">
+                    <strong
+                        style="font-size: 0.85rem; color: var(--color-neon); display: block; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.05em;">
                         <i class="fa-solid fa-star"></i> Equipamiento y Características Destacadas
                     </strong>
                     <div id="detail-custom-features-list" style="display: flex; flex-wrap: wrap; gap: 0.5rem;"></div>
                 </div>
 
                 <div style="display: flex; gap: 1rem;">
-                    <button class="btn btn-secondary" onclick="closeAuthModal('van-details-modal')" style="flex: 1; height: 50px;">
+                    <button class="btn btn-secondary" onclick="closeAuthModal('van-details-modal')"
+                        style="flex: 1; height: 50px;">
                         Volver
                     </button>
-                    <button class="btn btn-primary" id="detail-van-book-btn" style="flex: 2; height: 50px; font-weight: 700;">
+                    <button class="btn btn-primary" id="detail-van-book-btn"
+                        style="flex: 2; height: 50px; font-weight: 700;">
                         <i class="fa-solid fa-calendar-days"></i> Simular Presupuesto
                     </button>
                 </div>
@@ -717,15 +863,20 @@
                 <p>Tu opinión nos ayuda a mejorar y a dar confianza a otros vecinos.</p>
             </div>
             <form id="write-review-form">
-                <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1.5rem; line-height: 1.5; text-align: left;">
-                    <i class="fa-solid fa-circle-info" style="color: var(--color-neon);"></i> Para garantizar la veracidad de las opiniones, solo los clientes con un código de reserva válido pueden publicar una reseña. El código se le asigna al completar su reserva.
+                <p
+                    style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1.5rem; line-height: 1.5; text-align: left;">
+                    <i class="fa-solid fa-circle-info" style="color: var(--color-neon);"></i> Para garantizar la
+                    veracidad de las opiniones, solo los clientes con un código de reserva válido pueden publicar una
+                    reseña. El código se le asigna al completar su reserva.
                 </p>
-                
+
                 <div class="custom-form-group" style="text-align: left;">
-                    <label for="review-code-input"><i class="fa-solid fa-ticket"></i> Código de Reserva (Verificado)</label>
-                    <input type="text" id="review-code-input" class="custom-form-control" placeholder="" required style="text-transform: uppercase;">
+                    <label for="review-code-input"><i class="fa-solid fa-ticket"></i> Código de Reserva
+                        (Verificado)</label>
+                    <input type="text" id="review-code-input" class="custom-form-control" placeholder="" required
+                        style="text-transform: uppercase;">
                 </div>
-                
+
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                     <div class="custom-form-group" style="text-align: left;">
                         <label for="review-name-input"><i class="fa-solid fa-user"></i> Tu Nombre</label>
@@ -736,10 +887,12 @@
                         <input type="text" id="review-city-input" class="custom-form-control" placeholder="" required>
                     </div>
                 </div>
-                
+
                 <div class="custom-form-group" style="text-align: left;">
-                    <label style="display: block; margin-bottom: 0.5rem;"><i class="fa-solid fa-star"></i> Puntuación</label>
-                    <div class="star-rating-selector" style="display: flex; gap: 0.5rem; font-size: 1.8rem; color: rgba(255,255,255,0.15); cursor: pointer; justify-content: center; margin: 0.5rem 0;">
+                    <label style="display: block; margin-bottom: 0.5rem;"><i class="fa-solid fa-star"></i>
+                        Puntuación</label>
+                    <div class="star-rating-selector"
+                        style="display: flex; gap: 0.5rem; font-size: 1.8rem; color: rgba(255,255,255,0.15); cursor: pointer; justify-content: center; margin: 0.5rem 0;">
                         <i class="fa-solid fa-star" data-rating="1"></i>
                         <i class="fa-solid fa-star" data-rating="2"></i>
                         <i class="fa-solid fa-star" data-rating="3"></i>
@@ -748,12 +901,14 @@
                     </div>
                     <input type="hidden" id="review-rating-input" value="5">
                 </div>
-                
+
                 <div class="custom-form-group" style="text-align: left;">
-                    <label for="review-comment-input"><i class="fa-solid fa-comment-dots"></i> Comentario / Reseña</label>
-                    <textarea id="review-comment-input" class="custom-form-control" rows="3" placeholder="" style="resize: vertical; min-height: 80px;"></textarea>
+                    <label for="review-comment-input"><i class="fa-solid fa-comment-dots"></i> Comentario /
+                        Reseña</label>
+                    <textarea id="review-comment-input" class="custom-form-control" rows="3" placeholder=""
+                        style="resize: vertical; min-height: 80px;"></textarea>
                 </div>
-                
+
                 <button type="submit" class="btn btn-primary btn-block" style="margin-top: 1rem;">
                     <i class="fa-solid fa-paper-plane"></i> Publicar Reseña Verificada
                 </button>
@@ -769,19 +924,31 @@
                 <h2>Iniciar Sesión</h2>
                 <p>Accede a tu panel para reservar, ver contratos y facturas.</p>
             </div>
-            
+
             <div class="social-login-container" style="margin-bottom: 1.25rem;">
-                <button type="button" class="btn-social btn-google" onclick="loginWithGoogle()" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 0.8rem; background: #ffffff; color: #333333; font-weight: 600; padding: 0.75rem 1rem; border-radius: 8px; border: none; cursor: pointer; margin-bottom: 0.6rem; transition: all 0.2s ease;">
-                    <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
+                <button type="button" class="btn-social btn-google" onclick="loginWithGoogle()"
+                    style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 0.8rem; background: #ffffff; color: #333333; font-weight: 600; padding: 0.75rem 1rem; border-radius: 8px; border: none; cursor: pointer; margin-bottom: 0.6rem; transition: all 0.2s ease;">
+                    <svg width="18" height="18" viewBox="0 0 24 24">
+                        <path fill="#4285F4"
+                            d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                        <path fill="#34A853"
+                            d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                        <path fill="#FBBC05"
+                            d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+                        <path fill="#EA4335"
+                            d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+                    </svg>
                     <span>Continuar con Google</span>
                 </button>
-                <button type="button" class="btn-social btn-apple" onclick="loginWithApple()" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 0.8rem; background: #000000; color: #ffffff; font-weight: 600; padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); cursor: pointer; transition: all 0.2s ease;">
+                <button type="button" class="btn-social btn-apple" onclick="loginWithApple()"
+                    style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 0.8rem; background: #000000; color: #ffffff; font-weight: 600; padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); cursor: pointer; transition: all 0.2s ease;">
                     <i class="fa-brands fa-apple" style="font-size: 1.2rem;"></i>
                     <span>Continuar con Apple / iCloud</span>
                 </button>
             </div>
-            
-            <div class="auth-divider" style="display: flex; align-items: center; margin: 1rem 0; color: var(--text-secondary, #718096); font-size: 0.8rem;">
+
+            <div class="auth-divider"
+                style="display: flex; align-items: center; margin: 1rem 0; color: var(--text-secondary, #718096); font-size: 0.8rem;">
                 <span style="flex: 1; height: 1px; background: rgba(255,255,255,0.1);"></span>
                 <span style="padding: 0 0.8rem;">o escribe tu email</span>
                 <span style="flex: 1; height: 1px; background: rgba(255,255,255,0.1);"></span>
@@ -793,64 +960,15 @@
                     <input type="email" id="login-email" class="custom-form-control" required placeholder="">
                 </div>
                 <div class="custom-form-group">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.3rem;">
-                        <label for="login-password" style="margin-bottom: 0;">Contraseña</label>
-                        <a href="#" onclick="switchAuthModal('login-modal', 'forgot-password-modal')" style="font-size: 0.75rem; color: var(--color-neon, #82d105); text-decoration: none; font-weight: 600;">¿Olvidaste tu contraseña?</a>
-                    </div>
+                    <label for="login-password">Contraseña</label>
                     <input type="password" id="login-password" class="custom-form-control" required placeholder="">
                 </div>
                 <button type="submit" class="btn btn-primary btn-block" style="margin-top: 1rem;">Entrar</button>
             </form>
             <div class="custom-modal-footer">
-                ¿No tienes cuenta? <a href="#" onclick="switchAuthModal('login-modal', 'register-modal')">Regístrate aquí</a>
+                ¿No tienes cuenta? <a href="#" onclick="switchAuthModal('login-modal', 'register-modal')">Regístrate
+                    aquí</a>
             </div>
-        </div>
-    </div>
-
-    <!-- Modal: Recuperar Contraseña -->
-    <div class="custom-modal-backdrop" id="forgot-password-modal" style="display: none;">
-        <div class="custom-modal-card">
-            <span class="custom-modal-close" onclick="closeAuthModal('forgot-password-modal')">&times;</span>
-            <div class="custom-modal-header">
-                <h2>¿Olvidaste tu contraseña?</h2>
-                <p>Introduce tu correo electrónico registrado y te enviaremos un correo de confirmación con las instrucciones para restablecerla.</p>
-            </div>
-            <form id="forgot-password-form">
-                <div class="custom-form-group">
-                    <label for="forgot-email">Correo Electrónico</label>
-                    <input type="email" id="forgot-email" class="custom-form-control" required placeholder="tuemail@ejemplo.com">
-                </div>
-                <button type="submit" class="btn btn-primary btn-block" id="btn-forgot-submit" style="margin-top: 1rem;">
-                    <i class="fa-solid fa-paper-plane"></i> Enviar Correo de Confirmación
-                </button>
-            </form>
-            <div class="custom-modal-footer">
-                ¿Te has acordado? <a href="#" onclick="switchAuthModal('forgot-password-modal', 'login-modal')">Inicia sesión aquí</a>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal: Restablecer Contraseña -->
-    <div class="custom-modal-backdrop" id="reset-password-modal" style="display: none;">
-        <div class="custom-modal-card">
-            <span class="custom-modal-close" onclick="closeAuthModal('reset-password-modal')">&times;</span>
-            <div class="custom-modal-header">
-                <h2>Crear Nueva Contraseña</h2>
-                <p>Introduce el código de confirmación recibido y tu nueva contraseña.</p>
-            </div>
-            <form id="reset-password-form">
-                <div class="custom-form-group">
-                    <label for="reset-code">Código de Confirmación</label>
-                    <input type="text" id="reset-code" class="custom-form-control" required placeholder="Ej: 123456">
-                </div>
-                <div class="custom-form-group">
-                    <label for="reset-new-password">Nueva Contraseña</label>
-                    <input type="password" id="reset-new-password" class="custom-form-control" required placeholder="Mínimo 6 caracteres">
-                </div>
-                <button type="submit" class="btn btn-primary btn-block" style="margin-top: 1rem;">
-                    <i class="fa-solid fa-key"></i> Guardar Nueva Contraseña
-                </button>
-            </form>
         </div>
     </div>
 
@@ -862,19 +980,31 @@
                 <h2>Crear Cuenta</h2>
                 <p>Regístrate para reservar furgonetas en el altiplano.</p>
             </div>
-            
+
             <div class="social-login-container" style="margin-bottom: 1.25rem;">
-                <button type="button" class="btn-social btn-google" onclick="loginWithGoogle()" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 0.8rem; background: #ffffff; color: #333333; font-weight: 600; padding: 0.75rem 1rem; border-radius: 8px; border: none; cursor: pointer; margin-bottom: 0.6rem; transition: all 0.2s ease;">
-                    <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
+                <button type="button" class="btn-social btn-google" onclick="loginWithGoogle()"
+                    style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 0.8rem; background: #ffffff; color: #333333; font-weight: 600; padding: 0.75rem 1rem; border-radius: 8px; border: none; cursor: pointer; margin-bottom: 0.6rem; transition: all 0.2s ease;">
+                    <svg width="18" height="18" viewBox="0 0 24 24">
+                        <path fill="#4285F4"
+                            d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                        <path fill="#34A853"
+                            d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                        <path fill="#FBBC05"
+                            d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+                        <path fill="#EA4335"
+                            d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+                    </svg>
                     <span>Registrarse con Google</span>
                 </button>
-                <button type="button" class="btn-social btn-apple" onclick="loginWithApple()" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 0.8rem; background: #000000; color: #ffffff; font-weight: 600; padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); cursor: pointer; transition: all 0.2s ease;">
+                <button type="button" class="btn-social btn-apple" onclick="loginWithApple()"
+                    style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 0.8rem; background: #000000; color: #ffffff; font-weight: 600; padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); cursor: pointer; transition: all 0.2s ease;">
                     <i class="fa-brands fa-apple" style="font-size: 1.2rem;"></i>
                     <span>Registrarse con Apple / iCloud</span>
                 </button>
             </div>
-            
-            <div class="auth-divider" style="display: flex; align-items: center; margin: 1rem 0; color: var(--text-secondary, #718096); font-size: 0.8rem;">
+
+            <div class="auth-divider"
+                style="display: flex; align-items: center; margin: 1rem 0; color: var(--text-secondary, #718096); font-size: 0.8rem;">
                 <span style="flex: 1; height: 1px; background: rgba(255,255,255,0.1);"></span>
                 <span style="padding: 0 0.8rem;">o crea tu cuenta con email</span>
                 <span style="flex: 1; height: 1px; background: rgba(255,255,255,0.1);"></span>
@@ -904,7 +1034,69 @@
                 <button type="submit" class="btn btn-primary btn-block" style="margin-top: 1rem;">Crear Cuenta</button>
             </form>
             <div class="custom-modal-footer">
-                ¿Ya tienes cuenta? <a href="#" onclick="switchAuthModal('register-modal', 'login-modal')">Inicia sesión aquí</a>
+                ¿Ya tienes cuenta? <a href="#" onclick="switchAuthModal('register-modal', 'login-modal')">Inicia sesión
+                    aquí</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Selección de Cuenta Google SSO -->
+    <div class="custom-modal-backdrop" id="google-auth-modal" style="display: none;">
+        <div class="custom-modal-card" style="max-width: 420px; background: #ffffff; color: #202124; border-radius: 12px; padding: 2rem; box-shadow: 0 10px 30px rgba(0,0,0,0.4);">
+            <span class="custom-modal-close" onclick="closeAuthModal('google-auth-modal')" style="color: #5f6368;">&times;</span>
+            
+            <div style="text-align: center; margin-bottom: 1.5rem;">
+                <svg width="40" height="40" viewBox="0 0 24 24" style="margin-bottom: 0.5rem;"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
+                <h3 style="font-size: 1.3rem; font-weight: 700; color: #202124; margin: 0;">Iniciar sesión con Google</h3>
+                <p style="font-size: 0.85rem; color: #5f6368; margin-top: 0.25rem;">Elige una cuenta para continuar a RentMeUskar</p>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1.5rem;">
+                <div onclick="confirmGoogleAccount('yesas12345678@gmail.com', 'Jose Manuel')" style="display: flex; align-items: center; gap: 1rem; padding: 0.8rem 1rem; border: 1px solid #dadce0; border-radius: 8px; cursor: pointer; transition: background 0.2s ease;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">
+                    <div style="width: 40px; height: 40px; border-radius: 50%; background: #1a73e8; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.1rem;">J</div>
+                    <div style="flex: 1;">
+                        <div style="font-weight: 600; font-size: 0.95rem; color: #202124;">Jose Manuel</div>
+                        <div style="font-size: 0.8rem; color: #5f6368;">yesas12345678@gmail.com</div>
+                    </div>
+                    <i class="fa-solid fa-chevron-right" style="color: #5f6368; font-size: 0.8rem;"></i>
+                </div>
+
+                <div onclick="promptGoogleCustomEmail()" style="display: flex; align-items: center; gap: 1rem; padding: 0.8rem 1rem; border: 1px dashed #dadce0; border-radius: 8px; cursor: pointer; transition: background 0.2s ease;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">
+                    <div style="width: 40px; height: 40px; border-radius: 50%; background: #f1f3f4; color: #5f6368; display: flex; align-items: center; justify-content: center;"><i class="fa-solid fa-user-plus"></i></div>
+                    <div style="font-weight: 600; font-size: 0.9rem; color: #1a73e8;">Usar otra cuenta de Google</div>
+                </div>
+            </div>
+
+            <div style="font-size: 0.75rem; color: #70757a; text-align: center; line-height: 1.4;">
+                Para continuar, Google compartirá tu nombre, dirección de correo electrónico y foto de perfil con RentMeUskar.
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Selección de Cuenta Apple SSO -->
+    <div class="custom-modal-backdrop" id="apple-auth-modal" style="display: none;">
+        <div class="custom-modal-card" style="max-width: 420px; background: #000000; color: #ffffff; border-radius: 12px; padding: 2rem; border: 1px solid rgba(255,255,255,0.2); box-shadow: 0 10px 30px rgba(0,0,0,0.6);">
+            <span class="custom-modal-close" onclick="closeAuthModal('apple-auth-modal')" style="color: #aaaaaa;">&times;</span>
+            
+            <div style="text-align: center; margin-bottom: 1.5rem;">
+                <i class="fa-brands fa-apple" style="font-size: 2.5rem; color: #ffffff; margin-bottom: 0.5rem; display: block;"></i>
+                <h3 style="font-size: 1.3rem; font-weight: 700; color: #ffffff; margin: 0;">Iniciar sesión con Apple ID</h3>
+                <p style="font-size: 0.85rem; color: #aaaaaa; margin-top: 0.25rem;">Usa tu Apple ID / iCloud para acceder a RentMeUskar</p>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1.5rem;">
+                <div onclick="confirmAppleAccount('yesas12345678@icloud.com', 'Usuario Apple')" style="display: flex; align-items: center; gap: 1rem; padding: 0.8rem 1rem; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; cursor: pointer; transition: background 0.2s ease;" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='transparent'">
+                    <div style="width: 40px; height: 40px; border-radius: 50%; background: #ffffff; color: #000; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.1rem;"><i class="fa-brands fa-apple"></i></div>
+                    <div style="flex: 1;">
+                        <div style="font-weight: 600; font-size: 0.95rem; color: #ffffff;">Apple ID Principal</div>
+                        <div style="font-size: 0.8rem; color: #aaaaaa;">yesas12345678@icloud.com</div>
+                    </div>
+                    <i class="fa-solid fa-chevron-right" style="color: #aaaaaa; font-size: 0.8rem;"></i>
+                </div>
+            </div>
+
+            <div style="font-size: 0.75rem; color: #aaaaaa; text-align: center; line-height: 1.4;">
+                Con la función de Ocultar mi correo electrónico de Apple, tu información personal se mantiene segura y privada.
             </div>
         </div>
     </div>
@@ -917,7 +1109,7 @@
                 <h2 id="client-panel-title">Mi Área de Cliente</h2>
                 <p>Historial de reservas, contratos y facturas.</p>
             </div>
-            
+
             <div class="client-bookings-area">
                 <table class="client-table" id="client-bookings-table">
                     <thead>
@@ -934,15 +1126,19 @@
                     </thead>
                     <tbody id="client-bookings-tbody">
                         <tr>
-                            <td colspan="8" style="text-align: center; padding: 2rem;">No tienes reservas registradas.</td>
+                            <td colspan="8" style="text-align: center; padding: 2rem;">No tienes reservas registradas.
+                            </td>
                         </tr>
                     </tbody>
                 </table>
             </div>
-            
-            <div class="client-modal-actions" style="margin-top: 1.5rem; display: flex; justify-content: space-between; align-items: center;">
+
+            <div class="client-modal-actions"
+                style="margin-top: 1.5rem; display: flex; justify-content: space-between; align-items: center;">
                 <span id="client-user-info" style="font-size: 0.85rem; color: var(--text-secondary);"></span>
-                <button class="btn" id="btn-client-logout" style="border-color: var(--color-danger); color: var(--color-danger);"><i class="fa-solid fa-power-off"></i> Cerrar Sesión</button>
+                <button class="btn" id="btn-client-logout"
+                    style="border-color: var(--color-danger); color: var(--color-danger);"><i
+                        class="fa-solid fa-power-off"></i> Cerrar Sesión</button>
             </div>
         </div>
     </div>
@@ -952,20 +1148,30 @@
         <div class="custom-modal-card" style="max-width: 550px;">
             <span class="custom-modal-close" onclick="closeAuthModal('client-photos-modal')">&times;</span>
             <div class="custom-modal-header" style="text-align: left; margin-bottom: 1.5rem;">
-                <h2 style="font-family: var(--font-heading); color:#fff; font-size:1.3rem; margin-top:0; margin-bottom:0.3rem;"><i class="fa-solid fa-camera" style="color: var(--color-neon); margin-right: 0.3rem;"></i> Inspección del Vehículo</h2>
-                <p style="color: var(--text-secondary); font-size: 0.85rem; margin: 0;">Comprueba el estado de la furgoneta antes de la entrega y al devolverla.</p>
+                <h2
+                    style="font-family: var(--font-heading); color:#fff; font-size:1.3rem; margin-top:0; margin-bottom:0.3rem;">
+                    <i class="fa-solid fa-camera" style="color: var(--color-neon); margin-right: 0.3rem;"></i>
+                    Inspección del Vehículo</h2>
+                <p style="color: var(--text-secondary); font-size: 0.85rem; margin: 0;">Comprueba el estado de la
+                    furgoneta antes de la entrega y al devolverla.</p>
             </div>
-            
+
             <div style="margin-bottom: 1.5rem; text-align: left;">
-                <h3 style="font-size: 0.8rem; text-transform: uppercase; color: #fff; margin-bottom: 0.5rem; font-weight: 700; letter-spacing: 0.05em;">Antes de la Entrega</h3>
-                <div id="client-photos-before-container" style="display: flex; flex-wrap: wrap; gap: 8px; padding: 10px; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; min-height: 50px;">
+                <h3
+                    style="font-size: 0.8rem; text-transform: uppercase; color: #fff; margin-bottom: 0.5rem; font-weight: 700; letter-spacing: 0.05em;">
+                    Antes de la Entrega</h3>
+                <div id="client-photos-before-container"
+                    style="display: flex; flex-wrap: wrap; gap: 8px; padding: 10px; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; min-height: 50px;">
                     <!-- Inyectado por JS -->
                 </div>
             </div>
-            
+
             <div style="margin-bottom: 1rem; text-align: left;">
-                <h3 style="font-size: 0.8rem; text-transform: uppercase; color: #fff; margin-bottom: 0.5rem; font-weight: 700; letter-spacing: 0.05em;">Al Devolver</h3>
-                <div id="client-photos-after-container" style="display: flex; flex-wrap: wrap; gap: 8px; padding: 10px; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; min-height: 50px;">
+                <h3
+                    style="font-size: 0.8rem; text-transform: uppercase; color: #fff; margin-bottom: 0.5rem; font-weight: 700; letter-spacing: 0.05em;">
+                    Al Devolver</h3>
+                <div id="client-photos-after-container"
+                    style="display: flex; flex-wrap: wrap; gap: 8px; padding: 10px; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; min-height: 50px;">
                     <!-- Inyectado por JS -->
                 </div>
             </div>
@@ -1001,29 +1207,40 @@
 
                 <form id="tpv-form">
                     <div class="custom-form-group" style="margin-bottom: 1.25rem;">
-                        <label style="display: block; font-weight: 700; margin-bottom: 0.5rem; color: #ffffff;">Selecciona el Método de Pago:</label>
+                        <label
+                            style="display: block; font-weight: 700; margin-bottom: 0.5rem; color: #ffffff;">Selecciona
+                            el Método de Pago:</label>
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem;">
-                            <label class="payment-option-card" style="background: rgba(255,255,255,0.05); border: 2px solid var(--color-neon); border-radius: 8px; padding: 1rem 0.8rem; text-align: center; cursor: pointer; transition: all 0.2s ease;">
-                                <input type="radio" name="pay_method" value="card" checked style="margin-right: 0.4rem;">
-                                <i class="fa-solid fa-credit-card" style="font-size: 1.2rem; color: #ffffff; display: block; margin-bottom: 0.3rem;"></i>
+                            <label class="payment-option-card"
+                                style="background: rgba(255,255,255,0.05); border: 2px solid var(--color-neon); border-radius: 8px; padding: 1rem 0.8rem; text-align: center; cursor: pointer; transition: all 0.2s ease;">
+                                <input type="radio" name="pay_method" value="card" checked
+                                    style="margin-right: 0.4rem;">
+                                <i class="fa-solid fa-credit-card"
+                                    style="font-size: 1.2rem; color: #ffffff; display: block; margin-bottom: 0.3rem;"></i>
                                 <strong style="font-size: 0.85rem; color: #ffffff;">Tarjeta</strong>
                             </label>
-                            <label class="payment-option-card" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 1rem 0.8rem; text-align: center; cursor: pointer; transition: all 0.2s ease;">
+                            <label class="payment-option-card"
+                                style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 1rem 0.8rem; text-align: center; cursor: pointer; transition: all 0.2s ease;">
                                 <input type="radio" name="pay_method" value="bizum" style="margin-right: 0.4rem;">
-                                <i class="fa-solid fa-mobile-screen-button" style="font-size: 1.2rem; color: #00a896; display: block; margin-bottom: 0.3rem;"></i>
+                                <i class="fa-solid fa-mobile-screen-button"
+                                    style="font-size: 1.2rem; color: #00a896; display: block; margin-bottom: 0.3rem;"></i>
                                 <strong style="font-size: 0.85rem; color: #ffffff;">Bizum</strong>
                             </label>
                         </div>
                     </div>
 
-                    <div style="background: rgba(255, 193, 7, 0.1); border: 1px dashed rgba(255, 193, 7, 0.4); padding: 0.8rem 1rem; border-radius: 8px; margin-bottom: 1.2rem; font-size: 0.8rem; color: #ffc107; line-height: 1.4;">
-                        <i class="fa-solid fa-flask"></i> <strong>Modo Pruebas Activado:</strong> Serás redirigido a la pasarela oficial de CaixaBank Redsys en entorno de test sin dinero real.
+                    <div
+                        style="background: rgba(255, 193, 7, 0.1); border: 1px dashed rgba(255, 193, 7, 0.4); padding: 0.8rem 1rem; border-radius: 8px; margin-bottom: 1.2rem; font-size: 0.8rem; color: #ffc107; line-height: 1.4;">
+                        <i class="fa-solid fa-flask"></i> <strong>Modo Pruebas Activado:</strong> Serás redirigido a la
+                        pasarela oficial de CaixaBank Redsys en entorno de test sin dinero real.
                     </div>
 
-                    <button type="submit" class="btn btn-block" id="tpv-submit-btn" style="background: #007bff; border-color: #007bff; color: #fff; padding: 0.9rem; font-weight: 700;">
+                    <button type="submit" class="btn btn-block" id="tpv-submit-btn"
+                        style="background: #007bff; border-color: #007bff; color: #fff; padding: 0.9rem; font-weight: 700;">
                         <i class="fa-solid fa-lock"></i> Ir a Pasarela Segura CaixaBank
                     </button>
-                    <button type="button" class="btn btn-block" onclick="cancelTpvPayment()" style="margin-top: 0.5rem; background: transparent; border-color: rgba(255,255,255,0.1); color: var(--text-secondary);">
+                    <button type="button" class="btn btn-block" onclick="cancelTpvPayment()"
+                        style="margin-top: 0.5rem; background: transparent; border-color: rgba(255,255,255,0.1); color: var(--text-secondary);">
                         Cancelar Transacción
                     </button>
                 </form>
@@ -1063,7 +1280,7 @@
             max-height: calc(100vh - 3rem);
             overflow-y: auto;
             padding: 2rem;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
             position: relative;
             margin: auto;
             animation: modalFadeIn 0.3s ease;
@@ -1074,8 +1291,15 @@
         }
 
         @keyframes modalFadeIn {
-            from { transform: scale(0.95); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
+            from {
+                transform: scale(0.95);
+                opacity: 0;
+            }
+
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
         }
 
         .custom-modal-close {
@@ -1163,11 +1387,12 @@
             padding: 0;
             overflow: hidden;
             border-radius: 12px;
-            box-shadow: 0 15px 30px rgba(0,0,0,0.5);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.5);
         }
 
         .tpv-header {
-            background: #007bff; /* CaixaBank Blue representation */
+            background: #007bff;
+            /* CaixaBank Blue representation */
             color: #fff;
             padding: 1.2rem 1.5rem;
             display: flex;
@@ -1182,7 +1407,8 @@
         }
 
         .tpv-star {
-            color: #f7b32b; /* yellow star */
+            color: #f7b32b;
+            /* yellow star */
             font-size: 1.3rem;
         }
 
@@ -1194,7 +1420,7 @@
 
         .tpv-header-title {
             font-size: 0.8rem;
-            background: rgba(255,255,255,0.15);
+            background: rgba(255, 255, 255, 0.15);
             padding: 0.25rem 0.5rem;
             border-radius: 4px;
         }
@@ -1257,7 +1483,7 @@
             overflow-x: auto;
             max-height: 400px;
             margin-top: 1rem;
-            border: 1px solid rgba(255,255,255,0.05);
+            border: 1px solid rgba(255, 255, 255, 0.05);
             border-radius: 8px;
         }
 
@@ -1272,23 +1498,23 @@
             background: rgba(7, 14, 36, 0.4);
             padding: 0.8rem 1rem;
             color: var(--text-secondary);
-            border-bottom: 1px solid rgba(255,255,255,0.08);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
             font-weight: 600;
         }
 
         .client-table td {
             padding: 0.8rem 1rem;
-            border-bottom: 1px solid rgba(255,255,255,0.03);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
             color: var(--text-primary);
         }
 
         .client-table tbody tr:hover {
-            background: rgba(255,255,255,0.02);
+            background: rgba(255, 255, 255, 0.02);
         }
 
         .client-doc-btn {
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             color: var(--text-primary);
             padding: 0.25rem 0.5rem;
             border-radius: 4px;
@@ -1324,4 +1550,56 @@
     <!-- Custom Script -->
     <script src="app.js?v=2.1"></script>
 </body>
+
+</html>
+
+.client-table td {
+padding: 0.8rem 1rem;
+border-bottom: 1px solid rgba(255,255,255,0.03);
+color: var(--text-primary);
+}
+
+.client-table tbody tr:hover {
+background: rgba(255,255,255,0.02);
+}
+
+.client-doc-btn {
+background: rgba(255,255,255,0.05);
+border: 1px solid rgba(255,255,255,0.1);
+color: var(--text-primary);
+padding: 0.25rem 0.5rem;
+border-radius: 4px;
+font-size: 0.75rem;
+cursor: pointer;
+display: inline-flex;
+align-items: center;
+gap: 0.2rem;
+transition: all 0.2s ease;
+}
+
+.client-doc-btn:hover {
+background: var(--color-neon);
+border-color: var(--color-neon);
+color: #000;
+}
+
+/* Estilo personalizado para días no disponibles (deshabilitados) en el calendario */
+.flatpickr-day.flatpickr-disabled,
+.flatpickr-day.flatpickr-disabled:hover {
+color: #ff4d6d !important;
+background: rgba(255, 77, 109, 0.15) !important;
+text-decoration: line-through;
+cursor: not-allowed;
+border-color: transparent !important;
+}
+</style>
+
+<!-- Flatpickr JS -->
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
+
+<!-- Custom Script -->
+<script src="app.js?v=2.1"></script>
+</body>
+
 </html>

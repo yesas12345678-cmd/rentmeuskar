@@ -4,7 +4,7 @@
  */
 
 const initApp = () => {
-    
+
     // CONFIGURACIÓN CENTRALIZADA
     const CONFIG = {
         whatsappNumber: '34614767411', // Teléfono del propietario con prefijo de España
@@ -26,22 +26,22 @@ const initApp = () => {
     const navbar = document.getElementById('navbar');
     const navLinks = document.querySelectorAll('.nav-link');
     const selectVanBtns = document.querySelectorAll('.select-van-btn');
-    
+
     // Elementos de la Calculadora
     const calcForm = document.getElementById('booking-calculator-form');
     const vanSelect = document.getElementById('calc-van-select');
-    
+
     // Modalidades
     const modeSin = document.getElementById('mode-sin-conductor');
     const modeCon = document.getElementById('mode-con-conductor');
     const labelModeSin = document.getElementById('label-mode-sin');
     const labelModeCon = document.getElementById('label-mode-con');
-    
+
     // Contenedores condicionales
     const conConductorFields = document.getElementById('calc-con-conductor-fields');
     const extrasSection = document.getElementById('calc-extras-section');
     const fianzaNote = document.getElementById('calc-fianza-note');
-    
+
     // Parámetros Con Conductor
     const kmsEstimate = document.getElementById('calc-kms-estimate');
     const waitHours = document.getElementById('calc-wait-hours');
@@ -54,7 +54,7 @@ const initApp = () => {
     const vanSpecsContainer = document.getElementById('calc-van-specs-container');
     const fleetGridContainer = document.getElementById('fleet-grid-container');
     const clientName = document.getElementById('calc-name');
-    
+
     // Resumen de la Calculadora
     const summaryDays = document.getElementById('summary-days');
     const summaryBasePrice = document.getElementById('summary-base-price');
@@ -86,7 +86,7 @@ const initApp = () => {
     /* ==========================================================================
        1. NAVEGACIÓN Y EFECTOS HEADER
        ========================================================================== */
-    
+
     // Cambiar estilo de la cabecera al hacer scroll
     const checkScroll = () => {
         if (window.scrollY > 50) {
@@ -95,7 +95,7 @@ const initApp = () => {
             header.classList.remove('scrolled');
         }
     };
-    
+
     window.addEventListener('scroll', checkScroll);
     checkScroll(); // Ejecutar al cargar
 
@@ -114,14 +114,14 @@ const initApp = () => {
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
         anchor.addEventListener('click', function (e) {
             const targetId = this.getAttribute('href');
-            
+
             // Evitar interceptar si apunta a modales o acciones JS específicas
             if (targetId.includes('modal') || this.hasAttribute('data-toggle') || this.classList.contains('custom-modal-close') || this.id.includes('login') || this.id.includes('register')) {
                 return;
             }
-            
+
             e.preventDefault();
-            
+
             if (targetId === '#') {
                 window.scrollTo({
                     top: 0,
@@ -130,28 +130,28 @@ const initApp = () => {
                 history.replaceState(null, null, window.location.pathname);
                 return;
             }
-            
+
             const targetElement = document.querySelector(targetId);
             if (targetElement) {
                 const headerOffset = 100; // Compensar la cabecera fija
                 const elementPosition = targetElement.getBoundingClientRect().top;
                 const offsetPosition = elementPosition + window.scrollY - headerOffset;
-                
+
                 window.scrollTo({
                     top: offsetPosition,
                     behavior: 'smooth'
                 });
-                
+
                 // Actualizar clase activa del enlace en el menú
                 if (this.classList.contains('nav-link')) {
                     navLinks.forEach(l => l.classList.remove('active'));
                     this.classList.add('active');
                 }
-                
+
                 // Cerrar menú móvil
                 mobileMenuToggle.classList.remove('active');
                 navbar.classList.remove('active');
-                
+
                 // Limpiar la URL de hashes para que quede limpia
                 history.replaceState(null, null, window.location.pathname);
             }
@@ -160,8 +160,8 @@ const initApp = () => {
 
     // Cerrar menú móvil al hacer clic fuera del mismo
     document.addEventListener('click', (e) => {
-        if (navbar.classList.contains('active') && 
-            !navbar.contains(e.target) && 
+        if (navbar.classList.contains('active') &&
+            !navbar.contains(e.target) &&
             !mobileMenuToggle.contains(e.target)) {
             mobileMenuToggle.classList.remove('active');
             navbar.classList.remove('active');
@@ -170,15 +170,15 @@ const initApp = () => {
 
     // Resaltar sección activa en el menú de navegación según el scroll
     const sections = document.querySelectorAll('section[id]');
-    
+
     const highlightNavOnScroll = () => {
         const scrollY = window.scrollY;
-        
+
         sections.forEach(current => {
             const sectionHeight = current.offsetHeight;
             const sectionTop = current.offsetTop - 140; // Compensar altura del header
             const sectionId = current.getAttribute('id');
-            
+
             if (scrollY > sectionTop && scrollY <= sectionTop + sectionHeight) {
                 document.querySelector(`.nav-link[href*=${sectionId}]`)?.classList.add('active');
             } else {
@@ -186,7 +186,7 @@ const initApp = () => {
             }
         });
     };
-    
+
     window.addEventListener('scroll', highlightNavOnScroll);
 
     /* ==========================================================================
@@ -194,7 +194,7 @@ const initApp = () => {
        ========================================================================== */
     document.documentElement.classList.add('js');
     const revealElements = document.querySelectorAll('.reveal');
-    
+
     const revealObserver = new IntersectionObserver((entries, observer) => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
@@ -232,22 +232,22 @@ const initApp = () => {
     /* ==========================================================================
        3. INTEGRACIÓN DE FLATPICKR (CALENDARIO DE DISPONIBILIDAD)
        ========================================================================== */
-    
+
     const initFlatpickr = () => {
         if (typeof flatpickr === 'undefined') {
             console.warn('Flatpickr no está cargado. Se usarán selectores de fecha nativos.');
             const startEl = document.getElementById('calc-date-start');
             const endEl = document.getElementById('calc-date-end');
-            
+
             if (startEl && endEl) {
                 startEl.type = 'date';
                 endEl.type = 'date';
-                
+
                 const todayStr = new Date().toISOString().split('T')[0];
                 startEl.min = todayStr;
                 endEl.min = todayStr;
-                
-                startEl.addEventListener('change', function() {
+
+                startEl.addEventListener('change', function () {
                     endEl.min = this.value;
                     calculatePrice();
                 });
@@ -261,7 +261,7 @@ const initApp = () => {
             minDate: "today",
             dateFormat: "Y-m-d",
             disableMobile: true,
-            onChange: function(selectedDates, dateStr, instance) {
+            onChange: function (selectedDates, dateStr, instance) {
                 if (pickerEnd) pickerEnd.set("minDate", dateStr);
                 calculatePrice();
             }
@@ -272,7 +272,7 @@ const initApp = () => {
             minDate: "today",
             dateFormat: "Y-m-d",
             disableMobile: true,
-            onChange: function(selectedDates, dateStr, instance) {
+            onChange: function (selectedDates, dateStr, instance) {
                 calculatePrice();
             }
         });
@@ -285,10 +285,10 @@ const initApp = () => {
         if (!dynamicExtrasContainer) return;
         const vanType = vanSelect.value;
         if (!vanType) return;
-        
+
         const van = databaseVans.find(v => v.van_type === vanType);
         if (!van) return;
-        
+
         let extras = van.custom_extras;
         if (!Array.isArray(extras) || extras.length === 0) {
             extras = [
@@ -297,13 +297,13 @@ const initApp = () => {
                 { name: 'Kit Mudanza', price: 10.00, type: 'once' }
             ];
         }
-        
+
         dynamicExtrasContainer.innerHTML = '';
         extras.forEach((extra, index) => {
             const label = document.createElement('label');
             label.className = 'extra-checkbox-card';
             label.id = `card-dynamic-extra-${index}`;
-            
+
             let icon = 'fa-circle-plus';
             const nameLower = extra.name.toLowerCase();
             if (nameLower.includes('gps') || nameLower.includes('navegador') || nameLower.includes('mapa')) {
@@ -317,9 +317,9 @@ const initApp = () => {
             } else if (nameLower.includes('cadenas') || nameLower.includes('nieve')) {
                 icon = 'fa-snowflake';
             }
-            
+
             const priceText = extra.type === 'daily' ? `+${parseFloat(extra.price).toFixed(2)}€ / día` : `+${parseFloat(extra.price).toFixed(2)}€ total`;
-            
+
             label.innerHTML = `
                 <input type="checkbox" class="calc-dynamic-extra-checkbox" data-index="${index}" data-price="${extra.price}" data-type="${extra.type}" data-name="${extra.name}">
                 <div class="extra-content">
@@ -328,8 +328,8 @@ const initApp = () => {
                     <span class="extra-price">${priceText}</span>
                 </div>
             `;
-            
-            label.querySelector('input').addEventListener('change', function() {
+
+            label.querySelector('input').addEventListener('change', function () {
                 if (this.checked) {
                     label.classList.add('active');
                     label.style.borderColor = 'var(--color-neon)';
@@ -341,7 +341,7 @@ const initApp = () => {
                 }
                 calculatePrice();
             });
-            
+
             dynamicExtrasContainer.appendChild(label);
         });
     };
@@ -447,7 +447,7 @@ const initApp = () => {
                 const rawVans = await response.json();
                 const deletedIds = JSON.parse(localStorage.getItem('deleted_van_ids') || '[]');
                 databaseVans = rawVans.filter(v => !deletedIds.includes(String(v.id)) && !deletedIds.includes(Number(v.id)) && !deletedIds.includes(v.van_type));
-                
+
                 // Repoblar el selector calc-van-select
                 const selectedVal = vanSelect.value;
                 vanSelect.innerHTML = '<option value="" disabled selected>-- Elige un modelo --</option>';
@@ -458,7 +458,7 @@ const initApp = () => {
                     opt.textContent = `${van.name} - ${parseFloat(van.price_sin).toFixed(2).replace('.', ',')}€ + IVA / día`;
                     vanSelect.appendChild(opt);
                 });
-                
+
                 if (selectedVal && databaseVans.some(v => v.van_type === selectedVal)) {
                     vanSelect.value = selectedVal;
                     renderVanSpecs();
@@ -468,21 +468,21 @@ const initApp = () => {
                 if (fleetGridContainer) {
                     fleetGridContainer.innerHTML = '';
                     const activeVans = databaseVans.filter(v => v.status === 'active');
-                    
+
                     activeVans.forEach((van, index) => {
                         const article = document.createElement('article');
                         article.className = `van-card reveal${index > 0 ? ' delay-' + index : ''}`;
                         article.id = `card-van-${van.van_type}`;
                         article.style.cursor = 'pointer';
-                        
+
                         const mainImg = (van.images && van.images.length > 0) ? van.images[0] : 'assets/ford_transit_custom.png';
-                        
+
                         let tag = 'Furgoneta';
                         let desc = 'Capacidad de carga y comodidad';
                         let specPayload = '1.000 kg';
                         let specPlazas = '3 plazas';
                         let specExtra = 'Puerta lateral corredera';
-                        
+
                         if (van.van_type === 'medium') {
                             tag = 'Más Popular';
                             desc = 'Capacidad de carga mediana y ágil';
@@ -517,7 +517,7 @@ const initApp = () => {
                                 specExtra = 'Fácil conducción';
                             }
                         }
-                        
+
                         article.innerHTML = `
                             <div class="van-image-container" style="position: relative;">
                                 <img src="${mainImg}" alt="${van.name}" class="van-image" id="img-van-${van.van_type}">
@@ -542,13 +542,13 @@ const initApp = () => {
                                 </div>
                             </div>
                         `;
-                        
+
                         // Clicar en la tarjeta abre el detalle ampliado
                         article.addEventListener('click', (e) => {
                             if (e.target.closest('.select-van-btn')) return;
                             openVanDetailsModal(van.van_type);
                         });
-                        
+
                         // Clicar en el botón Seleccionar rellena el simulador
                         const selectBtn = article.querySelector('.select-van-btn');
                         if (selectBtn) {
@@ -560,20 +560,20 @@ const initApp = () => {
                                 renderVanSpecs();
                                 updateCalendarAvailability();
                                 calculatePrice();
-                                
+
                                 const calcSection = document.getElementById('calculadora');
                                 if (calcSection) {
                                     calcSection.scrollIntoView({ behavior: 'smooth' });
                                 }
                             });
                         }
-                        
+
                         fleetGridContainer.appendChild(article);
                         if (typeof revealObserver !== 'undefined' && revealObserver) {
                             revealObserver.observe(article);
                         }
                     });
-                    
+
                     // Asegurar que se revelan si ya están en pantalla
                     checkRevealFallback();
                 }
@@ -647,7 +647,7 @@ const initApp = () => {
                         }
                     }
                 });
-                
+
                 renderDynamicExtras();
             } else {
                 console.error('Error al descargar catálogo de furgonetas.');
@@ -661,16 +661,20 @@ const initApp = () => {
 
     const useStaticVansFallback = () => {
         databaseVans = [
-            { van_type: 'medium', name: 'Ford Transit Custom L2H2 (8m³)', plate: '3681 MCC', m3: '8m³', price_sin: 79.00, min_price_con: 50.00, km_price_con: 1.00, custom_extras: [
-                { name: 'GPS Navegador', price: 5.00, type: 'daily' },
-                { name: 'Segundo Conductor', price: 8.00, type: 'daily' },
-                { name: 'Kit Mudanza', price: 10.00, type: 'once' }
-            ]},
-            { van_type: 'large', name: 'MAN TGE L4H3 Gran Volumen (14m³)', plate: '3758 MDW', m3: '14m³', price_sin: 107.44, min_price_con: 60.00, km_price_con: 1.40, custom_extras: [
-                { name: 'GPS Navegador', price: 5.00, type: 'daily' },
-                { name: 'Segundo Conductor', price: 8.00, type: 'daily' },
-                { name: 'Kit Mudanza', price: 10.00, type: 'once' }
-            ]}
+            {
+                van_type: 'medium', name: 'Ford Transit Custom L2H2 (8m³)', plate: '3681 MCC', m3: '8m³', price_sin: 79.00, min_price_con: 50.00, km_price_con: 1.00, custom_extras: [
+                    { name: 'GPS Navegador', price: 5.00, type: 'daily' },
+                    { name: 'Segundo Conductor', price: 8.00, type: 'daily' },
+                    { name: 'Kit Mudanza', price: 10.00, type: 'once' }
+                ]
+            },
+            {
+                van_type: 'large', name: 'MAN TGE L4H3 Gran Volumen (14m³)', plate: '3758 MDW', m3: '14m³', price_sin: 107.44, min_price_con: 60.00, km_price_con: 1.40, custom_extras: [
+                    { name: 'GPS Navegador', price: 5.00, type: 'daily' },
+                    { name: 'Segundo Conductor', price: 8.00, type: 'daily' },
+                    { name: 'Kit Mudanza', price: 10.00, type: 'once' }
+                ]
+            }
         ];
     };
 
@@ -681,28 +685,28 @@ const initApp = () => {
         const vanType = vanSelect.value;
         const modeInput = document.querySelector('input[name="rental-mode"]:checked');
         const mode = modeInput ? modeInput.value : 'sin';
-        
+
         if (!vanType) return;
         if (typeof flatpickr === 'undefined' || !pickerStart || !pickerEnd) return;
-        
+
         if (mode === 'con') {
             // Con conductor no tiene bloqueo de fechas reservadas
             pickerStart.set('disable', []);
             pickerEnd.set('disable', []);
             return;
         }
-        
+
         try {
             const response = await fetch(`/api/bookings/unavailable-dates?van_type=${vanType}`);
             if (response.ok) {
                 const ranges = await response.json();
-                
+
                 // Mapear al formato esperado por Flatpickr: [{from: 'YYYY-MM-DD', to: 'YYYY-MM-DD'}]
                 const disableDates = ranges.map(range => ({
                     from: range.from,
                     to: range.to
                 }));
-                
+
                 pickerStart.set('disable', disableDates);
                 pickerEnd.set('disable', disableDates);
             }
@@ -716,12 +720,12 @@ const initApp = () => {
     /* ==========================================================================
        4. LÓGICA DE LA CALCULADORA DE PRESUPUESTO
        ========================================================================== */
-    
+
     const calculatePrice = () => {
         const vanType = vanSelect.value;
         const modeInput = document.querySelector('input[name="rental-mode"]:checked');
         const mode = modeInput ? modeInput.value : 'sin';
-        
+
         // Si no hay furgoneta seleccionada, poner valores a cero
         if (!vanType) {
             summaryDays.textContent = '0 días';
@@ -736,7 +740,7 @@ const initApp = () => {
             conConductorFields.style.display = 'none';
             extrasSection.style.display = 'block';
             fianzaNote.style.display = 'block';
-            
+
             // Labels de Sin Conductor
             document.getElementById('summary-days-label').textContent = 'Días de alquiler:';
             document.querySelector('.price-summary-box .summary-row:nth-child(2) span:first-child').textContent = 'Subtotal Base (excl. IVA):';
@@ -745,7 +749,7 @@ const initApp = () => {
             conConductorFields.style.display = 'block';
             extrasSection.style.display = 'none';
             fianzaNote.style.display = 'none';
-            
+
             // Labels de Con Conductor
             document.getElementById('summary-days-label').textContent = 'Estimación:';
             document.querySelector('.price-summary-box .summary-row:nth-child(2) span:first-child').textContent = 'Subtotal Base (excl. IVA):';
@@ -775,7 +779,7 @@ const initApp = () => {
                 summaryBasePrice.textContent = 'A consultar';
                 summaryExtrasPrice.textContent = 'A consultar';
                 summaryTotalPrice.textContent = 'A consultar';
-                
+
                 const submitBtn = document.getElementById('btn-submit-booking');
                 if (submitBtn) submitBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Reservar por WhatsApp (Larga Duración)';
                 return;
@@ -783,7 +787,7 @@ const initApp = () => {
 
             const baseDailyRate = van ? parseFloat(van.price_sin) : (vanType === 'medium' ? 79.00 : 107.44);
             let totalBase = baseDailyRate * days;
-            
+
             // Descuento del 5% a partir de 3 días (máximo 1 semana)
             if (days >= 3 && days <= 7) {
                 totalBase = totalBase * 0.95;
@@ -811,18 +815,18 @@ const initApp = () => {
             // CON CONDUCTOR
             const baseMinRate = van ? parseFloat(van.min_price_con) : (vanType === 'medium' ? 50.00 : 60.00);
             const kmRate = van ? parseFloat(van.km_price_con) : (vanType === 'medium' ? 1.00 : 1.40);
-            
+
             const kms = parseInt(kmsEstimate.value) || 20;
             const wait = parseFloat(waitHours.value) || 0;
-            
+
             let extraKmCost = 0;
             if (kms > 20) {
                 extraKmCost = (kms - 20) * kmRate;
             }
-            
+
             const waitingRate = van && van.waiting_hour_price !== undefined ? parseFloat(van.waiting_hour_price) : 30.00;
             const waitCost = wait * waitingRate;
-            
+
             baseTaxable = baseMinRate + extraKmCost + waitCost;
             vatAmount = baseTaxable * 0.21;
             totalEstimated = baseTaxable + vatAmount;
@@ -876,7 +880,7 @@ const initApp = () => {
             labelModeSin.querySelector('i').style.color = 'var(--text-secondary)';
             labelModeSin.querySelector('span').style.color = 'var(--text-secondary)';
         }
-        
+
         updateCalendarAvailability();
         renderVanSpecs();
         calculatePrice();
@@ -898,7 +902,7 @@ const initApp = () => {
             handleModeChange();
         }
     });
-    
+
     // Inputs de con conductor
     kmsEstimate.addEventListener('input', calculatePrice);
     waitHours.addEventListener('input', calculatePrice);
@@ -921,29 +925,29 @@ const initApp = () => {
         btn.addEventListener('click', (e) => {
             e.preventDefault();
             const vanType = btn.getAttribute('data-van');
-            
+
             // Seleccionar en el dropdown
             vanSelect.value = vanType;
             renderDynamicExtras();
             renderVanSpecs();
-            
+
             // Actualizar disponibilidad del calendario para esa furgoneta
             updateCalendarAvailability();
-            
+
             // Recalcular
             calculatePrice();
-            
+
             // Hacer scroll hasta el formulario
             const targetSection = document.getElementById('calculadora');
             const headerOffset = 110;
             const elementPosition = targetSection.getBoundingClientRect().top;
             const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
-            
+
             window.scrollTo({
                 top: offsetPosition,
                 behavior: 'smooth'
             });
-            
+
             // Enfocar el selector
             vanSelect.focus();
         });
@@ -952,16 +956,16 @@ const initApp = () => {
     /* ==========================================================================
        6. SISTEMA DE AUTENTICACIÓN DEL CLIENTE (MODALES)
        ========================================================================== */
-    
+
     // Funciones globales de modales
     window.openAuthModal = (modalId) => {
         document.getElementById(modalId).style.display = 'flex';
     };
-    
+
     window.closeAuthModal = (modalId) => {
         document.getElementById(modalId).style.display = 'none';
     };
-    
+
     window.switchAuthModal = (closeId, openId) => {
         window.closeAuthModal(closeId);
         window.openAuthModal(openId);
@@ -989,7 +993,7 @@ const initApp = () => {
     const updateAuthUI = async () => {
         const token = localStorage.getItem('user_token');
         const authSection = document.getElementById('user-auth-section');
-        
+
         if (!token) {
             authSection.innerHTML = `
                 <button class="btn btn-secondary btn-sm" onclick="openAuthModal('login-modal')" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">
@@ -998,7 +1002,7 @@ const initApp = () => {
             `;
             return;
         }
-        
+
         try {
             const res = await fetch('/api/auth/me', {
                 headers: { 'Authorization': `Bearer ${token}` }
@@ -1010,7 +1014,7 @@ const initApp = () => {
                         <i class="fa-solid fa-user-circle"></i> Mi Panel (${user.name.split(' ')[0]})
                     </button>
                 `;
-                
+
                 if (!clientName.value) {
                     clientName.value = user.name;
                 }
@@ -1033,7 +1037,7 @@ const initApp = () => {
         e.preventDefault();
         const email = document.getElementById('login-email').value;
         const password = document.getElementById('login-password').value;
-        
+
         try {
             const res = await fetch('/api/auth/login', {
                 method: 'POST',
@@ -1047,7 +1051,7 @@ const initApp = () => {
                     window.location.href = 'admin.html';
                     return;
                 }
-                
+
                 localStorage.setItem('user_token', data.token);
                 if (data.user) {
                     localStorage.setItem('user_profile', JSON.stringify(data.user));
@@ -1077,12 +1081,12 @@ const initApp = () => {
         const phone = document.getElementById('reg-phone').value;
         const dni = document.getElementById('reg-dni').value;
         const password = document.getElementById('reg-password').value;
-        
+
         if (password.length < 6) {
             alert('La contraseña debe tener al menos 6 caracteres.');
             return;
         }
-        
+
         try {
             const res = await fetch('/api/auth/register', {
                 method: 'POST',
@@ -1112,83 +1116,6 @@ const initApp = () => {
         }
     });
 
-    // Formulario ¿Olvidaste tu contraseña?
-    const forgotForm = document.getElementById('forgot-password-form');
-    if (forgotForm) {
-        forgotForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const emailInput = document.getElementById('forgot-email');
-            const email = emailInput ? emailInput.value : '';
-            const submitBtn = document.getElementById('btn-forgot-submit');
-            const originalBtn = submitBtn ? submitBtn.innerHTML : 'Enviar';
-
-            if (submitBtn) {
-                submitBtn.disabled = true;
-                submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Enviando correo...';
-            }
-
-            try {
-                const res = await fetch('/api/auth/forgot-password', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email })
-                });
-                const data = await res.json();
-                
-                showAppToast('Correo de confirmación enviado a ' + email, 'success');
-                window.switchAuthModal('forgot-password-modal', 'reset-password-modal');
-                if (data.code) {
-                    const codeInput = document.getElementById('reset-code');
-                    if (codeInput) codeInput.value = data.code;
-                }
-            } catch (err) {
-                console.warn('Envío local fallback forgot-password:', err);
-                showAppToast('Correo de confirmación enviado a ' + email, 'success');
-                window.switchAuthModal('forgot-password-modal', 'reset-password-modal');
-            } finally {
-                if (submitBtn) {
-                    submitBtn.disabled = false;
-                    submitBtn.innerHTML = originalBtn;
-                }
-            }
-        });
-    }
-
-    // Formulario Restablecer Contraseña
-    const resetForm = document.getElementById('reset-password-form');
-    if (resetForm) {
-        resetForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const code = document.getElementById('reset-code').value;
-            const newPassword = document.getElementById('reset-new-password').value;
-
-            if (newPassword.length < 6) {
-                alert('La contraseña debe tener al menos 6 caracteres.');
-                return;
-            }
-
-            try {
-                const res = await fetch('/api/auth/reset-password', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ code, newPassword })
-                });
-                const data = await res.json();
-
-                if (res.ok) {
-                    showAppToast('Contraseña restablecida con éxito. Inicia sesión.', 'success');
-                    window.switchAuthModal('reset-password-modal', 'login-modal');
-                } else {
-                    alert(data.error || 'Error al restablecer la contraseña.');
-                }
-            } catch (err) {
-                console.warn('Restablecimiento local fallback:', err);
-                showAppToast('Contraseña restablecida con éxito.', 'success');
-                window.switchAuthModal('reset-password-modal', 'login-modal');
-            }
-        });
-    }
-
     // Helper de notificaciones Toast elegantes para el cliente
     const showAppToast = (message, type = 'success') => {
         let toastBox = document.getElementById('app-toast-box');
@@ -1198,14 +1125,14 @@ const initApp = () => {
             toastBox.style.cssText = 'position:fixed;bottom:2rem;right:2rem;z-index:9999;display:flex;flex-direction:column;gap:0.5rem;';
             document.body.appendChild(toastBox);
         }
-        
+
         const toast = document.createElement('div');
         const bgColor = (type === 'success') ? '#0f224f' : '#3f0f1c';
         const borderColor = (type === 'success') ? 'var(--color-neon, #82d105)' : '#ef4444';
-        
+
         toast.style.cssText = `background:${bgColor};border:1px solid ${borderColor};color:#fff;padding:1rem 1.5rem;border-radius:8px;box-shadow:0 10px 25px rgba(0,0,0,0.5);font-size:0.9rem;font-weight:600;display:flex;align-items:center;gap:0.75rem;transition:all 0.3s ease;`;
         toast.innerHTML = `<i class="fa-solid ${type === 'success' ? 'fa-circle-check' : 'fa-circle-exclamation'}" style="color:${borderColor}"></i> <span>${message}</span>`;
-        
+
         toastBox.appendChild(toast);
         setTimeout(() => {
             toast.style.opacity = '0';
@@ -1213,126 +1140,88 @@ const initApp = () => {
         }, 3500);
     };
 
-    // 1-Click Social Login (Google & Apple OAuth Flow)
+    // 1-Click Social Login (Google & Apple Seamless SSO Flow)
     window.loginWithGoogle = () => {
-        // Inicializar Google Identity Services GSI si está disponible
-        if (window.google && window.google.accounts && window.google.accounts.id) {
-            try {
-                window.google.accounts.id.initialize({
-                    client_id: '123456789-rentmeuskar.apps.googleusercontent.com',
-                    callback: (response) => {
-                        const googleUser = {
-                            id: Date.now(),
-                            name: 'Usuario Google',
-                            email: 'cliente.google@gmail.com',
-                            phone: '614767411',
-                            dni: '00000000G',
-                            auth_provider: 'google'
-                        };
-                        localStorage.setItem('user_token', 'google_' + googleUser.id);
-                        localStorage.setItem('user_profile', JSON.stringify(googleUser));
-                        window.closeAuthModal('login-modal');
-                        window.closeAuthModal('register-modal');
-                        updateAuthUI();
-                        showAppToast('¡Sesión iniciada correctamente con tu cuenta de Google!', 'success');
-                    }
-                });
-                window.google.accounts.id.prompt();
-            } catch (err) {
-                console.warn('Google GSI SDK:', err);
-            }
-        }
-
-        // Ventana Popup OAuth de Google
-        const width = 500;
-        const height = 600;
-        const left = (window.screen.width / 2) - (width / 2);
-        const top = (window.screen.height / 2) - (height / 2);
-        
-        const googleAuthUrl = 'https://accounts.google.com/o/oauth2/v2/auth?client_id=rentmeuskar&redirect_uri=' + encodeURIComponent(window.location.origin) + '&response_type=token&scope=email%20profile';
-        
-        const popup = window.open(
-            googleAuthUrl,
-            'GoogleLoginPopup',
-            `width=${width},height=${height},top=${top},left=${left},scrollbars=yes,status=yes`
-        );
-
-        setTimeout(() => {
-            if (popup && !popup.closed) {
-                try { popup.close(); } catch(e) {}
-            }
-            const googleUser = {
-                id: Date.now(),
-                name: 'Cliente Google',
-                email: 'usuario.google@gmail.com',
-                phone: '614767411',
-                dni: '00000000G',
-                auth_provider: 'google'
-            };
-            localStorage.setItem('user_token', 'google_user_' + googleUser.id);
-            localStorage.setItem('user_profile', JSON.stringify(googleUser));
-            
-            window.closeAuthModal('login-modal');
-            window.closeAuthModal('register-modal');
-            updateAuthUI();
-            showAppToast('¡Sesión iniciada correctamente con tu cuenta de Google!', 'success');
-        }, 1000);
+        window.closeAuthModal('login-modal');
+        window.closeAuthModal('register-modal');
+        window.openAuthModal('google-auth-modal');
     };
 
     window.loginWithApple = () => {
-        const width = 500;
-        const height = 600;
-        const left = (window.screen.width / 2) - (width / 2);
-        const top = (window.screen.height / 2) - (height / 2);
+        window.closeAuthModal('login-modal');
+        window.closeAuthModal('register-modal');
+        window.openAuthModal('apple-auth-modal');
+    };
 
-        const appleAuthUrl = 'https://appleid.apple.com/auth/authorize?client_id=com.rentmeuskar.app&redirect_uri=' + encodeURIComponent(window.location.origin) + '&response_type=code&response_mode=popup';
+    window.confirmGoogleAccount = (email, name) => {
+        const cleanEmail = email || 'yesas12345678@gmail.com';
+        const cleanName = name || (cleanEmail.split('@')[0]);
         
-        const popup = window.open(
-            appleAuthUrl,
-            'AppleLoginPopup',
-            `width=${width},height=${height},top=${top},left=${left},scrollbars=yes,status=yes`
-        );
+        const googleUser = {
+            id: Date.now(),
+            name: cleanName,
+            email: cleanEmail,
+            phone: '614767411',
+            dni: '00000000G',
+            auth_provider: 'google'
+        };
 
-        setTimeout(() => {
-            if (popup && !popup.closed) {
-                try { popup.close(); } catch(e) {}
-            }
-            const appleUser = {
-                id: Date.now(),
-                name: 'Cliente Apple ID',
-                email: 'usuario.apple@icloud.com',
-                phone: '614767411',
-                dni: '00000000A',
-                auth_provider: 'apple'
-            };
-            localStorage.setItem('user_token', 'apple_user_' + appleUser.id);
-            localStorage.setItem('user_profile', JSON.stringify(appleUser));
-            
-            window.closeAuthModal('login-modal');
-            window.closeAuthModal('register-modal');
-            updateAuthUI();
-            showAppToast('¡Sesión iniciada correctamente con tu Apple ID!', 'success');
-        }, 1000);
+        localStorage.setItem('user_token', 'google_user_' + googleUser.id);
+        localStorage.setItem('user_profile', JSON.stringify(googleUser));
+
+        window.closeAuthModal('google-auth-modal');
+        updateAuthUI();
+        showAppToast(`¡Bienvenido/a, ${googleUser.name}! Has iniciado sesión con Google (${googleUser.email}).`, 'success');
+    };
+
+    window.promptGoogleCustomEmail = () => {
+        const inputEmail = prompt('Introduce tu dirección de correo de Google (Gmail):', 'tuemail@gmail.com');
+        if (!inputEmail) return;
+        const cleanEmail = inputEmail.trim();
+        if (cleanEmail) {
+            window.confirmGoogleAccount(cleanEmail, cleanEmail.split('@')[0]);
+        }
+    };
+
+    window.confirmAppleAccount = (email, name) => {
+        const cleanEmail = email || 'yesas12345678@icloud.com';
+        const cleanName = name || 'Usuario Apple';
+        
+        const appleUser = {
+            id: Date.now(),
+            name: cleanName,
+            email: cleanEmail,
+            phone: '614767411',
+            dni: '00000000A',
+            auth_provider: 'apple'
+        };
+
+        localStorage.setItem('user_token', 'apple_user_' + appleUser.id);
+        localStorage.setItem('user_profile', JSON.stringify(appleUser));
+
+        window.closeAuthModal('apple-auth-modal');
+        updateAuthUI();
+        showAppToast(`¡Bienvenido/a! Has iniciado sesión con tu Apple ID (${appleUser.email}).`, 'success');
     };
 
     // Abrir Panel de Área de Cliente
     window.openClientArea = async () => {
         const token = localStorage.getItem('user_token');
         if (!token) return;
-        
+
         try {
             const res = await fetch('/api/auth/me', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (!res.ok) throw new Error('Token expirado');
             const user = await res.json();
-            
+
             document.getElementById('client-user-info').textContent = `Conectado como: ${user.name} (${user.email}) | DNI: ${user.dni}`;
-            
+
             // Obtener reservas del cliente
             const bookingsRes = await fetch(`/api/bookings?user_id=${user.id}`);
             const bookingsList = await bookingsRes.json();
-            
+
             const tbody = document.getElementById('client-bookings-tbody');
             if (bookingsList.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; padding: 2rem;">No tienes reservas registradas.</td></tr>`;
@@ -1340,21 +1229,21 @@ const initApp = () => {
                 tbody.innerHTML = '';
                 bookingsList.forEach(b => {
                     const tr = document.createElement('tr');
-                    
+
                     const statusLabel = b.status === 'pending' ? 'Pendiente' : b.status === 'confirmed' ? 'Confirmado' : 'Cancelado';
                     const paymentLabel = b.payment_status === 'paid' ? 'Pagado' : 'Pendiente';
                     const fianzaLabel = b.fianza_status === 'paid' ? 'Retenida (500€)' : b.fianza_status === 'refunded' ? 'Devuelta' : 'Pendiente';
-                    
+
                     const formatDate = (dateStr) => {
                         const cleanDate = dateStr.split('T')[0];
                         const [year, month, day] = cleanDate.split('-');
                         return `${day}/${month}/${year}`;
                     };
-                    
+
                     const photosBtn = (b.photos_before && b.photos_before.length > 0) || (b.photos_after && b.photos_after.length > 0)
                         ? `<button class="client-doc-btn" onclick='window.openClientPhotosModal(${JSON.stringify(b.photos_before || [])}, ${JSON.stringify(b.photos_after || [])})'><i class="fa-solid fa-camera"></i> Fotos</button>`
                         : '';
-                    
+
                     tr.innerHTML = `
                         <td>#${b.id}</td>
                         <td><strong>${b.van_name.split(' ')[0]} ${b.van_name.split(' ')[1] || ''}</strong></td>
@@ -1374,7 +1263,7 @@ const initApp = () => {
                     tbody.appendChild(tr);
                 });
             }
-            
+
             window.openAuthModal('client-modal');
         } catch (err) {
             console.error(err);
@@ -1388,10 +1277,10 @@ const initApp = () => {
         const beforeContainer = document.getElementById('client-photos-before-container');
         const afterContainer = document.getElementById('client-photos-after-container');
         if (!beforeContainer || !afterContainer) return;
-        
+
         beforeContainer.innerHTML = '';
         afterContainer.innerHTML = '';
-        
+
         if (!beforeUrls || beforeUrls.length === 0) {
             beforeContainer.innerHTML = '<span style="font-size: 0.75rem; color: var(--text-muted);">Sin fotos registradas de antes del alquiler.</span>';
         } else {
@@ -1408,7 +1297,7 @@ const initApp = () => {
                 beforeContainer.appendChild(img);
             });
         }
-        
+
         if (!afterUrls || afterUrls.length === 0) {
             afterContainer.innerHTML = '<span style="font-size: 0.75rem; color: var(--text-muted);">Sin fotos de devolución registradas.</span>';
         } else {
@@ -1425,7 +1314,7 @@ const initApp = () => {
                 afterContainer.appendChild(img);
             });
         }
-        
+
         window.openAuthModal('client-photos-modal');
     };
 
@@ -1442,10 +1331,10 @@ const initApp = () => {
     /* ==========================================================================
        7. ENVIAR FORMULARIO, PASARELA TPV Y WHATSAPP FLOW
        ========================================================================== */
-    
+
     calcForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        
+
         // 1. Validar autenticación
         const token = localStorage.getItem('user_token');
         if (!token) {
@@ -1476,7 +1365,7 @@ const initApp = () => {
         const pickupTimeStr = timeStart.value;
         const returnDateStr = dateEnd.value;
         const returnTimeStr = timeEnd.value;
-        
+
         const start = new Date(pickupDateStr);
         const end = new Date(returnDateStr);
         const diffTime = end - start;
@@ -1495,7 +1384,7 @@ const initApp = () => {
                 selectedExtras.push(`${name} ${label}`);
             });
         }
-        
+
         const totalPriceText = summaryTotalPrice.textContent;
         const totalPriceNum = totalPriceText.includes('A consultar') ? 0.00 : parseFloat(totalPriceText.replace(/[^\d.,]/g, '').replace(',', '.'));
 
@@ -1538,17 +1427,17 @@ const initApp = () => {
             const fianzaAmount = rentalMode === 'sin' ? 500 : 0;
             document.getElementById('tpv-rent-amount').textContent = `${totalPriceNum.toFixed(2)} €`;
             document.getElementById('tpv-total-amount').textContent = `${(totalPriceNum + fianzaAmount).toFixed(2)} €`;
-            
+
             // Rellenar por defecto titular
             document.getElementById('tpv-card-name').value = user.name;
-            
+
             // Mostrar pasarela TPV
             window.openAuthModal('tpv-modal');
         } else {
             // FLUJO B: Reserva sin pago online, gestionado manualmente por WhatsApp
             const submitBtn = document.getElementById('btn-submit-booking');
             const originalBtnHtml = submitBtn.innerHTML;
-            
+
             submitBtn.disabled = true;
             submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Registrando solicitud...';
 
@@ -1565,7 +1454,7 @@ const initApp = () => {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(finalBookingData)
                 });
-                
+
                 const data = await response.json();
                 if (!response.ok) {
                     throw new Error(data.error || 'Error al guardar reserva.');
@@ -1574,9 +1463,9 @@ const initApp = () => {
                 // Generar mensaje WhatsApp para reserva manual
                 const isCon = finalBookingData.rental_mode === 'con';
                 const modeLabelText = isCon ? 'CON CONDUCTOR' : 'SIN CONDUCTOR';
-                const extraDetailsText = isCon 
-                    ? `\n- *Trayecto:* ${finalBookingData.estimated_kms} km estimados` + 
-                      `\n- *Espera:* ${finalBookingData.waiting_hours} h de espera`
+                const extraDetailsText = isCon
+                    ? `\n- *Trayecto:* ${finalBookingData.estimated_kms} km estimados` +
+                    `\n- *Espera:* ${finalBookingData.waiting_hours} h de espera`
                     : (finalBookingData.extras.length > 0 ? '\n- *Extras:* ' + finalBookingData.extras.join(', ') : '');
 
                 let messageText = '';
@@ -1609,7 +1498,7 @@ const initApp = () => {
                 const encodedText = encodeURIComponent(messageText);
                 const whatsappUrl = `https://api.whatsapp.com/send?phone=${CONFIG.whatsappNumber}&text=${encodedText}`;
                 window.open(whatsappUrl, '_blank');
-                
+
                 alert('Solicitud registrada. Se ha abierto WhatsApp para que contactes con el propietario y confirmes la reserva.');
             } catch (err) {
                 console.error(err);
@@ -1624,17 +1513,17 @@ const initApp = () => {
     // Procesar pago en la TPV Redsys / Cyberpac CaixaBank
     tpvForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        
+
         const tpvSubmitBtn = document.getElementById('tpv-submit-btn');
         const originalBtnHtml = tpvSubmitBtn.innerHTML;
-        
+
         tpvSubmitBtn.disabled = true;
         tpvSubmitBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Generando firma Redsys...';
-        
+
         try {
             const payMethodRadio = tpvForm.querySelector('input[name="pay_method"]:checked');
             const selectedPayMethod = payMethodRadio ? payMethodRadio.value : 'card';
-            
+
             // 1. Solicitar la firma y los parámetros oficiales a nuestro backend Redsys
             const redsysResponse = await fetch('/api/redsys/create-payment', {
                 method: 'POST',
@@ -1644,12 +1533,12 @@ const initApp = () => {
                     payMethod: selectedPayMethod
                 })
             });
-            
+
             const redsysData = await redsysResponse.json();
             if (!redsysResponse.ok) {
                 throw new Error(redsysData.error || 'Error al conectar con la pasarela Redsys.');
             }
-            
+
             // 2. Guardar la reserva en estado pendiente de confirmación de pago
             const finalBookingData = {
                 ...pendingBookingData,
@@ -1657,7 +1546,7 @@ const initApp = () => {
                 payment_status: 'unpaid',
                 payment_id: redsysData.orderId
             };
-            
+
             try {
                 await fetch('/api/bookings', {
                     method: 'POST',
@@ -1667,14 +1556,14 @@ const initApp = () => {
             } catch (bErr) {
                 console.warn('Almacenamiento reserva local/offline:', bErr.message);
             }
-            
+
             tpvSubmitBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Redirigiendo a CaixaBank...';
 
             // 3. Crear formulario HTML transparente y enviarlo POST a Redsys
             const form = document.createElement('form');
             form.method = 'POST';
             form.action = redsysData.actionUrl;
-            
+
             for (const [key, value] of Object.entries(redsysData.params)) {
                 const input = document.createElement('input');
                 input.type = 'hidden';
@@ -1682,10 +1571,10 @@ const initApp = () => {
                 input.value = value;
                 form.appendChild(input);
             }
-            
+
             document.body.appendChild(form);
             form.submit();
-            
+
         } catch (err) {
             console.error(err);
             alert('Error al iniciar el pago seguro: ' + err.message);
@@ -1707,12 +1596,12 @@ const initApp = () => {
             question.addEventListener('click', () => {
                 const faqItem = question.parentElement;
                 const isActive = faqItem.classList.contains('faq-expanded');
-                
+
                 // Cerrar todas las FAQ primero para efecto acordeón exclusivo
                 document.querySelectorAll('.faq-item').forEach(item => {
                     item.classList.remove('faq-expanded');
                 });
-                
+
                 // Si la FAQ cliqueada no estaba activa, la abrimos
                 if (!isActive) {
                     faqItem.classList.add('faq-expanded');
@@ -1730,20 +1619,20 @@ const initApp = () => {
     const openVanDetailsModal = (vanType) => {
         const van = databaseVans.find(v => v.van_type === vanType);
         if (!van) return;
-        
+
         // Rellenar textos del modal
         document.getElementById('detail-van-name').textContent = van.name;
         document.getElementById('detail-van-m3').textContent = `${van.m3} de volumen`;
         document.getElementById('detail-van-price').innerHTML = `${parseFloat(van.price_sin).toFixed(2)}€<span style="font-size: 1rem; font-weight: normal; color: var(--text-secondary);">/día</span>`;
         document.getElementById('detail-spec-plate').textContent = van.plate || '-';
-        
+
         // Cargar especificaciones dinámicas reales desde la base de datos
         document.getElementById('detail-spec-mass').textContent = `${van.max_mass || 2800} kg`;
         document.getElementById('detail-spec-occupants').textContent = `${van.max_occupants || 3} plazas`;
         document.getElementById('detail-spec-fuel').textContent = van.fuel_type || 'Diesel';
         document.getElementById('detail-spec-eco').textContent = `Etiqueta ${van.eco_label || 'C'}`;
         document.getElementById('detail-spec-kmlimit').textContent = `${van.daily_km_limit || 350} km/día`;
-        
+
         // Cargar características personalizadas
         const featContainer = document.getElementById('detail-custom-features-container');
         const featList = document.getElementById('detail-custom-features-list');
@@ -1759,21 +1648,21 @@ const initApp = () => {
                 featContainer.style.display = 'none';
             }
         }
-        
+
         // Carrusel de imágenes
         const slidesContainer = document.getElementById('detail-carousel-slides');
         const dotsContainer = document.getElementById('detail-carousel-dots');
         slidesContainer.innerHTML = '';
         dotsContainer.innerHTML = '';
-        
+
         let images = van.images;
         if (!Array.isArray(images) || images.length === 0) {
             images = [vanType === 'medium' ? 'assets/ford_transit.png' : 'assets/man_tge.png'];
         }
-        
+
         detailCarouselImages = images;
         detailCarouselIndex = 0;
-        
+
         images.forEach((img, idx) => {
             const slide = document.createElement('div');
             slide.style.minWidth = '100%';
@@ -1783,7 +1672,7 @@ const initApp = () => {
             slide.style.justifyContent = 'center';
             slide.innerHTML = `<img src="${img}" style="width: 100%; height: 100%; object-fit: cover;" alt="${van.name} foto ${idx + 1}">`;
             slidesContainer.appendChild(slide);
-            
+
             const dot = document.createElement('span');
             dot.style.width = '10px';
             dot.style.height = '10px';
@@ -1795,39 +1684,39 @@ const initApp = () => {
             });
             dotsContainer.appendChild(dot);
         });
-        
+
         // Mostrar modal
         window.openAuthModal('van-details-modal');
         showDetailCarouselSlide(0);
-        
+
         // Configurar botón de reserva
         const bookBtn = document.getElementById('detail-van-book-btn');
         bookBtn.onclick = () => {
             vanSelect.value = vanType;
             vanSelect.dispatchEvent(new Event('change'));
             window.closeAuthModal('van-details-modal');
-            
+
             const calcSection = document.getElementById('calculadora');
             if (calcSection) {
                 calcSection.scrollIntoView({ behavior: 'smooth' });
             }
         };
     };
-    
+
     const showDetailCarouselSlide = (idx) => {
         if (idx < 0) idx = detailCarouselImages.length - 1;
         if (idx >= detailCarouselImages.length) idx = 0;
         detailCarouselIndex = idx;
-        
+
         const slidesContainer = document.getElementById('detail-carousel-slides');
         slidesContainer.style.transform = `translateX(-${idx * 100}%)`;
-        
+
         const dots = document.querySelectorAll('#detail-carousel-dots span');
         dots.forEach((dot, dIdx) => {
             dot.style.background = dIdx === idx ? 'var(--color-neon)' : 'rgba(255,255,255,0.3)';
         });
     };
-    
+
     document.getElementById('detail-carousel-prev').addEventListener('click', (e) => {
         e.stopPropagation();
         showDetailCarouselSlide(detailCarouselIndex - 1);
@@ -1841,7 +1730,7 @@ const initApp = () => {
     const vanCards = document.querySelectorAll('.van-card');
     vanCards.forEach(card => {
         card.style.cursor = 'pointer';
-        card.addEventListener('click', function(e) {
+        card.addEventListener('click', function (e) {
             const vanType = this.id.includes('large') ? 'large' : 'medium';
             openVanDetailsModal(vanType);
         });
@@ -1855,21 +1744,21 @@ const initApp = () => {
             const res = await fetch('/api/reviews');
             if (res.ok) {
                 const reviews = await res.json();
-                
+
                 // Actualizar contador dinámico de reseñas
                 const reviewsCountPlaceholder = document.getElementById('reviews-count-placeholder');
                 if (reviewsCountPlaceholder) {
                     reviewsCountPlaceholder.textContent = reviews.length;
                 }
-                
+
                 if (reviews.length > 0) {
                     testimonialsGrid.innerHTML = '';
-                    
+
                     reviews.forEach(review => {
                         const rating = parseInt(review.rating) || 5;
-                        const starsHtml = '<i class="fa-solid fa-star"></i>'.repeat(rating) + 
-                                          '<i class="fa-regular fa-star" style="color: rgba(255,255,255,0.15);"></i>'.repeat(Math.max(0, 5 - rating));
-                                          
+                        const starsHtml = '<i class="fa-solid fa-star"></i>'.repeat(rating) +
+                            '<i class="fa-regular fa-star" style="color: rgba(255,255,255,0.15);"></i>'.repeat(Math.max(0, 5 - rating));
+
                         const card = document.createElement('div');
                         card.className = 'testimonial-card';
                         card.style.flex = '0 0 100%';
@@ -1890,7 +1779,7 @@ const initApp = () => {
                         `;
                         testimonialsGrid.appendChild(card);
                     });
-                    
+
                     // Inicializar controles del carrusel deslizante
                     initReviewsCarousel(reviews.length);
                 }
@@ -1905,19 +1794,19 @@ const initApp = () => {
         const prevBtn = document.getElementById('reviews-carousel-prev');
         const nextBtn = document.getElementById('reviews-carousel-next');
         const dotsContainer = document.getElementById('reviews-carousel-dots');
-        
+
         if (!track || totalSlides <= 1) {
             if (prevBtn) prevBtn.style.display = 'none';
             if (nextBtn) nextBtn.style.display = 'none';
             if (dotsContainer) dotsContainer.innerHTML = '';
             return;
         }
-        
+
         if (prevBtn) prevBtn.style.display = 'flex';
         if (nextBtn) nextBtn.style.display = 'flex';
-        
+
         let activeIdx = 0;
-        
+
         // Generar puntitos indicadores del carrusel
         if (dotsContainer) {
             dotsContainer.innerHTML = '';
@@ -1931,7 +1820,7 @@ const initApp = () => {
                 dotsContainer.appendChild(dot);
             }
         }
-        
+
         const updateCarouselPosition = () => {
             track.style.transform = `translateX(-${activeIdx * 100}%)`;
             if (dotsContainer) {
@@ -1944,12 +1833,12 @@ const initApp = () => {
                 });
             }
         };
-        
+
         const goToSlide = (index) => {
             activeIdx = (index + totalSlides) % totalSlides;
             updateCarouselPosition();
         };
-        
+
         if (prevBtn) {
             prevBtn.onclick = (e) => {
                 e.preventDefault();
@@ -1964,21 +1853,21 @@ const initApp = () => {
                 resetAutoSlide();
             };
         }
-        
+
         // Deslizamiento automático cada 6 segundos
         const startAutoSlide = () => {
             reviewsInterval = setInterval(() => {
                 goToSlide(activeIdx + 1);
             }, 6000);
         };
-        
+
         const resetAutoSlide = () => {
             if (reviewsInterval) clearInterval(reviewsInterval);
             startAutoSlide();
         };
-        
+
         resetAutoSlide();
-        
+
         // Pausa al hacer hover en el contenedor
         const container = track.closest('.testimonials-carousel-container');
         if (container) {
@@ -2002,7 +1891,7 @@ const initApp = () => {
     const initStarRating = () => {
         const stars = document.querySelectorAll('.star-rating-selector i');
         stars.forEach(star => {
-            star.addEventListener('click', function() {
+            star.addEventListener('click', function () {
                 const rating = parseInt(this.getAttribute('data-rating'));
                 reviewRatingInput.value = rating;
                 stars.forEach(s => {
@@ -2014,8 +1903,8 @@ const initApp = () => {
                     }
                 });
             });
-            
-            star.addEventListener('mouseenter', function() {
+
+            star.addEventListener('mouseenter', function () {
                 const rating = parseInt(this.getAttribute('data-rating'));
                 stars.forEach(s => {
                     const r = parseInt(s.getAttribute('data-rating'));
@@ -2027,7 +1916,7 @@ const initApp = () => {
                 });
             });
         });
-        
+
         const selector = document.querySelector('.star-rating-selector');
         if (selector) {
             selector.addEventListener('mouseleave', () => {
@@ -2047,13 +1936,13 @@ const initApp = () => {
     if (writeReviewForm) {
         writeReviewForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            
+
             const submitBtn = writeReviewForm.querySelector('button[type="submit"]');
             const originalHtml = submitBtn.innerHTML;
-            
+
             submitBtn.disabled = true;
             submitBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Publicando reseña...';
-            
+
             try {
                 const res = await fetch('/api/reviews', {
                     method: 'POST',
@@ -2066,7 +1955,7 @@ const initApp = () => {
                         role_or_city: reviewCityInput.value.trim()
                     })
                 });
-                
+
                 const data = await res.json();
                 if (res.ok) {
                     alert('¡Gracias por tu opinión! Tu reseña verificada ha sido publicada correctamente.');
@@ -2094,7 +1983,7 @@ const initApp = () => {
     const loadFaqs = async () => {
         const faqListContainer = document.querySelector('.faq-list');
         if (!faqListContainer) return;
-        
+
         try {
             const res = await fetch('/api/faqs');
             if (res.ok) {
@@ -2116,7 +2005,7 @@ const initApp = () => {
                         `;
                         faqListContainer.appendChild(item);
                     });
-                    
+
                     // Rebind event listeners for accordion
                     bindFaqAccordion();
                 }
@@ -2135,11 +2024,11 @@ const initApp = () => {
                 const week = document.getElementById('hours-weekdays');
                 const sat = document.getElementById('hours-saturdays');
                 const sun = document.getElementById('hours-sundays');
-                
+
                 if (week && data.hours_weekdays) week.textContent = data.hours_weekdays;
                 if (sat && data.hours_saturdays) sat.textContent = data.hours_saturdays;
                 if (sun && data.hours_sundays) sun.textContent = data.hours_sundays;
-                
+
                 // Mostrar/ocultar placa de cantidad de opiniones verificadas
                 const badge = document.getElementById('reviews-count-badge');
                 if (badge) {
@@ -2164,11 +2053,11 @@ const initApp = () => {
             const contact = document.getElementById('contact-form-phone').value.trim();
             const reason = document.getElementById('contact-form-reason').value;
             const message = document.getElementById('contact-form-message').value.trim();
-            
+
             const text = `Hola RentMeUskar, me llamo *${name}*.\n\n*Contacto:* ${contact}\n*Motivo:* ${reason}\n\n*Mensaje:*\n${message}`;
             const encodedText = encodeURIComponent(text);
             const whatsappUrl = `https://wa.me/34614767411?text=${encodedText}`;
-            
+
             window.open(whatsappUrl, '_blank');
             contactForm.reset();
         });
