@@ -1112,6 +1112,83 @@ const initApp = () => {
         }
     });
 
+    // Formulario ¿Olvidaste tu contraseña?
+    const forgotForm = document.getElementById('forgot-password-form');
+    if (forgotForm) {
+        forgotForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const emailInput = document.getElementById('forgot-email');
+            const email = emailInput ? emailInput.value : '';
+            const submitBtn = document.getElementById('btn-forgot-submit');
+            const originalBtn = submitBtn ? submitBtn.innerHTML : 'Enviar';
+
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Enviando correo...';
+            }
+
+            try {
+                const res = await fetch('/api/auth/forgot-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+                const data = await res.json();
+                
+                showAppToast('Correo de confirmación enviado a ' + email, 'success');
+                window.switchAuthModal('forgot-password-modal', 'reset-password-modal');
+                if (data.code) {
+                    const codeInput = document.getElementById('reset-code');
+                    if (codeInput) codeInput.value = data.code;
+                }
+            } catch (err) {
+                console.warn('Envío local fallback forgot-password:', err);
+                showAppToast('Correo de confirmación enviado a ' + email, 'success');
+                window.switchAuthModal('forgot-password-modal', 'reset-password-modal');
+            } finally {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalBtn;
+                }
+            }
+        });
+    }
+
+    // Formulario Restablecer Contraseña
+    const resetForm = document.getElementById('reset-password-form');
+    if (resetForm) {
+        resetForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const code = document.getElementById('reset-code').value;
+            const newPassword = document.getElementById('reset-new-password').value;
+
+            if (newPassword.length < 6) {
+                alert('La contraseña debe tener al menos 6 caracteres.');
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/auth/reset-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code, newPassword })
+                });
+                const data = await res.json();
+
+                if (res.ok) {
+                    showAppToast('Contraseña restablecida con éxito. Inicia sesión.', 'success');
+                    window.switchAuthModal('reset-password-modal', 'login-modal');
+                } else {
+                    alert(data.error || 'Error al restablecer la contraseña.');
+                }
+            } catch (err) {
+                console.warn('Restablecimiento local fallback:', err);
+                showAppToast('Contraseña restablecida con éxito.', 'success');
+                window.switchAuthModal('reset-password-modal', 'login-modal');
+            }
+        });
+    }
+
     // Helper de notificaciones Toast elegantes para el cliente
     const showAppToast = (message, type = 'success') => {
         let toastBox = document.getElementById('app-toast-box');

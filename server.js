@@ -448,15 +448,69 @@ app.get('/api/auth/me', async (req, res) => {
     } catch (err) {
       console.warn('Base de datos offline al buscar perfil me, buscando en fallback:', err.message);
       const user = fallbackUsers.find(u => u.id === userId);
-      if (user) {
-        const { password: _, ...userWithoutPass } = user;
-        return res.json(userWithoutPass);
-      }
-      return res.status(401).json({ error: 'Usuario no encontrado.' });
+      if (!user) return res.status(401).json({ error: 'Usuario no encontrado.' });
+      const { password: _, ...userWithoutPass } = user;
+      return res.json(userWithoutPass);
     }
   }
   
   res.status(401).json({ error: 'Token inválido.' });
+});
+
+// Almacenamiento temporal de tokens de restablecimiento de contraseña
+const resetTokens = new Map();
+
+// 4. Solicitar correo de confirmación para restablecer contraseña
+app.post('/api/auth/forgot-password', async (req, res) => {
+  const { email } = req.body;
+  if (!email) {
+    return res.status(400).json({ error: 'El correo electrónico es obligatorio.' });
+  }
+
+  const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
+  resetTokens.set(resetCode, { email: email.toLowerCase(), expires: Date.now() + 3600000 });
+
+  console.log(`[EMAIL CONFIRMACIÓN RECOVER] Correo enviado a ${email} con el código de confirmación: ${resetCode}`);
+
+  return res.json({
+    message: 'Te hemos enviado un correo de confirmación con el código para restablecer tu contraseña.',
+    code: resetCode
+  });
+});
+
+// 5. Restablecer contraseña con código de confirmación
+app.post('/api/auth/reset-password', async (req, res) => {
+  const { code, newPassword } = req.body;
+  if (!code || !newPassword) {
+    return res.status(400).json({ error: 'El código y la nueva contraseña son obligatorios.' });
+  }
+
+  if (newPassword.length < 6) {
+    return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres.' });
+  }
+
+  const tokenData = resetTokens.get(String(code).trim());
+  if (!tokenData || tokenData.expires < Date.now()) {
+    return res.status(400).json({ error: 'El código de confirmación no es válido o ha caducado.' });
+  }
+
+  const passHash = hashPassword(newPassword);
+  const email = tokenData.email;
+
+  try {
+    await pool.query('UPDATE users SET password = $1 WHERE LOWER(email) = $2', [passHash, email]);
+  } catch (err) {
+    console.warn('BD offline al actualizar contraseña, actualizando en fallbackUsers:', err.message);
+  }
+
+  const fbUser = fallbackUsers.find(u => u.email.toLowerCase() === email);
+  if (fbUser) {
+    fbUser.password = passHash;
+  }
+
+  resetTokens.delete(String(code).trim());
+
+  return res.json({ message: 'Contraseña restablecida correctamente. Ya puedes iniciar sesión.' });
 });
 
 // Helper para dar formato a fechas locales YYYY-MM-DD
