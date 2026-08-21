@@ -690,6 +690,29 @@
         .toast.error i { color: var(--color-danger); }
         .toast.info i { color: var(--color-info); }
 
+        .toast-action-btn {
+            background: rgba(130, 209, 5, 0.2);
+            color: var(--color-neon);
+            border: 1px solid var(--color-neon);
+            border-radius: 4px;
+            padding: 0.35rem 0.75rem;
+            font-size: 0.8rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-left: auto;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            white-space: nowrap;
+        }
+
+        .toast-action-btn:hover {
+            background: var(--color-neon);
+            color: #000000;
+            box-shadow: 0 0 10px rgba(130, 209, 5, 0.4);
+        }
+
         /* Media Queries */
         @media (max-width: 768px) {
             header {

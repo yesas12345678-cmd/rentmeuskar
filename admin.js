@@ -286,7 +286,7 @@ const initAdmin = () => {
     };
 
     // Mostrar Notificación Toast
-    const showToast = (message, type = 'info') => {
+    const showToast = (message, type = 'info', actionBtn = null) => {
         const toast = document.createElement('div');
         toast.className = `toast ${type}`;
         
@@ -296,19 +296,37 @@ const initAdmin = () => {
         
         toast.innerHTML = `
             <i class="fa-solid ${icon}"></i>
-            <span>${message}</span>
+            <span style="flex: 1;">${message}</span>
         `;
+        
+        if (actionBtn) {
+            const btn = document.createElement('button');
+            btn.className = 'toast-action-btn';
+            btn.innerHTML = actionBtn.text;
+            btn.onclick = (e) => {
+                e.stopPropagation();
+                if (actionBtn.onClick) actionBtn.onClick();
+                toast.classList.remove('active');
+                setTimeout(() => {
+                    if (toast.parentNode) toast.remove();
+                }, 300);
+            };
+            toast.appendChild(btn);
+        }
         
         toastContainer.appendChild(toast);
         toast.offsetHeight; // trigger reflow
         toast.classList.add('active');
         
+        const duration = actionBtn ? 5000 : 3500;
         setTimeout(() => {
-            toast.classList.remove('active');
-            setTimeout(() => {
-                toast.remove();
-            }, 300);
-        }, 3500);
+            if (toast.parentNode) {
+                toast.classList.remove('active');
+                setTimeout(() => {
+                    if (toast.parentNode) toast.remove();
+                }, 300);
+            }
+        }, duration);
     };
 
     /* ==========================================================================
@@ -391,39 +409,70 @@ const initAdmin = () => {
         }
     };
 
-    // Eliminar reserva
+    // Eliminar reserva con opción de Deshacer (Undo) durante 5 segundos
     const deleteBooking = async (id) => {
-        if (!confirm(`¿Estás seguro de que deseas eliminar permanentemente la reserva #${id}? Se borrarán también los registros asociados.`)) {
+        if (!confirm(`¿Estás seguro de que deseas eliminar la reserva #${id}?`)) {
             return;
         }
 
+        const bookingToDelete = bookings.find(b => String(b.id) === String(id));
+        if (!bookingToDelete) return;
+
         const token = localStorage.getItem('admin_token');
-        try {
-            const response = await fetch(`/api/bookings/${id}`, {
-                method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-
-            if (!response.ok) throw new Error('Error al eliminar reserva');
-            
-            // Persistir eliminación en el almacenamiento local para evitar reaparición
-            const deletedIds = JSON.parse(localStorage.getItem('deleted_booking_ids') || '[]');
-            if (!deletedIds.includes(String(id))) {
-                deletedIds.push(String(id));
-                localStorage.setItem('deleted_booking_ids', JSON.stringify(deletedIds));
-            }
-
-            bookings = bookings.filter(b => String(b.id) !== String(id));
-            
-            updateKPIs();
-            renderBookings();
-            closeModal();
-            
-            showToast(`Reserva #${id} eliminada permanentemente.`, 'success');
-        } catch (err) {
-            console.error(err);
-            showToast('No se pudo eliminar la reserva.', 'error');
+        
+        // 1. Quitar la reserva de la lista y actualizar la interfaz de inmediato
+        bookings = bookings.filter(b => String(b.id) !== String(id));
+        
+        const deletedIds = JSON.parse(localStorage.getItem('deleted_booking_ids') || '[]');
+        if (!deletedIds.includes(String(id))) {
+            deletedIds.push(String(id));
+            localStorage.setItem('deleted_booking_ids', JSON.stringify(deletedIds));
         }
+
+        updateKPIs();
+        renderBookings();
+        closeModal();
+
+        // 2. Notificar al backend en segundo plano
+        fetch(`/api/bookings/${id}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        }).catch(err => console.warn('Error backend al borrar reserva:', err));
+
+        // 3. Mostrar notificación toast con botón Deshacer activo durante 5 segundos
+        showToast(`Reserva #${id} eliminada permanentemente.`, 'success', {
+            text: '<i class="fa-solid fa-rotate-left"></i> Deshacer',
+            onClick: async () => {
+                // Restaurar reserva en la lista
+                if (!bookings.some(b => String(b.id) === String(id))) {
+                    bookings.push(bookingToDelete);
+                    bookings.sort((a, b) => b.id - a.id);
+                }
+
+                // Eliminar id del almacenamiento local de borrados
+                const currentDeletedIds = JSON.parse(localStorage.getItem('deleted_booking_ids') || '[]');
+                const updatedDeletedIds = currentDeletedIds.filter(dId => String(dId) !== String(id));
+                localStorage.setItem('deleted_booking_ids', JSON.stringify(updatedDeletedIds));
+
+                // Volver a crear la reserva en la base de datos del servidor
+                try {
+                    await fetch('/api/bookings', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify(bookingToDelete)
+                    });
+                } catch (rErr) {
+                    console.warn('Error backend al restaurar reserva:', rErr);
+                }
+
+                updateKPIs();
+                renderBookings();
+                showToast(`Reserva #${id} restaurada correctamente.`, 'info');
+            }
+        });
     };
 
     /* ==========================================================================
