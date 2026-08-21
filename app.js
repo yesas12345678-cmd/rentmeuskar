@@ -1108,28 +1108,43 @@ const initApp = () => {
             const res = await fetch('/api/auth/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, email, password, phone, dni })
+                body: JSON.stringify({ name, email: email.trim(), password, phone, dni })
             });
             const data = await res.json();
             if (res.ok) {
+                // Guardar email registrado localmente
+                const savedEmails = JSON.parse(localStorage.getItem('registered_emails') || '[]');
+                if (!savedEmails.includes(email.trim().toLowerCase())) {
+                    savedEmails.push(email.trim().toLowerCase());
+                    localStorage.setItem('registered_emails', JSON.stringify(savedEmails));
+                }
+
                 localStorage.setItem('user_token', data.token);
                 if (data.user) {
                     localStorage.setItem('user_profile', JSON.stringify(data.user));
                 }
                 window.closeAuthModal('register-modal');
                 updateAuthUI();
-                alert('Registro completado con éxito.');
+                showAppToast('¡Cuenta creada correctamente! Bienvenido/a a RentMeUskar.', 'success');
             } else {
-                alert(data.error || 'Error al registrarse.');
+                alert(data.error || 'Este correo electrónico ya está registrado.');
             }
         } catch (err) {
-            console.warn('Backend no disponible, creando usuario en modo local:', err);
-            const mockUser = { id: Date.now(), name, email, phone, dni };
+            console.warn('Backend no disponible, verificando registro local:', err);
+            const savedEmails = JSON.parse(localStorage.getItem('registered_emails') || '[]');
+            if (savedEmails.includes(email.trim().toLowerCase())) {
+                alert('El correo electrónico ya está registrado. Por favor, inicia sesión con tu contraseña o restablecela si la has olvidado.');
+                return;
+            }
+            savedEmails.push(email.trim().toLowerCase());
+            localStorage.setItem('registered_emails', JSON.stringify(savedEmails));
+
+            const mockUser = { id: Date.now(), name, email: email.trim(), phone, dni };
             localStorage.setItem('user_token', 'user_' + mockUser.id);
             localStorage.setItem('user_profile', JSON.stringify(mockUser));
             window.closeAuthModal('register-modal');
             updateAuthUI();
-            alert('Registro completado con éxito.');
+            showAppToast('¡Cuenta creada correctamente! Bienvenido/a.', 'success');
         }
     });
 

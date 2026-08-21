@@ -332,9 +332,9 @@ app.post('/api/auth/register', async (req, res) => {
   }
   
   try {
-    const checkUser = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
-    if (checkUser.rowCount > 0) {
-      return res.status(400).json({ error: 'El correo electrónico ya está registrado.' });
+    const checkUser = await pool.query('SELECT id FROM users WHERE LOWER(email) = LOWER($1)', [email.trim()]);
+    if (checkUser.rowCount > 0 || fallbackUsers.some(u => u.email.toLowerCase() === email.trim().toLowerCase())) {
+      return res.status(400).json({ error: 'El correo electrónico ya está registrado. Por favor, inicia sesión.' });
     }
     
     const passHash = hashPassword(password);
