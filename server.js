@@ -36,6 +36,7 @@ function hashPassword(password) {
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(uploadsDir));
 
 // Conexión a la base de datos PostgreSQL
@@ -796,6 +797,136 @@ app.delete('/api/bookings/:id', async (req, res) => {
       return res.json({ message: 'Reserva eliminada de memoria fallback (offline).' });
     }
     res.status(500).json({ error: 'Error del servidor al eliminar la reserva.' });
+  }
+});
+
+// --- INTEGRACIÓN DE REDSYS TPV VIRTUAL / CYBERPAC CAIXABANK Y BIZUM ---
+
+function encrypt3DES(order, secretKeyBase64) {
+  const keyBuffer = Buffer.from(secretKeyBase64, 'base64');
+  const iv = Buffer.alloc(8, 0);
+  const cipher = crypto.createCipheriv('des-ede3-cbc', keyBuffer, iv);
+  cipher.setAutoPadding(true);
+  let res = cipher.update(order, 'utf8', 'base64');
+  res += cipher.final('base64');
+  return Buffer.from(res, 'base64');
+}
+
+function createRedsysSignature(secretKeyBase64, order, merchantParamsBase64) {
+  const orderKey = encrypt3DES(order, secretKeyBase64);
+  const hmac = crypto.createHmac('sha256', orderKey);
+  hmac.update(merchantParamsBase64);
+  const signatureBase64 = hmac.digest('base64');
+  return signatureBase64.replace(/\+/g, '-').replace(/\//g, '_');
+}
+
+function decodeRedsysParameters(merchantParamsBase64) {
+  let normalized = merchantParamsBase64.replace(/-/g, '+').replace(/_/g, '/');
+  const jsonStr = Buffer.from(normalized, 'base64').toString('utf8');
+  return JSON.parse(jsonStr);
+}
+
+// 1. Crear parámetros para enviar el pago a Redsys (Tarjeta o Bizum)
+app.post('/api/redsys/create-payment', async (req, res) => {
+  try {
+    const { bookingData, payMethod } = req.body;
+    if (!bookingData) {
+      return res.status(400).json({ error: 'Faltan datos de la reserva.' });
+    }
+
+    const isConConductor = (bookingData.van_type === 'con_conductor');
+    const fianzaAmount = isConConductor ? 0 : 500;
+    const totalEuros = parseFloat(bookingData.total_price) + fianzaAmount;
+    const amountCents = Math.round(totalEuros * 100).toString();
+
+    // Generar número de pedido único de 10 dígitos (empezando por dígitos)
+    const numOrder = Date.now().toString().slice(-10);
+
+    const merchantCode = process.env.REDSYS_MERCHANT_CODE || '369636824';
+    const terminal = process.env.REDSYS_TERMINAL || '1';
+    const currency = process.env.REDSYS_CURRENCY || '978';
+    const secretKey = process.env.REDSYS_SECRET_KEY || 'sq7HjrUOBfKmC576ILgskD5srU870gJ7';
+    const redsysUrl = process.env.REDSYS_URL || 'https://sis-t.redsys.es:25443/sis/realizarPago';
+    const host = req.headers.host || 'localhost:3000';
+    const protocol = req.protocol || 'http';
+    const baseUrl = process.env.BASE_URL || `${protocol}://${host}`;
+
+    const merchantParamsObj = {
+      DS_MERCHANT_AMOUNT: amountCents,
+      DS_MERCHANT_ORDER: numOrder,
+      DS_MERCHANT_MERCHANTCODE: merchantCode,
+      DS_MERCHANT_CURRENCY: currency,
+      DS_MERCHANT_TRANSACTIONTYPE: '0',
+      DS_MERCHANT_TERMINAL: terminal,
+      DS_MERCHANT_MERCHANTURL: `${baseUrl}/api/redsys/notification`,
+      DS_MERCHANT_URLOK: `${baseUrl}/payment-success.html?order=${numOrder}`,
+      DS_MERCHANT_URLKO: `${baseUrl}/payment-error.html?order=${numOrder}`,
+      DS_MERCHANT_MERCHANTNAME: 'RentMeUskar'
+    };
+
+    if (payMethod === 'bizum') {
+      merchantParamsObj.DS_MERCHANT_PAYMETHODS = 'z';
+    }
+
+    const merchantParamsJsonStr = JSON.stringify(merchantParamsObj);
+    const merchantParamsBase64 = Buffer.from(merchantParamsJsonStr).toString('base64');
+    const signature = createRedsysSignature(secretKey, numOrder, merchantParamsBase64);
+
+    res.json({
+      actionUrl: redsysUrl,
+      params: {
+        Ds_SignatureVersion: 'HMAC_SHA256_V1',
+        Ds_MerchantParameters: merchantParamsBase64,
+        Ds_Signature: signature
+      },
+      orderId: numOrder,
+      totalAmount: totalEuros
+    });
+  } catch (err) {
+    console.error('Error al crear pago Redsys:', err);
+    res.status(500).json({ error: 'Error al generar los datos de pago seguro de Redsys.' });
+  }
+});
+
+// 2. Notificación en segundo plano enviada por Redsys
+app.post('/api/redsys/notification', async (req, res) => {
+  try {
+    const { Ds_SignatureVersion, Ds_MerchantParameters, Ds_Signature } = req.body;
+    if (!Ds_MerchantParameters || !Ds_Signature) {
+      return res.status(400).send('Parámetros no encontrados');
+    }
+
+    const decodedParams = decodeRedsysParameters(Ds_MerchantParameters);
+    const orderId = decodedParams.DS_ORDER || decodedParams.Ds_Order;
+    const responseCodeStr = decodedParams.DS_RESPONSE || decodedParams.Ds_Response;
+    const responseCode = parseInt(responseCodeStr, 10);
+
+    const secretKey = process.env.REDSYS_SECRET_KEY || 'sq7HjrUOBfKmC576ILgskD5srU870gJ7';
+    const expectedSignature = createRedsysSignature(secretKey, orderId, Ds_MerchantParameters);
+
+    if (expectedSignature !== Ds_Signature && expectedSignature.replace(/_/g, '/') !== Ds_Signature.replace(/_/g, '/')) {
+      console.error('Firma Redsys no válida en notificación para orden:', orderId);
+      return res.status(400).send('Firma no válida');
+    }
+
+    if (responseCode >= 0 && responseCode <= 99) {
+      console.log(`[REDSYS] ¡PAGO AUTORIZADO CORRECTAMENTE! Orden: ${orderId}`);
+      try {
+        await pool.query(
+          "UPDATE bookings SET status = 'paid_pending', payment_status = 'paid' WHERE payment_id = $1",
+          [orderId]
+        );
+      } catch (dbErr) {
+        console.warn('[REDSYS] BD offline, actualizando reserva fallback:', dbErr.message);
+      }
+      return res.status(200).send('OK');
+    } else {
+      console.warn(`[REDSYS] Pago denegado o cancelado. Orden: ${orderId}, Código: ${responseCodeStr}`);
+      return res.status(200).send('OK');
+    }
+  } catch (err) {
+    console.error('Error en webhook de Redsys:', err);
+    res.status(500).send('Error interno');
   }
 });
 

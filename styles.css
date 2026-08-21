@@ -359,12 +359,12 @@ a {
 .hero-section {
     position: relative;
     padding-top: 130px;
-    padding-bottom: 8rem;
-    min-height: 95vh;
+    padding-bottom: 2rem;
+    min-height: 90vh;
     background: radial-gradient(circle at 75% 40%, #0f224f 0%, #070e24 60%);
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    justify-content: space-between;
     overflow: hidden;
 }
 
@@ -542,8 +542,9 @@ a {
 
 /* Bottom Bar Wrapper (separating positioning from animation transforms) */
 .hero-footer-wrapper {
-    position: absolute;
-    bottom: 3.5rem;
+    position: relative;
+    margin-top: 2.5rem;
+    margin-bottom: 1rem;
     left: 0;
     width: 100%;
     z-index: 10;
@@ -725,10 +726,10 @@ a {
 }
 
 .scroll-down-indicator {
-    position: absolute;
-    bottom: 2rem;
-    left: 50%;
-    transform: translateX(-50%);
+    position: relative;
+    margin-top: 0.5rem;
+    margin-bottom: 0.5rem;
+    align-self: center;
     z-index: 10;
     text-align: center;
 }

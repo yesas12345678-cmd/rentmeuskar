@@ -1384,7 +1384,7 @@ const initApp = () => {
         }
     });
 
-    // Procesar pago en la TPV CaixaBank
+    // Procesar pago en la TPV Redsys / Cyberpac CaixaBank
     tpvForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         
@@ -1392,73 +1392,69 @@ const initApp = () => {
         const originalBtnHtml = tpvSubmitBtn.innerHTML;
         
         tpvSubmitBtn.disabled = true;
-        tpvSubmitBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Conectando con Redsys...';
+        tpvSubmitBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Generando firma Redsys...';
         
-        // Simular Redsys CaixaBank
-        setTimeout(() => {
-            tpvSubmitBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Autorizando pago seguro...';
+        try {
+            const payMethodRadio = tpvForm.querySelector('input[name="pay_method"]:checked');
+            const selectedPayMethod = payMethodRadio ? payMethodRadio.value : 'card';
             
-            setTimeout(async () => {
-                try {
-                    const paymentId = 'TPV_' + Math.random().toString(36).substr(2, 9).toUpperCase();
-                             const finalBookingData = {
-                        ...pendingBookingData,
-                        status: 'paid_pending',
-                        payment_status: 'paid',
-                        fianza_status: fianzaStatus,
-                        payment_id: paymentId
-                    };
-                    
-                    const response = await fetch('/api/bookings', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(finalBookingData)
-                    });
-                    const data = await response.json();
-                    if (!response.ok) {
-                        throw new Error(data.error || 'Error al guardar reserva.');
-                    }
-                    
-                    alert(`¡PAGO AUTORIZADO CORRECTAMENTE!\nReserva #${data.booking.id} registrada correctamente.\n\nEl propietario ha recibido la notificación y confirmará o cancelará (con devolución de dinero) su reserva a la brevedad.\n\nReferencia de operación: ${paymentId}`);
-                    
-                    window.closeAuthModal('tpv-modal');
-                    tpvForm.reset();
-                    updateCalendarAvailability();
-                    
-                    // Abrir WhatsApp con el recibo
-                    const modeLabelText = isCon ? 'CON CONDUCTOR' : 'SIN CONDUCTOR';
-                    const extraDetailsText = isCon 
-                        ? `\n- *Trayecto:* ${finalBookingData.estimated_kms} km estimados` + 
-                          `\n- *Espera:* ${finalBookingData.waiting_hours} h de espera`
-                        : (finalBookingData.extras.length > 0 ? '\n- *Extras:* ' + finalBookingData.extras.join(', ') : '');
-                    
-                    const messageText = `Hola *RentMeUskar*, he realizado un pago online para mi reserva:
-                    
-*NUEVA RESERVA PAGADA - PENDIENTE APROBACIÓN #${data.booking.id}*
-- *Cliente:* ${finalBookingData.name}
-- *Modalidad:* ${modeLabelText}
-- *Vehículo:* ${finalBookingData.van_name}
-- *Recogida:* ${finalBookingData.pickup_date} a las ${finalBookingData.pickup_time}
-- *Devolución:* ${finalBookingData.return_date} a las ${finalBookingData.return_time}${extraDetailsText}
-- *Duración:* ${isCon ? '-' : finalBookingData.days + ' días'}
-- *Importe Pagado:* ${(finalBookingData.total_price + (isCon ? 0 : 500)).toFixed(2)} €
-- *Referencia TPV:* ${paymentId}
+            // 1. Solicitar la firma y los parámetros oficiales a nuestro backend Redsys
+            const redsysResponse = await fetch('/api/redsys/create-payment', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    bookingData: pendingBookingData,
+                    payMethod: selectedPayMethod
+                })
+            });
+            
+            const redsysData = await redsysResponse.json();
+            if (!redsysResponse.ok) {
+                throw new Error(redsysData.error || 'Error al conectar con la pasarela Redsys.');
+            }
+            
+            // 2. Guardar la reserva en estado pendiente de confirmación de pago
+            const finalBookingData = {
+                ...pendingBookingData,
+                status: 'pending_payment',
+                payment_status: 'unpaid',
+                payment_id: redsysData.orderId
+            };
+            
+            try {
+                await fetch('/api/bookings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(finalBookingData)
+                });
+            } catch (bErr) {
+                console.warn('Almacenamiento reserva local/offline:', bErr.message);
+            }
+            
+            tpvSubmitBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Redirigiendo a CaixaBank...';
 
-_Por favor, accede al panel de administración de RentMeUskar para Aprobar o Cancelar/Reembolsar esta reserva._`;
-                    
-                    const encodedText = encodeURIComponent(messageText);
-                    const whatsappUrl = `https://api.whatsapp.com/send?phone=34614767411&text=${encodedText}`;
-                    window.open(whatsappUrl, '_blank');
-                    
-                } catch (err) {
-                    console.error(err);
-                    alert('Error al registrar la reserva pagada: ' + err.message);
-                } finally {
-                    tpvSubmitBtn.disabled = false;
-                    tpvSubmitBtn.innerHTML = originalBtnHtml;
-                }
-            }, 1000);
-        }, 1500);
+            // 3. Crear formulario HTML transparente y enviarlo POST a Redsys
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = redsysData.actionUrl;
+            
+            for (const [key, value] of Object.entries(redsysData.params)) {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = key;
+                input.value = value;
+                form.appendChild(input);
+            }
+            
+            document.body.appendChild(form);
+            form.submit();
+            
+        } catch (err) {
+            console.error(err);
+            alert('Error al iniciar el pago seguro: ' + err.message);
+            tpvSubmitBtn.disabled = false;
+            tpvSubmitBtn.innerHTML = originalBtnHtml;
+        }
     });
 
     window.cancelTpvPayment = () => {

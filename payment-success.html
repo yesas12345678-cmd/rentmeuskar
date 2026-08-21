@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pago Confirmado | RentMeUskar</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background-color: var(--bg-main, #070e24);
+            color: #ffffff;
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem 1rem;
+        }
+        .success-card {
+            background: rgba(15, 28, 63, 0.75);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(130, 209, 5, 0.3);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), 0 0 30px rgba(130, 209, 5, 0.15);
+            border-radius: 16px;
+            max-width: 550px;
+            width: 100%;
+            padding: 2.5rem 2rem;
+            text-align: center;
+        }
+        .icon-badge {
+            width: 80px;
+            height: 80px;
+            background: rgba(130, 209, 5, 0.15);
+            border: 2px solid var(--color-neon, #82d105);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.5rem auto;
+            color: var(--color-neon, #82d105);
+            font-size: 2.5rem;
+            box-shadow: 0 0 25px rgba(130, 209, 5, 0.4);
+        }
+        .test-badge {
+            display: inline-block;
+            background: rgba(255, 193, 7, 0.2);
+            color: #ffc107;
+            border: 1px solid rgba(255, 193, 7, 0.4);
+            font-size: 0.8rem;
+            font-weight: 700;
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            color: #ffffff;
+        }
+        p {
+            color: #a0aec0;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
+        }
+        .order-info {
+            background: rgba(3, 7, 18, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            padding: 1rem 1.5rem;
+            margin-bottom: 2rem;
+            text-align: left;
+        }
+        .order-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.4rem 0;
+            font-size: 0.9rem;
+            border-bottom: 1px dashed rgba(255, 255, 255, 0.05);
+        }
+        .order-row:last-child {
+            border-bottom: none;
+        }
+        .order-label {
+            color: #718096;
+        }
+        .order-value {
+            font-weight: 700;
+            color: #ffffff;
+        }
+        .btn-primary {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.6rem;
+            background: var(--color-neon, #82d105);
+            color: #000000;
+            font-weight: 800;
+            padding: 0.9rem 1.8rem;
+            border-radius: 8px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-bottom: 0.8rem;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(130, 209, 5, 0.3);
+        }
+        .btn-secondary {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.6rem;
+            background: transparent;
+            color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            font-weight: 600;
+            padding: 0.8rem 1.5rem;
+            border-radius: 8px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: #ffffff;
+        }
+    </style>
+</head>
+<body>
+    <div class="success-card">
+        <div class="icon-badge">
+            <i class="fa-solid fa-circle-check"></i>
+        </div>
+        <div class="test-badge"><i class="fa-solid fa-flask"></i> Entorno de Pruebas TPV / Bizum</div>
+        <h1>¡Operación Autorizada!</h1>
+        <p>Tu solicitud de pago se ha procesado correctamente en el entorno de test de Redsys Cyberpac CaixaBank.</p>
+
+        <div class="order-info">
+            <div class="order-row">
+                <span class="order-label">N.º de Pedido (TPV):</span>
+                <span class="order-value" id="order-id">Cargando...</span>
+            </div>
+            <div class="order-row">
+                <span class="order-label">Comercio:</span>
+                <span class="order-value">RentMeUskar</span>
+            </div>
+            <div class="order-row">
+                <span class="order-label">Estado de la Operación:</span>
+                <span class="order-value" style="color: var(--color-neon, #82d105);"><i class="fa-solid fa-check"></i> Aprobado (0000)</span>
+            </div>
+        </div>
+
+        <a href="index.html" class="btn-primary">
+            <i class="fa-solid fa-house"></i> Volver a RentMeUskar
+        </a>
+        <a href="https://api.whatsapp.com/send?phone=34614767411&text=Hola%20RentMeUskar%2C%20he%20realizado%20un%20pago%20de%20prueba%20para%20mi%20reserva" target="_blank" class="btn-secondary">
+            <i class="fa-brands fa-whatsapp"></i> Notificar por WhatsApp
+        </a>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const orderId = urlParams.get('order') || 'DEMO-' + Math.floor(Math.random() * 1000000);
+        document.getElementById('order-id').innerText = orderId;
+    </script>
+</body>
+</html>

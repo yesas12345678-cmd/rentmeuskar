@@ -911,26 +911,28 @@
                 </div>
 
                 <form id="tpv-form">
-                    <div class="custom-form-group">
-                        <label for="tpv-card-number">Número de Tarjeta</label>
-                        <input type="text" id="tpv-card-number" class="custom-form-control tpv-input" maxlength="19" required placeholder="4000 1234 5678 9010">
-                    </div>
-                    <div class="tpv-grid">
-                        <div class="custom-form-group">
-                            <label for="tpv-card-expiry">Caducidad</label>
-                            <input type="text" id="tpv-card-expiry" class="custom-form-control tpv-input" maxlength="5" required placeholder="MM/AA">
+                    <div class="custom-form-group" style="margin-bottom: 1.25rem;">
+                        <label style="display: block; font-weight: 700; margin-bottom: 0.5rem; color: #ffffff;">Selecciona el Método de Pago:</label>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem;">
+                            <label class="payment-option-card" style="background: rgba(255,255,255,0.05); border: 2px solid var(--color-neon); border-radius: 8px; padding: 1rem 0.8rem; text-align: center; cursor: pointer; transition: all 0.2s ease;">
+                                <input type="radio" name="pay_method" value="card" checked style="margin-right: 0.4rem;">
+                                <i class="fa-solid fa-credit-card" style="font-size: 1.2rem; color: #ffffff; display: block; margin-bottom: 0.3rem;"></i>
+                                <strong style="font-size: 0.85rem; color: #ffffff;">Tarjeta</strong>
+                            </label>
+                            <label class="payment-option-card" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 1rem 0.8rem; text-align: center; cursor: pointer; transition: all 0.2s ease;">
+                                <input type="radio" name="pay_method" value="bizum" style="margin-right: 0.4rem;">
+                                <i class="fa-solid fa-mobile-screen-button" style="font-size: 1.2rem; color: #00a896; display: block; margin-bottom: 0.3rem;"></i>
+                                <strong style="font-size: 0.85rem; color: #ffffff;">Bizum</strong>
+                            </label>
                         </div>
-                        <div class="custom-form-group">
-                            <label for="tpv-card-cvc">CVC</label>
-                            <input type="text" id="tpv-card-cvc" class="custom-form-control tpv-input" maxlength="3" required placeholder="123">
-                        </div>
                     </div>
-                    <div class="custom-form-group">
-                        <label for="tpv-card-name">Titular de la Tarjeta</label>
-                        <input type="text" id="tpv-card-name" class="custom-form-control tpv-input" required placeholder="">
+
+                    <div style="background: rgba(255, 193, 7, 0.1); border: 1px dashed rgba(255, 193, 7, 0.4); padding: 0.8rem 1rem; border-radius: 8px; margin-bottom: 1.2rem; font-size: 0.8rem; color: #ffc107; line-height: 1.4;">
+                        <i class="fa-solid fa-flask"></i> <strong>Modo Pruebas Activado:</strong> Serás redirigido a la pasarela oficial de CaixaBank Redsys en entorno de test sin dinero real.
                     </div>
-                    <button type="submit" class="btn btn-block" id="tpv-submit-btn" style="background: #007bff; border-color: #007bff; color: #fff; margin-top: 1rem;">
-                        <i class="fa-solid fa-lock"></i> Autorizar Pago
+
+                    <button type="submit" class="btn btn-block" id="tpv-submit-btn" style="background: #007bff; border-color: #007bff; color: #fff; padding: 0.9rem; font-weight: 700;">
+                        <i class="fa-solid fa-lock"></i> Ir a Pasarela Segura CaixaBank
                     </button>
                     <button type="button" class="btn btn-block" onclick="cancelTpvPayment()" style="margin-top: 0.5rem; background: transparent; border-color: rgba(255,255,255,0.1); color: var(--text-secondary);">
                         Cancelar Transacción
