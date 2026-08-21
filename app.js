@@ -1209,44 +1209,96 @@ const initApp = () => {
         }, 3500);
     };
 
-    // 1-Click Social Login (Google & Apple Direct Seamless SSO)
+    // Variable global para almacenar el usuario de SSO pendiente de DNI
+    let pendingSSOUser = null;
+
+    // 1-Click Social Login con Requisito de DNI/NIE
     window.loginWithGoogle = () => {
         window.closeAuthModal('login-modal');
         window.closeAuthModal('register-modal');
 
-        const googleUser = {
-            id: Date.now(),
-            name: 'Jose Manuel',
-            email: 'yesas12345678@gmail.com',
-            phone: '614767411',
-            dni: '00000000G',
-            auth_provider: 'google'
-        };
+        const savedProfileStr = localStorage.getItem('user_profile');
+        let savedProfile = null;
+        if (savedProfileStr) {
+            try { savedProfile = JSON.parse(savedProfileStr); } catch (e) { }
+        }
 
-        localStorage.setItem('user_token', 'google_user_' + googleUser.id);
-        localStorage.setItem('user_profile', JSON.stringify(googleUser));
-        updateAuthUI();
-        showAppToast(`¡Bienvenido/a, ${googleUser.name}! Has iniciado sesión con tu cuenta de Google (${googleUser.email}).`, 'success');
+        if (savedProfile && savedProfile.dni && savedProfile.dni !== '00000000G' && savedProfile.dni !== '00000000A') {
+            // Ya tiene DNI guardado
+            localStorage.setItem('user_token', 'google_user_' + savedProfile.id);
+            updateAuthUI();
+            showAppToast(`¡Bienvenido/a de nuevo, ${savedProfile.name}!`, 'success');
+        } else {
+            // Pedir DNI/NIE antes de activar la cuenta
+            pendingSSOUser = {
+                id: Date.now(),
+                name: 'Jose Manuel',
+                email: 'yesas12345678@gmail.com',
+                phone: '614767411',
+                auth_provider: 'google'
+            };
+            const ssoInput = document.getElementById('sso-dni-input');
+            if (ssoInput) ssoInput.value = '';
+            window.openAuthModal('sso-dni-modal');
+        }
     };
 
     window.loginWithApple = () => {
         window.closeAuthModal('login-modal');
         window.closeAuthModal('register-modal');
 
-        const appleUser = {
-            id: Date.now(),
-            name: 'Usuario Apple',
-            email: 'yesas12345678@icloud.com',
-            phone: '614767411',
-            dni: '00000000A',
-            auth_provider: 'apple'
-        };
+        const savedProfileStr = localStorage.getItem('user_profile');
+        let savedProfile = null;
+        if (savedProfileStr) {
+            try { savedProfile = JSON.parse(savedProfileStr); } catch (e) { }
+        }
 
-        localStorage.setItem('user_token', 'apple_user_' + appleUser.id);
-        localStorage.setItem('user_profile', JSON.stringify(appleUser));
-        updateAuthUI();
-        showAppToast(`¡Bienvenido/a! Has iniciado sesión con tu Apple ID (${appleUser.email}).`, 'success');
+        if (savedProfile && savedProfile.dni && savedProfile.dni !== '00000000G' && savedProfile.dni !== '00000000A') {
+            localStorage.setItem('user_token', 'apple_user_' + savedProfile.id);
+            updateAuthUI();
+            showAppToast(`¡Bienvenido/a de nuevo!`, 'success');
+        } else {
+            pendingSSOUser = {
+                id: Date.now(),
+                name: 'Usuario Apple',
+                email: 'yesas12345678@icloud.com',
+                phone: '614767411',
+                auth_provider: 'apple'
+            };
+            const ssoInput = document.getElementById('sso-dni-input');
+            if (ssoInput) ssoInput.value = '';
+            window.openAuthModal('sso-dni-modal');
+        }
     };
+
+    // Formulario de Submit de DNI para SSO
+    document.getElementById('sso-dni-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const dniValue = document.getElementById('sso-dni-input').value.trim().toUpperCase();
+        if (!dniValue) {
+            alert('Por favor, introduce un DNI o NIE válido.');
+            return;
+        }
+
+        if (!pendingSSOUser) {
+            pendingSSOUser = {
+                id: Date.now(),
+                name: 'Jose Manuel',
+                email: 'yesas12345678@gmail.com',
+                phone: '614767411',
+                auth_provider: 'google'
+            };
+        }
+
+        pendingSSOUser.dni = dniValue;
+
+        localStorage.setItem('user_token', `${pendingSSOUser.auth_provider || 'user'}_` + pendingSSOUser.id);
+        localStorage.setItem('user_profile', JSON.stringify(pendingSSOUser));
+
+        window.closeAuthModal('sso-dni-modal');
+        updateAuthUI();
+        showAppToast(`¡Perfil completado! Sesión iniciada como ${pendingSSOUser.name} (DNI: ${pendingSSOUser.dni}).`, 'success');
+    });
 
     // Abrir Panel de Área de Cliente (Sin cerrar sesión jamás por fallo de red)
     window.openClientArea = async () => {

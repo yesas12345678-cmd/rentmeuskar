@@ -1099,6 +1099,24 @@
         </div>
     </div>
 
+    <!-- Modal: Requerir DNI/NIE para Login con Google / Apple -->
+    <div class="custom-modal-backdrop" id="sso-dni-modal" style="display: none;">
+        <div class="custom-modal-card">
+            <span class="custom-modal-close" onclick="closeAuthModal('sso-dni-modal')">&times;</span>
+            <div class="custom-modal-header" style="text-align: center;">
+                <h2><i class="fa-solid fa-id-card" style="color: var(--color-neon); margin-right: 0.5rem;"></i> Identificación Requerida</h2>
+                <p>Por favor, introduce tu DNI o NIE para poder gestionar tus contratos y facturas de alquiler.</p>
+            </div>
+            <form id="sso-dni-form">
+                <div class="custom-form-group">
+                    <label for="sso-dni-input">DNI / NIE</label>
+                    <input type="text" id="sso-dni-input" class="custom-form-control" required placeholder="ej: 12345678X" style="text-transform: uppercase;">
+                </div>
+                <button type="submit" class="btn btn-primary btn-block" style="margin-top: 1rem;">Guardar DNI y Continuar</button>
+            </form>
+        </div>
+    </div>
+
     <!-- Modal: Área de Cliente (Reservas e Historial) -->
     <div class="custom-modal-backdrop" id="client-modal" style="display: none;">
         <div class="custom-modal-card max-width-lg">
