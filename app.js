@@ -1125,15 +1125,55 @@ const initApp = () => {
         }
     });
 
+    // Validador oficial de DNI / NIE / CIF español
+    window.validateSpanishID = (idString) => {
+        if (!idString) return false;
+        const value = idString.trim().toUpperCase();
+        
+        const dniRegex = /^(\d{8})([A-Z])$/;
+        const nieRegex = /^([XYZ])(\d{7})([A-Z])$/;
+        const cifRegex = /^([ABCDEFGHJKLMNPQRSUVW])(\d{7})([0-9A-J])$/;
+
+        const validLetters = "TRWAGMYFPDXBNJZSQVHLCKE";
+
+        if (dniRegex.test(value)) {
+            const match = value.match(dniRegex);
+            const number = parseInt(match[1], 10);
+            const letter = match[2];
+            const expectedLetter = validLetters[number % 23];
+            return letter === expectedLetter;
+        }
+
+        if (nieRegex.test(value)) {
+            const match = value.match(nieRegex);
+            const prefixMap = { 'X': '0', 'Y': '1', 'Z': '2' };
+            const fullNumber = prefixMap[match[1]] + match[2];
+            const letter = match[3];
+            const expectedLetter = validLetters[parseInt(fullNumber, 10) % 23];
+            return letter === expectedLetter;
+        }
+
+        if (cifRegex.test(value)) {
+            return true;
+        }
+
+        return false;
+    };
+
     // Register Form Submit
     document.getElementById('register-form').addEventListener('submit', async (e) => {
         e.preventDefault();
         const name = document.getElementById('reg-name').value.trim();
         const rawEmail = document.getElementById('reg-email').value;
         const phone = document.getElementById('reg-phone').value.trim();
-        const dni = document.getElementById('reg-dni').value.trim();
+        const dni = document.getElementById('reg-dni').value.trim().toUpperCase();
         const password = document.getElementById('reg-password').value;
         const cleanEmail = rawEmail ? rawEmail.trim().toLowerCase() : '';
+
+        if (!window.validateSpanishID(dni)) {
+            alert('El DNI / NIE introducido no es válido. Por favor, comprueba los 8 números y la letra (ejemplo: 12345678Z o X1234567L).');
+            return;
+        }
 
         if (password.length < 6) {
             alert('La contraseña debe tener al menos 6 caracteres.');
@@ -1275,8 +1315,9 @@ const initApp = () => {
     document.getElementById('sso-dni-form').addEventListener('submit', (e) => {
         e.preventDefault();
         const dniValue = document.getElementById('sso-dni-input').value.trim().toUpperCase();
-        if (!dniValue) {
-            alert('Por favor, introduce un DNI o NIE válido.');
+        
+        if (!window.validateSpanishID(dniValue)) {
+            alert('El DNI / NIE introducido no es válido. Comprueba los 8 números y la letra correspondiente (ejemplo: 12345678Z o X1234567L).');
             return;
         }
 

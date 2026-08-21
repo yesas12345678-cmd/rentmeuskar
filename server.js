@@ -324,11 +324,37 @@ initDb();
 
 // --- RUTAS DE LA API ---
 
+// Validador oficial DNI / NIE / CIF
+const validateSpanishID = (idString) => {
+  if (!idString) return false;
+  const value = idString.trim().toUpperCase();
+  const dniRegex = /^(\d{8})([A-Z])$/;
+  const nieRegex = /^([XYZ])(\d{7})([A-Z])$/;
+  const cifRegex = /^([ABCDEFGHJKLMNPQRSUVW])(\d{7})([0-9A-J])$/;
+  const validLetters = "TRWAGMYFPDXBNJZSQVHLCKE";
+
+  if (dniRegex.test(value)) {
+    const match = value.match(dniRegex);
+    return match[2] === validLetters[parseInt(match[1], 10) % 23];
+  }
+  if (nieRegex.test(value)) {
+    const match = value.match(nieRegex);
+    const prefixMap = { 'X': '0', 'Y': '1', 'Z': '2' };
+    const fullNumber = prefixMap[match[1]] + match[2];
+    return match[3] === validLetters[parseInt(fullNumber, 10) % 23];
+  }
+  return cifRegex.test(value);
+};
+
 // 1. Registro de usuarios
 app.post('/api/auth/register', async (req, res) => {
   const { name, email, password, phone, dni } = req.body;
   if (!name || !email || !password) {
     return res.status(400).json({ error: 'Nombre, email y contraseña son obligatorios.' });
+  }
+
+  if (dni && !validateSpanishID(dni)) {
+    return res.status(400).json({ error: 'El DNI / NIE introducido no es válido (comprueba los 8 números y la letra).' });
   }
 
   const cleanEmail = email.trim().toLowerCase();
