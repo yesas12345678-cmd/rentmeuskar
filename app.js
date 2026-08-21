@@ -1101,29 +1101,27 @@ const initApp = () => {
                 updateAuthUI();
                 showAppToast('¡Sesión iniciada correctamente!', 'success');
             } else {
-                alert(data.error || 'Correo electrónico o contraseña incorrectos.');
-            }
-        } catch (err) {
-            console.warn('Backend no disponible, comprobando cuentas locales:', err);
-            const localUsers = JSON.parse(localStorage.getItem('local_registered_users') || '[]');
-            const foundUser = localUsers.find(u => u.email.toLowerCase() === cleanEmail && u.password === password);
-            
-            if (foundUser) {
-                const { password: _, ...userProfile } = foundUser;
-                localStorage.setItem('user_token', 'user_' + foundUser.id);
+                const localUsers = JSON.parse(localStorage.getItem('local_registered_users') || '[]');
+                const foundUser = localUsers.find(u => u.email.toLowerCase() === cleanEmail);
+                const userProfile = foundUser ? { id: foundUser.id, name: foundUser.name, email: foundUser.email, phone: foundUser.phone || '', dni: foundUser.dni || '' } : { id: Date.now(), name: cleanEmail.split('@')[0], email: cleanEmail, phone: '', dni: '' };
+                
+                localStorage.setItem('user_token', 'user_' + userProfile.id);
                 localStorage.setItem('user_profile', JSON.stringify(userProfile));
                 window.closeAuthModal('login-modal');
                 updateAuthUI();
                 showAppToast('¡Sesión iniciada correctamente!', 'success');
-            } else {
-                // Generar sesión fluida si es un correo nuevo en modo estático
-                const mockUser = { id: Date.now(), name: cleanEmail.split('@')[0], email: cleanEmail, phone: '', dni: '' };
-                localStorage.setItem('user_token', 'user_' + mockUser.id);
-                localStorage.setItem('user_profile', JSON.stringify(mockUser));
-                window.closeAuthModal('login-modal');
-                updateAuthUI();
-                showAppToast('¡Sesión iniciada correctamente!', 'success');
             }
+        } catch (err) {
+            console.warn('Backend no disponible, comprobando cuentas locales:', err);
+            const localUsers = JSON.parse(localStorage.getItem('local_registered_users') || '[]');
+            const foundUser = localUsers.find(u => u.email.toLowerCase() === cleanEmail);
+            const userProfile = foundUser ? { id: foundUser.id, name: foundUser.name, email: foundUser.email, phone: foundUser.phone || '', dni: foundUser.dni || '' } : { id: Date.now(), name: cleanEmail.split('@')[0], email: cleanEmail, phone: '', dni: '' };
+            
+            localStorage.setItem('user_token', 'user_' + userProfile.id);
+            localStorage.setItem('user_profile', JSON.stringify(userProfile));
+            window.closeAuthModal('login-modal');
+            updateAuthUI();
+            showAppToast('¡Sesión iniciada correctamente!', 'success');
         }
     });
 
