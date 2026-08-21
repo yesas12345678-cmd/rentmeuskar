@@ -1052,14 +1052,15 @@ const initApp = () => {
     // Login Form Submit
     document.getElementById('login-form').addEventListener('submit', async (e) => {
         e.preventDefault();
-        const email = document.getElementById('login-email').value;
+        const rawEmail = document.getElementById('login-email').value;
         const password = document.getElementById('login-password').value;
+        const cleanEmail = rawEmail ? rawEmail.trim().toLowerCase() : '';
 
         try {
             const res = await fetch('/api/auth/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password })
+                body: JSON.stringify({ email: cleanEmail, password })
             });
             const data = await res.json();
             if (res.ok) {
@@ -1075,29 +1076,43 @@ const initApp = () => {
                 }
                 window.closeAuthModal('login-modal');
                 updateAuthUI();
-                alert('Sesión iniciada correctamente.');
+                showAppToast('¡Sesión iniciada correctamente!', 'success');
             } else {
-                alert(data.error || 'Error al iniciar sesión.');
+                alert(data.error || 'Correo electrónico o contraseña incorrectos.');
             }
         } catch (err) {
-            console.warn('Backend no disponible, iniciando sesión en modo local:', err);
-            const mockUser = { id: Date.now(), name: email.split('@')[0], email, phone: '', dni: '' };
-            localStorage.setItem('user_token', 'user_' + mockUser.id);
-            localStorage.setItem('user_profile', JSON.stringify(mockUser));
-            window.closeAuthModal('login-modal');
-            updateAuthUI();
-            alert('Sesión iniciada correctamente.');
+            console.warn('Backend no disponible, comprobando cuentas locales:', err);
+            const localUsers = JSON.parse(localStorage.getItem('local_registered_users') || '[]');
+            const foundUser = localUsers.find(u => u.email.toLowerCase() === cleanEmail && u.password === password);
+            
+            if (foundUser) {
+                const { password: _, ...userProfile } = foundUser;
+                localStorage.setItem('user_token', 'user_' + foundUser.id);
+                localStorage.setItem('user_profile', JSON.stringify(userProfile));
+                window.closeAuthModal('login-modal');
+                updateAuthUI();
+                showAppToast('¡Sesión iniciada correctamente!', 'success');
+            } else {
+                // Generar sesión fluida si es un correo nuevo en modo estático
+                const mockUser = { id: Date.now(), name: cleanEmail.split('@')[0], email: cleanEmail, phone: '', dni: '' };
+                localStorage.setItem('user_token', 'user_' + mockUser.id);
+                localStorage.setItem('user_profile', JSON.stringify(mockUser));
+                window.closeAuthModal('login-modal');
+                updateAuthUI();
+                showAppToast('¡Sesión iniciada correctamente!', 'success');
+            }
         }
     });
 
     // Register Form Submit
     document.getElementById('register-form').addEventListener('submit', async (e) => {
         e.preventDefault();
-        const name = document.getElementById('reg-name').value;
-        const email = document.getElementById('reg-email').value;
-        const phone = document.getElementById('reg-phone').value;
-        const dni = document.getElementById('reg-dni').value;
+        const name = document.getElementById('reg-name').value.trim();
+        const rawEmail = document.getElementById('reg-email').value;
+        const phone = document.getElementById('reg-phone').value.trim();
+        const dni = document.getElementById('reg-dni').value.trim();
         const password = document.getElementById('reg-password').value;
+        const cleanEmail = rawEmail ? rawEmail.trim().toLowerCase() : '';
 
         if (password.length < 6) {
             alert('La contraseña debe tener al menos 6 caracteres.');
@@ -1108,15 +1123,15 @@ const initApp = () => {
             const res = await fetch('/api/auth/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, email: email.trim(), password, phone, dni })
+                body: JSON.stringify({ name, email: cleanEmail, password, phone, dni })
             });
             const data = await res.json();
             if (res.ok) {
-                // Guardar email registrado localmente
-                const savedEmails = JSON.parse(localStorage.getItem('registered_emails') || '[]');
-                if (!savedEmails.includes(email.trim().toLowerCase())) {
-                    savedEmails.push(email.trim().toLowerCase());
-                    localStorage.setItem('registered_emails', JSON.stringify(savedEmails));
+                // Guardar en usuarios locales
+                const localUsers = JSON.parse(localStorage.getItem('local_registered_users') || '[]');
+                if (!localUsers.some(u => u.email === cleanEmail)) {
+                    localUsers.push({ id: data.user ? data.user.id : Date.now(), name, email: cleanEmail, password, phone, dni });
+                    localStorage.setItem('local_registered_users', JSON.stringify(localUsers));
                 }
 
                 localStorage.setItem('user_token', data.token);
@@ -1125,26 +1140,27 @@ const initApp = () => {
                 }
                 window.closeAuthModal('register-modal');
                 updateAuthUI();
-                showAppToast('¡Cuenta creada correctamente! Bienvenido/a a RentMeUskar.', 'success');
+                showAppToast('¡Cuenta creada e inicio de sesión automático!', 'success');
             } else {
                 alert(data.error || 'Este correo electrónico ya está registrado.');
             }
         } catch (err) {
-            console.warn('Backend no disponible, verificando registro local:', err);
-            const savedEmails = JSON.parse(localStorage.getItem('registered_emails') || '[]');
-            if (savedEmails.includes(email.trim().toLowerCase())) {
-                alert('El correo electrónico ya está registrado. Por favor, inicia sesión con tu contraseña o restablecela si la has olvidado.');
+            console.warn('Backend no disponible, registrando usuario localmente:', err);
+            const localUsers = JSON.parse(localStorage.getItem('local_registered_users') || '[]');
+            if (localUsers.some(u => u.email === cleanEmail)) {
+                alert('El correo electrónico ya está registrado. Por favor, inicia sesión con tu contraseña.');
                 return;
             }
-            savedEmails.push(email.trim().toLowerCase());
-            localStorage.setItem('registered_emails', JSON.stringify(savedEmails));
 
-            const mockUser = { id: Date.now(), name, email: email.trim(), phone, dni };
+            const mockUser = { id: Date.now(), name, email: cleanEmail, phone, dni };
+            localUsers.push({ ...mockUser, password });
+            localStorage.setItem('local_registered_users', JSON.stringify(localUsers));
+
             localStorage.setItem('user_token', 'user_' + mockUser.id);
             localStorage.setItem('user_profile', JSON.stringify(mockUser));
             window.closeAuthModal('register-modal');
             updateAuthUI();
-            showAppToast('¡Cuenta creada correctamente! Bienvenido/a.', 'success');
+            showAppToast('¡Cuenta creada e inicio de sesión automático!', 'success');
         }
     });
 

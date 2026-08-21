@@ -330,17 +330,20 @@ app.post('/api/auth/register', async (req, res) => {
   if (!name || !email || !password) {
     return res.status(400).json({ error: 'Nombre, email y contraseña son obligatorios.' });
   }
+
+  const cleanEmail = email.trim().toLowerCase();
+  const cleanName = name.trim();
+  const passHash = hashPassword(password);
   
   try {
-    const checkUser = await pool.query('SELECT id FROM users WHERE LOWER(email) = LOWER($1)', [email.trim()]);
-    if (checkUser.rowCount > 0 || fallbackUsers.some(u => u.email.toLowerCase() === email.trim().toLowerCase())) {
+    const checkUser = await pool.query('SELECT id FROM users WHERE LOWER(email) = $1', [cleanEmail]);
+    if (checkUser.rowCount > 0 || fallbackUsers.some(u => u.email.toLowerCase() === cleanEmail)) {
       return res.status(400).json({ error: 'El correo electrónico ya está registrado. Por favor, inicia sesión.' });
     }
     
-    const passHash = hashPassword(password);
     const result = await pool.query(
       'INSERT INTO users (name, email, password, phone, dni) VALUES ($1, $2, $3, $4, $5) RETURNING id, name, email, phone, dni, created_at',
-      [name, email, passHash, phone, dni]
+      [cleanName, cleanEmail, passHash, phone || '', dni || '']
     );
     
     const user = result.rows[0];
@@ -352,16 +355,15 @@ app.post('/api/auth/register', async (req, res) => {
     });
   } catch (err) {
     console.warn('Base de datos offline al registrar usuario, usando almacenamiento fallback:', err.message);
-    const passHash = hashPassword(password);
-    const existing = fallbackUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
+    const existing = fallbackUsers.find(u => u.email.toLowerCase() === cleanEmail);
     if (existing) {
-      return res.status(400).json({ error: 'El correo electrónico ya está registrado.' });
+      return res.status(400).json({ error: 'El correo electrónico ya está registrado. Por favor, inicia sesión.' });
     }
     const mockId = fallbackUsers.length > 0 ? Math.max(...fallbackUsers.map(u => u.id)) + 1 : 1;
     const newUser = {
       id: mockId,
-      name,
-      email,
+      name: cleanName,
+      email: cleanEmail,
       password: passHash,
       phone: phone || '',
       dni: dni || '',
@@ -383,39 +385,38 @@ app.post('/api/auth/login', async (req, res) => {
   if (!email || !password) {
     return res.status(400).json({ error: 'Email y contraseña son obligatorios.' });
   }
+
+  const cleanEmail = email.trim().toLowerCase();
   
   // Login de Administrador
-  if (email === 'zVaito' && password === 'Manuel1214$') {
+  if ((cleanEmail === 'zvaito' || cleanEmail === 'info@rentmeuskar.com') && password === 'Manuel1214$') {
     return res.json({
       token: 'admin_token_rentmeuskar',
       user: { id: 0, name: 'Admin', email: 'info@rentmeuskar.com', is_admin: true }
     });
   }
   
+  const passHash = hashPassword(password);
+
   try {
-    const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
-    if (result.rowCount === 0) {
-      return res.status(401).json({ error: 'Credenciales inválidas.' });
+    const result = await pool.query('SELECT * FROM users WHERE LOWER(email) = $1', [cleanEmail]);
+    if (result.rowCount > 0) {
+      const user = result.rows[0];
+      if (user.password === passHash) {
+        return res.json({
+          message: 'Inicio de sesión exitoso.',
+          token: 'user_' + user.id,
+          user: { id: user.id, name: user.name, email: user.email, phone: user.phone, dni: user.dni }
+        });
+      }
     }
-    
-    const user = result.rows[0];
-    const passHash = hashPassword(password);
-    if (user.password !== passHash) {
-      return res.status(401).json({ error: 'Credenciales inválidas.' });
-    }
-    
-    return res.json({
-      message: 'Inicio de sesión exitoso.',
-      token: 'user_' + user.id,
-      user: { id: user.id, name: user.name, email: user.email, phone: user.phone, dni: user.dni }
-    });
   } catch (err) {
     console.warn('Base de datos offline al iniciar sesión, buscando en fallback:', err.message);
-    const passHash = hashPassword(password);
-    const user = fallbackUsers.find(u => u.email.toLowerCase() === email.toLowerCase() && u.password === passHash);
-    if (!user) {
-      return res.status(401).json({ error: 'Credenciales inválidas.' });
-    }
+  }
+
+  // Buscar en usuarios registrados en memoria / fallback
+  const user = fallbackUsers.find(u => u.email.toLowerCase() === cleanEmail && u.password === passHash);
+  if (user) {
     const { password: _, ...userWithoutPass } = user;
     return res.json({
       message: 'Inicio de sesión exitoso.',
@@ -423,6 +424,8 @@ app.post('/api/auth/login', async (req, res) => {
       user: userWithoutPass
     });
   }
+
+  return res.status(401).json({ error: 'Correo electrónico o contraseña incorrectos.' });
 });
 
 // 3. Obtener perfil del usuario actual
