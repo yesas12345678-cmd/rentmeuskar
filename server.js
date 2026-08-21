@@ -344,14 +344,36 @@ app.post('/api/auth/register', async (req, res) => {
     );
     
     const user = result.rows[0];
-    res.status(201).json({
+    fallbackUsers.push({ ...user, password: passHash });
+    return res.status(201).json({
       message: 'Usuario registrado con éxito.',
       token: 'user_' + user.id,
       user
     });
   } catch (err) {
-    console.error('Error al registrar usuario:', err);
-    res.status(500).json({ error: 'Error interno del servidor al registrar el usuario.' });
+    console.warn('Base de datos offline al registrar usuario, usando almacenamiento fallback:', err.message);
+    const passHash = hashPassword(password);
+    const existing = fallbackUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
+    if (existing) {
+      return res.status(400).json({ error: 'El correo electrónico ya está registrado.' });
+    }
+    const mockId = fallbackUsers.length > 0 ? Math.max(...fallbackUsers.map(u => u.id)) + 1 : 1;
+    const newUser = {
+      id: mockId,
+      name,
+      email,
+      password: passHash,
+      phone: phone || '',
+      dni: dni || '',
+      created_at: new Date()
+    };
+    fallbackUsers.push(newUser);
+    const { password: _, ...userWithoutPass } = newUser;
+    return res.status(201).json({
+      message: 'Usuario registrado con éxito.',
+      token: 'user_' + newUser.id,
+      user: userWithoutPass
+    });
   }
 });
 
@@ -382,14 +404,24 @@ app.post('/api/auth/login', async (req, res) => {
       return res.status(401).json({ error: 'Credenciales inválidas.' });
     }
     
-    res.json({
+    return res.json({
       message: 'Inicio de sesión exitoso.',
       token: 'user_' + user.id,
       user: { id: user.id, name: user.name, email: user.email, phone: user.phone, dni: user.dni }
     });
   } catch (err) {
-    console.error('Error en login:', err);
-    res.status(500).json({ error: 'Error interno del servidor al iniciar sesión.' });
+    console.warn('Base de datos offline al iniciar sesión, buscando en fallback:', err.message);
+    const passHash = hashPassword(password);
+    const user = fallbackUsers.find(u => u.email.toLowerCase() === email.toLowerCase() && u.password === passHash);
+    if (!user) {
+      return res.status(401).json({ error: 'Credenciales inválidas.' });
+    }
+    const { password: _, ...userWithoutPass } = user;
+    return res.json({
+      message: 'Inicio de sesión exitoso.',
+      token: 'user_' + user.id,
+      user: userWithoutPass
+    });
   }
 });
 
@@ -414,8 +446,13 @@ app.get('/api/auth/me', async (req, res) => {
       }
       return res.json(result.rows[0]);
     } catch (err) {
-      console.error('Error al obtener perfil:', err);
-      return res.status(500).json({ error: 'Error del servidor.' });
+      console.warn('Base de datos offline al buscar perfil me, buscando en fallback:', err.message);
+      const user = fallbackUsers.find(u => u.id === userId);
+      if (user) {
+        const { password: _, ...userWithoutPass } = user;
+        return res.json(userWithoutPass);
+      }
+      return res.status(401).json({ error: 'Usuario no encontrado.' });
     }
   }
   
@@ -930,7 +967,8 @@ app.post('/api/redsys/notification', async (req, res) => {
   }
 });
 
-// --- RUTAS DE GESTIÓN DE FLOTA (FURGONETAS) ---
+// Usuarios fallback en memoria
+let fallbackUsers = [];
 
 // Reservas fallback en memoria
 let fallbackBookings = [
