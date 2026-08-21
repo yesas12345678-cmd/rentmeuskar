@@ -1029,11 +1029,11 @@ const initApp = () => {
             try { user = JSON.parse(savedProfileStr); } catch (e) { }
         }
 
-        const userNameText = (user && user.name) ? (user.name.split(' ')[0] || 'Mi Perfil') : 'Mi Perfil';
+        const userNameText = (user && user.name) ? user.name : 'Mi Perfil';
         if (authSection) {
             authSection.innerHTML = `
                 <button class="btn btn-secondary btn-sm" onclick="openClientArea()" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; border-color: var(--color-neon); color: var(--color-neon);">
-                    <i class="fa-solid fa-user-circle"></i> Mi Panel (${userNameText})
+                    <i class="fa-solid fa-user-circle"></i> ${userNameText}
                 </button>
             `;
         }
@@ -1050,11 +1050,11 @@ const initApp = () => {
             if (res.ok) {
                 const freshUser = await res.json();
                 localStorage.setItem('user_profile', JSON.stringify(freshUser));
-                const freshNameText = freshUser.name ? (freshUser.name.split(' ')[0] || 'Mi Perfil') : 'Mi Perfil';
+                const freshNameText = freshUser.name ? freshUser.name : 'Mi Perfil';
                 if (authSection) {
                     authSection.innerHTML = `
                         <button class="btn btn-secondary btn-sm" onclick="openClientArea()" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; border-color: var(--color-neon); color: var(--color-neon);">
-                            <i class="fa-solid fa-user-circle"></i> Mi Panel (${freshNameText})
+                            <i class="fa-solid fa-user-circle"></i> ${freshNameText}
                         </button>
                     `;
                 }
