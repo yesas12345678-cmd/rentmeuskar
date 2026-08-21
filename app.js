@@ -966,6 +966,23 @@ const initApp = () => {
         document.getElementById(modalId).style.display = 'none';
     };
 
+    // Alternar visibilidad de contraseña (ojo)
+    window.togglePasswordVisibility = (inputId, iconElement) => {
+        const input = document.getElementById(inputId);
+        if (!input) return;
+        if (input.type === 'password') {
+            input.type = 'text';
+            iconElement.classList.remove('fa-eye');
+            iconElement.classList.add('fa-eye-slash');
+            iconElement.style.color = 'var(--color-neon, #82d105)';
+        } else {
+            input.type = 'password';
+            iconElement.classList.remove('fa-eye-slash');
+            iconElement.classList.add('fa-eye');
+            iconElement.style.color = 'var(--text-secondary, #718096)';
+        }
+    };
+
     window.switchAuthModal = (closeId, openId) => {
         window.closeAuthModal(closeId);
         window.openAuthModal(openId);

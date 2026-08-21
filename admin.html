@@ -755,7 +755,10 @@
                 </div>
                 <div class="custom-form-group" style="margin-bottom: 1.5rem; text-align: left;">
                     <label style="display: block; font-size: 0.8rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 0.3rem; font-weight: 600; letter-spacing: 0.05em;">Contraseña</label>
-                    <input type="password" id="admin-password" class="search-input" style="padding-left: 1rem;" required placeholder="">
+                    <div style="position: relative; display: flex; align-items: center; width: 100%;">
+                        <input type="password" id="admin-password" class="search-input" style="padding-left: 1rem; padding-right: 2.5rem; width: 100%;" required placeholder="">
+                        <i class="fa-solid fa-eye toggle-password-btn" onclick="togglePasswordVisibility('admin-password', this)" title="Mostrar/Ocultar contraseña" style="position: absolute; right: 0.8rem; color: var(--text-secondary, #718096); cursor: pointer; font-size: 1rem; transition: color 0.2s; user-select: none;"></i>
+                    </div>
                 </div>
                 <button type="submit" class="btn btn-primary" style="width: 100%; padding: 0.8rem; justify-content: center;">Iniciar Sesión</button>
             </form>
