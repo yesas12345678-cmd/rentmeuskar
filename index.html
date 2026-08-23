@@ -1185,55 +1185,48 @@
                 <div class="tpv-amount-box">
                     <div class="tpv-amount-row">
                         <span>Importe Alquiler:</span>
-                        <span id="tpv-rent-amount">0,00 €</span>
+                        <strong id="tpv-rent-amount" style="color: #ffffff;">0,00 €</strong>
                     </div>
                     <div class="tpv-amount-row">
                         <span>Fianza (Retenida):</span>
-                        <span>500,00 €</span>
+                        <strong style="color: #ffffff;">500,00 €</strong>
                     </div>
-                    <hr style="border-color: rgba(255,255,255,0.1); margin: 0.5rem 0;">
+                    <hr style="border-color: rgba(255,255,255,0.12); margin: 0.6rem 0;">
                     <div class="tpv-amount-row total">
-                        <span>Importe Total:</span>
-                        <span id="tpv-total-amount" class="text-neon">500,00 €</span>
+                        <span style="font-weight: 700; color: #ffffff;">Importe Total:</span>
+                        <span id="tpv-total-amount" style="color: var(--color-neon); font-size: 1.3rem; font-weight: 800;">500,00 €</span>
                     </div>
                 </div>
 
                 <form id="tpv-form">
                     <div class="custom-form-group" style="margin-bottom: 1.25rem;">
-                        <label
-                            style="display: block; font-weight: 700; margin-bottom: 0.5rem; color: #ffffff;">Selecciona
-                            el Método de Pago:</label>
+                        <label style="display: block; font-weight: 700; margin-bottom: 0.6rem; color: #ffffff; font-size: 0.9rem;">
+                            Selecciona el Método de Pago:
+                        </label>
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem;">
                             <label class="payment-option-card"
-                                style="background: rgba(255,255,255,0.05); border: 2px solid var(--color-neon); border-radius: 8px; padding: 1rem 0.8rem; text-align: center; cursor: pointer; transition: all 0.2s ease;">
-                                <input type="radio" name="pay_method" value="card" checked
-                                    style="margin-right: 0.4rem;">
-                                <i class="fa-solid fa-credit-card"
-                                    style="font-size: 1.2rem; color: #ffffff; display: block; margin-bottom: 0.3rem;"></i>
-                                <strong style="font-size: 0.85rem; color: #ffffff;">Tarjeta</strong>
+                                style="background: rgba(255,255,255,0.06); border: 2px solid var(--color-neon); border-radius: 10px; padding: 1.1rem 0.8rem; text-align: center; cursor: pointer; transition: all 0.2s ease;">
+                                <input type="radio" name="pay_method" value="card" checked style="margin-right: 0.4rem;">
+                                <i class="fa-solid fa-credit-card" style="font-size: 1.4rem; color: #ffffff; display: block; margin-bottom: 0.4rem;"></i>
+                                <strong style="font-size: 0.9rem; color: #ffffff;">Tarjeta</strong>
                             </label>
                             <label class="payment-option-card"
-                                style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 1rem 0.8rem; text-align: center; cursor: pointer; transition: all 0.2s ease;">
+                                style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 1.1rem 0.8rem; text-align: center; cursor: pointer; transition: all 0.2s ease;">
                                 <input type="radio" name="pay_method" value="bizum" style="margin-right: 0.4rem;">
-                                <i class="fa-solid fa-mobile-screen-button"
-                                    style="font-size: 1.2rem; color: #00a896; display: block; margin-bottom: 0.3rem;"></i>
-                                <strong style="font-size: 0.85rem; color: #ffffff;">Bizum</strong>
+                                <i class="fa-solid fa-mobile-screen-button" style="font-size: 1.4rem; color: #00a896; display: block; margin-bottom: 0.4rem;"></i>
+                                <strong style="font-size: 0.9rem; color: #ffffff;">Bizum</strong>
                             </label>
                         </div>
                     </div>
 
-                    <div
-                        style="background: rgba(255, 193, 7, 0.1); border: 1px dashed rgba(255, 193, 7, 0.4); padding: 0.8rem 1rem; border-radius: 8px; margin-bottom: 1.2rem; font-size: 0.8rem; color: #ffc107; line-height: 1.4;">
-                        <i class="fa-solid fa-flask"></i> <strong>Modo Pruebas Activado:</strong> Serás redirigido a la
-                        pasarela oficial de CaixaBank Redsys en entorno de test sin dinero real.
+                    <div style="background: rgba(255, 193, 7, 0.12); border: 1px dashed rgba(255, 193, 7, 0.5); padding: 0.8rem 1rem; border-radius: 8px; margin-bottom: 1.2rem; font-size: 0.8rem; color: #ffc107; line-height: 1.4;">
+                        <i class="fa-solid fa-flask"></i> <strong>Modo Pruebas Activado:</strong> Serás redirigido a la pasarela oficial de CaixaBank Redsys en entorno de test sin dinero real.
                     </div>
 
-                    <button type="submit" class="btn btn-block" id="tpv-submit-btn"
-                        style="background: #007bff; border-color: #007bff; color: #fff; padding: 0.9rem; font-weight: 700;">
+                    <button type="submit" class="btn btn-block" id="tpv-submit-btn" style="background: #007bff; border-color: #007bff; color: #ffffff; padding: 0.95rem; font-weight: 700; font-size: 0.95rem; border-radius: 8px; cursor: pointer;">
                         <i class="fa-solid fa-lock"></i> Ir a Pasarela Segura CaixaBank
                     </button>
-                    <button type="button" class="btn btn-block" onclick="cancelTpvPayment()"
-                        style="margin-top: 0.5rem; background: transparent; border-color: rgba(255,255,255,0.1); color: var(--text-secondary);">
+                    <button type="button" class="btn btn-block" onclick="cancelTpvPayment()" style="margin-top: 0.6rem; background: transparent; border: 1px solid rgba(255,255,255,0.15); color: rgba(255,255,255,0.7); padding: 0.6rem; border-radius: 8px; cursor: pointer;">
                         Cancelar Transacción
                     </button>
                 </form>
@@ -1402,19 +1395,19 @@
 
         /* TPV CaixaBank Styles */
         .custom-modal-card.tpv-card {
-            background: #fbfbfb;
-            color: #333;
-            max-width: 400px;
+            background: #0f1c3f;
+            color: #ffffff;
+            max-width: 440px;
             padding: 0;
             overflow: hidden;
-            border-radius: 12px;
-            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.5);
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7);
         }
 
         .tpv-header {
-            background: #007bff;
-            /* CaixaBank Blue representation */
-            color: #fff;
+            background: linear-gradient(135deg, #0056b3, #007bff);
+            color: #ffffff;
             padding: 1.2rem 1.5rem;
             display: flex;
             justify-content: space-between;
@@ -1429,7 +1422,6 @@
 
         .tpv-star {
             color: #f7b32b;
-            /* yellow star */
             font-size: 1.3rem;
         }
 
@@ -1437,65 +1429,52 @@
             font-weight: 800;
             font-size: 1.2rem;
             letter-spacing: -0.03em;
+            color: #ffffff;
         }
 
         .tpv-header-title {
             font-size: 0.8rem;
-            background: rgba(255, 255, 255, 0.15);
-            padding: 0.25rem 0.5rem;
-            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 0.25rem 0.6rem;
+            border-radius: 6px;
+            font-weight: 600;
+            color: #ffffff;
         }
 
         .tpv-body {
             padding: 1.5rem;
+            background: #0f1c3f;
         }
 
         .tpv-amount-box {
-            background: #f1f5f9;
-            border-radius: 8px;
-            padding: 1rem;
+            background: rgba(7, 14, 36, 0.6);
+            border-radius: 10px;
+            padding: 1.2rem;
             margin-bottom: 1.2rem;
-            border: 1px solid #e2e8f0;
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .tpv-amount-row {
             display: flex;
             justify-content: space-between;
-            font-size: 0.9rem;
-            color: #475569;
-            margin-bottom: 0.25rem;
+            font-size: 0.95rem;
+            color: #cbd5e1;
+            margin-bottom: 0.4rem;
         }
 
         .tpv-amount-row.total {
             font-weight: 700;
-            font-size: 1.1rem;
-            color: #0f172a;
-            margin-top: 0.25rem;
-        }
-
-        .tpv-input {
-            background: #fff !important;
-            border-color: #cbd5e1 !important;
-            color: #333 !important;
-        }
-
-        .tpv-input:focus {
-            border-color: #007bff !important;
-            box-shadow: 0 0 8px rgba(0, 123, 255, 0.2) !important;
-        }
-
-        .tpv-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1rem;
+            font-size: 1.2rem;
+            color: #ffffff;
+            margin-top: 0.4rem;
         }
 
         .tpv-footer {
-            background: #f8fafc;
-            border-top: 1px solid #e2e8f0;
-            padding: 0.8rem 1.5rem;
-            font-size: 0.75rem;
-            color: #64748b;
+            background: #070e24;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 0.9rem 1.5rem;
+            font-size: 0.78rem;
+            color: rgba(255, 255, 255, 0.6);
             text-align: center;
         }
 
