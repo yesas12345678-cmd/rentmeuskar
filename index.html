@@ -85,30 +85,28 @@
                     body: JSON.stringify({ email: email })
                 });
 
-                var data = await res.json();
-                var code = (res.ok && data.code) ? data.code : '123456';
-
+                var msg = `📧 Te hemos enviado un correo de confirmación a ${email}. Por favor, revisa tu bandeja de entrada o carpeta de spam para obtener tu código.`;
                 if (typeof showAppToast === 'function') {
-                    showAppToast(`📧 Código de confirmación enviado a ${email}. Código: ${code}`, 'success', 8000);
+                    showAppToast(msg, 'success', 8000);
                 } else {
-                    alert(`📧 Código de confirmación enviado a ${email}.\nTu código de confirmación es: ${code}`);
+                    alert(msg);
                 }
 
                 var resetCodeInput = document.getElementById('reset-code');
-                if (resetCodeInput) resetCodeInput.value = code;
+                if (resetCodeInput) resetCodeInput.value = '';
 
                 window.switchAuthModal('forgot-password-modal', 'reset-password-modal');
             } catch (err) {
-                console.warn('Error al enviar código de recuperación, usando fallback:', err);
-                var code = '123456';
+                console.warn('Error al enviar código de recuperación:', err);
+                var msg = `📧 Te hemos enviado un correo de confirmación a ${email}. Por favor, revisa tu bandeja de entrada o carpeta de spam para obtener tu código.`;
                 if (typeof showAppToast === 'function') {
-                    showAppToast(`📧 Código de confirmación enviado a ${email}. Código: ${code}`, 'success', 8000);
+                    showAppToast(msg, 'success', 8000);
                 } else {
-                    alert(`📧 Código de confirmación enviado a ${email}.\nTu código de confirmación es: ${code}`);
+                    alert(msg);
                 }
 
                 var resetCodeInput = document.getElementById('reset-code');
-                if (resetCodeInput) resetCodeInput.value = code;
+                if (resetCodeInput) resetCodeInput.value = '';
 
                 window.switchAuthModal('forgot-password-modal', 'reset-password-modal');
             } finally {

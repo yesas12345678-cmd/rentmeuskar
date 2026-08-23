@@ -1291,22 +1291,18 @@ const initApp = () => {
                     body: JSON.stringify({ email })
                 });
 
-                const data = await res.json();
-                const code = (res.ok && data.code) ? data.code : '123456';
-
-                showAppToast(`📧 Código de confirmación enviado a ${email}. Código: ${code}`, 'success', 8000);
+                showAppToast(`📧 Te hemos enviado un correo de confirmación a ${email}. Por favor, revisa tu bandeja de entrada o spam.`, 'success', 8000);
 
                 const resetCodeInput = document.getElementById('reset-code');
-                if (resetCodeInput) resetCodeInput.value = code;
+                if (resetCodeInput) resetCodeInput.value = '';
 
                 window.switchAuthModal('forgot-password-modal', 'reset-password-modal');
             } catch (err) {
-                console.warn('Error al enviar código de recuperación, usando fallback:', err);
-                const code = '123456';
-                showAppToast(`📧 Código de confirmación para ${email}: ${code}`, 'success', 8000);
+                console.warn('Error al enviar código de recuperación:', err);
+                showAppToast(`📧 Te hemos enviado un correo de confirmación a ${email}. Por favor, revisa tu bandeja de entrada o spam.`, 'success', 8000);
 
                 const resetCodeInput = document.getElementById('reset-code');
-                if (resetCodeInput) resetCodeInput.value = code;
+                if (resetCodeInput) resetCodeInput.value = '';
 
                 window.switchAuthModal('forgot-password-modal', 'reset-password-modal');
             } finally {

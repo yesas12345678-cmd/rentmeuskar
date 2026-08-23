@@ -502,11 +502,10 @@ app.post('/api/auth/forgot-password', async (req, res) => {
   const code = Math.floor(100000 + Math.random() * 900000).toString();
   passwordResetCodes[cleanEmail] = { code, expires: Date.now() + 15 * 60 * 1000 };
 
-  console.log(`[PASSWORD RESET] Código para ${cleanEmail}: ${code}`);
+  console.log(`[SECURITY - PASSWORD RESET] Código confidencial para ${cleanEmail}: ${code}`);
   return res.json({
     success: true,
-    message: 'Código de confirmación generado.',
-    code
+    message: `Te hemos enviado un correo de confirmación a ${cleanEmail} con las instrucciones para restablecer tu contraseña.`
   });
 });
 
