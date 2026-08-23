@@ -1252,84 +1252,102 @@ const initApp = () => {
     // Variable global para almacenar el usuario de SSO pendiente de DNI
     let pendingSSOUser = null;
 
-    // Social Login con selección de cuenta y requisito de DNI/NIE
+    // Social Login con modales estilo oficial Google / Apple (Sin ventanas emergentes prompt)
     window.loginWithGoogle = () => {
         window.closeAuthModal('login-modal');
         window.closeAuthModal('register-modal');
-
-        const inputEmail = prompt('Introduce la dirección de correo de tu cuenta de Google (Gmail):', '');
-        if (!inputEmail) return;
-        const cleanEmail = inputEmail.trim().toLowerCase();
-        if (!cleanEmail || !cleanEmail.includes('@') || cleanEmail.includes('tuemail')) {
-            alert('Por favor, introduce una dirección de correo válida.');
-            return;
-        }
-
-        const namePart = cleanEmail.split('@')[0];
-        const formattedName = namePart.charAt(0).toUpperCase() + namePart.slice(1);
-
-        const savedProfileStr = localStorage.getItem('user_profile');
-        let savedProfile = null;
-        if (savedProfileStr) {
-            try { savedProfile = JSON.parse(savedProfileStr); } catch (e) { }
-        }
-
-        if (savedProfile && savedProfile.email === cleanEmail && savedProfile.dni && window.validateSpanishID(savedProfile.dni)) {
-            localStorage.setItem('user_token', 'google_user_' + savedProfile.id);
-            updateAuthUI();
-            showAppToast(`¡Bienvenido/a de nuevo, ${savedProfile.name}!`, 'success');
-        } else {
-            pendingSSOUser = {
-                id: Date.now(),
-                name: formattedName,
-                email: cleanEmail,
-                phone: '',
-                auth_provider: 'google'
-            };
-            const ssoInput = document.getElementById('sso-dni-input');
-            if (ssoInput) ssoInput.value = '';
-            window.openAuthModal('sso-dni-modal');
-        }
+        const googleInput = document.getElementById('google-email-input');
+        if (googleInput) googleInput.value = '';
+        window.openAuthModal('google-sso-modal');
     };
 
     window.loginWithApple = () => {
         window.closeAuthModal('login-modal');
         window.closeAuthModal('register-modal');
-
-        const inputEmail = prompt('Introduce tu correo o Apple ID / iCloud:', '');
-        if (!inputEmail) return;
-        const cleanEmail = inputEmail.trim().toLowerCase();
-        if (!cleanEmail || !cleanEmail.includes('@') || cleanEmail.includes('tuemail')) {
-            alert('Por favor, introduce una dirección de correo válida.');
-            return;
-        }
-
-        const namePart = cleanEmail.split('@')[0];
-        const formattedName = namePart.charAt(0).toUpperCase() + namePart.slice(1);
-
-        const savedProfileStr = localStorage.getItem('user_profile');
-        let savedProfile = null;
-        if (savedProfileStr) {
-            try { savedProfile = JSON.parse(savedProfileStr); } catch (e) { }
-        }
-
-        if (savedProfile && savedProfile.email === cleanEmail && savedProfile.dni && window.validateSpanishID(savedProfile.dni)) {
-            localStorage.setItem('user_token', 'apple_user_' + savedProfile.id);
-            updateAuthUI();
-            showAppToast(`¡Bienvenido/a de nuevo, ${savedProfile.name}!`, 'success');
-        } else {
-            pendingSSOUser = {
-                id: Date.now(),
-                name: formattedName,
-                email: cleanEmail,
-                phone: '',
-                auth_provider: 'apple'
-            };
-            const ssoInput = document.getElementById('sso-dni-input');
-            if (ssoInput) ssoInput.value = '';
-            window.openAuthModal('sso-dni-modal');
-        }
+        const appleInput = document.getElementById('apple-email-input');
+        if (appleInput) appleInput.value = '';
+        window.openAuthModal('apple-sso-modal');
     };
+
+    // Handler Formulario Google SSO
+    const googleForm = document.getElementById('google-sso-form');
+    if (googleForm) {
+        googleForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const emailVal = document.getElementById('google-email-input').value.trim().toLowerCase();
+            if (!emailVal || !emailVal.includes('@')) {
+                alert('Introduce un correo electrónico válido.');
+                return;
+            }
+            window.closeAuthModal('google-sso-modal');
+
+            const namePart = emailVal.split('@')[0];
+            const formattedName = namePart.charAt(0).toUpperCase() + namePart.slice(1);
+
+            const savedProfileStr = localStorage.getItem('user_profile');
+            let savedProfile = null;
+            if (savedProfileStr) {
+                try { savedProfile = JSON.parse(savedProfileStr); } catch (e) { }
+            }
+
+            if (savedProfile && savedProfile.email === emailVal && savedProfile.dni && window.validateSpanishID(savedProfile.dni)) {
+                localStorage.setItem('user_token', 'google_user_' + savedProfile.id);
+                updateAuthUI();
+                showAppToast(`¡Bienvenido/a de nuevo, ${savedProfile.name}!`, 'success');
+            } else {
+                pendingSSOUser = {
+                    id: Date.now(),
+                    name: formattedName,
+                    email: emailVal,
+                    phone: '',
+                    auth_provider: 'google'
+                };
+                const ssoInput = document.getElementById('sso-dni-input');
+                if (ssoInput) ssoInput.value = '';
+                window.openAuthModal('sso-dni-modal');
+            }
+        });
+    }
+
+    // Handler Formulario Apple SSO
+    const appleForm = document.getElementById('apple-sso-form');
+    if (appleForm) {
+        appleForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const emailVal = document.getElementById('apple-email-input').value.trim().toLowerCase();
+            if (!emailVal || !emailVal.includes('@')) {
+                alert('Introduce un correo electrónico válido.');
+                return;
+            }
+            window.closeAuthModal('apple-sso-modal');
+
+            const namePart = emailVal.split('@')[0];
+            const formattedName = namePart.charAt(0).toUpperCase() + namePart.slice(1);
+
+            const savedProfileStr = localStorage.getItem('user_profile');
+            let savedProfile = null;
+            if (savedProfileStr) {
+                try { savedProfile = JSON.parse(savedProfileStr); } catch (e) { }
+            }
+
+            if (savedProfile && savedProfile.email === emailVal && savedProfile.dni && window.validateSpanishID(savedProfile.dni)) {
+                localStorage.setItem('user_token', 'apple_user_' + savedProfile.id);
+                updateAuthUI();
+                showAppToast(`¡Bienvenido/a de nuevo, ${savedProfile.name}!`, 'success');
+            } else {
+                pendingSSOUser = {
+                    id: Date.now(),
+                    name: formattedName,
+                    email: emailVal,
+                    phone: '',
+                    auth_provider: 'apple'
+                };
+                const ssoInput = document.getElementById('sso-dni-input');
+                if (ssoInput) ssoInput.value = '';
+                window.openAuthModal('sso-dni-modal');
+            }
+        });
+    }
 
     // Formulario de Submit de DNI para SSO
     document.getElementById('sso-dni-form').addEventListener('submit', (e) => {
