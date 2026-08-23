@@ -1161,10 +1161,17 @@ const initApp = () => {
         }
     };
 
-    // Event listener para login modal botón en header
-    document.getElementById('btn-login-modal').addEventListener('click', () => {
-        window.openAuthModal('login-modal');
-    });
+        const btnLoginNav = document.getElementById('btn-login-modal');
+        if (btnLoginNav) {
+            btnLoginNav.addEventListener('click', () => {
+                const token = localStorage.getItem('user_token');
+                if (token) {
+                    window.openClientArea();
+                } else {
+                    window.openAuthModal('login-modal');
+                }
+            });
+        }
 
     // Login Form Submit
     document.getElementById('login-form').addEventListener('submit', async (e) => {
@@ -1347,96 +1354,101 @@ const initApp = () => {
 
     // Abrir Panel de Área de Cliente (Sin cerrar sesión jamás por fallo de red)
     window.openClientArea = async () => {
-        const token = localStorage.getItem('user_token');
-        if (!token) return;
-
-        let user = null;
-        const savedProfileStr = localStorage.getItem('user_profile');
-        if (savedProfileStr) {
-            try { user = JSON.parse(savedProfileStr); } catch (e) { }
-        }
-
-        // Si no hay perfil local guardado, intentar obtenerlo del servidor
-        if (!user) {
-            try {
-                const res = await fetch('/api/auth/me', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                if (res.ok) {
-                    user = await res.json();
-                    localStorage.setItem('user_profile', JSON.stringify(user));
-                }
-            } catch (err) {
-                console.warn('Error backend me:', err);
-            }
-        }
-
-        if (!user) {
-            user = { id: 1, name: 'Jose Manuel', email: 'yesas12345678@gmail.com', dni: '00000000G' };
-        }
-
-        const userInfoEl = document.getElementById('client-user-info');
-        if (userInfoEl) {
-            userInfoEl.textContent = `Conectado como: ${user.name} (${user.email}) | DNI: ${user.dni || 'No especificado'}`;
-        }
-
-        // Obtener reservas del cliente (resiliente)
-        let bookingsList = [];
         try {
-            const bookingsRes = await fetch(`/api/bookings?user_id=${user.id}`);
-            if (bookingsRes.ok) {
-                bookingsList = await bookingsRes.json();
+            const token = localStorage.getItem('user_token');
+            if (!token) {
+                window.openAuthModal('login-modal');
+                return;
             }
-        } catch (bErr) {
-            console.warn('Backend bookings offline:', bErr);
-        }
 
-        const tbody = document.getElementById('client-bookings-tbody');
-        if (tbody) {
-            if (!bookingsList || bookingsList.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; padding: 2rem;">No tienes reservas registradas.</td></tr>`;
-            } else {
-                tbody.innerHTML = '';
-                bookingsList.forEach(b => {
-                    const tr = document.createElement('tr');
-
-                    const statusLabel = b.status === 'pending' ? 'Pendiente' : b.status === 'confirmed' ? 'Confirmado' : 'Cancelado';
-                    const paymentLabel = b.payment_status === 'paid' ? 'Pagado' : 'Pendiente';
-                    const fianzaLabel = b.fianza_status === 'paid' ? 'Retenida (500€)' : b.fianza_status === 'refunded' ? 'Devuelta' : 'Pendiente';
-
-                    const formatDate = (dateStr) => {
-                        if (!dateStr) return '';
-                        const cleanDate = dateStr.split('T')[0];
-                        const [year, month, day] = cleanDate.split('-');
-                        return `${day}/${month}/${year}`;
-                    };
-
-                    const photosBtn = (b.photos_before && b.photos_before.length > 0) || (b.photos_after && b.photos_after.length > 0)
-                        ? `<button class="client-doc-btn" onclick='window.openClientPhotosModal(${JSON.stringify(b.photos_before || [])}, ${JSON.stringify(b.photos_after || [])})'><i class="fa-solid fa-camera"></i> Fotos</button>`
-                        : '';
-
-                    tr.innerHTML = `
-                        <td>#${b.id}</td>
-                        <td><strong>${b.van_name ? b.van_name.split(' ')[0] : 'Furgoneta'} ${b.van_name ? (b.van_name.split(' ')[1] || '') : ''}</strong></td>
-                        <td>${formatDate(b.pickup_date)} ${b.pickup_time || ''}</td>
-                        <td>${formatDate(b.return_date)} ${b.return_time || ''}</td>
-                        <td><strong>${parseFloat(b.total_price || 0).toFixed(2)} €</strong></td>
-                        <td><span style="font-size: 0.8rem; padding: 2px 6px; border-radius: 4px; background: rgba(255,255,255,0.05);">${fianzaLabel}</span></td>
-                        <td><span style="font-size: 0.8rem; font-weight: 700; color: ${b.status === 'confirmed' ? '#82d105' : b.status === 'pending' ? '#ffb703' : '#ff4d6d'};">${statusLabel}</span></td>
-                        <td>
-                            ${b.status === 'confirmed' ? `
-                                <button class="client-doc-btn" onclick="window.open('/contract/${b.id}', '_blank')"><i class="fa-solid fa-file-signature"></i> Contrato</button>
-                                <button class="client-doc-btn" onclick="window.open('/invoice/${b.id}', '_blank')"><i class="fa-solid fa-file-invoice-dollar"></i> Factura</button>
-                                ${photosBtn}
-                            ` : '<span style="color: var(--text-muted); font-size: 0.75rem;">Pendiente</span>'}
-                        </td>
-                    `;
-                    tbody.appendChild(tr);
-                });
+            let user = null;
+            const savedProfileStr = localStorage.getItem('user_profile');
+            if (savedProfileStr) {
+                try { user = JSON.parse(savedProfileStr); } catch (e) { }
             }
-        }
 
-        window.openAuthModal('client-modal');
+            // Si no hay perfil local guardado, intentar obtenerlo del servidor
+            if (!user) {
+                try {
+                    const res = await fetch('/api/auth/me', {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    if (res.ok) {
+                        user = await res.json();
+                        localStorage.setItem('user_profile', JSON.stringify(user));
+                    }
+                } catch (err) {
+                    console.warn('Error backend me:', err);
+                }
+            }
+
+            if (!user) {
+                user = { id: 1, name: 'Jose Manuel', email: 'yesas12345678@gmail.com', dni: '' };
+            }
+
+            const userInfoEl = document.getElementById('client-user-info');
+            if (userInfoEl) {
+                userInfoEl.textContent = `Conectado como: ${user.name} (${user.email}) | DNI: ${user.dni || 'No especificado'}`;
+            }
+
+            // Obtener reservas del cliente (resiliente)
+            let bookingsList = [];
+            try {
+                const bookingsRes = await fetch(`/api/bookings?user_id=${user.id}`);
+                if (bookingsRes.ok) {
+                    bookingsList = await bookingsRes.json();
+                }
+            } catch (bErr) {
+                console.warn('Backend bookings offline:', bErr);
+            }
+
+            const tbody = document.getElementById('client-bookings-tbody');
+            if (tbody) {
+                if (!bookingsList || bookingsList.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; padding: 2rem;">No tienes reservas registradas.</td></tr>`;
+                } else {
+                    tbody.innerHTML = '';
+                    bookingsList.forEach(b => {
+                        const tr = document.createElement('tr');
+
+                        const statusLabel = b.status === 'pending' ? 'Pendiente' : b.status === 'confirmed' ? 'Confirmado' : 'Cancelado';
+                        const paymentLabel = b.payment_status === 'paid' ? 'Pagado' : 'Pendiente';
+                        const fianzaLabel = b.fianza_status === 'paid' ? 'Retenida (500€)' : b.fianza_status === 'refunded' ? 'Devuelta' : 'Pendiente';
+
+                        const formatDate = (dateStr) => {
+                            if (!dateStr) return '-';
+                            if (dateStr.includes('/')) return dateStr;
+                            const cleanDate = dateStr.split('T')[0];
+                            const parts = cleanDate.split('-');
+                            if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+                            return dateStr;
+                        };
+
+                        tr.innerHTML = `
+                            <td>#${b.id}</td>
+                            <td><strong>${b.van_name ? b.van_name.split(' ')[0] : 'Furgoneta'} ${b.van_name ? (b.van_name.split(' ')[1] || '') : ''}</strong></td>
+                            <td>${formatDate(b.pickup_date)} ${b.pickup_time || ''}</td>
+                            <td>${formatDate(b.return_date)} ${b.return_time || ''}</td>
+                            <td><strong>${parseFloat(b.total_price || 0).toFixed(2)} €</strong></td>
+                            <td><span style="font-size: 0.8rem; padding: 2px 6px; border-radius: 4px; background: rgba(255,255,255,0.05);">${fianzaLabel}</span></td>
+                            <td><span style="font-size: 0.8rem; font-weight: 700; color: ${b.status === 'confirmed' ? '#82d105' : b.status === 'pending' ? '#ffb703' : '#ff4d6d'};">${statusLabel}</span></td>
+                            <td>
+                                ${b.status === 'confirmed' ? `
+                                    <button class="client-doc-btn" onclick="window.open('/contract/${b.id}', '_blank')"><i class="fa-solid fa-file-signature"></i> Contrato</button>
+                                    <button class="client-doc-btn" onclick="window.open('/invoice/${b.id}', '_blank')"><i class="fa-solid fa-file-invoice-dollar"></i> Factura</button>
+                                ` : '<span style="color: var(--text-muted); font-size: 0.75rem;">Pendiente</span>'}
+                            </td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                }
+            }
+
+            window.openAuthModal('client-modal');
+        } catch (err) {
+            console.error('Error al abrir Área de Cliente:', err);
+            window.openAuthModal('client-modal');
+        }
     };
 
     // Abrir modal de edición de perfil
