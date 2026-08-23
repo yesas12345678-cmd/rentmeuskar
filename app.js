@@ -1257,10 +1257,10 @@ const initApp = () => {
         window.closeAuthModal('login-modal');
         window.closeAuthModal('register-modal');
 
-        const inputEmail = prompt('Introduce la dirección de correo de tu cuenta de Google (Gmail):', 'tuemail@gmail.com');
+        const inputEmail = prompt('Introduce la dirección de correo de tu cuenta de Google (Gmail):', '');
         if (!inputEmail) return;
         const cleanEmail = inputEmail.trim().toLowerCase();
-        if (!cleanEmail || !cleanEmail.includes('@')) {
+        if (!cleanEmail || !cleanEmail.includes('@') || cleanEmail.includes('tuemail')) {
             alert('Por favor, introduce una dirección de correo válida.');
             return;
         }
@@ -1296,10 +1296,10 @@ const initApp = () => {
         window.closeAuthModal('login-modal');
         window.closeAuthModal('register-modal');
 
-        const inputEmail = prompt('Introduce tu correo o Apple ID / iCloud:', 'tuemail@icloud.com');
+        const inputEmail = prompt('Introduce tu correo o Apple ID / iCloud:', '');
         if (!inputEmail) return;
         const cleanEmail = inputEmail.trim().toLowerCase();
-        if (!cleanEmail || !cleanEmail.includes('@')) {
+        if (!cleanEmail || !cleanEmail.includes('@') || cleanEmail.includes('tuemail')) {
             alert('Por favor, introduce una dirección de correo válida.');
             return;
         }
@@ -1467,15 +1467,20 @@ const initApp = () => {
             user = { name: '', email: '', phone: '', dni: '' };
         }
 
+        const cleanName = (user.name && user.name !== 'Tuemail' && user.name !== 'Jose Manuel') ? user.name : '';
+        const cleanEmail = (user.email && !user.email.includes('tuemail@') && !user.email.includes('cliente@rentmeuskar')) ? user.email : '';
+        const cleanPhone = user.phone || '';
+        const cleanDni = (user.dni && user.dni !== '00000000G' && user.dni !== '00000000A') ? user.dni : '';
+
         const nameInput = document.getElementById('edit-profile-name');
         const emailInput = document.getElementById('edit-profile-email');
         const phoneInput = document.getElementById('edit-profile-phone');
         const dniInput = document.getElementById('edit-profile-dni');
 
-        if (nameInput) nameInput.value = user.name || '';
-        if (emailInput) emailInput.value = user.email || '';
-        if (phoneInput) phoneInput.value = user.phone || '';
-        if (dniInput) dniInput.value = (user.dni && user.dni !== '00000000G' && user.dni !== '00000000A') ? user.dni : '';
+        if (nameInput) nameInput.value = cleanName;
+        if (emailInput) emailInput.value = cleanEmail;
+        if (phoneInput) phoneInput.value = cleanPhone;
+        if (dniInput) dniInput.value = cleanDni;
 
         window.openAuthModal('edit-profile-modal');
     };
