@@ -1643,6 +1643,11 @@ const initApp = () => {
         const returnDateStr = dateEnd.value;
         const returnTimeStr = timeEnd.value;
 
+        if (!pickupDateStr || !returnDateStr) {
+            alert('Por favor, selecciona la fecha de recogida y la fecha de devolución.');
+            return;
+        }
+
         const start = new Date(pickupDateStr);
         const end = new Date(returnDateStr);
         const diffTime = end - start;
@@ -1712,11 +1717,14 @@ const initApp = () => {
         if (days <= 7 && rentalMode === 'sin') {
             // FLUJO A: Pago online obligatorio de alquiler + fianza de 500€ (solo si es sin conductor)
             const fianzaAmount = rentalMode === 'sin' ? 500 : 0;
-            document.getElementById('tpv-rent-amount').textContent = `${totalPriceNum.toFixed(2)} €`;
-            document.getElementById('tpv-total-amount').textContent = `${(totalPriceNum + fianzaAmount).toFixed(2)} €`;
+            const rentAmountEl = document.getElementById('tpv-rent-amount');
+            const totalAmountEl = document.getElementById('tpv-total-amount');
 
-            // Rellenar por defecto titular
-            document.getElementById('tpv-card-name').value = user.name;
+            if (rentAmountEl) rentAmountEl.textContent = `${totalPriceNum.toFixed(2)} €`;
+            if (totalAmountEl) totalAmountEl.textContent = `${(totalPriceNum + fianzaAmount).toFixed(2)} €`;
+
+            const cardNameEl = document.getElementById('tpv-card-name');
+            if (cardNameEl) cardNameEl.value = user.name || '';
 
             // Mostrar pasarela TPV
             window.openAuthModal('tpv-modal');
