@@ -322,7 +322,11 @@ const initApp = () => {
             locale: "es",
             minDate: "today",
             dateFormat: "Y-m-d",
-            disableMobile: true,
+            altInput: true,
+            altFormat: "d/m/Y",
+            altInputClass: "form-control",
+            clickOpens: true,
+            disableMobile: "true",
             onChange: function (selectedDates, dateStr, instance) {
                 validateAndAdjustDateSelection();
                 calculatePrice();
@@ -333,12 +337,26 @@ const initApp = () => {
             locale: "es",
             minDate: "today",
             dateFormat: "Y-m-d",
-            disableMobile: true,
+            altInput: true,
+            altFormat: "d/m/Y",
+            altInputClass: "form-control",
+            clickOpens: true,
+            disableMobile: "true",
             onChange: function (selectedDates, dateStr, instance) {
                 validateAndAdjustDateSelection();
                 calculatePrice();
             }
         });
+
+        // Click listeners directos para forzar apertura del calendario en cualquier clic
+        const startEl = document.getElementById('calc-date-start');
+        const endEl = document.getElementById('calc-date-end');
+        if (startEl) {
+            startEl.addEventListener('click', () => { if (pickerStart) pickerStart.open(); });
+        }
+        if (endEl) {
+            endEl.addEventListener('click', () => { if (pickerEnd) pickerEnd.open(); });
+        }
     };
 
     initFlatpickr();
