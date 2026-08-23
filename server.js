@@ -1883,9 +1883,9 @@ app.get('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, 'admin.html'));
 });
 
-// Servir favicon.ico de forma directa y explícita
+// Servir favicon.ico de forma directa y explícita con fondo circular azul oscuro
 app.get('/favicon.ico', (req, res) => {
-  res.sendFile(path.join(__dirname, 'assets', 'logo.png'));
+  res.sendFile(path.join(__dirname, 'assets', 'favicon.png'));
 });
 
 // Servir archivos estáticos
