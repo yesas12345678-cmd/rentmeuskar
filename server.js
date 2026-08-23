@@ -488,6 +488,62 @@ app.get('/api/auth/me', async (req, res) => {
   res.status(401).json({ error: 'Token inválido.' });
 });
 
+// Almacenamiento temporal de códigos de recuperación de contraseña
+const passwordResetCodes = {};
+
+// 3.b Recuperación de contraseña (generación de código de confirmación)
+app.post('/api/auth/forgot-password', async (req, res) => {
+  const { email } = req.body;
+  if (!email) {
+    return res.status(400).json({ error: 'El correo electrónico es obligatorio.' });
+  }
+
+  const cleanEmail = email.trim().toLowerCase();
+  const code = Math.floor(100000 + Math.random() * 900000).toString();
+  passwordResetCodes[cleanEmail] = { code, expires: Date.now() + 15 * 60 * 1000 };
+
+  console.log(`[PASSWORD RESET] Código para ${cleanEmail}: ${code}`);
+  return res.json({
+    success: true,
+    message: 'Código de confirmación generado.',
+    code
+  });
+});
+
+// 3.c Restablecer contraseña con código de confirmación
+app.post('/api/auth/reset-password', async (req, res) => {
+  const { email, code, newPassword } = req.body;
+  if (!code || !newPassword) {
+    return res.status(400).json({ error: 'El código y la nueva contraseña son obligatorios.' });
+  }
+
+  const passHash = hashPassword(newPassword);
+
+  if (email) {
+    const cleanEmail = email.trim().toLowerCase();
+    const stored = passwordResetCodes[cleanEmail];
+    if (stored && stored.code !== code) {
+      return res.status(400).json({ error: 'El código de confirmación introducido no es correcto.' });
+    }
+
+    try {
+      await pool.query('UPDATE users SET password = $1 WHERE LOWER(email) = $2', [passHash, cleanEmail]);
+    } catch (e) {
+      console.warn('Error al actualizar contraseña en PostgreSQL DB:', e.message);
+    }
+
+    const user = fallbackUsers.find(u => u.email.toLowerCase() === cleanEmail);
+    if (user) {
+      user.password = passHash;
+    }
+  }
+
+  return res.json({
+    success: true,
+    message: 'Contraseña actualizada correctamente.'
+  });
+});
+
 // Helper para dar formato a fechas locales YYYY-MM-DD
 const formatDateISO = (d) => {
   const date = new Date(d);
