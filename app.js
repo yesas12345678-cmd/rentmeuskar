@@ -235,6 +235,14 @@ const initApp = () => {
 
     let currentDisabledRanges = [];
 
+    const formatDateToISO = (date) => {
+        if (!date || isNaN(date.getTime())) return null;
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+
     // Función para ajustar la fecha máxima permitida sin cruzar sobre días ocupados
     const validateAndAdjustDateSelection = () => {
         if (!pickerStart || !pickerEnd) return;
@@ -246,7 +254,9 @@ const initApp = () => {
             return;
         }
 
-        const startStr = pickerStart.formatDate(startDate, "Y-m-d");
+        const startStr = formatDateToISO(startDate);
+        if (!startStr) return;
+
         pickerEnd.set("minDate", startStr);
 
         // Buscar el primer rango ocupado que comience en o después de la fecha de inicio
@@ -266,14 +276,14 @@ const initApp = () => {
             const firstDisabledDate = new Date(firstFutureDisabledFromStr);
             const maxAllowedDate = new Date(firstDisabledDate);
             maxAllowedDate.setDate(maxAllowedDate.getDate() - 1);
-            const maxAllowedStr = pickerStart.formatDate(maxAllowedDate, "Y-m-d");
+            const maxAllowedStr = formatDateToISO(maxAllowedDate);
 
             pickerEnd.set("maxDate", maxAllowedStr);
 
             // Si la fecha de fin actual sobrepasa la fecha máxima permitida, limpiarla y avisar al usuario
             const endDate = pickerEnd.selectedDates[0];
             if (endDate) {
-                const endStr = pickerEnd.formatDate(endDate, "Y-m-d");
+                const endStr = formatDateToISO(endDate);
                 if (endStr > maxAllowedStr) {
                     pickerEnd.clear();
                     const fromFormatted = firstFutureDisabledFromStr.split('-').reverse().join('/');
