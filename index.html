@@ -31,6 +31,32 @@
 
     <!-- Google Identity Services -->
     <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+    <!-- Global Auth Modal Handlers (Instant Execution) -->
+    <script>
+        window.openAuthModal = function(modalId) {
+            var el = document.getElementById(modalId);
+            if (el) el.style.display = 'flex';
+        };
+        window.closeAuthModal = function(modalId) {
+            var el = document.getElementById(modalId);
+            if (el) el.style.display = 'none';
+        };
+        window.switchAuthModal = function(closeId, openId) {
+            window.closeAuthModal(closeId);
+            window.openAuthModal(openId);
+        };
+        window.handleLoginButtonClick = function() {
+            var token = localStorage.getItem('user_token');
+            if (token && typeof window.openClientArea === 'function') {
+                window.openClientArea();
+            } else if (token) {
+                window.openAuthModal('client-modal');
+            } else {
+                window.openAuthModal('login-modal');
+            }
+        };
+    </script>
 </head>
 
 <body>
@@ -55,7 +81,7 @@
             <div class="header-actions">
                 <div class="user-auth-section" id="user-auth-section"
                     style="display: flex; gap: 0.5rem; align-items: center;">
-                    <button class="btn btn-secondary btn-sm" id="btn-login-modal" onclick="window.openAuthModal('login-modal')"
+                    <button class="btn btn-secondary btn-sm" id="btn-login-modal" onclick="window.handleLoginButtonClick()"
                         style="padding: 0.4rem 0.8rem; font-size: 0.8rem; cursor: pointer;">
                         <i class="fa-solid fa-user-lock"></i> Entrar
                     </button>
