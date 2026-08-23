@@ -1899,3 +1899,22 @@ a.contact-method-card:hover {
         background: rgba(7, 14, 36, 0.8) !important;
     }
 }
+
+/* Visibilidad de opciones en desplegables select */
+select option,
+select optgroup,
+.custom-form-control option,
+.custom-form-control optgroup,
+.form-control option,
+.form-control optgroup {
+    background-color: #0f172a !important;
+    color: #ffffff !important;
+    padding: 10px !important;
+    font-size: 0.95rem !important;
+}
+
+select option:checked,
+select option:hover {
+    background-color: #1e293b !important;
+    color: #82d105 !important;
+}
