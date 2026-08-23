@@ -1615,9 +1615,10 @@ const initApp = () => {
     // Cerrar sesión
     document.getElementById('btn-client-logout').addEventListener('click', () => {
         localStorage.removeItem('user_token');
+        localStorage.removeItem('user_profile');
         window.closeAuthModal('client-modal');
         updateAuthUI();
-        clientName.value = '';
+        if (clientName) clientName.value = '';
     });
 
     updateAuthUI(); // Comprobar sesión al arrancar

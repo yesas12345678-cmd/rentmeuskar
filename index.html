@@ -47,11 +47,16 @@
             window.openAuthModal(openId);
         };
         window.handleLoginButtonClick = function() {
+            var btn = document.getElementById('btn-login-modal');
+            var isEntrarButton = !btn || btn.textContent.indexOf('Entrar') !== -1;
             var token = localStorage.getItem('user_token');
-            if (token && typeof window.openClientArea === 'function') {
-                window.openClientArea();
-            } else if (token) {
-                window.openAuthModal('client-modal');
+
+            if (!isEntrarButton && token) {
+                if (typeof window.openClientArea === 'function') {
+                    window.openClientArea();
+                } else {
+                    window.openAuthModal('client-modal');
+                }
             } else {
                 window.openAuthModal('login-modal');
             }
