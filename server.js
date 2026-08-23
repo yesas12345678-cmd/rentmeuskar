@@ -900,9 +900,15 @@ app.post('/api/redsys/create-payment', async (req, res) => {
       return res.status(400).json({ error: 'Faltan datos de la reserva.' });
     }
 
-    const isConConductor = (bookingData.van_type === 'con_conductor');
+    const isConConductor = (bookingData.rental_mode === 'con');
     const fianzaAmount = isConConductor ? 0 : 500;
-    const totalEuros = parseFloat(bookingData.total_price) + fianzaAmount;
+    const rentAmount = parseFloat(bookingData.total_price) || 0;
+    
+    if (rentAmount <= 0) {
+      return res.status(400).json({ error: 'El importe del alquiler no es válido.' });
+    }
+
+    const totalEuros = rentAmount + fianzaAmount;
     const amountCents = Math.round(totalEuros * 100).toString();
 
     // Generar número de pedido único de 10 dígitos (empezando por dígitos)

@@ -756,13 +756,41 @@ const initApp = () => {
             document.querySelector('.price-summary-box .summary-row:nth-child(3) span:first-child').textContent = 'IVA (21%):';
         }
 
-        // Calcular número de días
+    // Función auxiliar para parsear fechas en español (DD/MM/YYYY o YYYY-MM-DD)
+    const parseSpanishDate = (dateStr) => {
+        if (!dateStr) return null;
+        if (dateStr.includes('-')) {
+            const parts = dateStr.split('-');
+            if (parts.length === 3) {
+                return new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+            }
+        }
+        if (dateStr.includes('/')) {
+            const parts = dateStr.split('/');
+            if (parts.length === 3) {
+                return new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+            }
+        }
+        const d = new Date(dateStr);
+        return isNaN(d.getTime()) ? null : d;
+    };
+
+    // Actualizar resumen en tiempo real
+    const updateCalculatorUI = () => {
+        if (!vanSelect || !dateStart || !dateEnd) return;
+
+        const vanType = vanSelect.value;
+        if (!vanType) return;
+
+        const mode = document.querySelector('input[name="rental-mode"]:checked').value;
         const startVal = dateStart.value;
         const endVal = dateEnd.value;
         if (!startVal || !endVal) return;
 
-        const start = new Date(startVal);
-        const end = new Date(endVal);
+        const start = parseSpanishDate(startVal);
+        const end = parseSpanishDate(endVal);
+        if (!start || !end) return;
+
         const diffTime = end - start;
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
         const days = diffDays > 0 ? diffDays : 1;
@@ -1520,14 +1548,20 @@ const initApp = () => {
             return;
         }
 
-        const start = new Date(pickupDateStr);
-        const end = new Date(returnDateStr);
+        const start = parseSpanishDate(pickupDateStr);
+        const end = parseSpanishDate(returnDateStr);
+        if (!start || !end) {
+            alert('Por favor, selecciona fechas de recogida y devolución válidas.');
+            return;
+        }
+
         const diffTime = end - start;
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
         const days = diffDays > 0 ? diffDays : 1;
 
         // Recopilar extras activos dinámicamente
         const selectedExtras = [];
+        let totalExtrasCost = 0;
         if (rentalMode === 'sin') {
             const checkedBoxes = document.querySelectorAll('.calc-dynamic-extra-checkbox:checked');
             checkedBoxes.forEach(box => {
@@ -1536,11 +1570,38 @@ const initApp = () => {
                 const type = box.getAttribute('data-type');
                 const label = type === 'daily' ? `(+${price.toFixed(2)}€/día)` : `(+${price.toFixed(2)}€ pago único)`;
                 selectedExtras.push(`${name} ${label}`);
+
+                if (type === 'daily') {
+                    totalExtrasCost += price * days;
+                } else {
+                    totalExtrasCost += price;
+                }
             });
         }
 
-        const totalPriceText = summaryTotalPrice.textContent;
-        const totalPriceNum = totalPriceText.includes('A consultar') ? 0.00 : parseFloat(totalPriceText.replace(/[^\d.,]/g, '').replace(',', '.'));
+        // Calcular precio exacto numérico de forma robusta
+        const van = databaseVans.find(v => v.van_type === vanType);
+        let totalPriceNum = 0;
+
+        if (rentalMode === 'sin') {
+            const baseDailyRate = van ? parseFloat(van.price_sin) : (vanType === 'medium' ? 79.00 : 107.44);
+            let totalBase = baseDailyRate * days;
+            if (days >= 3 && days <= 7) totalBase *= 0.95;
+            const baseTaxable = totalBase + totalExtrasCost;
+            totalPriceNum = baseTaxable * 1.21;
+        } else {
+            const baseMinRate = van ? parseFloat(van.min_price_con) : (vanType === 'medium' ? 50.00 : 60.00);
+            const kmRate = van ? parseFloat(van.km_price_con) : (vanType === 'medium' ? 1.00 : 1.40);
+            const kms = parseInt(kmsEstimate.value) || 20;
+            const wait = parseFloat(waitHours.value) || 0;
+            const extraKmCost = kms > 20 ? (kms - 20) * kmRate : 0;
+            const waitingRate = van && van.waiting_hour_price !== undefined ? parseFloat(van.waiting_hour_price) : 30.00;
+            const baseTaxable = baseMinRate + extraKmCost + (wait * waitingRate);
+            totalPriceNum = baseTaxable * 1.21;
+        }
+
+        totalPriceNum = Math.round(totalPriceNum * 100) / 100;
+        const totalPriceText = `${totalPriceNum.toFixed(2)} €`;
 
         // Obtener usuario (Resiliente sin expulsar jamás la sesión)
         let user = null;
