@@ -1877,6 +1877,11 @@ app.get('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, 'admin.html'));
 });
 
+// Servir favicon.ico de forma directa y explícita
+app.get('/favicon.ico', (req, res) => {
+  res.sendFile(path.join(__dirname, 'assets', 'logo.png'));
+});
+
 // Servir archivos estáticos
 app.use(express.static(__dirname));
 
