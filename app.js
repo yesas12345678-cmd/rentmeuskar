@@ -329,15 +329,18 @@ const initApp = () => {
             return;
         }
 
+        const esLocale = (typeof flatpickr !== 'undefined' && flatpickr.l10ns && flatpickr.l10ns.es) ? flatpickr.l10ns.es : "es";
+
         pickerStart = flatpickr("#calc-date-start", {
-            locale: "es",
+            locale: esLocale,
             minDate: "today",
             dateFormat: "Y-m-d",
             altInput: true,
             altFormat: "d/m/Y",
             altInputClass: "form-control",
             clickOpens: true,
-            disableMobile: "true",
+            allowInput: false,
+            disableMobile: true,
             onChange: function (selectedDates, dateStr, instance) {
                 validateAndAdjustDateSelection();
                 calculatePrice();
@@ -345,29 +348,40 @@ const initApp = () => {
         });
 
         pickerEnd = flatpickr("#calc-date-end", {
-            locale: "es",
+            locale: esLocale,
             minDate: "today",
             dateFormat: "Y-m-d",
             altInput: true,
             altFormat: "d/m/Y",
             altInputClass: "form-control",
             clickOpens: true,
-            disableMobile: "true",
+            allowInput: false,
+            disableMobile: true,
             onChange: function (selectedDates, dateStr, instance) {
                 validateAndAdjustDateSelection();
                 calculatePrice();
             }
         });
 
-        // Click listeners directos para forzar apertura del calendario en cualquier clic
-        const startEl = document.getElementById('calc-date-start');
-        const endEl = document.getElementById('calc-date-end');
-        if (startEl) {
-            startEl.addEventListener('click', () => { if (pickerStart) pickerStart.open(); });
+        // Click listeners directos sobre inputs originales, inputs visibles (altInput) y contenedores
+        if (pickerStart) {
+            if (pickerStart.input) pickerStart.input.addEventListener('click', () => pickerStart.open());
+            if (pickerStart.altInput) pickerStart.altInput.addEventListener('click', () => pickerStart.open());
         }
-        if (endEl) {
-            endEl.addEventListener('click', () => { if (pickerEnd) pickerEnd.open(); });
+        if (pickerEnd) {
+            if (pickerEnd.input) pickerEnd.input.addEventListener('click', () => pickerEnd.open());
+            if (pickerEnd.altInput) pickerEnd.altInput.addEventListener('click', () => pickerEnd.open());
         }
+
+        document.querySelectorAll('#calc-date-start, #calc-date-end').forEach(el => {
+            const parentGroup = el.closest('.form-group');
+            if (parentGroup) {
+                parentGroup.addEventListener('click', () => {
+                    if (el.id === 'calc-date-start' && pickerStart) pickerStart.open();
+                    if (el.id === 'calc-date-end' && pickerEnd) pickerEnd.open();
+                });
+            }
+        });
     };
 
     initFlatpickr();
