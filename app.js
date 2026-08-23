@@ -363,14 +363,22 @@ const initApp = () => {
             }
         });
 
-        // Click listeners directos sobre inputs originales, inputs visibles (altInput) y contenedores
+        // Desactivar el autocompletado nativo del navegador sobre los inputs visibles generados por Flatpickr
         if (pickerStart) {
-            if (pickerStart.input) pickerStart.input.addEventListener('click', () => pickerStart.open());
-            if (pickerStart.altInput) pickerStart.altInput.addEventListener('click', () => pickerStart.open());
+            if (pickerStart.input) pickerStart.input.setAttribute('autocomplete', 'off');
+            if (pickerStart.altInput) {
+                pickerStart.altInput.setAttribute('autocomplete', 'off');
+                pickerStart.altInput.setAttribute('readonly', 'readonly');
+                pickerStart.altInput.addEventListener('click', () => pickerStart.open());
+            }
         }
         if (pickerEnd) {
-            if (pickerEnd.input) pickerEnd.input.addEventListener('click', () => pickerEnd.open());
-            if (pickerEnd.altInput) pickerEnd.altInput.addEventListener('click', () => pickerEnd.open());
+            if (pickerEnd.input) pickerEnd.input.setAttribute('autocomplete', 'off');
+            if (pickerEnd.altInput) {
+                pickerEnd.altInput.setAttribute('autocomplete', 'off');
+                pickerEnd.altInput.setAttribute('readonly', 'readonly');
+                pickerEnd.altInput.addEventListener('click', () => pickerEnd.open());
+            }
         }
 
         document.querySelectorAll('#calc-date-start, #calc-date-end').forEach(el => {
