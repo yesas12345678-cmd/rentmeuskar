@@ -1,7 +1,18 @@
-/**
- * RentMeUskar - Lógica de Aplicación
- * Sitio web de alquiler de furgonetas sin conductor en Huéscar
- */
+// Funciones globales de modales inmediata
+window.openAuthModal = (modalId) => {
+    const el = document.getElementById(modalId);
+    if (el) el.style.display = 'flex';
+};
+
+window.closeAuthModal = (modalId) => {
+    const el = document.getElementById(modalId);
+    if (el) el.style.display = 'none';
+};
+
+window.switchAuthModal = (closeId, openId) => {
+    window.closeAuthModal(closeId);
+    window.openAuthModal(openId);
+};
 
 const initApp = () => {
 
@@ -1127,7 +1138,7 @@ const initApp = () => {
         if (!token) {
             if (authSection) {
                 authSection.innerHTML = `
-                    <button class="btn btn-secondary btn-sm" onclick="openAuthModal('login-modal')" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">
+                    <button class="btn btn-secondary btn-sm" id="btn-login-modal" onclick="window.openAuthModal('login-modal')" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; cursor: pointer;">
                         <i class="fa-solid fa-user-lock"></i> Entrar
                     </button>
                 `;
@@ -1144,7 +1155,7 @@ const initApp = () => {
         const userNameText = (user && user.name) ? user.name : 'Mi Perfil';
         if (authSection) {
             authSection.innerHTML = `
-                <button class="btn btn-secondary btn-sm" onclick="openClientArea()" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; border-color: var(--color-neon); color: var(--color-neon);">
+                <button class="btn btn-secondary btn-sm" id="btn-login-modal" onclick="window.openClientArea()" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; border-color: var(--color-neon); color: var(--color-neon); cursor: pointer;">
                     <i class="fa-solid fa-user-circle"></i> ${userNameText}
                 </button>
             `;
@@ -1165,7 +1176,7 @@ const initApp = () => {
                 const freshNameText = freshUser.name ? freshUser.name : 'Mi Perfil';
                 if (authSection) {
                     authSection.innerHTML = `
-                        <button class="btn btn-secondary btn-sm" onclick="openClientArea()" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; border-color: var(--color-neon); color: var(--color-neon);">
+                        <button class="btn btn-secondary btn-sm" id="btn-login-modal" onclick="window.openClientArea()" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; border-color: var(--color-neon); color: var(--color-neon); cursor: pointer;">
                             <i class="fa-solid fa-user-circle"></i> ${freshNameText}
                         </button>
                     `;
