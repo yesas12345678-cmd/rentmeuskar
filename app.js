@@ -233,6 +233,58 @@ const initApp = () => {
        3. INTEGRACIÓN DE FLATPICKR (CALENDARIO DE DISPONIBILIDAD)
        ========================================================================== */
 
+    let currentDisabledRanges = [];
+
+    // Función para ajustar la fecha máxima permitida sin cruzar sobre días ocupados
+    const validateAndAdjustDateSelection = () => {
+        if (!pickerStart || !pickerEnd) return;
+
+        const startDate = pickerStart.selectedDates[0];
+        if (!startDate) {
+            pickerEnd.set("minDate", "today");
+            pickerEnd.set("maxDate", null);
+            return;
+        }
+
+        const startStr = pickerStart.formatDate(startDate, "Y-m-d");
+        pickerEnd.set("minDate", startStr);
+
+        // Buscar el primer rango ocupado que comience en o después de la fecha de inicio
+        let firstFutureDisabledFromStr = null;
+
+        currentDisabledRanges.forEach(range => {
+            const fromStr = typeof range === 'string' ? range : range.from;
+            if (fromStr >= startStr) {
+                if (!firstFutureDisabledFromStr || fromStr < firstFutureDisabledFromStr) {
+                    firstFutureDisabledFromStr = fromStr;
+                }
+            }
+        });
+
+        if (firstFutureDisabledFromStr) {
+            // La fecha máxima de devolución no puede sobrepasar el día anterior al primer bloqueo
+            const firstDisabledDate = new Date(firstFutureDisabledFromStr);
+            const maxAllowedDate = new Date(firstDisabledDate);
+            maxAllowedDate.setDate(maxAllowedDate.getDate() - 1);
+            const maxAllowedStr = pickerStart.formatDate(maxAllowedDate, "Y-m-d");
+
+            pickerEnd.set("maxDate", maxAllowedStr);
+
+            // Si la fecha de fin actual sobrepasa la fecha máxima permitida, limpiarla y avisar al usuario
+            const endDate = pickerEnd.selectedDates[0];
+            if (endDate) {
+                const endStr = pickerEnd.formatDate(endDate, "Y-m-d");
+                if (endStr > maxAllowedStr) {
+                    pickerEnd.clear();
+                    const fromFormatted = firstFutureDisabledFromStr.split('-').reverse().join('/');
+                    alert(`⚠️ La furgoneta no está disponible en las fechas elegidas porque ya tiene una reserva activa desde el ${fromFormatted}. Se ha ajustado la fecha máxima de devolución permitida.`);
+                }
+            }
+        } else {
+            pickerEnd.set("maxDate", null);
+        }
+    };
+
     const initFlatpickr = () => {
         if (typeof flatpickr === 'undefined') {
             console.warn('Flatpickr no está cargado. Se usarán selectores de fecha nativos.');
@@ -262,7 +314,7 @@ const initApp = () => {
             dateFormat: "Y-m-d",
             disableMobile: true,
             onChange: function (selectedDates, dateStr, instance) {
-                if (pickerEnd) pickerEnd.set("minDate", dateStr);
+                validateAndAdjustDateSelection();
                 calculatePrice();
             }
         });
@@ -273,6 +325,7 @@ const initApp = () => {
             dateFormat: "Y-m-d",
             disableMobile: true,
             onChange: function (selectedDates, dateStr, instance) {
+                validateAndAdjustDateSelection();
                 calculatePrice();
             }
         });
@@ -702,13 +755,16 @@ const initApp = () => {
                 const ranges = await response.json();
 
                 // Mapear al formato esperado por Flatpickr: [{from: 'YYYY-MM-DD', to: 'YYYY-MM-DD'}]
-                const disableDates = ranges.map(range => ({
+                currentDisabledRanges = ranges.map(range => ({
                     from: range.from,
                     to: range.to
                 }));
 
-                pickerStart.set('disable', disableDates);
-                pickerEnd.set('disable', disableDates);
+                pickerStart.set('disable', currentDisabledRanges);
+                pickerEnd.set('disable', currentDisabledRanges);
+
+                // Revalidar selección actual de fechas por si colisiona con el nuevo vehículo
+                validateAndAdjustDateSelection();
             }
         } catch (err) {
             console.error('Error al obtener disponibilidad de fechas:', err);
