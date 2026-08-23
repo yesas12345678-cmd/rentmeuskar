@@ -986,11 +986,11 @@
                             <h3 style="font-size: 1.1rem; color: #fff; margin-bottom: 1rem; font-family: var(--font-heading); display: flex; align-items: center; gap: 0.5rem; margin-top: 0;">
                                 <i class="fa-solid fa-ticket" style="color: var(--color-neon);"></i> Generar Código de Reseña
                             </h3>
-                            <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1.25rem; line-height: 1.5;">
-                                Genera un código de reseña verificado especificando el vehículo alquilado y datos del cliente.
+                            <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem; line-height: 1.5;">
+                                Genera un código de reseña verificado especificando el vehículo alquilado, fechas y datos de la reserva.
                             </p>
 
-                            <div class="custom-form-group" style="margin-bottom: 1rem;">
+                            <div class="custom-form-group" style="margin-bottom: 0.75rem;">
                                 <label style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.3rem;">Furgoneta / Producto</label>
                                 <select id="admin-gen-van-select" class="search-input" style="width: 100%; padding-left: 0.8rem;">
                                     <option value="Ford Transit Custom L2H2 (8m³)">Ford Transit Custom L2H2 (8m³)</option>
@@ -1000,7 +1000,7 @@
                                 </select>
                             </div>
 
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1rem;">
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.75rem;">
                                 <div class="custom-form-group">
                                     <label style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.3rem;">Nombre Cliente</label>
                                     <input type="text" id="admin-gen-client-name" class="search-input" placeholder="" style="width: 100%; padding-left: 0.8rem;">
@@ -1008,6 +1008,37 @@
                                 <div class="custom-form-group">
                                     <label style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.3rem;">Ciudad / Tipo</label>
                                     <input type="text" id="admin-gen-city" class="search-input" placeholder="" style="width: 100%; padding-left: 0.8rem;">
+                                </div>
+                            </div>
+
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.75rem;">
+                                <div class="custom-form-group">
+                                    <label style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.3rem;">Días de Alquiler</label>
+                                    <input type="number" id="admin-gen-days" class="search-input" value="2" min="1" style="width: 100%; padding-left: 0.8rem;">
+                                </div>
+                                <div class="custom-form-group">
+                                    <label style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.3rem;">Modalidad</label>
+                                    <select id="admin-gen-rental-mode" class="search-input" style="width: 100%; padding-left: 0.8rem;">
+                                        <option value="Sin Conductor">Sin Conductor</option>
+                                        <option value="Con Conductor">Con Conductor</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 1rem;">
+                                <div class="custom-form-group">
+                                    <label style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.3rem;">Fecha Recogida</label>
+                                    <div style="display: flex; gap: 0.3rem;">
+                                        <input type="date" id="admin-gen-pickup-date" class="search-input" style="width: 60%; padding-left: 0.4rem; font-size: 0.75rem;">
+                                        <input type="time" id="admin-gen-pickup-time" class="search-input" value="09:00" style="width: 40%; padding-left: 0.3rem; font-size: 0.75rem;">
+                                    </div>
+                                </div>
+                                <div class="custom-form-group">
+                                    <label style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.3rem;">Fecha Devolución</label>
+                                    <div style="display: flex; gap: 0.3rem;">
+                                        <input type="date" id="admin-gen-return-date" class="search-input" style="width: 60%; padding-left: 0.4rem; font-size: 0.75rem;">
+                                        <input type="time" id="admin-gen-return-time" class="search-input" value="19:00" style="width: 40%; padding-left: 0.3rem; font-size: 0.75rem;">
+                                    </div>
                                 </div>
                             </div>
                             

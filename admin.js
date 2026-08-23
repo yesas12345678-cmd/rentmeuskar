@@ -1158,7 +1158,7 @@ const initAdmin = () => {
         }
     };
 
-    // Generador de códigos manuales con especificaciones de furgoneta
+    // Generador de códigos manuales con especificaciones completas de reserva
     if (btnGenerateCode) {
         btnGenerateCode.addEventListener('click', async () => {
             const token = localStorage.getItem('admin_token');
@@ -1167,10 +1167,34 @@ const initAdmin = () => {
             const vanSelect = document.getElementById('admin-gen-van-select');
             const clientInput = document.getElementById('admin-gen-client-name');
             const cityInput = document.getElementById('admin-gen-city');
+            const daysInput = document.getElementById('admin-gen-days');
+            const modeSelect = document.getElementById('admin-gen-rental-mode');
+            const pickupDateInput = document.getElementById('admin-gen-pickup-date');
+            const pickupTimeInput = document.getElementById('admin-gen-pickup-time');
+            const returnDateInput = document.getElementById('admin-gen-return-date');
+            const returnTimeInput = document.getElementById('admin-gen-return-time');
 
             const van_name = vanSelect ? vanSelect.value : 'Ford Transit Custom L2H2 (8m³)';
             const client_name = clientInput ? clientInput.value.trim() : '';
             const city = cityInput ? cityInput.value.trim() : '';
+            const rental_days = daysInput ? parseInt(daysInput.value) || 2 : 2;
+            const rental_mode = modeSelect ? modeSelect.value : 'Sin Conductor';
+            const pickup_date = pickupDateInput ? pickupDateInput.value : '';
+            const pickup_time = pickupTimeInput ? pickupTimeInput.value : '09:00';
+            const return_date = returnDateInput ? returnDateInput.value : '';
+            const return_time = returnTimeInput ? returnTimeInput.value : '19:00';
+
+            const payload = {
+                van_name,
+                client_name,
+                city,
+                rental_days,
+                rental_mode,
+                pickup_date,
+                pickup_time,
+                return_date,
+                return_time
+            };
 
             btnGenerateCode.disabled = true;
             btnGenerateCode.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generando...';
@@ -1182,7 +1206,7 @@ const initAdmin = () => {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ van_name, client_name, city })
+                    body: JSON.stringify(payload)
                 });
                 
                 const data = await res.json();
@@ -1191,16 +1215,16 @@ const initAdmin = () => {
                     generatedCodeText.textContent = data.codeObj.code;
                     const specsEl = document.getElementById('generated-code-specs');
                     if (specsEl) {
-                        specsEl.textContent = `📦 ${data.codeObj.van_name} ${data.codeObj.client_name ? '| ' + data.codeObj.client_name : ''}`;
+                        specsEl.textContent = `📦 ${data.codeObj.van_name} | 🗓️ ${data.codeObj.rental_days} Días (${data.codeObj.rental_mode})`;
                     }
-                    showToast(`Código verificado ${data.codeObj.code} creado para ${data.codeObj.van_name}`, 'success');
+                    showToast(`Código verificado ${data.codeObj.code} creado con especificaciones completas.`, 'success');
                 } else {
                     const code = 'RMU-' + Math.floor(1000 + Math.random() * 9000);
                     generatedCodeBox.style.display = 'block';
                     generatedCodeText.textContent = code;
                     const specsEl = document.getElementById('generated-code-specs');
                     if (specsEl) {
-                        specsEl.textContent = `📦 ${van_name} ${client_name ? '| ' + client_name : ''}`;
+                        specsEl.textContent = `📦 ${van_name} | 🗓️ ${rental_days} Días (${rental_mode})`;
                     }
                     showToast(`Código verificado ${code} creado localmente.`, 'success');
                 }
@@ -1211,7 +1235,7 @@ const initAdmin = () => {
                 generatedCodeText.textContent = code;
                 const specsEl = document.getElementById('generated-code-specs');
                 if (specsEl) {
-                    specsEl.textContent = `📦 ${van_name} ${client_name ? '| ' + client_name : ''}`;
+                    specsEl.textContent = `📦 ${van_name} | 🗓️ ${rental_days} Días (${rental_mode})`;
                 }
                 showToast(`Código verificado ${code} creado localmente.`, 'success');
             } finally {

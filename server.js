@@ -1421,9 +1421,9 @@ let fallbackReviews = [
 
 let manualReviewCodes = [];
 
-// Generar código de reseña manual desde admin con especificaciones de producto
+// Generar código de reseña manual desde admin con especificaciones completas de la reserva
 app.post('/api/admin/generate-review-code', verifyAdmin, (req, res) => {
-  const { van_name, client_name, city } = req.body;
+  const { van_name, client_name, city, rental_days, rental_mode, pickup_date, pickup_time, return_date, return_time } = req.body;
   const randomNum = Math.floor(1000 + Math.random() * 9000);
   const code = 'RMU-' + randomNum;
 
@@ -1432,6 +1432,12 @@ app.post('/api/admin/generate-review-code', verifyAdmin, (req, res) => {
     van_name: van_name || 'Ford Transit Custom L2H2 (8m³)',
     client_name: client_name || '',
     city: city || 'Granada',
+    rental_days: rental_days || 2,
+    rental_mode: rental_mode || 'Sin Conductor',
+    pickup_date: pickup_date || '',
+    pickup_time: pickup_time || '09:00',
+    return_date: return_date || '',
+    return_time: return_time || '19:00',
     created_at: new Date().toISOString()
   };
 
@@ -1439,7 +1445,7 @@ app.post('/api/admin/generate-review-code', verifyAdmin, (req, res) => {
   res.json({ message: 'Código de reseña verificado creado.', codeObj });
 });
 
-// Verificar código manual para autocompletar vehículo
+// Verificar código manual para autocompletar vehículo y datos de reserva
 app.post('/api/reviews/verify-code', (req, res) => {
   const { code } = req.body;
   if (!code) return res.status(400).json({ error: 'Código requerido' });
@@ -1449,18 +1455,39 @@ app.post('/api/reviews/verify-code', (req, res) => {
   // Buscar en códigos manuales generados por admin
   const manualObj = manualReviewCodes.find(c => c.code.toUpperCase() === cleanCode);
   if (manualObj) {
-    return res.json({ valid: true, van_name: manualObj.van_name, client_name: manualObj.client_name, city: manualObj.city });
+    return res.json({ 
+      valid: true, 
+      van_name: manualObj.van_name, 
+      client_name: manualObj.client_name, 
+      city: manualObj.city,
+      rental_days: manualObj.rental_days,
+      rental_mode: manualObj.rental_mode,
+      pickup_date: manualObj.pickup_date,
+      pickup_time: manualObj.pickup_time,
+      return_date: manualObj.return_date,
+      return_time: manualObj.return_time
+    });
   }
 
   // Buscar en reservas
   const foundBooking = fallbackBookings.find(b => b.review_code && b.review_code.toUpperCase() === cleanCode);
   if (foundBooking) {
-    return res.json({ valid: true, van_name: foundBooking.van_name, client_name: foundBooking.name });
+    return res.json({ 
+      valid: true, 
+      van_name: foundBooking.van_name, 
+      client_name: foundBooking.name,
+      rental_days: foundBooking.days || 2,
+      rental_mode: foundBooking.rental_mode || 'Sin Conductor',
+      pickup_date: foundBooking.pickup_date,
+      pickup_time: foundBooking.pickup_time,
+      return_date: foundBooking.return_date,
+      return_time: foundBooking.return_time
+    });
   }
 
   // Si es un código genérico válido
   if (cleanCode.startsWith('RMU-') || cleanCode.startsWith('MOCK-')) {
-    return res.json({ valid: true, van_name: 'Ford Transit Custom L2H2 (8m³)' });
+    return res.json({ valid: true, van_name: 'Ford Transit Custom L2H2 (8m³)', rental_days: 2, rental_mode: 'Sin Conductor' });
   }
 
   return res.status(400).json({ error: 'Código de reseña no encontrado.' });

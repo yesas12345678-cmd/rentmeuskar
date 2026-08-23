@@ -2170,7 +2170,7 @@ const initApp = () => {
         }
     };
 
-    // Función para actualizar la insignia del vehículo seleccionado
+    // Función para actualizar la insignia del vehículo seleccionado con todas las especificaciones
     const updateReviewVehicleBadge = () => {
         const select = document.getElementById('review-booking-select');
         const badgeText = document.getElementById('review-vehicle-text');
@@ -2192,9 +2192,13 @@ const initApp = () => {
         } else {
             if (manualGroup) manualGroup.style.display = 'none';
             const vanName = selectedOpt.getAttribute('data-van') || 'Ford Transit Custom L2H2 (8m³)';
+            const days = selectedOpt.getAttribute('data-days') || '2';
+            const mode = selectedOpt.getAttribute('data-mode') || 'Sin Conductor';
             const code = selectedOpt.getAttribute('data-code') || ('RMU-B' + selectedOpt.value.replace('booking_', ''));
-            if (hiddenVanInput) hiddenVanInput.value = vanName;
-            if (badgeText) badgeText.textContent = vanName;
+            const fullSpec = `${vanName} • ${days} Días (${mode})`;
+
+            if (hiddenVanInput) hiddenVanInput.value = fullSpec;
+            if (badgeText) badgeText.textContent = fullSpec;
             if (reviewCodeInput) {
                 reviewCodeInput.required = false;
                 reviewCodeInput.value = code;
@@ -2242,7 +2246,10 @@ const initApp = () => {
                     userBookings.forEach(b => {
                         const van = b.van_name || 'Ford Transit Custom L2H2 (8m³)';
                         const code = b.review_code || ('RMU-B' + b.id);
-                        html += `<option value="booking_${b.id}" data-van="${van}" data-code="${code}">Reserva #${b.id} - ${van}</option>`;
+                        const days = b.days || 2;
+                        const mode = b.rental_mode === 'con' ? 'Con Conductor' : 'Sin Conductor';
+                        const label = `Reserva #${b.id} - ${van} • ${days} Días (${mode})`;
+                        html += `<option value="booking_${b.id}" data-van="${van}" data-days="${days}" data-mode="${mode}" data-code="${code}">${label}</option>`;
                     });
                     html += '</optgroup>';
                 }
@@ -2285,12 +2292,16 @@ const initApp = () => {
                     const nameInput = document.getElementById('review-name-input');
                     const cityInput = document.getElementById('review-city-input');
 
-                    if (hiddenVanInput) hiddenVanInput.value = data.van_name || 'Ford Transit Custom L2H2 (8m³)';
-                    if (badgeText) badgeText.textContent = data.van_name || 'Ford Transit Custom L2H2 (8m³)';
+                    const daysSpec = data.rental_days ? ` • ${data.rental_days} Días` : '';
+                    const modeSpec = data.rental_mode ? ` (${data.rental_mode})` : '';
+                    const fullVanText = `${data.van_name}${daysSpec}${modeSpec}`;
+
+                    if (hiddenVanInput) hiddenVanInput.value = fullVanText;
+                    if (badgeText) badgeText.textContent = fullVanText;
                     if (data.client_name && nameInput) nameInput.value = data.client_name;
                     if (data.city && cityInput) cityInput.value = data.city;
 
-                    showAppToast(`¡Código verificado! Vehículo: ${data.van_name}`, 'success');
+                    showAppToast(`¡Código verificado! Reserva: ${fullVanText}`, 'success');
                 } else {
                     alert(data.error || 'Código no válido.');
                 }
