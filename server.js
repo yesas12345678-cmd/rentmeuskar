@@ -632,6 +632,59 @@ app.get('/api/auth/me', async (req, res) => {
   res.status(401).json({ error: 'Token inválido.' });
 });
 
+// 3.b Actualizar perfil del usuario actual
+app.put('/api/auth/me', async (req, res) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    return res.status(401).json({ error: 'No autorizado. Falta token.' });
+  }
+
+  const token = authHeader.replace('Bearer ', '');
+  const { name, email, phone, dni } = req.body;
+
+  if (dni && !validateSpanishID(dni)) {
+    return res.status(400).json({ error: 'El DNI / NIE introducido no es válido.' });
+  }
+
+  if (token.startsWith('user_')) {
+    const userId = parseInt(token.replace('user_', ''));
+    try {
+      const result = await pool.query(
+        'UPDATE users SET name = COALESCE(NULLIF($1, \'\'), name), phone = COALESCE(NULLIF($2, \'\'), phone), dni = COALESCE(NULLIF($3, \'\'), dni) WHERE id = $4 RETURNING id, name, email, phone, dni, created_at',
+        [name, phone, dni, userId]
+      );
+
+      const fbIndex = fallbackUsers.findIndex(u => u.id === userId);
+      if (fbIndex !== -1) {
+        if (name) fallbackUsers[fbIndex].name = name;
+        if (phone) fallbackUsers[fbIndex].phone = phone;
+        if (dni) fallbackUsers[fbIndex].dni = dni;
+      }
+
+      if (result.rowCount > 0) {
+        return res.json({ message: 'Perfil actualizado con éxito.', user: result.rows[0] });
+      }
+    } catch (err) {
+      console.warn('Base de datos offline al actualizar perfil, actualizando memoria fallback:', err.message);
+    }
+
+    const fbIndex = fallbackUsers.findIndex(u => u.id === userId);
+    if (fbIndex !== -1) {
+      if (name) fallbackUsers[fbIndex].name = name;
+      if (phone) fallbackUsers[fbIndex].phone = phone;
+      if (dni) fallbackUsers[fbIndex].dni = dni;
+      const { password: _, ...userWithoutPass } = fallbackUsers[fbIndex];
+      return res.json({ message: 'Perfil actualizado con éxito.', user: userWithoutPass });
+    } else {
+      const updatedUser = { id: userId, name: name || 'Usuario', email: email || '', phone: phone || '', dni: dni || '' };
+      fallbackUsers.push(updatedUser);
+      return res.json({ message: 'Perfil actualizado con éxito.', user: updatedUser });
+    }
+  }
+
+  return res.status(401).json({ error: 'Token inválido.' });
+});
+
 // Almacenamiento temporal de códigos de recuperación de contraseña
 const passwordResetCodes = {};
 

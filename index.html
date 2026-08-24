@@ -495,7 +495,23 @@
                 dni: dni || currentUser.dni
             });
 
+            // 1. Guardar en user_profile
             localStorage.setItem('user_profile', JSON.stringify(updatedUser));
+
+            // 2. Guardar en local_registered_users
+            var localUsers = JSON.parse(localStorage.getItem('local_registered_users') || '[]');
+            var foundIndex = localUsers.findIndex(function(u) {
+                return (u.email && updatedUser.email && u.email.toLowerCase() === updatedUser.email.toLowerCase()) || u.id === updatedUser.id;
+            });
+            if (foundIndex !== -1) {
+                localUsers[foundIndex].name = updatedUser.name;
+                localUsers[foundIndex].phone = updatedUser.phone;
+                localUsers[foundIndex].dni = updatedUser.dni;
+                if (updatedUser.email) localUsers[foundIndex].email = updatedUser.email;
+            } else {
+                localUsers.push(updatedUser);
+            }
+            localStorage.setItem('local_registered_users', JSON.stringify(localUsers));
 
             try {
                 if (token) {
@@ -2093,7 +2109,7 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
 
     <!-- Custom Script -->
-    <script src="app.js?v=8.0"></script>
+    <script src="app.js?v=9.0"></script>
 </body>
 
 </html>
