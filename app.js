@@ -828,16 +828,20 @@ const initApp = () => {
 
     // Obtener fechas ocupadas de la furgoneta seleccionada o bloqueos generales
     window.updateCalendarAvailability = async () => {
+        const vanSelect = document.getElementById('calc-van-select');
         const vanType = vanSelect ? vanSelect.value : '';
         const modeInput = document.querySelector('input[name="rental-mode"]:checked');
         const mode = modeInput ? modeInput.value : 'sin';
 
-        if (typeof flatpickr === 'undefined' || !pickerStart || !pickerEnd) return;
+        const pStart = window.pickerStart || pickerStart;
+        const pEnd = window.pickerEnd || pickerEnd;
+
+        if (typeof flatpickr === 'undefined' || !pStart || !pEnd) return;
 
         if (mode === 'con') {
             // Con conductor no tiene bloqueo de fechas reservadas
-            pickerStart.set('disable', []);
-            pickerEnd.set('disable', []);
+            pStart.set('disable', []);
+            pEnd.set('disable', []);
             return;
         }
 
@@ -847,24 +851,25 @@ const initApp = () => {
             if (response.ok) {
                 const ranges = await response.json();
 
-                currentDisabledRanges = ranges.map(range => ({
+                window.currentDisabledRanges = ranges.map(range => ({
                     from: typeof range.from === 'string' ? range.from.split('T')[0] : range.from,
                     to: typeof range.to === 'string' ? range.to.split('T')[0] : range.to
                 }));
+                currentDisabledRanges = window.currentDisabledRanges;
 
                 const disabledMatcher = typeof window.isDateDisabled === 'function' ? window.isDateDisabled : function(date) {
-                    if (!currentDisabledRanges || currentDisabledRanges.length === 0) return false;
+                    if (!window.currentDisabledRanges || window.currentDisabledRanges.length === 0) return false;
                     const y = date.getFullYear();
                     const m = String(date.getMonth() + 1).padStart(2, '0');
                     const d = String(date.getDate()).padStart(2, '0');
                     const dateStr = `${y}-${m}-${d}`;
-                    return currentDisabledRanges.some(r => dateStr >= (r.from || '').split('T')[0] && dateStr <= (r.to || '').split('T')[0]);
+                    return window.currentDisabledRanges.some(r => dateStr >= (r.from || '').split('T')[0] && dateStr <= (r.to || '').split('T')[0]);
                 };
 
-                pickerStart.set('disable', [disabledMatcher]);
-                pickerEnd.set('disable', [disabledMatcher]);
-                if (typeof pickerStart.redraw === 'function') pickerStart.redraw();
-                if (typeof pickerEnd.redraw === 'function') pickerEnd.redraw();
+                pStart.set('disable', [disabledMatcher]);
+                pEnd.set('disable', [disabledMatcher]);
+                if (typeof pStart.redraw === 'function') pStart.redraw();
+                if (typeof pEnd.redraw === 'function') pEnd.redraw();
 
                 // Revalidar selección actual de fechas por si colisiona con el nuevo vehículo
                 validateAndAdjustDateSelection();

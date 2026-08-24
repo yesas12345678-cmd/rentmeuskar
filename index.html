@@ -124,6 +124,25 @@
             return true;
         };
 
+        window.currentDisabledRanges = window.currentDisabledRanges || [];
+
+        window.isDateDisabled = function(date) {
+            var ranges = window.currentDisabledRanges || [];
+            if (!ranges || ranges.length === 0) return false;
+            var y = date.getFullYear();
+            var m = String(date.getMonth() + 1);
+            if (m.length < 2) m = '0' + m;
+            var d = String(date.getDate());
+            if (d.length < 2) d = '0' + d;
+            var dateStr = y + '-' + m + '-' + d;
+
+            return ranges.some(function(range) {
+                var fromStr = typeof range.from === 'string' ? range.from.split('T')[0] : '';
+                var toStr = typeof range.to === 'string' ? range.to.split('T')[0] : '';
+                return dateStr >= fromStr && dateStr <= toStr;
+            });
+        };
+
         window.initCalendar = function() {
             if (typeof flatpickr === 'undefined') return;
             var esLocale = (flatpickr.l10ns && flatpickr.l10ns.es) ? flatpickr.l10ns.es : 'es';
@@ -140,6 +159,7 @@
                     clickOpens: true,
                     allowInput: false,
                     disableMobile: true,
+                    disable: [window.isDateDisabled],
                     onChange: function() {
                         if (typeof validateAndAdjustDateSelection === 'function') validateAndAdjustDateSelection();
                         if (typeof calculatePrice === 'function') calculatePrice();
@@ -159,6 +179,7 @@
                     clickOpens: true,
                     allowInput: false,
                     disableMobile: true,
+                    disable: [window.isDateDisabled],
                     onChange: function() {
                         if (typeof validateAndAdjustDateSelection === 'function') validateAndAdjustDateSelection();
                         if (typeof calculatePrice === 'function') calculatePrice();
@@ -2189,7 +2210,7 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
 
     <!-- Custom Script -->
-    <script src="app.js?v=16.0"></script>
+    <script src="app.js?v=17.0"></script>
 </body>
 
 </html>
