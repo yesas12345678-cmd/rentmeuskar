@@ -73,6 +73,32 @@
 
     <!-- Global Auth Modal Handlers (Instant Execution) -->
     <script>
+        window.validateSpanishID = function(idString) {
+            if (!idString) return false;
+            var value = idString.trim().toUpperCase();
+            var dniRegex = /^(\d{8})([A-Z])$/;
+            var nieRegex = /^([XYZ])(\d{7})([A-Z])$/;
+            var cifRegex = /^([ABCDEFGHJKLMNPQRSUVW])(\d{7})([0-9A-J])$/;
+            var validLetters = "TRWAGMYFPDXBNJZSQVHLCKE";
+
+            if (dniRegex.test(value)) {
+                var match = value.match(dniRegex);
+                var number = parseInt(match[1], 10);
+                var letter = match[2];
+                return letter === validLetters[number % 23];
+            }
+
+            if (nieRegex.test(value)) {
+                var match = value.match(nieRegex);
+                var prefixMap = { 'X': '0', 'Y': '1', 'Z': '2' };
+                var fullNumber = prefixMap[match[1]] + match[2];
+                var letter = match[3];
+                return letter === validLetters[parseInt(fullNumber, 10) % 23];
+            }
+
+            return cifRegex.test(value);
+        };
+
         window.updateAuthUI = function() {
             var token = localStorage.getItem('user_token');
             var savedProfileStr = localStorage.getItem('user_profile');
@@ -453,8 +479,8 @@
             var phone = phoneEl ? phoneEl.value.trim() : '';
             var dni = dniEl ? dniEl.value.trim().toUpperCase() : '';
 
-            if (dni && typeof validateSpanishID === 'function' && !validateSpanishID(dni)) {
-                alert('El DNI / NIE introducido no es válido. Comprueba los 8 números y la letra.');
+            if (dni && typeof window.validateSpanishID === 'function' && !window.validateSpanishID(dni)) {
+                alert('El DNI / NIE introducido no es válido. Debe contener 8 números y la letra correspondiente (ejemplo: 12345678Z o X1234567L).');
                 return false;
             }
 
@@ -1616,7 +1642,7 @@
                     <input type="tel" id="edit-profile-phone" class="custom-form-control" required placeholder="">
                 </div>
                 <div class="custom-form-group" style="text-align: left;">
-                    <label for="edit-profile-dni">DNI / NIE (Verificado)</label>
+                    <label for="edit-profile-dni">DNI / NIE</label>
                     <input type="text" id="edit-profile-dni" class="custom-form-control" required placeholder="" style="text-transform: uppercase;">
                 </div>
                 <button type="submit" class="btn btn-primary btn-block" style="margin-top: 1rem;">
@@ -2038,7 +2064,7 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
 
     <!-- Custom Script -->
-    <script src="app.js?v=7.0"></script>
+    <script src="app.js?v=8.0"></script>
 </body>
 
 </html>
