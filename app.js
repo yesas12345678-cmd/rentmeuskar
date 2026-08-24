@@ -576,6 +576,31 @@ const initApp = () => {
         vanSpecsContainer.style.display = 'block';
     };
 
+    const populateVanDropdown = (vansList) => {
+        if (!vanSelect) return;
+        const selectedVal = vanSelect.value;
+        vanSelect.innerHTML = '<option value="" disabled selected>-- Elige un modelo --</option>';
+
+        const list = Array.isArray(vansList) && vansList.length > 0 ? vansList : databaseVans;
+        const activeVans = list.filter(v => v.status === 'active' || !v.status);
+
+        activeVans.forEach(van => {
+            const opt = document.createElement('option');
+            opt.value = van.van_type;
+            opt.setAttribute('data-price', van.price_sin);
+            const priceFormatted = parseFloat(van.price_sin || 0).toFixed(2).replace('.', ',');
+            opt.textContent = `${van.name} - ${priceFormatted}€ + IVA / día`;
+            vanSelect.appendChild(opt);
+        });
+
+        if (selectedVal && activeVans.some(v => v.van_type === selectedVal)) {
+            vanSelect.value = selectedVal;
+            renderVanSpecs();
+        } else {
+            vanSelect.value = '';
+        }
+    };
+
     // Cargar catálogo de furgonetas desde la API y renderizar tarjetas públicas dinámicamente
     const loadVans = async () => {
         try {
@@ -583,28 +608,11 @@ const initApp = () => {
             if (response.ok) {
                 const rawVans = await response.json();
                 
-                // Filtrar furgonetas activas directamente del catálogo real de la API
-                databaseVans = rawVans.filter(v => v.status === 'active' || !v.status);
-
-                // Repoblar el selector calc-van-select solo con furgonetas activas
-                const selectedVal = vanSelect ? vanSelect.value : '';
-                if (vanSelect) {
-                    vanSelect.innerHTML = '<option value="" disabled selected>-- Elige un modelo --</option>';
-                    databaseVans.forEach(van => {
-                        const opt = document.createElement('option');
-                        opt.value = van.van_type;
-                        opt.setAttribute('data-price', van.price_sin);
-                        opt.textContent = `${van.name} - ${parseFloat(van.price_sin).toFixed(2).replace('.', ',')}€ + IVA / día`;
-                        vanSelect.appendChild(opt);
-                    });
-
-                    if (selectedVal && databaseVans.some(v => v.van_type === selectedVal)) {
-                        vanSelect.value = selectedVal;
-                        renderVanSpecs();
-                    } else {
-                        vanSelect.value = '';
-                    }
+                if (Array.isArray(rawVans) && rawVans.length > 0) {
+                    databaseVans = rawVans;
                 }
+                
+                populateVanDropdown(databaseVans);
 
                 // Renderizar tarjetas de furgonetas activas dinámicamente en el DOM de la página principal
                 if (fleetGridContainer) {
@@ -818,6 +826,7 @@ const initApp = () => {
                 ]
             }
         ];
+        populateVanDropdown(databaseVans);
     };
 
     loadVans();
