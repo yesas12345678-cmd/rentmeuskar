@@ -230,7 +230,7 @@
                 });
 
                 var data = await res.json();
-                if (res.ok) {
+                if (res.ok && data) {
                     if (data.user && data.user.is_admin) {
                         localStorage.setItem('admin_token', data.token);
                         window.location.href = 'admin.html';
@@ -241,22 +241,13 @@
                     if (data.user) {
                         localStorage.setItem('user_profile', JSON.stringify(data.user));
                     }
-                    window.closeAuthModal('login-modal');
-                    if (typeof updateAuthUI === 'function') updateAuthUI();
-                    if (typeof showAppToast === 'function') showAppToast('¡Sesión iniciada correctamente!', 'success');
-                    else alert('¡Sesión iniciada correctamente!');
                 } else {
-                    // Fallback local garantizado para inicio de sesión inmediato
                     var localUsers = JSON.parse(localStorage.getItem('local_registered_users') || '[]');
                     var foundUser = localUsers.find(function(u) { return u.email.toLowerCase() === cleanEmail; });
                     var userProfile = foundUser ? { id: foundUser.id, name: foundUser.name, email: foundUser.email, phone: foundUser.phone || '', dni: foundUser.dni || '' } : { id: Date.now(), name: cleanEmail.split('@')[0], email: cleanEmail, phone: '', dni: '' };
 
                     localStorage.setItem('user_token', 'user_' + userProfile.id);
                     localStorage.setItem('user_profile', JSON.stringify(userProfile));
-                    window.closeAuthModal('login-modal');
-                    if (typeof updateAuthUI === 'function') updateAuthUI();
-                    if (typeof showAppToast === 'function') showAppToast('¡Sesión iniciada correctamente!', 'success');
-                    else alert('¡Sesión iniciada correctamente!');
                 }
             } catch (err) {
                 console.warn('Error de red al iniciar sesión, aplicando sesión local:', err);
@@ -266,15 +257,14 @@
 
                 localStorage.setItem('user_token', 'user_' + userProfile.id);
                 localStorage.setItem('user_profile', JSON.stringify(userProfile));
-                window.closeAuthModal('login-modal');
-                if (typeof updateAuthUI === 'function') updateAuthUI();
-                if (typeof showAppToast === 'function') showAppToast('¡Sesión iniciada correctamente!', 'success');
-                else alert('¡Sesión iniciada correctamente!');
             } finally {
                 if (submitBtn) {
                     submitBtn.disabled = false;
                     submitBtn.innerHTML = 'Entrar';
                 }
+                window.closeAuthModal('login-modal');
+                if (typeof updateAuthUI === 'function') updateAuthUI();
+                if (typeof showAppToast === 'function') showAppToast('¡Sesión iniciada correctamente!', 'success');
             }
             return false;
         };
@@ -1879,7 +1869,7 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
 
     <!-- Custom Script -->
-    <script src="app.js?v=2.2"></script>
+    <script src="app.js?v=5.0"></script>
 </body>
 
 </html>
