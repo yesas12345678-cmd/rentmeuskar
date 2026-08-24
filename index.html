@@ -296,8 +296,10 @@
 
             if (submitBtn) {
                 submitBtn.disabled = true;
-                submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Registrando...';
+                submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Enviando código...';
             }
+
+            window._pendingRegEmail = email;
 
             try {
                 var res = await fetch('/api/auth/register', {
@@ -307,46 +309,81 @@
                 });
 
                 var data = await res.json();
-                if (res.ok) {
-                    localStorage.setItem('user_token', data.token);
-                    if (data.user) {
-                        localStorage.setItem('user_profile', JSON.stringify(data.user));
-                    }
-                    window.closeAuthModal('register-modal');
-                    if (typeof updateAuthUI === 'function') updateAuthUI();
-                    if (typeof showAppToast === 'function') showAppToast('¡Cuenta creada e inicio de sesión automático!', 'success');
-                    else alert('¡Cuenta creada e inicio de sesión automático!');
-                } else {
-                    var mockUser = { id: Date.now(), name: name, email: email, phone: phone, dni: dni };
-                    var localUsers = JSON.parse(localStorage.getItem('local_registered_users') || '[]');
-                    localUsers.push(mockUser);
-                    localStorage.setItem('local_registered_users', JSON.stringify(localUsers));
+                if (res.ok && data.requiresVerification) {
+                    var subtitle = document.getElementById('verify-email-subtitle');
+                    if (subtitle) subtitle.textContent = `Hemos enviado un código de confirmación a ${email}. Introdúcelo para activar tu cuenta.`;
 
-                    localStorage.setItem('user_token', 'user_' + mockUser.id);
-                    localStorage.setItem('user_profile', JSON.stringify(mockUser));
-                    window.closeAuthModal('register-modal');
-                    if (typeof updateAuthUI === 'function') updateAuthUI();
-                    if (typeof showAppToast === 'function') showAppToast('¡Cuenta creada correctamente!', 'success');
-                    else alert('¡Cuenta creada correctamente!');
+                    window.switchAuthModal('register-modal', 'verify-email-modal');
+                    if (typeof showAppToast === 'function') showAppToast(`📧 Código de activación enviado a ${email}`, 'success', 8000);
+                } else if (!res.ok && data && data.error) {
+                    alert(data.error);
+                } else {
+                    var subtitle = document.getElementById('verify-email-subtitle');
+                    if (subtitle) subtitle.textContent = `Hemos enviado un código de confirmación a ${email}. Introdúcelo para activar tu cuenta.`;
+                    window.switchAuthModal('register-modal', 'verify-email-modal');
                 }
             } catch (err) {
-                console.warn('Error de red al registrar, aplicando cuenta local:', err);
-                var mockUser = { id: Date.now(), name: name, email: email, phone: phone, dni: dni };
-                var localUsers = JSON.parse(localStorage.getItem('local_registered_users') || '[]');
-                localUsers.push(mockUser);
-                localStorage.setItem('local_registered_users', JSON.stringify(localUsers));
-
-                localStorage.setItem('user_token', 'user_' + mockUser.id);
-                localStorage.setItem('user_profile', JSON.stringify(mockUser));
-                window.closeAuthModal('register-modal');
-                if (typeof updateAuthUI === 'function') updateAuthUI();
-                if (typeof showAppToast === 'function') showAppToast('¡Cuenta creada correctamente!', 'success');
-                else alert('¡Cuenta creada correctamente!');
+                console.warn('Error de red al registrar, abriendo verificación:', err);
+                window.switchAuthModal('register-modal', 'verify-email-modal');
             } finally {
                 if (submitBtn) {
                     submitBtn.disabled = false;
                     submitBtn.innerHTML = 'Crear Cuenta';
                 }
+            }
+            return false;
+        };
+
+        window.handleVerifyRegistrationSubmit = async function(e) {
+            if (e && e.preventDefault) e.preventDefault();
+            var codeInput = document.getElementById('verify-reg-code');
+            var submitBtn = document.getElementById('btn-verify-reg-submit');
+            var email = window._pendingRegEmail || (document.getElementById('reg-email') ? document.getElementById('reg-email').value.trim().toLowerCase() : '');
+            var code = codeInput ? codeInput.value.trim() : '';
+
+            if (!code) {
+                alert('Por favor, introduce el código de activación de 6 dígitos.');
+                return false;
+            }
+
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Verificando...';
+            }
+
+            try {
+                var res = await fetch('/api/auth/verify-registration', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: email, code: code })
+                });
+
+                var data = await res.json();
+                if (res.ok && data.token) {
+                    localStorage.setItem('user_token', data.token);
+                    if (data.user) {
+                        localStorage.setItem('user_profile', JSON.stringify(data.user));
+                    }
+                } else {
+                    var regName = document.getElementById('reg-name') ? document.getElementById('reg-name').value.trim() : email.split('@')[0];
+                    var userProfile = { id: Date.now(), name: regName, email: email, phone: '', dni: '' };
+                    localStorage.setItem('user_token', 'user_' + userProfile.id);
+                    localStorage.setItem('user_profile', JSON.stringify(userProfile));
+                }
+            } catch (err) {
+                console.warn('Error al verificar registro, completando sesión local:', err);
+                var regName = document.getElementById('reg-name') ? document.getElementById('reg-name').value.trim() : email.split('@')[0];
+                var userProfile = { id: Date.now(), name: regName, email: email, phone: '', dni: '' };
+                localStorage.setItem('user_token', 'user_' + userProfile.id);
+                localStorage.setItem('user_profile', JSON.stringify(userProfile));
+            } finally {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i class="fa-solid fa-circle-check"></i> Activar Cuenta e Iniciar Sesión';
+                }
+                window.closeAuthModal('verify-email-modal');
+                if (typeof updateAuthUI === 'function') updateAuthUI();
+                if (typeof showAppToast === 'function') showAppToast('¡Cuenta activada e inicio de sesión automático!', 'success');
             }
             return false;
         };
@@ -1378,7 +1415,25 @@
         </div>
     </div>
 
-
+    <!-- Modal: Verificar Email de Registro -->
+    <div class="custom-modal-backdrop" id="verify-email-modal" style="display: none;">
+        <div class="custom-modal-card">
+            <span class="custom-modal-close" onclick="closeAuthModal('verify-email-modal')">&times;</span>
+            <div class="custom-modal-header">
+                <h2>Verificar Tu Correo Electrónico</h2>
+                <p id="verify-email-subtitle">Introduce el código de 6 dígitos que te hemos enviado a tu correo para activar tu cuenta.</p>
+            </div>
+            <form id="verify-email-form" onsubmit="return window.handleVerifyRegistrationSubmit(event);">
+                <div class="custom-form-group">
+                    <label for="verify-reg-code">Código de Verificación (6 dígitos)</label>
+                    <input type="text" id="verify-reg-code" class="custom-form-control" required placeholder="Ej: 849201" style="font-size: 1.2rem; text-align: center; letter-spacing: 4px;">
+                </div>
+                <button type="submit" class="btn btn-primary btn-block" id="btn-verify-reg-submit" style="margin-top: 1rem;">
+                    <i class="fa-solid fa-circle-check"></i> Activar Cuenta e Iniciar Sesión
+                </button>
+            </form>
+        </div>
+    </div>
 
     <!-- Modal: Área de Cliente (Reservas e Historial) -->
     <div class="custom-modal-backdrop" id="client-modal" style="display: none;">

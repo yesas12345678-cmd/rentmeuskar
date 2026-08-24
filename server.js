@@ -371,7 +371,10 @@ const validateSpanishID = (idString) => {
   return cifRegex.test(value);
 };
 
-// 1. Registro de usuarios
+// Almacenamiento temporal de registros pendientes de verificación por email
+const pendingRegistrations = {};
+
+// 1. Registro de usuarios con verificación previa de correo electrónico
 app.post('/api/auth/register', async (req, res) => {
   const { name, email, password, phone, dni } = req.body;
   if (!name || !email || !password) {
@@ -391,39 +394,123 @@ app.post('/api/auth/register', async (req, res) => {
     if (checkUser.rowCount > 0 || fallbackUsers.some(u => u.email.toLowerCase() === cleanEmail)) {
       return res.status(400).json({ error: 'El correo electrónico ya está registrado. Por favor, inicia sesión.' });
     }
-    
+  } catch (e) {
+    if (fallbackUsers.some(u => u.email.toLowerCase() === cleanEmail)) {
+      return res.status(400).json({ error: 'El correo electrónico ya está registrado. Por favor, inicia sesión.' });
+    }
+  }
+
+  // Generar código de activación de 6 dígitos
+  const code = Math.floor(100000 + Math.random() * 900000).toString();
+  pendingRegistrations[cleanEmail] = {
+    name: cleanName,
+    email: cleanEmail,
+    password,
+    passHash,
+    phone: phone || '',
+    dni: dni || '',
+    code,
+    expires: Date.now() + 15 * 60 * 1000
+  };
+
+  console.log(`[SECURITY - REGISTRATION CODE] Código de verificación para ${cleanEmail}: ${code}`);
+
+  // Enviar correo electrónico real de verificación si hay transporte SMTP
+  if (mailTransporter) {
+    try {
+      const senderAddress = process.env.SMTP_USER || process.env.GMAIL_USER || 'info@rentmeuskar.com';
+      await mailTransporter.sendMail({
+        from: `"RentMeUskar" <${senderAddress}>`,
+        to: cleanEmail,
+        subject: '🔐 Código de Verificación de Registro | RentMeUskar',
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; background-color: #070e24; color: #ffffff; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
+            <div style="text-align: center; padding-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1);">
+              <h1 style="color: #82d105; margin: 0; font-size: 24px;">RentMeUskar</h1>
+              <p style="color: #a0aec0; margin-top: 5px; font-size: 14px;">Bienvenido a RentMeUskar</p>
+            </div>
+            <div style="padding: 24px 0;">
+              <h2 style="color: #ffffff; font-size: 18px; margin-bottom: 12px;">Verifica tu Correo Electrónico</h2>
+              <p style="color: #cbd5e0; line-height: 1.6;">Hola <strong>${cleanName}</strong>,</p>
+              <p style="color: #cbd5e0; line-height: 1.6;">Para completar la creación de tu cuenta en <strong>RentMeUskar</strong> y verificar que la dirección de correo te pertenece, introduce este código de activación:</p>
+              
+              <div style="font-size: 32px; font-weight: bold; background: #0c1838; padding: 18px; text-align: center; border-radius: 8px; color: #82d105; letter-spacing: 6px; margin: 24px 0; border: 1px dashed #82d105;">
+                ${code}
+              </div>
+              
+              <p style="color: #a0aec0; font-size: 13px;">Si tú no solicitaste este registro, por favor ignora este mensaje.</p>
+            </div>
+            <div style="padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); text-align: center; color: #718096; font-size: 12px;">
+              &copy; ${new Date().getFullYear()} RentMeUskar. Todos los derechos reservados.
+            </div>
+          </div>
+        `
+      });
+      console.log(`[SMTP REGISTRATION SUCCESS] Correo enviado a ${cleanEmail}`);
+    } catch (mailErr) {
+      console.error('[SMTP REGISTRATION ERROR] Error al enviar correo de verificación:', mailErr.message);
+    }
+  }
+
+  return res.json({
+    success: true,
+    requiresVerification: true,
+    message: `Hemos enviado un código de confirmación a ${cleanEmail} para activar tu cuenta.`
+  });
+});
+
+// 1.b Confirmar código de registro y activar inicio de sesión automático
+app.post('/api/auth/verify-registration', async (req, res) => {
+  const { email, code } = req.body;
+  if (!email || !code) {
+    return res.status(400).json({ error: 'El email y el código de verificación son obligatorios.' });
+  }
+
+  const cleanEmail = email.trim().toLowerCase();
+  const pending = pendingRegistrations[cleanEmail];
+
+  if (!pending) {
+    return res.status(400).json({ error: 'No hay ninguna solicitud de registro pendiente para este correo.' });
+  }
+
+  if (pending.code !== code.trim()) {
+    return res.status(400).json({ error: 'El código de verificación introducido no es correcto.' });
+  }
+
+  // Código correcto: Crear usuario en la base de datos e iniciar sesión automáticamente
+  try {
     const result = await pool.query(
       'INSERT INTO users (name, email, password, phone, dni) VALUES ($1, $2, $3, $4, $5) RETURNING id, name, email, phone, dni, created_at',
-      [cleanName, cleanEmail, passHash, phone || '', dni || '']
+      [pending.name, pending.email, pending.passHash, pending.phone, pending.dni]
     );
     
     const user = result.rows[0];
-    fallbackUsers.push({ ...user, password: passHash });
+    fallbackUsers.push({ ...user, password: pending.passHash });
+    delete pendingRegistrations[cleanEmail];
+
     return res.status(201).json({
-      message: 'Usuario registrado con éxito.',
+      message: 'Cuenta activada e inicio de sesión automático.',
       token: 'user_' + user.id,
       user
     });
   } catch (err) {
-    console.warn('Base de datos offline al registrar usuario, usando almacenamiento fallback:', err.message);
-    const existing = fallbackUsers.find(u => u.email.toLowerCase() === cleanEmail);
-    if (existing) {
-      return res.status(400).json({ error: 'El correo electrónico ya está registrado. Por favor, inicia sesión.' });
-    }
+    console.warn('Base de datos offline al confirmar registro, activando usuario localmente:', err.message);
     const mockId = fallbackUsers.length > 0 ? Math.max(...fallbackUsers.map(u => u.id)) + 1 : 1;
     const newUser = {
       id: mockId,
-      name: cleanName,
-      email: cleanEmail,
-      password: passHash,
-      phone: phone || '',
-      dni: dni || '',
+      name: pending.name,
+      email: pending.email,
+      password: pending.passHash,
+      phone: pending.phone,
+      dni: pending.dni,
       created_at: new Date()
     };
     fallbackUsers.push(newUser);
+    delete pendingRegistrations[cleanEmail];
+
     const { password: _, ...userWithoutPass } = newUser;
     return res.status(201).json({
-      message: 'Usuario registrado con éxito.',
+      message: 'Cuenta activada e inicio de sesión automático.',
       token: 'user_' + newUser.id,
       user: userWithoutPass
     });
