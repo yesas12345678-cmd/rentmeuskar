@@ -1976,6 +1976,10 @@ app.post('/api/blockages', verifyAdmin, async (req, res) => {
   if (!van_type || !start_date || !end_date || !reason) {
     return res.status(400).json({ error: 'Todos los campos son obligatorios (van_type, start_date, end_date, reason).' });
   }
+
+  if (end_date < start_date) {
+    return res.status(400).json({ error: 'La fecha de fin de bloqueo no puede ser anterior a la fecha de inicio.' });
+  }
   
   try {
     const query = `

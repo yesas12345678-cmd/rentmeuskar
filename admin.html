@@ -1116,7 +1116,7 @@
                                 <div class="custom-form-group" style="margin-bottom: 1.2rem; display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                                     <div>
                                         <label style="display: block; font-size: 0.8rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 0.5rem; font-weight: 600; letter-spacing: 0.05em;">Desde el día</label>
-                                        <input type="date" id="block-start-date" class="search-input" style="padding-left: 1rem; height: 42px;" required>
+                                        <input type="date" id="block-start-date" class="search-input" style="padding-left: 1rem; height: 42px;" required onchange="if(this.value){var endEl=document.getElementById('block-end-date'); endEl.min=this.value; if(endEl.value && endEl.value<this.value) endEl.value=this.value;}">
                                     </div>
                                     <div>
                                         <label style="display: block; font-size: 0.8rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 0.5rem; font-weight: 600; letter-spacing: 0.05em;">Hasta el día (inclusive)</label>
@@ -1794,6 +1794,6 @@
     <!-- Toast Notification Container -->
     <div class="toast-container" id="toast-container"></div>
 
-    <script src="admin.js"></script>
+    <script src="admin.js?v=2.0"></script>
 </body>
 </html>

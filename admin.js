@@ -1973,11 +1973,28 @@ const initAdmin = () => {
         }
     };
 
+    // Ajustar dinámicamente la fecha mínima de fin de bloqueo
+    if (blockStartDate && blockEndDate) {
+        blockStartDate.addEventListener('change', () => {
+            if (blockStartDate.value) {
+                blockEndDate.min = blockStartDate.value;
+                if (blockEndDate.value && blockEndDate.value < blockStartDate.value) {
+                    blockEndDate.value = blockStartDate.value;
+                }
+            }
+        });
+    }
+
     // Crear bloqueo de disponibilidad
     blockageForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const token = localStorage.getItem('admin_token');
         if (!token) return;
+
+        if (blockStartDate.value && blockEndDate.value && blockEndDate.value < blockStartDate.value) {
+            showToast('La fecha de fin no puede ser anterior a la fecha de inicio.', 'error');
+            return;
+        }
 
         const body = {
             van_type: blockVanType.value,
