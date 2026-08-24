@@ -583,22 +583,31 @@ const initApp = () => {
             if (response.ok) {
                 const rawVans = await response.json();
                 const deletedIds = JSON.parse(localStorage.getItem('deleted_van_ids') || '[]');
-                databaseVans = rawVans.filter(v => !deletedIds.includes(String(v.id)) && !deletedIds.includes(Number(v.id)) && !deletedIds.includes(v.van_type));
+                databaseVans = rawVans.filter(v => 
+                    !deletedIds.includes(String(v.id)) && 
+                    !deletedIds.includes(Number(v.id)) && 
+                    !deletedIds.includes(v.van_type) &&
+                    (v.status === 'active' || !v.status)
+                );
 
-                // Repoblar el selector calc-van-select
-                const selectedVal = vanSelect.value;
-                vanSelect.innerHTML = '<option value="" disabled selected>-- Elige un modelo --</option>';
-                databaseVans.forEach(van => {
-                    const opt = document.createElement('option');
-                    opt.value = van.van_type;
-                    opt.setAttribute('data-price', van.price_sin);
-                    opt.textContent = `${van.name} - ${parseFloat(van.price_sin).toFixed(2).replace('.', ',')}€ + IVA / día`;
-                    vanSelect.appendChild(opt);
-                });
+                // Repoblar el selector calc-van-select solo con furgonetas activas
+                const selectedVal = vanSelect ? vanSelect.value : '';
+                if (vanSelect) {
+                    vanSelect.innerHTML = '<option value="" disabled selected>-- Elige un modelo --</option>';
+                    databaseVans.forEach(van => {
+                        const opt = document.createElement('option');
+                        opt.value = van.van_type;
+                        opt.setAttribute('data-price', van.price_sin);
+                        opt.textContent = `${van.name} - ${parseFloat(van.price_sin).toFixed(2).replace('.', ',')}€ + IVA / día`;
+                        vanSelect.appendChild(opt);
+                    });
 
-                if (selectedVal && databaseVans.some(v => v.van_type === selectedVal)) {
-                    vanSelect.value = selectedVal;
-                    renderVanSpecs();
+                    if (selectedVal && databaseVans.some(v => v.van_type === selectedVal)) {
+                        vanSelect.value = selectedVal;
+                        renderVanSpecs();
+                    } else {
+                        vanSelect.value = '';
+                    }
                 }
 
                 // Renderizar tarjetas de furgonetas activas dinámicamente en el DOM de la página principal
