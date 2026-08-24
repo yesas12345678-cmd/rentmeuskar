@@ -517,6 +517,38 @@ app.post('/api/auth/verify-registration', async (req, res) => {
   }
 });
 
+// 1.c Formulario de contacto (Copia por correo al administrador)
+app.post('/api/contact', async (req, res) => {
+  const { name, contact, reason, message } = req.body;
+  console.log(`[CONTACT FORM SUBMISSION] Nombre: ${name} | Contacto: ${contact} | Motivo: ${reason} | Mensaje: ${message}`);
+
+  if (mailTransporter) {
+    try {
+      const adminEmail = process.env.SMTP_USER || process.env.GMAIL_USER || 'info@rentmeuskar.com';
+      await mailTransporter.sendMail({
+        from: `"RentMeUskar Web" <${adminEmail}>`,
+        to: adminEmail,
+        subject: `📩 Nuevo Mensaje Web de ${name} (${reason})`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; background-color: #070e24; color: #ffffff; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
+            <h2 style="color: #82d105; margin-top: 0;">Nuevo Mensaje desde RentMeUskar.com</h2>
+            <p><strong>Nombre:</strong> ${name}</p>
+            <p><strong>Contacto:</strong> ${contact}</p>
+            <p><strong>Motivo:</strong> ${reason}</p>
+            <div style="background: #0c1838; padding: 15px; border-radius: 8px; margin-top: 15px; border-left: 4px solid #82d105;">
+              <p style="margin: 0; white-space: pre-wrap;">${message}</p>
+            </div>
+          </div>
+        `
+      });
+    } catch (e) {
+      console.error('[SMTP CONTACT ERROR] Error al enviar copia por email:', e.message);
+    }
+  }
+
+  return res.json({ success: true, message: 'Mensaje recibido con éxito.' });
+});
+
 // 2. Inicio de sesión
 app.post('/api/auth/login', async (req, res) => {
   const { email, password } = req.body;

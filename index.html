@@ -527,6 +527,35 @@
             if (typeof showAppToast === 'function') showAppToast('Has cerrado sesión correctamente', 'info');
             else alert('Has cerrado sesión correctamente');
         };
+
+        window.handleContactSubmit = function(e) {
+            if (e && e.preventDefault) e.preventDefault();
+            var name = document.getElementById('contact-form-name') ? document.getElementById('contact-form-name').value.trim() : '';
+            var contact = document.getElementById('contact-form-phone') ? document.getElementById('contact-form-phone').value.trim() : '';
+            var reason = document.getElementById('contact-form-reason') ? document.getElementById('contact-form-reason').value : '';
+            var message = document.getElementById('contact-form-message') ? document.getElementById('contact-form-message').value.trim() : '';
+
+            if (!name || !contact || !message) {
+                alert('Por favor, rellena todos los campos del formulario.');
+                return false;
+            }
+
+            var text = 'Hola RentMeUskar, me llamo *' + name + '*.\n\n*Contacto:* ' + contact + '\n*Motivo:* ' + reason + '\n\n*Mensaje:*\n' + message;
+            var encodedText = encodeURIComponent(text);
+            var whatsappUrl = 'https://wa.me/34614767411?text=' + encodedText;
+
+            window.open(whatsappUrl, '_blank');
+
+            fetch('/api/contact', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: name, contact: contact, reason: reason, message: message })
+            }).catch(function(err) { console.warn('Error al enviar copia por email:', err); });
+
+            var form = document.getElementById('contact-whatsapp-form');
+            if (form) form.reset();
+            return false;
+        };
     </script>
 </head>
 
@@ -1126,7 +1155,7 @@
                             <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 2rem;">Rellena el
                                 formulario y envíalo directamente a nuestro WhatsApp oficial.</p>
 
-                            <form id="contact-whatsapp-form">
+                            <form id="contact-whatsapp-form" onsubmit="return window.handleContactSubmit(event);">
                                 <div class="custom-form-group" style="margin-bottom: 1.25rem;">
                                     <label for="contact-form-name"
                                         style="display: block; font-size: 0.8rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 0.4rem; font-weight: 600;">Tu
