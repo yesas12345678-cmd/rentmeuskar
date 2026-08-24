@@ -582,13 +582,9 @@ const initApp = () => {
             const response = await fetch('/api/vans');
             if (response.ok) {
                 const rawVans = await response.json();
-                const deletedIds = JSON.parse(localStorage.getItem('deleted_van_ids') || '[]');
-                databaseVans = rawVans.filter(v => 
-                    !deletedIds.includes(String(v.id)) && 
-                    !deletedIds.includes(Number(v.id)) && 
-                    !deletedIds.includes(v.van_type) &&
-                    (v.status === 'active' || !v.status)
-                );
+                
+                // Filtrar furgonetas activas directamente del catálogo real de la API
+                databaseVans = rawVans.filter(v => v.status === 'active' || !v.status);
 
                 // Repoblar el selector calc-van-select solo con furgonetas activas
                 const selectedVal = vanSelect ? vanSelect.value : '';

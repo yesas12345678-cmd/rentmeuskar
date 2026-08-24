@@ -1368,17 +1368,7 @@ const initAdmin = () => {
         fleet = fleet.filter(v => v.id !== id);
         renderFleet();
 
-        // 2. Guardar ID borrado en localStorage
-        const deletedIds = JSON.parse(localStorage.getItem('deleted_van_ids') || '[]');
-        if (!deletedIds.includes(String(id))) {
-            deletedIds.push(String(id));
-            if (vanObj && vanObj.van_type) {
-                deletedIds.push(vanObj.van_type);
-            }
-            localStorage.setItem('deleted_van_ids', JSON.stringify(deletedIds));
-        }
-
-        // 3. Notificar al servidor en segundo plano
+        // 2. Notificar al servidor
         fetch(`/api/vans/${id}`, {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${token}` }

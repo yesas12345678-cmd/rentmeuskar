@@ -75,6 +75,8 @@
 
     <!-- Global Auth Modal Handlers (Instant Execution) -->
     <script>
+        try { localStorage.removeItem('deleted_van_ids'); } catch (e) {}
+
         window.validateSpanishID = function(idString) {
             if (!idString) return false;
             var value = idString.trim().toUpperCase();
@@ -2210,7 +2212,7 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
 
     <!-- Custom Script -->
-    <script src="app.js?v=18.0"></script>
+    <script src="app.js?v=19.0"></script>
 </body>
 
 </html>
