@@ -363,21 +363,26 @@ const initApp = () => {
             }
         });
 
+        window.pickerStart = pickerStart;
+        window.pickerEnd = pickerEnd;
+
         // Desactivar el autocompletado nativo del navegador sobre los inputs visibles generados por Flatpickr
         if (pickerStart) {
             if (pickerStart.input) pickerStart.input.setAttribute('autocomplete', 'off');
             if (pickerStart.altInput) {
                 pickerStart.altInput.setAttribute('autocomplete', 'off');
-                pickerStart.altInput.setAttribute('readonly', 'readonly');
+                pickerStart.altInput.style.cursor = 'pointer';
                 pickerStart.altInput.addEventListener('click', () => pickerStart.open());
+                pickerStart.altInput.addEventListener('focus', () => pickerStart.open());
             }
         }
         if (pickerEnd) {
             if (pickerEnd.input) pickerEnd.input.setAttribute('autocomplete', 'off');
             if (pickerEnd.altInput) {
                 pickerEnd.altInput.setAttribute('autocomplete', 'off');
-                pickerEnd.altInput.setAttribute('readonly', 'readonly');
+                pickerEnd.altInput.style.cursor = 'pointer';
                 pickerEnd.altInput.addEventListener('click', () => pickerEnd.open());
+                pickerEnd.altInput.addEventListener('focus', () => pickerEnd.open());
             }
         }
 

@@ -827,10 +827,10 @@
 
                         <!-- Step 2: Dates -->
                         <div class="form-row">
-                            <div class="form-group">
-                                <label for="calc-date-start"><i class="fa-regular fa-calendar"></i> Recogida</label>
+                            <div class="form-group" style="cursor: pointer;" onclick="if(window.pickerStart) window.pickerStart.open();">
+                                <label for="calc-date-start" style="cursor: pointer;"><i class="fa-regular fa-calendar"></i> Recogida</label>
                                 <input type="text" id="calc-date-start" class="form-control"
-                                    placeholder="Pincha aquí para elegir..." required autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" readonly style="cursor: pointer;">
+                                    placeholder="Pincha aquí para elegir..." required autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" style="cursor: pointer;" onclick="if(window.pickerStart) window.pickerStart.open();" onfocus="if(window.pickerStart) window.pickerStart.open();">
                             </div>
                             <div class="form-group">
                                 <label for="calc-time-start"><i class="fa-regular fa-clock"></i> Hora</label>
@@ -846,10 +846,10 @@
                         </div>
 
                         <div class="form-row">
-                            <div class="form-group">
-                                <label for="calc-date-end"><i class="fa-regular fa-calendar"></i> Devolución</label>
+                            <div class="form-group" style="cursor: pointer;" onclick="if(window.pickerEnd) window.pickerEnd.open();">
+                                <label for="calc-date-end" style="cursor: pointer;"><i class="fa-regular fa-calendar"></i> Devolución</label>
                                 <input type="text" id="calc-date-end" class="form-control"
-                                    placeholder="Pincha aquí para elegir..." required autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" readonly style="cursor: pointer;">
+                                    placeholder="Pincha aquí para elegir..." required autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" style="cursor: pointer;" onclick="if(window.pickerEnd) window.pickerEnd.open();" onfocus="if(window.pickerEnd) window.pickerEnd.open();">
                             </div>
                             <div class="form-group">
                                 <label for="calc-time-end"><i class="fa-regular fa-clock"></i> Hora</label>
@@ -2109,7 +2109,7 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
 
     <!-- Custom Script -->
-    <script src="app.js?v=9.0"></script>
+    <script src="app.js?v=10.0"></script>
 </body>
 
 </html>
