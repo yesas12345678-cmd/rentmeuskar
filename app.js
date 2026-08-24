@@ -662,7 +662,7 @@ const initApp = () => {
 
                         article.innerHTML = `
                             <div class="van-image-container" style="position: relative;">
-                                <img src="${mainImg}" alt="${van.name}" class="van-image" id="img-van-${van.van_type}">
+                                <img src="${mainImg}" alt="${van.name}" class="van-image" id="img-van-${van.van_type}" loading="lazy" decoding="async">
                                 <div class="van-tag ${van.van_type === 'medium' ? 'highlight' : ''}">${tag}</div>
                             </div>
                             <div class="van-details">

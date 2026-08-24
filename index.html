@@ -684,7 +684,7 @@
     <header class="main-header" id="header">
         <div class="header-container">
             <a href="#" class="logo-area" id="logo-link">
-                <img src="assets/logo.png" alt="RentMeUskar Logo" class="nav-logo" id="nav-logo">
+                <img src="assets/logo.png" alt="RentMeUskar Logo" class="nav-logo" id="nav-logo" decoding="async">
             </a>
 
             <nav class="navbar" id="navbar">
@@ -760,7 +760,7 @@
                 </div>
 
                 <div class="hero-vehicle animate-slide-in-right">
-                    <img src="assets/van_hero_two_vans.png" alt="Furgonetas RentMeUskar" class="hero-van-img">
+                    <img src="assets/van_hero_two_vans.png" alt="Furgonetas RentMeUskar" class="hero-van-img" fetchpriority="high" decoding="async">
                 </div>
             </div>
 
@@ -841,7 +841,7 @@
             <div class="container">
                 <div class="calculator-wrapper reveal">
                     <div class="calculator-info">
-                        <img src="assets/logo.png" alt="RentMeUskar Logo"
+                        <img src="assets/logo.png" alt="RentMeUskar Logo" loading="lazy" decoding="async"
                             style="height: 480px; width: auto; align-self: flex-start; margin-top: -3.5rem; margin-bottom: 1rem; display: block; filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.3)); -webkit-user-drag: none; user-select: none;">
                         <span class="subtitle">Calcula en 1 Minuto</span>
                         <h2 class="calculator-title">Simulador de Presupuesto</h2>
@@ -2212,7 +2212,7 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
 
     <!-- Custom Script -->
-    <script src="app.js?v=19.0"></script>
+    <script src="app.js?v=20.0"></script>
 </body>
 
 </html>
