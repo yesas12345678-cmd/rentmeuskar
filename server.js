@@ -58,11 +58,15 @@ function hashPassword(password) {
   return crypto.createHash('sha256').update(password).digest('hex');
 }
 
+const compression = require('compression');
+
 // Middleware
+app.use(compression());
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use('/uploads', express.static(uploadsDir));
+app.use('/uploads', express.static(uploadsDir, { maxAge: '7d' }));
+app.use('/assets', express.static(path.join(__dirname, 'assets'), { maxAge: '7d' }));
 
 // Conexión a la base de datos PostgreSQL
 const pool = new Pool({
@@ -255,6 +259,11 @@ const initDb = async () => {
     // Crear tabla de bloqueos
     await client.query(createBlockagesTableQuery);
     console.log('Tabla "van_blockages" verificada/creada.');
+
+    // Crear índices de rendimiento para consultas ultrarrápidas
+    await client.query('CREATE INDEX IF NOT EXISTS idx_bookings_van_status ON bookings(van_type, status);');
+    await client.query('CREATE INDEX IF NOT EXISTS idx_bookings_dates ON bookings(pickup_date, return_date);');
+    await client.query('CREATE INDEX IF NOT EXISTS idx_blockages_van ON van_blockages(van_type);');
 
     // Crear tabla de FAQs
     await client.query(createFaqsTableQuery);

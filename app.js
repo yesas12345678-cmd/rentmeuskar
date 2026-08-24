@@ -2511,10 +2511,12 @@ const initApp = () => {
         });
     }
 
-    // Ejecutar inicializaciones dinámicas
-    loadReviews();
-    loadFaqs();
-    loadSettings();
+    // Ejecutar inicializaciones dinámicas en paralelo para acelerar la carga
+    Promise.allSettled([
+        loadReviews(),
+        loadFaqs(),
+        loadSettings()
+    ]);
     initStarRating();
 };
 
