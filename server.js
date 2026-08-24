@@ -6,9 +6,34 @@ const path = require('path');
 const crypto = require('crypto');
 const multer = require('multer');
 const fs = require('fs');
+const nodemailer = require('nodemailer');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Configuración de transporte SMTP para envío de emails de confirmación
+let mailTransporter = null;
+if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
+  mailTransporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port: parseInt(process.env.SMTP_PORT || '587'),
+    secure: process.env.SMTP_SECURE === 'true',
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS
+    }
+  });
+  console.log('[SMTP] Transporte de correo configurado vía SMTP.');
+} else if (process.env.GMAIL_USER && process.env.GMAIL_PASS) {
+  mailTransporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: process.env.GMAIL_USER,
+      pass: process.env.GMAIL_PASS
+    }
+  });
+  console.log('[SMTP] Transporte de correo configurado vía Gmail.');
+}
 
 // Asegurar que existe la carpeta de subidas (uploads)
 const uploadsDir = path.join(__dirname, 'uploads');
@@ -503,6 +528,47 @@ app.post('/api/auth/forgot-password', async (req, res) => {
   passwordResetCodes[cleanEmail] = { code, expires: Date.now() + 15 * 60 * 1000 };
 
   console.log(`[SECURITY - PASSWORD RESET] Código confidencial para ${cleanEmail}: ${code}`);
+
+  // Enviar correo electrónico real si hay un servidor de correo (SMTP) configurado
+  if (mailTransporter) {
+    try {
+      const senderAddress = process.env.SMTP_USER || process.env.GMAIL_USER || 'info@rentmeuskar.com';
+      await mailTransporter.sendMail({
+        from: `"RentMeUskar" <${senderAddress}>`,
+        to: cleanEmail,
+        subject: '🔐 Código de confirmación - Restablecer Contraseña | RentMeUskar',
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; background-color: #070e24; color: #ffffff; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
+            <div style="text-align: center; padding-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1);">
+              <h1 style="color: #82d105; margin: 0; font-size: 24px;">RentMeUskar</h1>
+              <p style="color: #a0aec0; margin-top: 5px; font-size: 14px;">Alquiler de Vehículos en Huéscar y Altiplano Granadino</p>
+            </div>
+            <div style="padding: 24px 0;">
+              <h2 style="color: #ffffff; font-size: 18px; margin-bottom: 12px;">Restablecimiento de Contraseña</h2>
+              <p style="color: #cbd5e0; line-height: 1.6;">Hola,</p>
+              <p style="color: #cbd5e0; line-height: 1.6;">Hemos recibido una solicitud para restablecer la contraseña de tu cuenta registrada en <strong>RentMeUskar</strong>.</p>
+              <p style="color: #cbd5e0; line-height: 1.6;">Introduce el siguiente <strong>código de confirmación de 6 dígitos</strong> en la pantalla de la aplicación:</p>
+              
+              <div style="font-size: 32px; font-weight: bold; background: #0c1838; padding: 18px; text-align: center; border-radius: 8px; color: #82d105; letter-spacing: 6px; margin: 24px 0; border: 1px dashed #82d105;">
+                ${code}
+              </div>
+              
+              <p style="color: #a0aec0; font-size: 13px;">Este código expirará en <strong>15 minutos</strong>. Si no solicitaste este cambio, puedes ignorar este correo con total tranquilidad.</p>
+            </div>
+            <div style="padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); text-align: center; color: #718096; font-size: 12px;">
+              &copy; ${new Date().getFullYear()} RentMeUskar. Todos los derechos reservados.
+            </div>
+          </div>
+        `
+      });
+      console.log(`[SMTP EMAIL SUCCESS] Correo de confirmación enviado a ${cleanEmail}`);
+    } catch (mailErr) {
+      console.error('[SMTP EMAIL ERROR] No se pudo enviar el correo por SMTP:', mailErr.message);
+    }
+  } else {
+    console.log(`[SMTP INFO] Para enviar correos automáticos reales a la bandeja de entrada, añade SMTP_HOST, SMTP_USER y SMTP_PASS en el archivo .env.`);
+  }
+
   return res.json({
     success: true,
     message: `Te hemos enviado un correo de confirmación a ${cleanEmail} con las instrucciones para restablecer tu contraseña.`
