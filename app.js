@@ -331,6 +331,21 @@ const initApp = () => {
 
         const esLocale = (typeof flatpickr !== 'undefined' && flatpickr.l10ns && flatpickr.l10ns.es) ? flatpickr.l10ns.es : "es";
 
+        const isDateDisabled = function(date) {
+            if (!currentDisabledRanges || currentDisabledRanges.length === 0) return false;
+            const y = date.getFullYear();
+            const m = String(date.getMonth() + 1).padStart(2, '0');
+            const d = String(date.getDate()).padStart(2, '0');
+            const dateStr = `${y}-${m}-${d}`;
+
+            return currentDisabledRanges.some(range => {
+                const fromStr = typeof range.from === 'string' ? range.from.split('T')[0] : '';
+                const toStr = typeof range.to === 'string' ? range.to.split('T')[0] : '';
+                return dateStr >= fromStr && dateStr <= toStr;
+            });
+        };
+        window.isDateDisabled = isDateDisabled;
+
         pickerStart = flatpickr("#calc-date-start", {
             locale: esLocale,
             minDate: "today",
@@ -341,6 +356,7 @@ const initApp = () => {
             clickOpens: true,
             allowInput: false,
             disableMobile: true,
+            disable: [isDateDisabled],
             onChange: function (selectedDates, dateStr, instance) {
                 validateAndAdjustDateSelection();
                 calculatePrice();
@@ -357,6 +373,7 @@ const initApp = () => {
             clickOpens: true,
             allowInput: false,
             disableMobile: true,
+            disable: [isDateDisabled],
             onChange: function (selectedDates, dateStr, instance) {
                 validateAndAdjustDateSelection();
                 calculatePrice();
@@ -821,14 +838,24 @@ const initApp = () => {
             if (response.ok) {
                 const ranges = await response.json();
 
-                // Mapear al formato esperado por Flatpickr: [{from: 'YYYY-MM-DD', to: 'YYYY-MM-DD'}]
                 currentDisabledRanges = ranges.map(range => ({
-                    from: range.from,
-                    to: range.to
+                    from: typeof range.from === 'string' ? range.from.split('T')[0] : range.from,
+                    to: typeof range.to === 'string' ? range.to.split('T')[0] : range.to
                 }));
 
-                pickerStart.set('disable', currentDisabledRanges);
-                pickerEnd.set('disable', currentDisabledRanges);
+                const disabledMatcher = typeof window.isDateDisabled === 'function' ? window.isDateDisabled : function(date) {
+                    if (!currentDisabledRanges || currentDisabledRanges.length === 0) return false;
+                    const y = date.getFullYear();
+                    const m = String(date.getMonth() + 1).padStart(2, '0');
+                    const d = String(date.getDate()).padStart(2, '0');
+                    const dateStr = `${y}-${m}-${d}`;
+                    return currentDisabledRanges.some(r => dateStr >= (r.from || '').split('T')[0] && dateStr <= (r.to || '').split('T')[0]);
+                };
+
+                pickerStart.set('disable', [disabledMatcher]);
+                pickerEnd.set('disable', [disabledMatcher]);
+                if (typeof pickerStart.redraw === 'function') pickerStart.redraw();
+                if (typeof pickerEnd.redraw === 'function') pickerEnd.redraw();
 
                 // Revalidar selección actual de fechas por si colisiona con el nuevo vehículo
                 validateAndAdjustDateSelection();

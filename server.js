@@ -783,13 +783,18 @@ app.post('/api/auth/reset-password', async (req, res) => {
 
 // Helper para dar formato a fechas locales YYYY-MM-DD
 const formatDateISO = (d) => {
-  const date = new Date(d);
-  const year = date.getFullYear();
-  let month = '' + (date.getMonth() + 1);
-  let day = '' + date.getDate();
-  if (month.length < 2) month = '0' + month;
-  if (day.length < 2) day = '0' + day;
-  return [year, month, day].join('-');
+  if (!d) return '';
+  if (typeof d === 'string') {
+    const match = d.match(/^(\d{4}-\d{2}-\d{2})/);
+    if (match) return match[1];
+  }
+  try {
+    const date = new Date(d);
+    if (isNaN(date.getTime())) return String(d);
+    return date.toISOString().split('T')[0];
+  } catch (e) {
+    return String(d);
+  }
 };
 
 // 4. Obtener fechas no disponibles (ocupadas o bloqueadas por el administrador)
