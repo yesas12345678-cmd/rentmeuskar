@@ -61,9 +61,11 @@
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    <!-- Flatpickr CSS -->
+    <!-- Flatpickr CSS & JS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
 
     <!-- Custom CSS -->
     <link rel="stylesheet" href="styles.css?v=3.9">
@@ -98,6 +100,55 @@
 
             return cifRegex.test(value);
         };
+
+        window.initCalendar = function() {
+            if (typeof flatpickr === 'undefined') return;
+            var esLocale = (flatpickr.l10ns && flatpickr.l10ns.es) ? flatpickr.l10ns.es : 'es';
+
+            var startEl = document.getElementById('calc-date-start');
+            if (startEl && !window.pickerStart) {
+                window.pickerStart = flatpickr(startEl, {
+                    locale: esLocale,
+                    minDate: "today",
+                    dateFormat: "Y-m-d",
+                    altInput: true,
+                    altFormat: "d/m/Y",
+                    altInputClass: "form-control",
+                    clickOpens: true,
+                    allowInput: false,
+                    disableMobile: true,
+                    onChange: function() {
+                        if (typeof validateAndAdjustDateSelection === 'function') validateAndAdjustDateSelection();
+                        if (typeof calculatePrice === 'function') calculatePrice();
+                    }
+                });
+            }
+
+            var endEl = document.getElementById('calc-date-end');
+            if (endEl && !window.pickerEnd) {
+                window.pickerEnd = flatpickr(endEl, {
+                    locale: esLocale,
+                    minDate: "today",
+                    dateFormat: "Y-m-d",
+                    altInput: true,
+                    altFormat: "d/m/Y",
+                    altInputClass: "form-control",
+                    clickOpens: true,
+                    allowInput: false,
+                    disableMobile: true,
+                    onChange: function() {
+                        if (typeof validateAndAdjustDateSelection === 'function') validateAndAdjustDateSelection();
+                        if (typeof calculatePrice === 'function') calculatePrice();
+                    }
+                });
+            }
+        };
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function() { window.initCalendar(); });
+        } else {
+            setTimeout(function() { window.initCalendar(); }, 100);
+        }
 
         window.updateAuthUI = function() {
             var token = localStorage.getItem('user_token');
@@ -827,10 +878,10 @@
 
                         <!-- Step 2: Dates -->
                         <div class="form-row">
-                            <div class="form-group" style="cursor: pointer;" onclick="if(window.pickerStart) window.pickerStart.open();">
+                            <div class="form-group" style="cursor: pointer;" onclick="if(window.pickerStart){window.pickerStart.open()}else{if(typeof window.initCalendar==='function')window.initCalendar();if(window.pickerStart)window.pickerStart.open();}">
                                 <label for="calc-date-start" style="cursor: pointer;"><i class="fa-regular fa-calendar"></i> Recogida</label>
                                 <input type="text" id="calc-date-start" class="form-control"
-                                    placeholder="Pincha aquí para elegir..." required autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" style="cursor: pointer;" onclick="if(window.pickerStart) window.pickerStart.open();" onfocus="if(window.pickerStart) window.pickerStart.open();">
+                                    placeholder="Pincha aquí para elegir..." required readonly autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" style="cursor: pointer;" onclick="if(window.pickerStart){window.pickerStart.open()}else{if(typeof window.initCalendar==='function')window.initCalendar();if(window.pickerStart)window.pickerStart.open();}" onfocus="if(window.pickerStart){window.pickerStart.open()}else{if(typeof window.initCalendar==='function')window.initCalendar();if(window.pickerStart)window.pickerStart.open();}">
                             </div>
                             <div class="form-group">
                                 <label for="calc-time-start"><i class="fa-regular fa-clock"></i> Hora</label>
@@ -846,10 +897,10 @@
                         </div>
 
                         <div class="form-row">
-                            <div class="form-group" style="cursor: pointer;" onclick="if(window.pickerEnd) window.pickerEnd.open();">
+                            <div class="form-group" style="cursor: pointer;" onclick="if(window.pickerEnd){window.pickerEnd.open()}else{if(typeof window.initCalendar==='function')window.initCalendar();if(window.pickerEnd)window.pickerEnd.open();}">
                                 <label for="calc-date-end" style="cursor: pointer;"><i class="fa-regular fa-calendar"></i> Devolución</label>
                                 <input type="text" id="calc-date-end" class="form-control"
-                                    placeholder="Pincha aquí para elegir..." required autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" style="cursor: pointer;" onclick="if(window.pickerEnd) window.pickerEnd.open();" onfocus="if(window.pickerEnd) window.pickerEnd.open();">
+                                    placeholder="Pincha aquí para elegir..." required readonly autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" style="cursor: pointer;" onclick="if(window.pickerEnd){window.pickerEnd.open()}else{if(typeof window.initCalendar==='function')window.initCalendar();if(window.pickerEnd)window.pickerEnd.open();}" onfocus="if(window.pickerEnd){window.pickerEnd.open()}else{if(typeof window.initCalendar==='function')window.initCalendar();if(window.pickerEnd)window.pickerEnd.open();}">
                             </div>
                             <div class="form-group">
                                 <label for="calc-time-end"><i class="fa-regular fa-clock"></i> Hora</label>
@@ -2109,7 +2160,7 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
 
     <!-- Custom Script -->
-    <script src="app.js?v=10.0"></script>
+    <script src="app.js?v=11.0"></script>
 </body>
 
 </html>
