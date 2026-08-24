@@ -398,6 +398,7 @@ const initApp = () => {
     };
 
     initFlatpickr();
+    if (typeof window.updateCalendarAvailability === 'function') window.updateCalendarAvailability();
 
     // Renderizar extras dinámicamente según la furgoneta seleccionada
     const renderDynamicExtras = () => {
@@ -799,13 +800,12 @@ const initApp = () => {
 
     loadVans();
 
-    // Obtener fechas ocupadas de la furgoneta seleccionada (solo aplica a Sin Conductor)
-    const updateCalendarAvailability = async () => {
-        const vanType = vanSelect.value;
+    // Obtener fechas ocupadas de la furgoneta seleccionada o bloqueos generales
+    window.updateCalendarAvailability = async () => {
+        const vanType = vanSelect ? vanSelect.value : '';
         const modeInput = document.querySelector('input[name="rental-mode"]:checked');
         const mode = modeInput ? modeInput.value : 'sin';
 
-        if (!vanType) return;
         if (typeof flatpickr === 'undefined' || !pickerStart || !pickerEnd) return;
 
         if (mode === 'con') {
@@ -816,7 +816,8 @@ const initApp = () => {
         }
 
         try {
-            const response = await fetch(`/api/bookings/unavailable-dates?van_type=${vanType}`);
+            const url = vanType ? `/api/bookings/unavailable-dates?van_type=${encodeURIComponent(vanType)}` : '/api/bookings/unavailable-dates';
+            const response = await fetch(url);
             if (response.ok) {
                 const ranges = await response.json();
 

@@ -792,23 +792,32 @@ const formatDateISO = (d) => {
   return [year, month, day].join('-');
 };
 
-// 4. Obtener fechas de disponibilidad no disponibles (ocupadas) para una furgoneta
+// 4. Obtener fechas no disponibles (ocupadas o bloqueadas por el administrador)
 app.get('/api/bookings/unavailable-dates', async (req, res) => {
   const { van_type } = req.query;
-  if (!van_type) {
-    return res.status(400).json({ error: 'El parámetro van_type es obligatorio.' });
-  }
   
   let ranges = [];
   try {
-    const query = `
+    let query = `
       SELECT pickup_date AS from_date, return_date AS to_date FROM bookings 
-      WHERE van_type = $1 AND status != 'cancelled'
+      WHERE status != 'cancelled'
       UNION ALL
-      SELECT start_date AS from_date, end_date AS to_date FROM van_blockages 
-      WHERE van_type = $1
+      SELECT start_date AS from_date, end_date AS to_date FROM van_blockages
     `;
-    const result = await pool.query(query, [van_type]);
+    let params = [];
+
+    if (van_type) {
+      query = `
+        SELECT pickup_date AS from_date, return_date AS to_date FROM bookings 
+        WHERE van_type = $1 AND status != 'cancelled'
+        UNION ALL
+        SELECT start_date AS from_date, end_date AS to_date FROM van_blockages 
+        WHERE van_type = $1
+      `;
+      params = [van_type];
+    }
+
+    const result = await pool.query(query, params);
     
     ranges = result.rows.map(row => ({
       from: formatDateISO(row.from_date),
@@ -817,11 +826,11 @@ app.get('/api/bookings/unavailable-dates', async (req, res) => {
   } catch (err) {
     console.warn('Base de datos offline al obtener disponibilidad, usando fallback:', err.message);
     const bookingsRange = fallbackBookings
-      .filter(b => b.van_type === van_type && b.status !== 'cancelled')
-      .map(b => ({ from: b.pickup_date, to: b.return_date }));
+      .filter(b => (!van_type || b.van_type === van_type) && b.status !== 'cancelled')
+      .map(b => ({ from: formatDateISO(b.pickup_date), to: formatDateISO(b.return_date) }));
     const blockagesRange = fallbackBlockages
-      .filter(b => b.van_type === van_type)
-      .map(b => ({ from: b.start_date, to: b.end_date }));
+      .filter(b => (!van_type || b.van_type === van_type))
+      .map(b => ({ from: formatDateISO(b.start_date), to: formatDateISO(b.end_date) }));
     ranges = [...bookingsRange, ...blockagesRange];
   }
   res.json(ranges);
