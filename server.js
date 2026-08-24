@@ -59,8 +59,36 @@ function hashPassword(password) {
 }
 
 const compression = require('compression');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 
-// Middleware
+// Rate limiting para prevenir ataques de fuerza bruta y DDoS
+const globalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 300, // Límite de 300 peticiones por ventana por IP
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Demasiadas peticiones desde esta IP. Por favor, inténtalo más tarde.' }
+});
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 15, // Límite estricto de 15 intentos de login/registro
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Demasiados intentos de autenticación. Por favor, inténtalo en 15 minutos.' }
+});
+
+// Security & Optimization Middleware
+app.disable('x-powered-by');
+app.use(helmet({
+  contentSecurityPolicy: false, // Permitir CDN estáticos de FontAwesome y Flatpickr
+  crossOriginEmbedderPolicy: false
+}));
+app.use(globalLimiter);
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/register', authLimiter);
+app.use('/api/admin/login', authLimiter);
 app.use(compression());
 app.use(cors());
 app.use(express.json());
