@@ -865,7 +865,19 @@ const initApp = () => {
         }
     };
 
-    vanSelect.addEventListener('change', updateCalendarAvailability);
+    vanSelect.addEventListener('change', () => {
+        const val = vanSelect.value;
+        const startEl = document.getElementById('calc-date-start');
+        const endEl = document.getElementById('calc-date-end');
+        const placeholderText = val ? 'Pincha aquí para elegir...' : 'Primero elige una furgoneta...';
+
+        if (startEl) startEl.placeholder = placeholderText;
+        if (endEl) endEl.placeholder = placeholderText;
+        if (pickerStart && pickerStart.altInput) pickerStart.altInput.placeholder = placeholderText;
+        if (pickerEnd && pickerEnd.altInput) pickerEnd.altInput.placeholder = placeholderText;
+
+        updateCalendarAvailability();
+    });
 
     /* ==========================================================================
        4. LÓGICA DE LA CALCULADORA DE PRESUPUESTO

@@ -101,6 +101,29 @@
             return cifRegex.test(value);
         };
 
+        window.checkVanSelectedBeforeCalendar = function(type) {
+            var vanSelect = document.getElementById('calc-van-select');
+            if (!vanSelect || !vanSelect.value) {
+                if (typeof showAppToast === 'function') {
+                    showAppToast('Por favor, selecciona primero un modelo de furgoneta.', 'info');
+                } else {
+                    alert('Por favor, selecciona primero un modelo de furgoneta.');
+                }
+                vanSelect.focus();
+                vanSelect.style.outline = '2px solid #82d105';
+                vanSelect.style.boxShadow = '0 0 15px rgba(130, 209, 5, 0.4)';
+                setTimeout(function() {
+                    vanSelect.style.outline = '';
+                    vanSelect.style.boxShadow = '';
+                }, 2000);
+                return false;
+            }
+            if (typeof window.initCalendar === 'function') window.initCalendar();
+            if (type === 'start' && window.pickerStart) window.pickerStart.open();
+            if (type === 'end' && window.pickerEnd) window.pickerEnd.open();
+            return true;
+        };
+
         window.initCalendar = function() {
             if (typeof flatpickr === 'undefined') return;
             var esLocale = (flatpickr.l10ns && flatpickr.l10ns.es) ? flatpickr.l10ns.es : 'es';
@@ -884,10 +907,10 @@
 
                         <!-- Step 2: Dates -->
                         <div class="form-row">
-                            <div class="form-group" style="cursor: pointer;" onclick="if(window.pickerStart){window.pickerStart.open()}else{if(typeof window.initCalendar==='function')window.initCalendar();if(window.pickerStart)window.pickerStart.open();}">
+                            <div class="form-group" style="cursor: pointer;" onclick="window.checkVanSelectedBeforeCalendar('start');">
                                 <label for="calc-date-start" style="cursor: pointer;"><i class="fa-regular fa-calendar"></i> Recogida</label>
                                 <input type="text" id="calc-date-start" class="form-control"
-                                    placeholder="Pincha aquí para elegir..." required readonly autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" style="cursor: pointer;" onclick="if(window.pickerStart){window.pickerStart.open()}else{if(typeof window.initCalendar==='function')window.initCalendar();if(window.pickerStart)window.pickerStart.open();}" onfocus="if(window.pickerStart){window.pickerStart.open()}else{if(typeof window.initCalendar==='function')window.initCalendar();if(window.pickerStart)window.pickerStart.open();}">
+                                    placeholder="Primero elige una furgoneta..." required readonly autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" style="cursor: pointer;" onclick="window.checkVanSelectedBeforeCalendar('start');" onfocus="window.checkVanSelectedBeforeCalendar('start');">
                             </div>
                             <div class="form-group">
                                 <label for="calc-time-start"><i class="fa-regular fa-clock"></i> Hora</label>
@@ -903,10 +926,10 @@
                         </div>
 
                         <div class="form-row">
-                            <div class="form-group" style="cursor: pointer;" onclick="if(window.pickerEnd){window.pickerEnd.open()}else{if(typeof window.initCalendar==='function')window.initCalendar();if(window.pickerEnd)window.pickerEnd.open();}">
+                            <div class="form-group" style="cursor: pointer;" onclick="window.checkVanSelectedBeforeCalendar('end');">
                                 <label for="calc-date-end" style="cursor: pointer;"><i class="fa-regular fa-calendar"></i> Devolución</label>
                                 <input type="text" id="calc-date-end" class="form-control"
-                                    placeholder="Pincha aquí para elegir..." required readonly autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" style="cursor: pointer;" onclick="if(window.pickerEnd){window.pickerEnd.open()}else{if(typeof window.initCalendar==='function')window.initCalendar();if(window.pickerEnd)window.pickerEnd.open();}" onfocus="if(window.pickerEnd){window.pickerEnd.open()}else{if(typeof window.initCalendar==='function')window.initCalendar();if(window.pickerEnd)window.pickerEnd.open();}">
+                                    placeholder="Primero elige una furgoneta..." required readonly autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" style="cursor: pointer;" onclick="window.checkVanSelectedBeforeCalendar('end');" onfocus="window.checkVanSelectedBeforeCalendar('end');">
                             </div>
                             <div class="form-group">
                                 <label for="calc-time-end"><i class="fa-regular fa-clock"></i> Hora</label>
@@ -2170,7 +2193,7 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
 
     <!-- Custom Script -->
-    <script src="app.js?v=14.0"></script>
+    <script src="app.js?v=15.0"></script>
 </body>
 
 </html>
