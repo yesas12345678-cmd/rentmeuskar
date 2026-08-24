@@ -805,7 +805,7 @@ app.get('/api/bookings/unavailable-dates', async (req, res) => {
   try {
     let query = `
       SELECT pickup_date AS from_date, return_date AS to_date FROM bookings 
-      WHERE status != 'cancelled'
+      WHERE (status IS NULL OR status != 'cancelled')
       UNION ALL
       SELECT start_date AS from_date, end_date AS to_date FROM van_blockages
     `;
@@ -814,7 +814,7 @@ app.get('/api/bookings/unavailable-dates', async (req, res) => {
     if (van_type) {
       query = `
         SELECT pickup_date AS from_date, return_date AS to_date FROM bookings 
-        WHERE van_type = $1 AND status != 'cancelled'
+        WHERE van_type = $1 AND (status IS NULL OR status != 'cancelled')
         UNION ALL
         SELECT start_date AS from_date, end_date AS to_date FROM van_blockages 
         WHERE van_type = $1
@@ -831,7 +831,7 @@ app.get('/api/bookings/unavailable-dates', async (req, res) => {
   } catch (err) {
     console.warn('Base de datos offline al obtener disponibilidad, usando fallback:', err.message);
     const bookingsRange = fallbackBookings
-      .filter(b => (!van_type || b.van_type === van_type) && b.status !== 'cancelled')
+      .filter(b => (!van_type || b.van_type === van_type) && (!b.status || b.status !== 'cancelled'))
       .map(b => ({ from: formatDateISO(b.pickup_date), to: formatDateISO(b.return_date) }));
     const blockagesRange = fallbackBlockages
       .filter(b => (!van_type || b.van_type === van_type))

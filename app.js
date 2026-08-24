@@ -1726,6 +1726,11 @@ const initApp = () => {
                     throw new Error(data.error || 'Error al guardar reserva.');
                 }
 
+                // Sincronizar fechas deshabilitadas en el calendario de la web
+                if (typeof window.updateCalendarAvailability === 'function') {
+                    window.updateCalendarAvailability();
+                }
+
                 // Generar mensaje WhatsApp para reserva manual
                 const isCon = finalBookingData.rental_mode === 'con';
                 const modeLabelText = isCon ? 'CON CONDUCTOR' : 'SIN CONDUCTOR';
