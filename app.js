@@ -1152,7 +1152,7 @@ const initApp = () => {
     });
 
     // Actualizar NavBar según estado de sesión (Sesión Permanente sin caducidad)
-    const updateAuthUI = async () => {
+    window.updateAuthUI = async () => {
         const token = localStorage.getItem('user_token');
         const savedProfileStr = localStorage.getItem('user_profile');
         const authSection = document.getElementById('user-auth-section');

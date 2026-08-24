@@ -263,7 +263,7 @@
                     submitBtn.innerHTML = 'Entrar';
                 }
                 window.closeAuthModal('login-modal');
-                if (typeof updateAuthUI === 'function') updateAuthUI();
+                if (typeof window.updateAuthUI === 'function') window.updateAuthUI();
                 if (typeof showAppToast === 'function') showAppToast('¡Sesión iniciada correctamente!', 'success');
             }
             return false;
@@ -382,7 +382,7 @@
                     submitBtn.innerHTML = '<i class="fa-solid fa-circle-check"></i> Activar Cuenta e Iniciar Sesión';
                 }
                 window.closeAuthModal('verify-email-modal');
-                if (typeof updateAuthUI === 'function') updateAuthUI();
+                if (typeof window.updateAuthUI === 'function') window.updateAuthUI();
                 if (typeof showAppToast === 'function') showAppToast('¡Cuenta activada e inicio de sesión automático!', 'success');
             }
             return false;
