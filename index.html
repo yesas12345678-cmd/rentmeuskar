@@ -421,6 +421,86 @@
             }
             return false;
         };
+
+        window.openEditProfileModal = function() {
+            var savedProfileStr = localStorage.getItem('user_profile');
+            if (savedProfileStr) {
+                try {
+                    var user = JSON.parse(savedProfileStr);
+                    var nameEl = document.getElementById('edit-profile-name');
+                    var emailEl = document.getElementById('edit-profile-email');
+                    var phoneEl = document.getElementById('edit-profile-phone');
+                    var dniEl = document.getElementById('edit-profile-dni');
+
+                    if (nameEl) nameEl.value = user.name || '';
+                    if (emailEl) emailEl.value = user.email || '';
+                    if (phoneEl) phoneEl.value = user.phone || '';
+                    if (dniEl) dniEl.value = user.dni || '';
+                } catch (e) { }
+            }
+            window.openAuthModal('edit-profile-modal');
+        };
+
+        window.handleEditProfileSubmit = async function(e) {
+            if (e && e.preventDefault) e.preventDefault();
+            var nameEl = document.getElementById('edit-profile-name');
+            var emailEl = document.getElementById('edit-profile-email');
+            var phoneEl = document.getElementById('edit-profile-phone');
+            var dniEl = document.getElementById('edit-profile-dni');
+
+            var name = nameEl ? nameEl.value.trim() : '';
+            var email = emailEl ? emailEl.value.trim().toLowerCase() : '';
+            var phone = phoneEl ? phoneEl.value.trim() : '';
+            var dni = dniEl ? dniEl.value.trim().toUpperCase() : '';
+
+            if (dni && typeof validateSpanishID === 'function' && !validateSpanishID(dni)) {
+                alert('El DNI / NIE introducido no es válido. Comprueba los 8 números y la letra.');
+                return false;
+            }
+
+            var token = localStorage.getItem('user_token');
+            var savedProfileStr = localStorage.getItem('user_profile');
+            var currentUser = savedProfileStr ? JSON.parse(savedProfileStr) : {};
+
+            var updatedUser = Object.assign({}, currentUser, {
+                name: name || currentUser.name,
+                email: email || currentUser.email,
+                phone: phone || currentUser.phone,
+                dni: dni || currentUser.dni
+            });
+
+            localStorage.setItem('user_profile', JSON.stringify(updatedUser));
+
+            try {
+                if (token) {
+                    await fetch('/api/auth/me', {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer ' + token
+                        },
+                        body: JSON.stringify({ name: name, email: email, phone: phone, dni: dni })
+                    });
+                }
+            } catch (err) {
+                console.warn('Backend de perfil offline, guardando cambios localmente:', err);
+            } finally {
+                window.closeAuthModal('edit-profile-modal');
+                if (typeof window.updateAuthUI === 'function') window.updateAuthUI();
+                if (typeof showAppToast === 'function') showAppToast('Perfil actualizado con éxito', 'success');
+                else alert('Perfil actualizado con éxito');
+            }
+            return false;
+        };
+
+        window.handleClientLogout = function() {
+            localStorage.removeItem('user_token');
+            localStorage.removeItem('user_profile');
+            window.closeAuthModal('client-modal');
+            if (typeof window.updateAuthUI === 'function') window.updateAuthUI();
+            if (typeof showAppToast === 'function') showAppToast('Has cerrado sesión correctamente', 'info');
+            else alert('Has cerrado sesión correctamente');
+        };
     </script>
 </head>
 
@@ -1505,8 +1585,8 @@
                 style="margin-top: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.8rem;">
                 <span id="client-user-info" style="font-size: 0.85rem; color: var(--text-secondary);"></span>
                 <div style="display: flex; gap: 0.5rem;">
-                    <button class="btn btn-secondary" onclick="openEditProfileModal()" style="font-size: 0.85rem; padding: 0.5rem 1rem; border-color: var(--color-neon); color: var(--color-neon);"><i class="fa-solid fa-user-pen"></i> Editar Mi Perfil</button>
-                    <button class="btn" id="btn-client-logout"
+                    <button class="btn btn-secondary" onclick="window.openEditProfileModal()" style="font-size: 0.85rem; padding: 0.5rem 1rem; border-color: var(--color-neon); color: var(--color-neon); cursor: pointer;"><i class="fa-solid fa-user-pen"></i> Editar Mi Perfil</button>
+                    <button class="btn" id="btn-client-logout" onclick="window.handleClientLogout()"
                         style="background: rgba(255, 77, 109, 0.15); border: 1px solid #ff4d6d; color: #ff4d6d; font-weight: 600; padding: 0.5rem 1.2rem; border-radius: 8px; cursor: pointer; transition: all 0.2s ease;"><i
                             class="fa-solid fa-power-off" style="margin-right: 0.4rem;"></i> Cerrar Sesión</button>
                 </div>
@@ -1522,7 +1602,7 @@
                 <h2><i class="fa-solid fa-user-pen" style="color: var(--color-neon); margin-right: 0.4rem;"></i> Editar Mis Datos de Perfil</h2>
                 <p>Modifica tu información personal para tus contratos y facturas.</p>
             </div>
-            <form id="edit-profile-form">
+            <form id="edit-profile-form" onsubmit="return window.handleEditProfileSubmit(event);">
                 <div class="custom-form-group" style="text-align: left;">
                     <label for="edit-profile-name">Nombre Completo</label>
                     <input type="text" id="edit-profile-name" class="custom-form-control" required placeholder="">
@@ -1958,7 +2038,7 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
 
     <!-- Custom Script -->
-    <script src="app.js?v=6.0"></script>
+    <script src="app.js?v=7.0"></script>
 </body>
 
 </html>
