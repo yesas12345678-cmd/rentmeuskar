@@ -73,6 +73,40 @@
 
     <!-- Global Auth Modal Handlers (Instant Execution) -->
     <script>
+        window.updateAuthUI = function() {
+            var token = localStorage.getItem('user_token');
+            var savedProfileStr = localStorage.getItem('user_profile');
+            var authSection = document.getElementById('user-auth-section');
+
+            if (!token) {
+                if (authSection) {
+                    authSection.innerHTML = '<button class="btn btn-secondary btn-sm" id="btn-login-modal" onclick="window.handleLoginButtonClick()" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; cursor: pointer;"><i class="fa-solid fa-user-lock"></i> Entrar</button>';
+                }
+                return;
+            }
+
+            var user = null;
+            if (savedProfileStr) {
+                try { user = JSON.parse(savedProfileStr); } catch (e) { }
+            }
+
+            var userNameText = (user && user.name) ? user.name : (user && user.email ? user.email.split('@')[0] : 'Mi Perfil');
+            if (authSection) {
+                authSection.innerHTML = '<button class="btn btn-secondary btn-sm" id="btn-login-modal" onclick="window.handleLoginButtonClick()" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; border-color: var(--color-neon); color: var(--color-neon); cursor: pointer;"><i class="fa-solid fa-user-circle"></i> ' + userNameText + '</button>';
+            }
+
+            var clientNameInput = document.getElementById('calc-client-name');
+            if (user && user.name && clientNameInput && !clientNameInput.value) {
+                clientNameInput.value = user.name;
+            }
+        };
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function() { window.updateAuthUI(); });
+        } else {
+            window.updateAuthUI();
+        }
+
         window.openAuthModal = function(modalId) {
             var el = document.getElementById(modalId);
             if (el) el.style.display = 'flex';
@@ -1924,7 +1958,7 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
 
     <!-- Custom Script -->
-    <script src="app.js?v=5.0"></script>
+    <script src="app.js?v=6.0"></script>
 </body>
 
 </html>
