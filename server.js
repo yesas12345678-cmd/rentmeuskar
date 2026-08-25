@@ -13,26 +13,23 @@ const PORT = process.env.PORT || 3000;
 
 // Configuración de transporte SMTP para envío de emails de confirmación
 let mailTransporter = null;
-if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
+const smtpHost = process.env.SMTP_HOST || 'smtp.zoho.eu';
+const smtpPort = parseInt(process.env.SMTP_PORT || '465');
+const smtpSecure = process.env.SMTP_SECURE ? (process.env.SMTP_SECURE === 'true') : true;
+const smtpUser = process.env.SMTP_USER || 'confirmacion@rentmeuskar.com';
+const smtpPass = process.env.SMTP_PASS || 'Follete_87';
+
+if (smtpUser && smtpPass) {
   mailTransporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: parseInt(process.env.SMTP_PORT || '587'),
-    secure: process.env.SMTP_SECURE === 'true',
+    host: smtpHost,
+    port: smtpPort,
+    secure: smtpSecure,
     auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS
+      user: smtpUser,
+      pass: smtpPass
     }
   });
-  console.log('[SMTP] Transporte de correo configurado vía SMTP.');
-} else if (process.env.GMAIL_USER && process.env.GMAIL_PASS) {
-  mailTransporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      user: process.env.GMAIL_USER,
-      pass: process.env.GMAIL_PASS
-    }
-  });
-  console.log('[SMTP] Transporte de correo configurado vía Gmail.');
+  console.log('[SMTP] Transporte de correo Zoho Mail activado.');
 }
 
 // Asegurar que existe la carpeta de subidas (uploads)
