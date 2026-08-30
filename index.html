@@ -414,7 +414,7 @@
                 });
 
                 var data = await res.json();
-                if (res.ok && data) {
+                if (res.ok && data && data.token) {
                     if (data.user && data.user.is_admin) {
                         localStorage.setItem('admin_token', data.token);
                         window.location.href = 'admin.html';
@@ -425,30 +425,35 @@
                     if (data.user) {
                         localStorage.setItem('user_profile', JSON.stringify(data.user));
                     }
+                    window.closeAuthModal('login-modal');
+                    if (typeof window.updateAuthUI === 'function') window.updateAuthUI();
+                    if (typeof showAppToast === 'function') showAppToast('¡Sesión iniciada correctamente!', 'success');
                 } else {
-                    var localUsers = JSON.parse(localStorage.getItem('local_registered_users') || '[]');
-                    var foundUser = localUsers.find(function(u) { return u.email.toLowerCase() === cleanEmail; });
-                    var userProfile = foundUser ? { id: foundUser.id, name: foundUser.name, email: foundUser.email, phone: foundUser.phone || '', dni: foundUser.dni || '' } : { id: Date.now(), name: cleanEmail.split('@')[0], email: cleanEmail, phone: '', dni: '' };
-
-                    localStorage.setItem('user_token', 'user_' + userProfile.id);
-                    localStorage.setItem('user_profile', JSON.stringify(userProfile));
+                    localStorage.removeItem('user_token');
+                    localStorage.removeItem('user_profile');
+                    if (typeof window.updateAuthUI === 'function') window.updateAuthUI();
+                    var errMsg = (data && data.error) ? data.error : 'Credenciales inválidas.';
+                    if (typeof showAppToast === 'function') {
+                        showAppToast(errMsg, 'error');
+                    } else {
+                        alert(errMsg);
+                    }
                 }
             } catch (err) {
-                console.warn('Error de red al iniciar sesión, aplicando sesión local:', err);
-                var localUsers = JSON.parse(localStorage.getItem('local_registered_users') || '[]');
-                var foundUser = localUsers.find(function(u) { return u.email.toLowerCase() === cleanEmail; });
-                var userProfile = foundUser ? { id: foundUser.id, name: foundUser.name, email: foundUser.email, phone: foundUser.phone || '', dni: foundUser.dni || '' } : { id: Date.now(), name: cleanEmail.split('@')[0], email: cleanEmail, phone: '', dni: '' };
-
-                localStorage.setItem('user_token', 'user_' + userProfile.id);
-                localStorage.setItem('user_profile', JSON.stringify(userProfile));
+                console.error('Error al iniciar sesión:', err);
+                localStorage.removeItem('user_token');
+                localStorage.removeItem('user_profile');
+                if (typeof window.updateAuthUI === 'function') window.updateAuthUI();
+                if (typeof showAppToast === 'function') {
+                    showAppToast('Error de conexión con el servidor.', 'error');
+                } else {
+                    alert('Error de conexión con el servidor.');
+                }
             } finally {
                 if (submitBtn) {
                     submitBtn.disabled = false;
                     submitBtn.innerHTML = 'Entrar';
                 }
-                window.closeAuthModal('login-modal');
-                if (typeof window.updateAuthUI === 'function') window.updateAuthUI();
-                if (typeof showAppToast === 'function') showAppToast('¡Sesión iniciada correctamente!', 'success');
             }
             return false;
         };
