@@ -972,7 +972,8 @@ const initApp = () => {
         const token = localStorage.getItem('user_token');
         const authSection = document.getElementById('user-auth-section');
         
-        if (!token) {
+        if (!token || token === 'undefined' || token === 'null') {
+            localStorage.removeItem('user_token');
             authSection.innerHTML = `
                 <button class="btn btn-secondary btn-sm" onclick="openAuthModal('login-modal')" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">
                     <i class="fa-solid fa-user-lock"></i> Entrar
@@ -985,8 +986,19 @@ const initApp = () => {
             const res = await fetch('/api/auth/me', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
+            const contentType = res.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                localStorage.removeItem('user_token');
+                updateAuthUI();
+                return;
+            }
             if (res.ok) {
                 const user = await res.json();
+                if (!user || !user.name || typeof user.id === 'undefined') {
+                    localStorage.removeItem('user_token');
+                    updateAuthUI();
+                    return;
+                }
                 authSection.innerHTML = `
                     <button class="btn btn-secondary btn-sm" onclick="openClientArea()" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; border-color: var(--color-neon); color: var(--color-neon);">
                         <i class="fa-solid fa-user-circle"></i> Mi Panel (${user.name.split(' ')[0]})
@@ -1002,6 +1014,7 @@ const initApp = () => {
             }
         } catch (err) {
             console.error('Error al verificar perfil de sesión:', err);
+            localStorage.removeItem('user_token');
         }
     };
 
@@ -1022,8 +1035,15 @@ const initApp = () => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password })
             });
+            
+            const contentType = res.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                alert('El servidor de base de datos no está respondiendo en formato JSON. Verifica la conexión con http://localhost:3000.');
+                return;
+            }
+
             const data = await res.json();
-            if (res.ok) {
+            if (res.ok && data && data.token) {
                 if (data.user && data.user.is_admin) {
                     localStorage.setItem('admin_token', data.token);
                     window.location.href = '/admin';
@@ -1035,7 +1055,9 @@ const initApp = () => {
                 updateAuthUI();
                 alert('Sesión iniciada correctamente.');
             } else {
-                alert(data.error || 'Error al iniciar sesión.');
+                localStorage.removeItem('user_token');
+                updateAuthUI();
+                alert((data && data.error) || 'Credenciales inválidas.');
             }
         } catch (err) {
             console.error(err);
