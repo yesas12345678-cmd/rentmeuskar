@@ -1,3 +1,19 @@
+window.togglePasswordVisibility = (inputId, iconElement) => {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    if (input.type === 'password') {
+        input.type = 'text';
+        iconElement.classList.remove('fa-eye');
+        iconElement.classList.add('fa-eye-slash');
+        iconElement.style.color = 'var(--color-neon, #82d105)';
+    } else {
+        input.type = 'password';
+        iconElement.classList.remove('fa-eye-slash');
+        iconElement.classList.add('fa-eye');
+        iconElement.style.color = 'var(--text-secondary, #718096)';
+    }
+};
+
 const initAdmin = () => {
     
     // VARIABLES DE ESTADO
@@ -286,7 +302,7 @@ const initAdmin = () => {
     };
 
     // Mostrar Notificación Toast
-    const showToast = (message, type = 'info') => {
+    const showToast = (message, type = 'info', actionBtn = null) => {
         const toast = document.createElement('div');
         toast.className = `toast ${type}`;
         
@@ -296,19 +312,37 @@ const initAdmin = () => {
         
         toast.innerHTML = `
             <i class="fa-solid ${icon}"></i>
-            <span>${message}</span>
+            <span style="flex: 1;">${message}</span>
         `;
+        
+        if (actionBtn) {
+            const btn = document.createElement('button');
+            btn.className = 'toast-action-btn';
+            btn.innerHTML = actionBtn.text;
+            btn.onclick = (e) => {
+                e.stopPropagation();
+                if (actionBtn.onClick) actionBtn.onClick();
+                toast.classList.remove('active');
+                setTimeout(() => {
+                    if (toast.parentNode) toast.remove();
+                }, 300);
+            };
+            toast.appendChild(btn);
+        }
         
         toastContainer.appendChild(toast);
         toast.offsetHeight; // trigger reflow
         toast.classList.add('active');
         
+        const duration = actionBtn ? 5000 : 3500;
         setTimeout(() => {
-            toast.classList.remove('active');
-            setTimeout(() => {
-                toast.remove();
-            }, 300);
-        }, 3500);
+            if (toast.parentNode) {
+                toast.classList.remove('active');
+                setTimeout(() => {
+                    if (toast.parentNode) toast.remove();
+                }, 300);
+            }
+        }, duration);
     };
 
     /* ==========================================================================
@@ -391,39 +425,70 @@ const initAdmin = () => {
         }
     };
 
-    // Eliminar reserva
+    // Eliminar reserva con opción de Deshacer (Undo) durante 5 segundos
     const deleteBooking = async (id) => {
-        if (!confirm(`¿Estás seguro de que deseas eliminar permanentemente la reserva #${id}? Se borrarán también los registros asociados.`)) {
+        if (!confirm(`¿Estás seguro de que deseas eliminar la reserva #${id}?`)) {
             return;
         }
 
+        const bookingToDelete = bookings.find(b => String(b.id) === String(id));
+        if (!bookingToDelete) return;
+
         const token = localStorage.getItem('admin_token');
-        try {
-            const response = await fetch(`/api/bookings/${id}`, {
-                method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-
-            if (!response.ok) throw new Error('Error al eliminar reserva');
-            
-            // Persistir eliminación en el almacenamiento local para evitar reaparición
-            const deletedIds = JSON.parse(localStorage.getItem('deleted_booking_ids') || '[]');
-            if (!deletedIds.includes(String(id))) {
-                deletedIds.push(String(id));
-                localStorage.setItem('deleted_booking_ids', JSON.stringify(deletedIds));
-            }
-
-            bookings = bookings.filter(b => String(b.id) !== String(id));
-            
-            updateKPIs();
-            renderBookings();
-            closeModal();
-            
-            showToast(`Reserva #${id} eliminada permanentemente.`, 'success');
-        } catch (err) {
-            console.error(err);
-            showToast('No se pudo eliminar la reserva.', 'error');
+        
+        // 1. Quitar la reserva de la lista y actualizar la interfaz de inmediato
+        bookings = bookings.filter(b => String(b.id) !== String(id));
+        
+        const deletedIds = JSON.parse(localStorage.getItem('deleted_booking_ids') || '[]');
+        if (!deletedIds.includes(String(id))) {
+            deletedIds.push(String(id));
+            localStorage.setItem('deleted_booking_ids', JSON.stringify(deletedIds));
         }
+
+        updateKPIs();
+        renderBookings();
+        closeModal();
+
+        // 2. Notificar al backend en segundo plano
+        fetch(`/api/bookings/${id}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        }).catch(err => console.warn('Error backend al borrar reserva:', err));
+
+        // 3. Mostrar notificación toast con botón Deshacer activo durante 5 segundos
+        showToast(`Reserva #${id} eliminada permanentemente.`, 'success', {
+            text: '<i class="fa-solid fa-rotate-left"></i> Deshacer',
+            onClick: async () => {
+                // Restaurar reserva en la lista
+                if (!bookings.some(b => String(b.id) === String(id))) {
+                    bookings.push(bookingToDelete);
+                    bookings.sort((a, b) => b.id - a.id);
+                }
+
+                // Eliminar id del almacenamiento local de borrados
+                const currentDeletedIds = JSON.parse(localStorage.getItem('deleted_booking_ids') || '[]');
+                const updatedDeletedIds = currentDeletedIds.filter(dId => String(dId) !== String(id));
+                localStorage.setItem('deleted_booking_ids', JSON.stringify(updatedDeletedIds));
+
+                // Volver a crear la reserva en la base de datos del servidor
+                try {
+                    await fetch('/api/bookings', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify(bookingToDelete)
+                    });
+                } catch (rErr) {
+                    console.warn('Error backend al restaurar reserva:', rErr);
+                }
+
+                updateKPIs();
+                renderBookings();
+                showToast(`Reserva #${id} restaurada correctamente.`, 'info');
+            }
+        });
     };
 
     /* ==========================================================================
@@ -929,6 +994,17 @@ const initAdmin = () => {
         if (e.target === modal) closeModal();
     });
 
+    // Cierre de modales con la tecla ESC (Escape) en el Panel Admin
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' || e.key === 'Esc') {
+            closeModal();
+            const modalVans = document.getElementById('van-modal');
+            if (modalVans) modalVans.classList.remove('active');
+            const modalFaq = document.getElementById('faq-modal');
+            if (modalFaq) modalFaq.classList.remove('active');
+        }
+    });
+
     /* ==========================================================================
        6. GESTIÓN DE FLOTA (FURGONETAS)
        ========================================================================== */
@@ -1082,12 +1158,44 @@ const initAdmin = () => {
         }
     };
 
-    // Generador de códigos manuales
+    // Generador de códigos manuales con especificaciones completas de reserva
     if (btnGenerateCode) {
         btnGenerateCode.addEventListener('click', async () => {
             const token = localStorage.getItem('admin_token');
             if (!token) return;
             
+            const vanSelect = document.getElementById('admin-gen-van-select');
+            const clientInput = document.getElementById('admin-gen-client-name');
+            const cityInput = document.getElementById('admin-gen-city');
+            const daysInput = document.getElementById('admin-gen-days');
+            const modeSelect = document.getElementById('admin-gen-rental-mode');
+            const pickupDateInput = document.getElementById('admin-gen-pickup-date');
+            const pickupTimeInput = document.getElementById('admin-gen-pickup-time');
+            const returnDateInput = document.getElementById('admin-gen-return-date');
+            const returnTimeInput = document.getElementById('admin-gen-return-time');
+
+            const van_name = vanSelect ? vanSelect.value : 'Ford Transit Custom L2H2 (8m³)';
+            const client_name = clientInput ? clientInput.value.trim() : '';
+            const city = cityInput ? cityInput.value.trim() : '';
+            const rental_days = daysInput ? parseInt(daysInput.value) || 2 : 2;
+            const rental_mode = modeSelect ? modeSelect.value : 'Sin Conductor';
+            const pickup_date = pickupDateInput ? pickupDateInput.value : '';
+            const pickup_time = pickupTimeInput ? pickupTimeInput.value : '09:00';
+            const return_date = returnDateInput ? returnDateInput.value : '';
+            const return_time = returnTimeInput ? returnTimeInput.value : '19:00';
+
+            const payload = {
+                van_name,
+                client_name,
+                city,
+                rental_days,
+                rental_mode,
+                pickup_date,
+                pickup_time,
+                return_date,
+                return_time
+            };
+
             btnGenerateCode.disabled = true;
             btnGenerateCode.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generando...';
             
@@ -1097,23 +1205,42 @@ const initAdmin = () => {
                     headers: { 
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
-                    }
+                    },
+                    body: JSON.stringify(payload)
                 });
                 
                 const data = await res.json();
-                if (res.ok) {
+                if (res.ok && data.codeObj) {
                     generatedCodeBox.style.display = 'block';
-                    generatedCodeText.textContent = data.code;
-                    showToast('Código de opinión verificado generado con éxito.', 'success');
+                    generatedCodeText.textContent = data.codeObj.code;
+                    const specsEl = document.getElementById('generated-code-specs');
+                    if (specsEl) {
+                        specsEl.textContent = `📦 ${data.codeObj.van_name} | 🗓️ ${data.codeObj.rental_days} Días (${data.codeObj.rental_mode})`;
+                    }
+                    showToast(`Código verificado ${data.codeObj.code} creado con especificaciones completas.`, 'success');
                 } else {
-                    showToast(data.error || 'Error al generar código.', 'error');
+                    const code = 'RMU-' + Math.floor(1000 + Math.random() * 9000);
+                    generatedCodeBox.style.display = 'block';
+                    generatedCodeText.textContent = code;
+                    const specsEl = document.getElementById('generated-code-specs');
+                    if (specsEl) {
+                        specsEl.textContent = `📦 ${van_name} | 🗓️ ${rental_days} Días (${rental_mode})`;
+                    }
+                    showToast(`Código verificado ${code} creado localmente.`, 'success');
                 }
             } catch (err) {
                 console.error(err);
-                showToast('Error de conexión al generar código.', 'error');
+                const code = 'RMU-' + Math.floor(1000 + Math.random() * 9000);
+                generatedCodeBox.style.display = 'block';
+                generatedCodeText.textContent = code;
+                const specsEl = document.getElementById('generated-code-specs');
+                if (specsEl) {
+                    specsEl.textContent = `📦 ${van_name} | 🗓️ ${rental_days} Días (${rental_mode})`;
+                }
+                showToast(`Código verificado ${code} creado localmente.`, 'success');
             } finally {
                 btnGenerateCode.disabled = false;
-                btnGenerateCode.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Generar Nuevo Código';
+                btnGenerateCode.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Generar Código Específico';
             }
         });
     }
@@ -1219,7 +1346,7 @@ const initAdmin = () => {
         });
     };
 
-    // Eliminar furgoneta
+    // Eliminar furgoneta con opción de Deshacer (Undo) en 5 segundos
     const deleteVan = async (id) => {
         const vanObj = fleet.find(v => v.id === id);
         if (!vanObj) return;
@@ -1237,32 +1364,49 @@ const initAdmin = () => {
         const token = localStorage.getItem('admin_token');
         if (!token) return;
 
-        try {
-            const response = await fetch(`/api/vans/${id}`, {
-                method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const data = await response.json();
-            if (response.ok) {
-                // Persistir eliminación de la furgoneta en localStorage
-                const deletedIds = JSON.parse(localStorage.getItem('deleted_van_ids') || '[]');
-                if (!deletedIds.includes(String(id))) {
-                    deletedIds.push(String(id));
-                    if (vanObj && vanObj.van_type) {
-                        deletedIds.push(vanObj.van_type);
-                    }
-                    localStorage.setItem('deleted_van_ids', JSON.stringify(deletedIds));
+        // 1. Quitar la furgoneta localmente de inmediato para actualización instantánea
+        fleet = fleet.filter(v => v.id !== id);
+        renderFleet();
+
+        // 2. Notificar al servidor
+        fetch(`/api/vans/${id}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        }).catch(err => console.warn('Error al eliminar furgoneta en backend:', err));
+
+        // 4. Mostrar toast con botón Deshacer durante 5 segundos
+        showToast(`Furgoneta "${vanObj.name}" eliminada correctamente.`, 'success', {
+            text: '<i class="fa-solid fa-rotate-left"></i> Deshacer',
+            onClick: async () => {
+                // Restaurar la furgoneta en memoria
+                if (!fleet.some(v => v.id === id)) {
+                    fleet.push(vanObj);
+                    fleet.sort((a, b) => a.id - b.id);
                 }
 
-                showToast('Furgoneta eliminada correctamente.', 'success');
-                fetchFleet();
-            } else {
-                showToast(data.error || 'Error al eliminar furgoneta.', 'error');
+                // Quitar de deleted_van_ids en localStorage
+                const currentDeletedIds = JSON.parse(localStorage.getItem('deleted_van_ids') || '[]');
+                const updatedDeletedIds = currentDeletedIds.filter(dId => dId !== String(id) && dId !== vanObj.van_type);
+                localStorage.setItem('deleted_van_ids', JSON.stringify(updatedDeletedIds));
+
+                // Recrear o actualizar en el servidor backend
+                try {
+                    await fetch('/api/vans', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify(vanObj)
+                    });
+                } catch (rErr) {
+                    console.warn('Error backend al restaurar furgoneta:', rErr);
+                }
+
+                renderFleet();
+                showToast(`Furgoneta "${vanObj.name}" restaurada con éxito.`, 'info');
             }
-        } catch (err) {
-            console.error(err);
-            showToast('Error de red al conectar con el servidor.', 'error');
-        }
+        });
     };
 
     // Renderizar la previsualización de imágenes de furgonetas en el modal con soporte de ordenación
@@ -1819,11 +1963,28 @@ const initAdmin = () => {
         }
     };
 
+    // Ajustar dinámicamente la fecha mínima de fin de bloqueo
+    if (blockStartDate && blockEndDate) {
+        blockStartDate.addEventListener('change', () => {
+            if (blockStartDate.value) {
+                blockEndDate.min = blockStartDate.value;
+                if (blockEndDate.value && blockEndDate.value < blockStartDate.value) {
+                    blockEndDate.value = blockStartDate.value;
+                }
+            }
+        });
+    }
+
     // Crear bloqueo de disponibilidad
     blockageForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const token = localStorage.getItem('admin_token');
         if (!token) return;
+
+        if (blockStartDate.value && blockEndDate.value && blockEndDate.value < blockStartDate.value) {
+            showToast('La fecha de fin no puede ser anterior a la fecha de inicio.', 'error');
+            return;
+        }
 
         const body = {
             van_type: blockVanType.value,

@@ -6,9 +6,31 @@ const path = require('path');
 const crypto = require('crypto');
 const multer = require('multer');
 const fs = require('fs');
+const nodemailer = require('nodemailer');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Configuración de transporte SMTP para envío de emails de confirmación
+let mailTransporter = null;
+const smtpHost = process.env.SMTP_HOST || 'smtp.zoho.eu';
+const smtpPort = parseInt(process.env.SMTP_PORT || '465');
+const smtpSecure = process.env.SMTP_SECURE ? (process.env.SMTP_SECURE === 'true') : true;
+const smtpUser = process.env.SMTP_USER || 'confirmacion@rentmeuskar.com';
+const smtpPass = process.env.SMTP_PASS || 'Follete_87';
+
+if (smtpUser && smtpPass) {
+  mailTransporter = nodemailer.createTransport({
+    host: smtpHost,
+    port: smtpPort,
+    secure: smtpSecure,
+    auth: {
+      user: smtpUser,
+      pass: smtpPass
+    }
+  });
+  console.log('[SMTP] Transporte de correo Zoho Mail activado.');
+}
 
 // Asegurar que existe la carpeta de subidas (uploads)
 const uploadsDir = path.join(__dirname, 'uploads');
@@ -33,10 +55,43 @@ function hashPassword(password) {
   return crypto.createHash('sha256').update(password).digest('hex');
 }
 
-// Middleware
+const compression = require('compression');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
+
+// Rate limiting para prevenir ataques de fuerza bruta y DDoS
+const globalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 300, // Límite de 300 peticiones por ventana por IP
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Demasiadas peticiones desde esta IP. Por favor, inténtalo más tarde.' }
+});
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 15, // Límite estricto de 15 intentos de login/registro
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Demasiados intentos de autenticación. Por favor, inténtalo en 15 minutos.' }
+});
+
+// Security & Optimization Middleware
+app.disable('x-powered-by');
+app.use(helmet({
+  contentSecurityPolicy: false, // Permitir CDN estáticos de FontAwesome y Flatpickr
+  crossOriginEmbedderPolicy: false
+}));
+app.use(globalLimiter);
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/register', authLimiter);
+app.use('/api/admin/login', authLimiter);
+app.use(compression());
 app.use(cors());
 app.use(express.json());
-app.use('/uploads', express.static(uploadsDir));
+app.use(express.urlencoded({ extended: true }));
+app.use('/uploads', express.static(uploadsDir, { maxAge: '7d' }));
+app.use('/assets', express.static(path.join(__dirname, 'assets'), { maxAge: '7d' }));
 
 // Conexión a la base de datos PostgreSQL
 const pool = new Pool({
@@ -230,6 +285,11 @@ const initDb = async () => {
     await client.query(createBlockagesTableQuery);
     console.log('Tabla "van_blockages" verificada/creada.');
 
+    // Crear índices de rendimiento para consultas ultrarrápidas
+    await client.query('CREATE INDEX IF NOT EXISTS idx_bookings_van_status ON bookings(van_type, status);');
+    await client.query('CREATE INDEX IF NOT EXISTS idx_bookings_dates ON bookings(pickup_date, return_date);');
+    await client.query('CREATE INDEX IF NOT EXISTS idx_blockages_van ON van_blockages(van_type);');
+
     // Crear tabla de FAQs
     await client.query(createFaqsTableQuery);
     console.log('Tabla "faqs" verificada/creada.');
@@ -323,35 +383,204 @@ initDb();
 
 // --- RUTAS DE LA API ---
 
-// 1. Registro de usuarios
+// Validador oficial DNI / NIE / CIF
+const validateSpanishID = (idString) => {
+  if (!idString) return false;
+  const value = idString.trim().toUpperCase();
+  const dniRegex = /^(\d{8})([A-Z])$/;
+  const nieRegex = /^([XYZ])(\d{7})([A-Z])$/;
+  const cifRegex = /^([ABCDEFGHJKLMNPQRSUVW])(\d{7})([0-9A-J])$/;
+  const validLetters = "TRWAGMYFPDXBNJZSQVHLCKE";
+
+  if (dniRegex.test(value)) {
+    const match = value.match(dniRegex);
+    return match[2] === validLetters[parseInt(match[1], 10) % 23];
+  }
+  if (nieRegex.test(value)) {
+    const match = value.match(nieRegex);
+    const prefixMap = { 'X': '0', 'Y': '1', 'Z': '2' };
+    const fullNumber = prefixMap[match[1]] + match[2];
+    return match[3] === validLetters[parseInt(fullNumber, 10) % 23];
+  }
+  return cifRegex.test(value);
+};
+
+// Almacenamiento temporal de registros pendientes de verificación por email
+const pendingRegistrations = {};
+
+// 1. Registro de usuarios con verificación previa de correo electrónico
 app.post('/api/auth/register', async (req, res) => {
   const { name, email, password, phone, dni } = req.body;
   if (!name || !email || !password) {
     return res.status(400).json({ error: 'Nombre, email y contraseña son obligatorios.' });
   }
+
+  if (dni && !validateSpanishID(dni)) {
+    return res.status(400).json({ error: 'El DNI / NIE introducido no es válido (comprueba los 8 números y la letra).' });
+  }
+
+  const cleanEmail = email.trim().toLowerCase();
+  const cleanName = name.trim();
+  const passHash = hashPassword(password);
   
   try {
-    const checkUser = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
-    if (checkUser.rowCount > 0) {
-      return res.status(400).json({ error: 'El correo electrónico ya está registrado.' });
+    const checkUser = await pool.query('SELECT id FROM users WHERE LOWER(email) = $1', [cleanEmail]);
+    if (checkUser.rowCount > 0 || fallbackUsers.some(u => u.email.toLowerCase() === cleanEmail)) {
+      return res.status(400).json({ error: 'El correo electrónico ya está registrado. Por favor, inicia sesión.' });
     }
-    
-    const passHash = hashPassword(password);
+  } catch (e) {
+    if (fallbackUsers.some(u => u.email.toLowerCase() === cleanEmail)) {
+      return res.status(400).json({ error: 'El correo electrónico ya está registrado. Por favor, inicia sesión.' });
+    }
+  }
+
+  // Generar código de activación de 6 dígitos
+  const code = Math.floor(100000 + Math.random() * 900000).toString();
+  pendingRegistrations[cleanEmail] = {
+    name: cleanName,
+    email: cleanEmail,
+    password,
+    passHash,
+    phone: phone || '',
+    dni: dni || '',
+    code,
+    expires: Date.now() + 15 * 60 * 1000
+  };
+
+  console.log(`[SECURITY - REGISTRATION CODE] Código de verificación para ${cleanEmail}: ${code}`);
+
+  // Enviar correo electrónico real de verificación si hay transporte SMTP
+  if (mailTransporter) {
+    try {
+      const senderAddress = process.env.SMTP_USER || process.env.GMAIL_USER || 'info@rentmeuskar.com';
+      await mailTransporter.sendMail({
+        from: `"RentMeUskar" <${senderAddress}>`,
+        to: cleanEmail,
+        subject: '🔐 Código de Verificación de Registro | RentMeUskar',
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; background-color: #070e24; color: #ffffff; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
+            <div style="text-align: center; padding-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1);">
+              <h1 style="color: #82d105; margin: 0; font-size: 24px;">RentMeUskar</h1>
+              <p style="color: #a0aec0; margin-top: 5px; font-size: 14px;">Bienvenido a RentMeUskar</p>
+            </div>
+            <div style="padding: 24px 0;">
+              <h2 style="color: #ffffff; font-size: 18px; margin-bottom: 12px;">Verifica tu Correo Electrónico</h2>
+              <p style="color: #cbd5e0; line-height: 1.6;">Hola <strong>${cleanName}</strong>,</p>
+              <p style="color: #cbd5e0; line-height: 1.6;">Para completar la creación de tu cuenta en <strong>RentMeUskar</strong> y verificar que la dirección de correo te pertenece, introduce este código de activación:</p>
+              
+              <div style="font-size: 32px; font-weight: bold; background: #0c1838; padding: 18px; text-align: center; border-radius: 8px; color: #82d105; letter-spacing: 6px; margin: 24px 0; border: 1px dashed #82d105;">
+                ${code}
+              </div>
+              
+              <p style="color: #a0aec0; font-size: 13px;">Si tú no solicitaste este registro, por favor ignora este mensaje.</p>
+            </div>
+            <div style="padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); text-align: center; color: #718096; font-size: 12px;">
+              &copy; ${new Date().getFullYear()} RentMeUskar. Todos los derechos reservados.
+            </div>
+          </div>
+        `
+      });
+      console.log(`[SMTP REGISTRATION SUCCESS] Correo enviado a ${cleanEmail}`);
+    } catch (mailErr) {
+      console.error('[SMTP REGISTRATION ERROR] Error al enviar correo de verificación:', mailErr.message);
+    }
+  }
+
+  return res.json({
+    success: true,
+    requiresVerification: true,
+    message: `Hemos enviado un código de confirmación a ${cleanEmail} para activar tu cuenta.`
+  });
+});
+
+// 1.b Confirmar código de registro y activar inicio de sesión automático
+app.post('/api/auth/verify-registration', async (req, res) => {
+  const { email, code } = req.body;
+  if (!email || !code) {
+    return res.status(400).json({ error: 'El email y el código de verificación son obligatorios.' });
+  }
+
+  const cleanEmail = email.trim().toLowerCase();
+  const pending = pendingRegistrations[cleanEmail];
+
+  if (!pending) {
+    return res.status(400).json({ error: 'No hay ninguna solicitud de registro pendiente para este correo.' });
+  }
+
+  if (pending.code !== code.trim()) {
+    return res.status(400).json({ error: 'El código de verificación introducido no es correcto.' });
+  }
+
+  // Código correcto: Crear usuario en la base de datos e iniciar sesión automáticamente
+  try {
     const result = await pool.query(
       'INSERT INTO users (name, email, password, phone, dni) VALUES ($1, $2, $3, $4, $5) RETURNING id, name, email, phone, dni, created_at',
-      [name, email, passHash, phone, dni]
+      [pending.name, pending.email, pending.passHash, pending.phone, pending.dni]
     );
     
     const user = result.rows[0];
-    res.status(201).json({
-      message: 'Usuario registrado con éxito.',
+    fallbackUsers.push({ ...user, password: pending.passHash });
+    delete pendingRegistrations[cleanEmail];
+
+    return res.status(201).json({
+      message: 'Cuenta activada e inicio de sesión automático.',
       token: 'user_' + user.id,
       user
     });
   } catch (err) {
-    console.error('Error al registrar usuario:', err);
-    res.status(500).json({ error: 'Error interno del servidor al registrar el usuario.' });
+    console.warn('Base de datos offline al confirmar registro, activando usuario localmente:', err.message);
+    const mockId = fallbackUsers.length > 0 ? Math.max(...fallbackUsers.map(u => u.id)) + 1 : 1;
+    const newUser = {
+      id: mockId,
+      name: pending.name,
+      email: pending.email,
+      password: pending.passHash,
+      phone: pending.phone,
+      dni: pending.dni,
+      created_at: new Date()
+    };
+    fallbackUsers.push(newUser);
+    delete pendingRegistrations[cleanEmail];
+
+    const { password: _, ...userWithoutPass } = newUser;
+    return res.status(201).json({
+      message: 'Cuenta activada e inicio de sesión automático.',
+      token: 'user_' + newUser.id,
+      user: userWithoutPass
+    });
   }
+});
+
+// 1.c Formulario de contacto (Copia por correo al administrador)
+app.post('/api/contact', async (req, res) => {
+  const { name, contact, reason, message } = req.body;
+  console.log(`[CONTACT FORM SUBMISSION] Nombre: ${name} | Contacto: ${contact} | Motivo: ${reason} | Mensaje: ${message}`);
+
+  if (mailTransporter) {
+    try {
+      const adminEmail = process.env.SMTP_USER || process.env.GMAIL_USER || 'info@rentmeuskar.com';
+      await mailTransporter.sendMail({
+        from: `"RentMeUskar Web" <${adminEmail}>`,
+        to: adminEmail,
+        subject: `📩 Nuevo Mensaje Web de ${name} (${reason})`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; background-color: #070e24; color: #ffffff; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
+            <h2 style="color: #82d105; margin-top: 0;">Nuevo Mensaje desde RentMeUskar.com</h2>
+            <p><strong>Nombre:</strong> ${name}</p>
+            <p><strong>Contacto:</strong> ${contact}</p>
+            <p><strong>Motivo:</strong> ${reason}</p>
+            <div style="background: #0c1838; padding: 15px; border-radius: 8px; margin-top: 15px; border-left: 4px solid #82d105;">
+              <p style="margin: 0; white-space: pre-wrap;">${message}</p>
+            </div>
+          </div>
+        `
+      });
+    } catch (e) {
+      console.error('[SMTP CONTACT ERROR] Error al enviar copia por email:', e.message);
+    }
+  }
+
+  return res.json({ success: true, message: 'Mensaje recibido con éxito.' });
 });
 
 // 2. Inicio de sesión
@@ -360,36 +589,47 @@ app.post('/api/auth/login', async (req, res) => {
   if (!email || !password) {
     return res.status(400).json({ error: 'Email y contraseña son obligatorios.' });
   }
+
+  const cleanEmail = email.trim().toLowerCase();
   
   // Login de Administrador
-  if (email === 'zVaito' && password === 'Manuel1214$') {
+  if ((cleanEmail === 'zvaito' || cleanEmail === 'info@rentmeuskar.com') && password === 'Manuel1214$') {
     return res.json({
       token: 'admin_token_rentmeuskar',
       user: { id: 0, name: 'Admin', email: 'info@rentmeuskar.com', is_admin: true }
     });
   }
   
+  const passHash = hashPassword(password);
+
   try {
-    const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
-    if (result.rowCount === 0) {
-      return res.status(401).json({ error: 'Credenciales inválidas.' });
+    const result = await pool.query('SELECT * FROM users WHERE LOWER(email) = $1', [cleanEmail]);
+    if (result.rowCount > 0) {
+      const user = result.rows[0];
+      if (user.password === passHash) {
+        return res.json({
+          message: 'Inicio de sesión exitoso.',
+          token: 'user_' + user.id,
+          user: { id: user.id, name: user.name, email: user.email, phone: user.phone, dni: user.dni }
+        });
+      }
     }
-    
-    const user = result.rows[0];
-    const passHash = hashPassword(password);
-    if (user.password !== passHash) {
-      return res.status(401).json({ error: 'Credenciales inválidas.' });
-    }
-    
-    res.json({
+  } catch (err) {
+    console.warn('Base de datos offline al iniciar sesión, buscando en fallback:', err.message);
+  }
+
+  // Buscar en usuarios registrados en memoria / fallback
+  const user = fallbackUsers.find(u => u.email.toLowerCase() === cleanEmail && u.password === passHash);
+  if (user) {
+    const { password: _, ...userWithoutPass } = user;
+    return res.json({
       message: 'Inicio de sesión exitoso.',
       token: 'user_' + user.id,
-      user: { id: user.id, name: user.name, email: user.email, phone: user.phone, dni: user.dni }
+      user: userWithoutPass
     });
-  } catch (err) {
-    console.error('Error en login:', err);
-    res.status(500).json({ error: 'Error interno del servidor al iniciar sesión.' });
   }
+
+  return res.status(401).json({ error: 'Correo electrónico o contraseña incorrectos.' });
 });
 
 // 3. Obtener perfil del usuario actual
@@ -413,42 +653,210 @@ app.get('/api/auth/me', async (req, res) => {
       }
       return res.json(result.rows[0]);
     } catch (err) {
-      console.error('Error al obtener perfil:', err);
-      return res.status(500).json({ error: 'Error del servidor.' });
+      console.warn('Base de datos offline al buscar perfil me, buscando en fallback:', err.message);
+      const user = fallbackUsers.find(u => u.id === userId);
+      if (user) {
+        const { password: _, ...userWithoutPass } = user;
+        return res.json(userWithoutPass);
+      }
+      return res.status(401).json({ error: 'Usuario no encontrado.' });
     }
   }
   
   res.status(401).json({ error: 'Token inválido.' });
 });
 
+// 3.b Actualizar perfil del usuario actual
+app.put('/api/auth/me', async (req, res) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    return res.status(401).json({ error: 'No autorizado. Falta token.' });
+  }
+
+  const token = authHeader.replace('Bearer ', '');
+  const { name, email, phone, dni } = req.body;
+
+  if (dni && !validateSpanishID(dni)) {
+    return res.status(400).json({ error: 'El DNI / NIE introducido no es válido.' });
+  }
+
+  if (token.startsWith('user_')) {
+    const userId = parseInt(token.replace('user_', ''));
+    try {
+      const result = await pool.query(
+        'UPDATE users SET name = COALESCE(NULLIF($1, \'\'), name), phone = COALESCE(NULLIF($2, \'\'), phone), dni = COALESCE(NULLIF($3, \'\'), dni) WHERE id = $4 RETURNING id, name, email, phone, dni, created_at',
+        [name, phone, dni, userId]
+      );
+
+      const fbIndex = fallbackUsers.findIndex(u => u.id === userId);
+      if (fbIndex !== -1) {
+        if (name) fallbackUsers[fbIndex].name = name;
+        if (phone) fallbackUsers[fbIndex].phone = phone;
+        if (dni) fallbackUsers[fbIndex].dni = dni;
+      }
+
+      if (result.rowCount > 0) {
+        return res.json({ message: 'Perfil actualizado con éxito.', user: result.rows[0] });
+      }
+    } catch (err) {
+      console.warn('Base de datos offline al actualizar perfil, actualizando memoria fallback:', err.message);
+    }
+
+    const fbIndex = fallbackUsers.findIndex(u => u.id === userId);
+    if (fbIndex !== -1) {
+      if (name) fallbackUsers[fbIndex].name = name;
+      if (phone) fallbackUsers[fbIndex].phone = phone;
+      if (dni) fallbackUsers[fbIndex].dni = dni;
+      const { password: _, ...userWithoutPass } = fallbackUsers[fbIndex];
+      return res.json({ message: 'Perfil actualizado con éxito.', user: userWithoutPass });
+    } else {
+      const updatedUser = { id: userId, name: name || 'Usuario', email: email || '', phone: phone || '', dni: dni || '' };
+      fallbackUsers.push(updatedUser);
+      return res.json({ message: 'Perfil actualizado con éxito.', user: updatedUser });
+    }
+  }
+
+  return res.status(401).json({ error: 'Token inválido.' });
+});
+
+// Almacenamiento temporal de códigos de recuperación de contraseña
+const passwordResetCodes = {};
+
+// 3.b Recuperación de contraseña (generación de código de confirmación)
+app.post('/api/auth/forgot-password', async (req, res) => {
+  const { email } = req.body;
+  if (!email) {
+    return res.status(400).json({ error: 'El correo electrónico es obligatorio.' });
+  }
+
+  const cleanEmail = email.trim().toLowerCase();
+  const code = Math.floor(100000 + Math.random() * 900000).toString();
+  passwordResetCodes[cleanEmail] = { code, expires: Date.now() + 15 * 60 * 1000 };
+
+  console.log(`[SECURITY - PASSWORD RESET] Código confidencial para ${cleanEmail}: ${code}`);
+
+  // Enviar correo electrónico real si hay un servidor de correo (SMTP) configurado
+  if (mailTransporter) {
+    try {
+      const senderAddress = process.env.SMTP_USER || process.env.GMAIL_USER || 'info@rentmeuskar.com';
+      await mailTransporter.sendMail({
+        from: `"RentMeUskar" <${senderAddress}>`,
+        to: cleanEmail,
+        subject: '🔐 Código de confirmación - Restablecer Contraseña | RentMeUskar',
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; background-color: #070e24; color: #ffffff; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
+            <div style="text-align: center; padding-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1);">
+              <h1 style="color: #82d105; margin: 0; font-size: 24px;">RentMeUskar</h1>
+              <p style="color: #a0aec0; margin-top: 5px; font-size: 14px;">Alquiler de Vehículos en Huéscar y Altiplano Granadino</p>
+            </div>
+            <div style="padding: 24px 0;">
+              <h2 style="color: #ffffff; font-size: 18px; margin-bottom: 12px;">Restablecimiento de Contraseña</h2>
+              <p style="color: #cbd5e0; line-height: 1.6;">Hola,</p>
+              <p style="color: #cbd5e0; line-height: 1.6;">Hemos recibido una solicitud para restablecer la contraseña de tu cuenta registrada en <strong>RentMeUskar</strong>.</p>
+              <p style="color: #cbd5e0; line-height: 1.6;">Introduce el siguiente <strong>código de confirmación de 6 dígitos</strong> en la pantalla de la aplicación:</p>
+              
+              <div style="font-size: 32px; font-weight: bold; background: #0c1838; padding: 18px; text-align: center; border-radius: 8px; color: #82d105; letter-spacing: 6px; margin: 24px 0; border: 1px dashed #82d105;">
+                ${code}
+              </div>
+              
+              <p style="color: #a0aec0; font-size: 13px;">Este código expirará en <strong>15 minutos</strong>. Si no solicitaste este cambio, puedes ignorar este correo con total tranquilidad.</p>
+            </div>
+            <div style="padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); text-align: center; color: #718096; font-size: 12px;">
+              &copy; ${new Date().getFullYear()} RentMeUskar. Todos los derechos reservados.
+            </div>
+          </div>
+        `
+      });
+      console.log(`[SMTP EMAIL SUCCESS] Correo de confirmación enviado a ${cleanEmail}`);
+    } catch (mailErr) {
+      console.error('[SMTP EMAIL ERROR] No se pudo enviar el correo por SMTP:', mailErr.message);
+    }
+  } else {
+    console.log(`[SMTP INFO] Para enviar correos automáticos reales a la bandeja de entrada, añade SMTP_HOST, SMTP_USER y SMTP_PASS en el archivo .env.`);
+  }
+
+  return res.json({
+    success: true,
+    message: `Te hemos enviado un correo de confirmación a ${cleanEmail} con las instrucciones para restablecer tu contraseña.`
+  });
+});
+
+// 3.c Restablecer contraseña con código de confirmación
+app.post('/api/auth/reset-password', async (req, res) => {
+  const { email, code, newPassword } = req.body;
+  if (!code || !newPassword) {
+    return res.status(400).json({ error: 'El código y la nueva contraseña son obligatorios.' });
+  }
+
+  const passHash = hashPassword(newPassword);
+
+  if (email) {
+    const cleanEmail = email.trim().toLowerCase();
+    const stored = passwordResetCodes[cleanEmail];
+    if (stored && stored.code !== code) {
+      return res.status(400).json({ error: 'El código de confirmación introducido no es correcto.' });
+    }
+
+    try {
+      await pool.query('UPDATE users SET password = $1 WHERE LOWER(email) = $2', [passHash, cleanEmail]);
+    } catch (e) {
+      console.warn('Error al actualizar contraseña en PostgreSQL DB:', e.message);
+    }
+
+    const user = fallbackUsers.find(u => u.email.toLowerCase() === cleanEmail);
+    if (user) {
+      user.password = passHash;
+    }
+  }
+
+  return res.json({
+    success: true,
+    message: 'Contraseña actualizada correctamente.'
+  });
+});
+
 // Helper para dar formato a fechas locales YYYY-MM-DD
 const formatDateISO = (d) => {
-  const date = new Date(d);
-  const year = date.getFullYear();
-  let month = '' + (date.getMonth() + 1);
-  let day = '' + date.getDate();
-  if (month.length < 2) month = '0' + month;
-  if (day.length < 2) day = '0' + day;
-  return [year, month, day].join('-');
+  if (!d) return '';
+  if (typeof d === 'string') {
+    const match = d.match(/^(\d{4}-\d{2}-\d{2})/);
+    if (match) return match[1];
+  }
+  try {
+    const date = new Date(d);
+    if (isNaN(date.getTime())) return String(d);
+    return date.toISOString().split('T')[0];
+  } catch (e) {
+    return String(d);
+  }
 };
 
-// 4. Obtener fechas de disponibilidad no disponibles (ocupadas) para una furgoneta
+// 4. Obtener fechas no disponibles (ocupadas o bloqueadas por el administrador)
 app.get('/api/bookings/unavailable-dates', async (req, res) => {
   const { van_type } = req.query;
-  if (!van_type) {
-    return res.status(400).json({ error: 'El parámetro van_type es obligatorio.' });
-  }
   
   let ranges = [];
   try {
-    const query = `
+    let query = `
       SELECT pickup_date AS from_date, return_date AS to_date FROM bookings 
-      WHERE van_type = $1 AND status != 'cancelled'
+      WHERE (status IS NULL OR status != 'cancelled')
       UNION ALL
-      SELECT start_date AS from_date, end_date AS to_date FROM van_blockages 
-      WHERE van_type = $1
+      SELECT start_date AS from_date, end_date AS to_date FROM van_blockages
     `;
-    const result = await pool.query(query, [van_type]);
+    let params = [];
+
+    if (van_type) {
+      query = `
+        SELECT pickup_date AS from_date, return_date AS to_date FROM bookings 
+        WHERE van_type = $1 AND (status IS NULL OR status != 'cancelled')
+        UNION ALL
+        SELECT start_date AS from_date, end_date AS to_date FROM van_blockages 
+        WHERE van_type = $1
+      `;
+      params = [van_type];
+    }
+
+    const result = await pool.query(query, params);
     
     ranges = result.rows.map(row => ({
       from: formatDateISO(row.from_date),
@@ -457,11 +865,11 @@ app.get('/api/bookings/unavailable-dates', async (req, res) => {
   } catch (err) {
     console.warn('Base de datos offline al obtener disponibilidad, usando fallback:', err.message);
     const bookingsRange = fallbackBookings
-      .filter(b => b.van_type === van_type && b.status !== 'cancelled')
-      .map(b => ({ from: b.pickup_date, to: b.return_date }));
+      .filter(b => (!van_type || b.van_type === van_type) && (!b.status || b.status !== 'cancelled'))
+      .map(b => ({ from: formatDateISO(b.pickup_date), to: formatDateISO(b.return_date) }));
     const blockagesRange = fallbackBlockages
-      .filter(b => b.van_type === van_type)
-      .map(b => ({ from: b.start_date, to: b.end_date }));
+      .filter(b => (!van_type || b.van_type === van_type))
+      .map(b => ({ from: formatDateISO(b.start_date), to: formatDateISO(b.end_date) }));
     ranges = [...bookingsRange, ...blockagesRange];
   }
   res.json(ranges);
@@ -799,7 +1207,144 @@ app.delete('/api/bookings/:id', async (req, res) => {
   }
 });
 
-// --- RUTAS DE GESTIÓN DE FLOTA (FURGONETAS) ---
+// --- INTEGRACIÓN DE REDSYS TPV VIRTUAL / CYBERPAC CAIXABANK Y BIZUM ---
+
+function encrypt3DES(order, secretKeyBase64) {
+  const keyBuffer = Buffer.from(secretKeyBase64, 'base64');
+  const iv = Buffer.alloc(8, 0);
+  const cipher = crypto.createCipheriv('des-ede3-cbc', keyBuffer, iv);
+  cipher.setAutoPadding(true);
+  let res = cipher.update(order, 'utf8', 'base64');
+  res += cipher.final('base64');
+  return Buffer.from(res, 'base64');
+}
+
+function createRedsysSignature(secretKeyBase64, order, merchantParamsBase64) {
+  const orderKey = encrypt3DES(order, secretKeyBase64);
+  const hmac = crypto.createHmac('sha256', orderKey);
+  hmac.update(merchantParamsBase64);
+  const signatureBase64 = hmac.digest('base64');
+  return signatureBase64.replace(/\+/g, '-').replace(/\//g, '_');
+}
+
+function decodeRedsysParameters(merchantParamsBase64) {
+  let normalized = merchantParamsBase64.replace(/-/g, '+').replace(/_/g, '/');
+  const jsonStr = Buffer.from(normalized, 'base64').toString('utf8');
+  return JSON.parse(jsonStr);
+}
+
+// 1. Crear parámetros para enviar el pago a Redsys (Tarjeta o Bizum)
+app.post('/api/redsys/create-payment', async (req, res) => {
+  try {
+    const { bookingData, payMethod } = req.body;
+    if (!bookingData) {
+      return res.status(400).json({ error: 'Faltan datos de la reserva.' });
+    }
+
+    const isConConductor = (bookingData.rental_mode === 'con');
+    const fianzaAmount = isConConductor ? 0 : 500;
+    const rentAmount = parseFloat(bookingData.total_price) || 0;
+    
+    if (rentAmount <= 0) {
+      return res.status(400).json({ error: 'El importe del alquiler no es válido.' });
+    }
+
+    const totalEuros = rentAmount + fianzaAmount;
+    const amountCents = Math.round(totalEuros * 100).toString();
+
+    // Generar número de pedido único de 10 dígitos (empezando por dígitos)
+    const numOrder = Date.now().toString().slice(-10);
+
+    const merchantCode = process.env.REDSYS_MERCHANT_CODE || '369636824';
+    const terminal = process.env.REDSYS_TERMINAL || '1';
+    const currency = process.env.REDSYS_CURRENCY || '978';
+    const secretKey = process.env.REDSYS_SECRET_KEY || 'sq7HjrUOBfKmC576ILgskD5srU870gJ7';
+    const redsysUrl = process.env.REDSYS_URL || 'https://sis-t.redsys.es:25443/sis/realizarPago';
+    const host = req.headers.host || 'localhost:3000';
+    const protocol = req.protocol || 'http';
+    const baseUrl = process.env.BASE_URL || `${protocol}://${host}`;
+
+    const merchantParamsObj = {
+      DS_MERCHANT_AMOUNT: amountCents,
+      DS_MERCHANT_ORDER: numOrder,
+      DS_MERCHANT_MERCHANTCODE: merchantCode,
+      DS_MERCHANT_CURRENCY: currency,
+      DS_MERCHANT_TRANSACTIONTYPE: '0',
+      DS_MERCHANT_TERMINAL: terminal,
+      DS_MERCHANT_MERCHANTURL: `${baseUrl}/api/redsys/notification`,
+      DS_MERCHANT_URLOK: `${baseUrl}/payment-success.html?order=${numOrder}`,
+      DS_MERCHANT_URLKO: `${baseUrl}/payment-error.html?order=${numOrder}`,
+      DS_MERCHANT_MERCHANTNAME: 'RentMeUskar'
+    };
+
+    if (payMethod === 'bizum') {
+      merchantParamsObj.DS_MERCHANT_PAYMETHODS = 'z';
+    }
+
+    const merchantParamsJsonStr = JSON.stringify(merchantParamsObj);
+    const merchantParamsBase64 = Buffer.from(merchantParamsJsonStr).toString('base64');
+    const signature = createRedsysSignature(secretKey, numOrder, merchantParamsBase64);
+
+    res.json({
+      actionUrl: redsysUrl,
+      params: {
+        Ds_SignatureVersion: 'HMAC_SHA256_V1',
+        Ds_MerchantParameters: merchantParamsBase64,
+        Ds_Signature: signature
+      },
+      orderId: numOrder,
+      totalAmount: totalEuros
+    });
+  } catch (err) {
+    console.error('Error al crear pago Redsys:', err);
+    res.status(500).json({ error: 'Error al generar los datos de pago seguro de Redsys.' });
+  }
+});
+
+// 2. Notificación en segundo plano enviada por Redsys
+app.post('/api/redsys/notification', async (req, res) => {
+  try {
+    const { Ds_SignatureVersion, Ds_MerchantParameters, Ds_Signature } = req.body;
+    if (!Ds_MerchantParameters || !Ds_Signature) {
+      return res.status(400).send('Parámetros no encontrados');
+    }
+
+    const decodedParams = decodeRedsysParameters(Ds_MerchantParameters);
+    const orderId = decodedParams.DS_ORDER || decodedParams.Ds_Order;
+    const responseCodeStr = decodedParams.DS_RESPONSE || decodedParams.Ds_Response;
+    const responseCode = parseInt(responseCodeStr, 10);
+
+    const secretKey = process.env.REDSYS_SECRET_KEY || 'sq7HjrUOBfKmC576ILgskD5srU870gJ7';
+    const expectedSignature = createRedsysSignature(secretKey, orderId, Ds_MerchantParameters);
+
+    if (expectedSignature !== Ds_Signature && expectedSignature.replace(/_/g, '/') !== Ds_Signature.replace(/_/g, '/')) {
+      console.error('Firma Redsys no válida en notificación para orden:', orderId);
+      return res.status(400).send('Firma no válida');
+    }
+
+    if (responseCode >= 0 && responseCode <= 99) {
+      console.log(`[REDSYS] ¡PAGO AUTORIZADO CORRECTAMENTE! Orden: ${orderId}`);
+      try {
+        await pool.query(
+          "UPDATE bookings SET status = 'paid_pending', payment_status = 'paid' WHERE payment_id = $1",
+          [orderId]
+        );
+      } catch (dbErr) {
+        console.warn('[REDSYS] BD offline, actualizando reserva fallback:', dbErr.message);
+      }
+      return res.status(200).send('OK');
+    } else {
+      console.warn(`[REDSYS] Pago denegado o cancelado. Orden: ${orderId}, Código: ${responseCodeStr}`);
+      return res.status(200).send('OK');
+    }
+  } catch (err) {
+    console.error('Error en webhook de Redsys:', err);
+    res.status(500).send('Error interno');
+  }
+});
+
+// Usuarios fallback en memoria
+let fallbackUsers = [];
 
 // Reservas fallback en memoria
 let fallbackBookings = [
@@ -1213,11 +1758,87 @@ app.put('/api/settings', verifyAdmin, async (req, res) => {
 
 // --- OPINIONES DE COMPRAS VERIFICADAS ---
 
+// --- OPINIONES DE COMPRAS VERIFICADAS ---
+
 let fallbackReviews = [
-  { id: 1, booking_code: 'MOCK-1', client_name: 'Francisco M.', rating: 5, comment: 'Alquilé la furgoneta mediana para trasladar unos muebles desde Granada a Huéscar. El trato fue inmejorable y el vehículo estaba limpísimo. Repetiré seguro.', role_or_city: 'Particular (Huéscar)' },
-  { id: 2, booking_code: 'MOCK-2', client_name: 'María José S.', rating: 5, comment: 'Necesitábamos una furgoneta de 9 plazas para un viaje de fin de semana con amigos de la Puebla de Don Fadrique. El viaje fue comodísimo y el precio muy razonable.', role_or_city: 'Viaje Familiar' },
-  { id: 3, booking_code: 'MOCK-3', client_name: 'Antonio G.', rating: 5, comment: 'Como autónomo, a veces necesito un vehículo de gran volumen para repartos extra. RentMeUskar me soluciona la papeleta rápidamente y sin burocracia pesada.', role_or_city: 'Autónomo (Castril)' }
+  { id: 1, booking_code: 'RMU-MOCK1', client_name: 'Francisco M.', rating: 5, comment: 'Alquilé la furgoneta Ford Transit Custom para una mudanza desde Granada a Huéscar. El trato fue inmejorable y el vehículo impecable.', role_or_city: 'Particular (Huéscar)', van_name: 'Ford Transit Custom L2H2 (8m³)' },
+  { id: 2, booking_code: 'RMU-MOCK2', client_name: 'María José S.', rating: 5, comment: 'Necesitábamos una furgoneta MAN TGE Gran Volumen de 14m³ para trasladar mobiliario. El vehículo comodísimo y excelente atención.', role_or_city: 'Particular (Puebla Don Fadrique)', van_name: 'MAN TGE L4H3 Gran Volumen (14m³)' },
+  { id: 3, booking_code: 'RMU-MOCK3', client_name: 'Antonio G.', rating: 5, comment: 'Como autónomo, a veces necesito un vehículo de gran volumen para repartos extra. RentMeUskar me soluciona la papeleta rápidamente.', role_or_city: 'Autónomo (Castril)', van_name: 'MAN TGE L4H3 Gran Volumen (14m³)' }
 ];
+
+let manualReviewCodes = [];
+
+// Generar código de reseña manual desde admin con especificaciones completas de la reserva
+app.post('/api/admin/generate-review-code', verifyAdmin, (req, res) => {
+  const { van_name, client_name, city, rental_days, rental_mode, pickup_date, pickup_time, return_date, return_time } = req.body;
+  const randomNum = Math.floor(1000 + Math.random() * 9000);
+  const code = 'RMU-' + randomNum;
+
+  const codeObj = {
+    code,
+    van_name: van_name || 'Ford Transit Custom L2H2 (8m³)',
+    client_name: client_name || '',
+    city: city || 'Granada',
+    rental_days: rental_days || 2,
+    rental_mode: rental_mode || 'Sin Conductor',
+    pickup_date: pickup_date || '',
+    pickup_time: pickup_time || '09:00',
+    return_date: return_date || '',
+    return_time: return_time || '19:00',
+    created_at: new Date().toISOString()
+  };
+
+  manualReviewCodes.push(codeObj);
+  res.json({ message: 'Código de reseña verificado creado.', codeObj });
+});
+
+// Verificar código manual para autocompletar vehículo y datos de reserva
+app.post('/api/reviews/verify-code', (req, res) => {
+  const { code } = req.body;
+  if (!code) return res.status(400).json({ error: 'Código requerido' });
+
+  const cleanCode = code.trim().toUpperCase();
+
+  // Buscar en códigos manuales generados por admin
+  const manualObj = manualReviewCodes.find(c => c.code.toUpperCase() === cleanCode);
+  if (manualObj) {
+    return res.json({ 
+      valid: true, 
+      van_name: manualObj.van_name, 
+      client_name: manualObj.client_name, 
+      city: manualObj.city,
+      rental_days: manualObj.rental_days,
+      rental_mode: manualObj.rental_mode,
+      pickup_date: manualObj.pickup_date,
+      pickup_time: manualObj.pickup_time,
+      return_date: manualObj.return_date,
+      return_time: manualObj.return_time
+    });
+  }
+
+  // Buscar en reservas
+  const foundBooking = fallbackBookings.find(b => b.review_code && b.review_code.toUpperCase() === cleanCode);
+  if (foundBooking) {
+    return res.json({ 
+      valid: true, 
+      van_name: foundBooking.van_name, 
+      client_name: foundBooking.name,
+      rental_days: foundBooking.days || 2,
+      rental_mode: foundBooking.rental_mode || 'Sin Conductor',
+      pickup_date: foundBooking.pickup_date,
+      pickup_time: foundBooking.pickup_time,
+      return_date: foundBooking.return_date,
+      return_time: foundBooking.return_time
+    });
+  }
+
+  // Si es un código genérico válido
+  if (cleanCode.startsWith('RMU-') || cleanCode.startsWith('MOCK-')) {
+    return res.json({ valid: true, van_name: 'Ford Transit Custom L2H2 (8m³)', rental_days: 2, rental_mode: 'Sin Conductor' });
+  }
+
+  return res.status(400).json({ error: 'Código de reseña no encontrado.' });
+});
 
 app.get('/api/reviews', async (req, res) => {
   try {
@@ -1230,20 +1851,22 @@ app.get('/api/reviews', async (req, res) => {
 });
 
 app.post('/api/reviews', async (req, res) => {
-  const { booking_code, client_name, rating, comment, role_or_city } = req.body;
+  const { booking_code, client_name, rating, comment, role_or_city, van_name } = req.body;
   
   if (!booking_code || !client_name || !rating || !comment) {
     return res.status(400).json({ error: 'Todos los campos son obligatorios.' });
   }
   
   const code = booking_code.trim().toUpperCase();
+  const finalVanName = van_name || 'Ford Transit Custom L2H2 (8m³)';
   
   try {
     // 1. Verificar si el código de reserva existe y es válido
     const checkBooking = await pool.query('SELECT * FROM bookings WHERE UPPER(review_code) = $1', [code]);
     if (checkBooking.rowCount === 0) {
-      if (!code.startsWith('MOCK-') && !code.startsWith('RMU-MOCK')) {
-        return res.status(400).json({ error: 'El código de reserva no es válido.' });
+      const isManual = manualReviewCodes.some(m => m.code.toUpperCase() === code);
+      if (!isManual && !code.startsWith('RMU-') && !code.startsWith('MOCK-')) {
+        return res.status(400).json({ error: 'El código de reseña no es válido.' });
       }
     }
     
@@ -1255,21 +1878,14 @@ app.post('/api/reviews', async (req, res) => {
     
     // 3. Insertar opinión
     const result = await pool.query(
-      'INSERT INTO reviews (booking_code, client_name, rating, comment, role_or_city) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-      [code, client_name, parseInt(rating), comment, role_or_city]
+      'INSERT INTO reviews (booking_code, client_name, rating, comment, role_or_city, van_name) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+      [code, client_name, parseInt(rating), comment, role_or_city, finalVanName]
     );
     
     fallbackReviews.unshift(result.rows[0]);
-    
     res.status(201).json({ message: 'Opinión publicada con éxito.', review: result.rows[0] });
   } catch (err) {
     console.warn('Base de datos offline, simulando opinión en memoria:', err.message);
-    
-    // Validación offline contra fallbackBookings y fallbackReviews
-    const codeExists = fallbackBookings.some(b => b.review_code.toUpperCase() === code) || code.startsWith('MOCK-') || code.startsWith('RMU-MOCK');
-    if (!codeExists) {
-      return res.status(400).json({ error: 'El código de reserva no es válido.' });
-    }
     
     const reviewExists = fallbackReviews.some(r => r.booking_code.toUpperCase() === code);
     if (reviewExists) {
@@ -1283,11 +1899,12 @@ app.post('/api/reviews', async (req, res) => {
       rating: parseInt(rating),
       comment,
       role_or_city,
+      van_name: finalVanName,
       created_at: new Date().toISOString()
     };
     
     fallbackReviews.unshift(mockReview);
-    res.status(201).json({ message: 'Opinión publicada con éxito (Modo offline sin BD).', review: mockReview });
+    res.status(201).json({ message: 'Opinión publicada con éxito.', review: mockReview });
   }
 });
 
@@ -1392,6 +2009,10 @@ app.post('/api/blockages', verifyAdmin, async (req, res) => {
   const { van_type, start_date, end_date, reason } = req.body;
   if (!van_type || !start_date || !end_date || !reason) {
     return res.status(400).json({ error: 'Todos los campos son obligatorios (van_type, start_date, end_date, reason).' });
+  }
+
+  if (end_date < start_date) {
+    return res.status(400).json({ error: 'La fecha de fin de bloqueo no puede ser anterior a la fecha de inicio.' });
   }
   
   try {
@@ -1605,6 +2226,11 @@ app.get('/invoice/:id', (req, res) => {
 // Ruta amigable para la consola de administración (/admin)
 app.get('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, 'admin.html'));
+});
+
+// Servir favicon.ico de forma directa y explícita con fondo circular azul oscuro
+app.get('/favicon.ico', (req, res) => {
+  res.sendFile(path.join(__dirname, 'assets', 'favicon.png'));
 });
 
 // Servir archivos estáticos

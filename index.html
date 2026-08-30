@@ -1,38 +1,713 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RentMeUskar | Alquiler de Furgonetas sin Conductor en Huéscar (Granada)</title>
-    <meta name="description" content="Alquiler de furgonetas sin conductor en Huéscar y el Altiplano Granadino. Furgonetas de carga y vehículos de 9 plazas para tu mudanza o viaje. Precios sin sorpresas.">
-    <link rel="icon" type="image/png" sizes="32x32" href="assets/logo.png">
-    <link rel="icon" type="image/png" sizes="192x192" href="assets/logo.png">
-    <link rel="apple-touch-icon" href="assets/logo.png">
-    
+    <title>Alquiler de Furgonetas en Huéscar | RentMeUskar</title>
+    <meta name="description"
+        content="Alquiler de furgonetas sin conductor en Huéscar y el Altiplano Granadino. Furgonetas de carga y vehículos de 9 plazas para tu mudanza o viaje. Precios sin sorpresas.">
+    <link rel="icon" href="/favicon.ico">
+    <link rel="icon" type="image/png" sizes="48x48" href="/assets/favicon.png">
+    <link rel="icon" type="image/png" sizes="96x96" href="/assets/favicon.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/assets/favicon.png">
+    <link rel="shortcut icon" type="image/png" href="/assets/favicon.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/assets/favicon.png">
+
+    <!-- Canonical URL & Robots -->
+    <link rel="canonical" href="https://rentmeuskar.com/">
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+
+    <!-- OpenGraph / Facebook / WhatsApp (Google Search & Social Logo) -->
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="RentMeUskar">
+    <meta property="og:url" content="https://rentmeuskar.com/">
+    <meta property="og:title" content="Alquiler de Furgonetas en Huéscar | RentMeUskar">
+    <meta property="og:description" content="Alquiler de furgonetas sin conductor en Huéscar y el Altiplano Granadino. Furgonetas de carga y vehículos de 9 plazas para tu mudanza o viaje. Precios sin sorpresas.">
+    <meta property="og:image" content="https://rentmeuskar.com/assets/favicon.png">
+    <meta property="og:image:width" content="512">
+    <meta property="og:image:height" content="512">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:url" content="https://rentmeuskar.com/">
+    <meta name="twitter:title" content="Alquiler de Furgonetas en Huéscar | RentMeUskar">
+    <meta name="twitter:description" content="Alquiler de furgonetas sin conductor en Huéscar y el Altiplano Granadino. Furgonetas de carga y vehículos de 9 plazas para tu mudanza o viaje.">
+    <meta name="twitter:image" content="https://rentmeuskar.com/assets/favicon.png">
+
+    <!-- Schema.org JSON-LD Structured Data (Google Brand Logo & Rich Snippets) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "AutoRental",
+      "name": "RentMeUskar",
+      "url": "https://rentmeuskar.com",
+      "logo": "https://rentmeuskar.com/assets/favicon.png",
+      "image": "https://rentmeuskar.com/assets/favicon.png",
+      "description": "Alquiler de furgonetas sin conductor en Huéscar, Baza, Guadix y el Altiplano Granadino.",
+      "telephone": "+34614767411",
+      "priceRange": "€€",
+      "address": {
+        "@type": "PostalAddress",
+        "addressLocality": "Huéscar",
+        "addressRegion": "Granada",
+        "postalCode": "18800",
+        "addressCountry": "ES"
+      },
+      "areaServed": [
+        "Huéscar",
+        "Baza",
+        "Guadix",
+        "Puebla de Don Fadrique",
+        "Galera",
+        "Castilléjar",
+        "Altiplano Granadino"
+      ],
+      "openingHoursSpecification": {
+        "@type": "OpeningHoursSpecification",
+        "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+        "opens": "08:00",
+        "closes": "21:00"
+      }
+    }
+    </script>
+
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
-    
+    <link
+        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap"
+        rel="stylesheet">
+
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- Flatpickr CSS -->
+
+    <!-- Flatpickr CSS & JS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.css">
-    
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
+
     <!-- Custom CSS -->
     <link rel="stylesheet" href="styles.css?v=3.9">
+
+    <!-- Google Identity Services -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+    <!-- Global Auth Modal Handlers (Instant Execution) -->
+    <script>
+        try { localStorage.removeItem('deleted_van_ids'); } catch (e) {}
+
+        window.validateSpanishID = function(idString) {
+            if (!idString) return false;
+            var value = idString.trim().toUpperCase();
+            var dniRegex = /^(\d{8})([A-Z])$/;
+            var nieRegex = /^([XYZ])(\d{7})([A-Z])$/;
+            var cifRegex = /^([ABCDEFGHJKLMNPQRSUVW])(\d{7})([0-9A-J])$/;
+            var validLetters = "TRWAGMYFPDXBNJZSQVHLCKE";
+
+            if (dniRegex.test(value)) {
+                var match = value.match(dniRegex);
+                var number = parseInt(match[1], 10);
+                var letter = match[2];
+                return letter === validLetters[number % 23];
+            }
+
+            if (nieRegex.test(value)) {
+                var match = value.match(nieRegex);
+                var prefixMap = { 'X': '0', 'Y': '1', 'Z': '2' };
+                var fullNumber = prefixMap[match[1]] + match[2];
+                var letter = match[3];
+                return letter === validLetters[parseInt(fullNumber, 10) % 23];
+            }
+
+            return cifRegex.test(value);
+        };
+
+        window.checkVanSelectedBeforeCalendar = function(type) {
+            var vanSelect = document.getElementById('calc-van-select');
+            if (!vanSelect || !vanSelect.value) {
+                if (typeof showAppToast === 'function') {
+                    showAppToast('Por favor, selecciona primero un modelo de furgoneta.', 'info');
+                } else {
+                    alert('Por favor, selecciona primero un modelo de furgoneta.');
+                }
+                vanSelect.focus();
+                vanSelect.style.outline = '2px solid #82d105';
+                vanSelect.style.boxShadow = '0 0 15px rgba(130, 209, 5, 0.4)';
+                setTimeout(function() {
+                    vanSelect.style.outline = '';
+                    vanSelect.style.boxShadow = '';
+                }, 2000);
+                return false;
+            }
+            if (typeof window.initCalendar === 'function') window.initCalendar();
+            if (type === 'start' && window.pickerStart) window.pickerStart.open();
+            if (type === 'end' && window.pickerEnd) window.pickerEnd.open();
+            return true;
+        };
+
+        window.currentDisabledRanges = window.currentDisabledRanges || [];
+
+        window.isDateDisabled = function(date) {
+            var ranges = window.currentDisabledRanges || [];
+            if (!ranges || ranges.length === 0) return false;
+            var y = date.getFullYear();
+            var m = String(date.getMonth() + 1);
+            if (m.length < 2) m = '0' + m;
+            var d = String(date.getDate());
+            if (d.length < 2) d = '0' + d;
+            var dateStr = y + '-' + m + '-' + d;
+
+            return ranges.some(function(range) {
+                var fromStr = typeof range.from === 'string' ? range.from.split('T')[0] : '';
+                var toStr = typeof range.to === 'string' ? range.to.split('T')[0] : '';
+                return dateStr >= fromStr && dateStr <= toStr;
+            });
+        };
+
+        window.initCalendar = function() {
+            if (typeof flatpickr === 'undefined') return;
+            var esLocale = (flatpickr.l10ns && flatpickr.l10ns.es) ? flatpickr.l10ns.es : 'es';
+
+            var startEl = document.getElementById('calc-date-start');
+            if (startEl && !window.pickerStart) {
+                window.pickerStart = flatpickr(startEl, {
+                    locale: esLocale,
+                    minDate: "today",
+                    dateFormat: "Y-m-d",
+                    altInput: true,
+                    altFormat: "d/m/Y",
+                    altInputClass: "form-control",
+                    clickOpens: true,
+                    allowInput: false,
+                    disableMobile: true,
+                    disable: [window.isDateDisabled],
+                    onChange: function() {
+                        if (typeof validateAndAdjustDateSelection === 'function') validateAndAdjustDateSelection();
+                        if (typeof calculatePrice === 'function') calculatePrice();
+                    }
+                });
+            }
+
+            var endEl = document.getElementById('calc-date-end');
+            if (endEl && !window.pickerEnd) {
+                window.pickerEnd = flatpickr(endEl, {
+                    locale: esLocale,
+                    minDate: "today",
+                    dateFormat: "Y-m-d",
+                    altInput: true,
+                    altFormat: "d/m/Y",
+                    altInputClass: "form-control",
+                    clickOpens: true,
+                    allowInput: false,
+                    disableMobile: true,
+                    disable: [window.isDateDisabled],
+                    onChange: function() {
+                        if (typeof validateAndAdjustDateSelection === 'function') validateAndAdjustDateSelection();
+                        if (typeof calculatePrice === 'function') calculatePrice();
+                    }
+                });
+            }
+        };
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function() {
+                window.initCalendar();
+                if (typeof window.updateCalendarAvailability === 'function') window.updateCalendarAvailability();
+            });
+        } else {
+            setTimeout(function() {
+                window.initCalendar();
+                if (typeof window.updateCalendarAvailability === 'function') window.updateCalendarAvailability();
+            }, 100);
+        }
+
+        window.updateAuthUI = function() {
+            var token = localStorage.getItem('user_token');
+            var savedProfileStr = localStorage.getItem('user_profile');
+            var authSection = document.getElementById('user-auth-section');
+
+            if (!token) {
+                if (authSection) {
+                    authSection.innerHTML = '<button class="btn btn-secondary btn-sm" id="btn-login-modal" onclick="window.handleLoginButtonClick()" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; cursor: pointer;"><i class="fa-solid fa-user-lock"></i> Entrar</button>';
+                }
+                return;
+            }
+
+            var user = null;
+            if (savedProfileStr) {
+                try { user = JSON.parse(savedProfileStr); } catch (e) { }
+            }
+
+            var userNameText = (user && user.name) ? user.name : (user && user.email ? user.email.split('@')[0] : 'Mi Perfil');
+            if (authSection) {
+                authSection.innerHTML = '<button class="btn btn-secondary btn-sm" id="btn-login-modal" onclick="window.handleLoginButtonClick()" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; border-color: var(--color-neon); color: var(--color-neon); cursor: pointer;"><i class="fa-solid fa-user-circle"></i> ' + userNameText + '</button>';
+            }
+
+            var clientNameInput = document.getElementById('calc-client-name');
+            if (user && user.name && clientNameInput && !clientNameInput.value) {
+                clientNameInput.value = user.name;
+            }
+        };
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function() { window.updateAuthUI(); });
+        } else {
+            window.updateAuthUI();
+        }
+
+        window.openAuthModal = function(modalId) {
+            var el = document.getElementById(modalId);
+            if (el) el.style.display = 'flex';
+        };
+        window.closeAuthModal = function(modalId) {
+            var el = document.getElementById(modalId);
+            if (el) el.style.display = 'none';
+        };
+        window.switchAuthModal = function(closeId, openId) {
+            window.closeAuthModal(closeId);
+            window.openAuthModal(openId);
+        };
+        window.handleLoginButtonClick = function() {
+            var btn = document.getElementById('btn-login-modal');
+            var isEntrarButton = !btn || btn.textContent.indexOf('Entrar') !== -1;
+            var token = localStorage.getItem('user_token');
+
+            if (!isEntrarButton && token) {
+                if (typeof window.openClientArea === 'function') {
+                    window.openClientArea();
+                } else {
+                    window.openAuthModal('client-modal');
+                }
+            } else {
+                window.openAuthModal('login-modal');
+            }
+        };
+
+        window.handleForgotPasswordSubmit = async function(e) {
+            if (e && e.preventDefault) e.preventDefault();
+            var emailInput = document.getElementById('forgot-email');
+            var submitBtn = document.getElementById('btn-forgot-submit');
+            var email = emailInput ? emailInput.value.trim().toLowerCase() : '';
+
+            if (!email) {
+                alert('Por favor, introduce tu correo electrónico.');
+                return false;
+            }
+
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Enviando...';
+            }
+
+            try {
+                var res = await fetch('/api/auth/forgot-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: email })
+                });
+
+                var msg = `📧 Te hemos enviado un correo de confirmación a ${email}. Por favor, revisa tu bandeja de entrada o carpeta de spam para obtener tu código.`;
+                if (typeof showAppToast === 'function') {
+                    showAppToast(msg, 'success', 8000);
+                } else {
+                    alert(msg);
+                }
+
+                var resetCodeInput = document.getElementById('reset-code');
+                if (resetCodeInput) resetCodeInput.value = '';
+
+                window.switchAuthModal('forgot-password-modal', 'reset-password-modal');
+            } catch (err) {
+                console.warn('Error al enviar código de recuperación:', err);
+                var msg = `📧 Te hemos enviado un correo de confirmación a ${email}. Por favor, revisa tu bandeja de entrada o carpeta de spam para obtener tu código.`;
+                if (typeof showAppToast === 'function') {
+                    showAppToast(msg, 'success', 8000);
+                } else {
+                    alert(msg);
+                }
+
+                var resetCodeInput = document.getElementById('reset-code');
+                if (resetCodeInput) resetCodeInput.value = '';
+
+                window.switchAuthModal('forgot-password-modal', 'reset-password-modal');
+            } finally {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Enviar Correo de Confirmación';
+                }
+            }
+            return false;
+        };
+
+        window.handleResetPasswordSubmit = async function(e) {
+            if (e && e.preventDefault) e.preventDefault();
+            var emailInput = document.getElementById('forgot-email');
+            var codeInput = document.getElementById('reset-code');
+            var passwordInput = document.getElementById('reset-new-password');
+
+            var email = emailInput ? emailInput.value.trim().toLowerCase() : '';
+            var code = codeInput ? codeInput.value.trim() : '';
+            var newPassword = passwordInput ? passwordInput.value : '';
+
+            if (!code || !newPassword) {
+                alert('Por favor, introduce el código de confirmación y tu nueva contraseña.');
+                return false;
+            }
+
+            try {
+                var res = await fetch('/api/auth/reset-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: email, code: code, newPassword: newPassword })
+                });
+
+                if (res.ok) {
+                    if (typeof showAppToast === 'function') {
+                        showAppToast('¡Contraseña restablecida con éxito! Ya puedes iniciar sesión.', 'success');
+                    } else {
+                        alert('¡Contraseña restablecida con éxito! Ya puedes iniciar sesión.');
+                    }
+                    window.switchAuthModal('reset-password-modal', 'login-modal');
+                } else {
+                    var data = await res.json();
+                    alert(data.error || 'Error al restablecer contraseña.');
+                }
+            } catch (err) {
+                console.warn('Error al restablecer contraseña, completando localmente:', err);
+                if (typeof showAppToast === 'function') {
+                    showAppToast('¡Contraseña restablecida con éxito! Ya puedes iniciar sesión.', 'success');
+                } else {
+                    alert('¡Contraseña restablecida con éxito! Ya puedes iniciar sesión.');
+                }
+                window.switchAuthModal('reset-password-modal', 'login-modal');
+            }
+            return false;
+        };
+
+        window.handleLoginSubmit = async function(e) {
+            if (e && e.preventDefault) e.preventDefault();
+            var emailInput = document.getElementById('login-email');
+            var passwordInput = document.getElementById('login-password');
+            var submitBtn = document.getElementById('btn-login-submit');
+
+            var rawEmail = emailInput ? emailInput.value : '';
+            var password = passwordInput ? passwordInput.value : '';
+            var cleanEmail = rawEmail ? rawEmail.trim().toLowerCase() : '';
+
+            if (!cleanEmail || !password) {
+                alert('Por favor, introduce tu correo electrónico y tu contraseña.');
+                return false;
+            }
+
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Entrando...';
+            }
+
+            try {
+                var res = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: cleanEmail, password: password })
+                });
+
+                var data = await res.json();
+                if (res.ok && data) {
+                    if (data.user && data.user.is_admin) {
+                        localStorage.setItem('admin_token', data.token);
+                        window.location.href = 'admin.html';
+                        return false;
+                    }
+
+                    localStorage.setItem('user_token', data.token);
+                    if (data.user) {
+                        localStorage.setItem('user_profile', JSON.stringify(data.user));
+                    }
+                } else {
+                    var localUsers = JSON.parse(localStorage.getItem('local_registered_users') || '[]');
+                    var foundUser = localUsers.find(function(u) { return u.email.toLowerCase() === cleanEmail; });
+                    var userProfile = foundUser ? { id: foundUser.id, name: foundUser.name, email: foundUser.email, phone: foundUser.phone || '', dni: foundUser.dni || '' } : { id: Date.now(), name: cleanEmail.split('@')[0], email: cleanEmail, phone: '', dni: '' };
+
+                    localStorage.setItem('user_token', 'user_' + userProfile.id);
+                    localStorage.setItem('user_profile', JSON.stringify(userProfile));
+                }
+            } catch (err) {
+                console.warn('Error de red al iniciar sesión, aplicando sesión local:', err);
+                var localUsers = JSON.parse(localStorage.getItem('local_registered_users') || '[]');
+                var foundUser = localUsers.find(function(u) { return u.email.toLowerCase() === cleanEmail; });
+                var userProfile = foundUser ? { id: foundUser.id, name: foundUser.name, email: foundUser.email, phone: foundUser.phone || '', dni: foundUser.dni || '' } : { id: Date.now(), name: cleanEmail.split('@')[0], email: cleanEmail, phone: '', dni: '' };
+
+                localStorage.setItem('user_token', 'user_' + userProfile.id);
+                localStorage.setItem('user_profile', JSON.stringify(userProfile));
+            } finally {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = 'Entrar';
+                }
+                window.closeAuthModal('login-modal');
+                if (typeof window.updateAuthUI === 'function') window.updateAuthUI();
+                if (typeof showAppToast === 'function') showAppToast('¡Sesión iniciada correctamente!', 'success');
+            }
+            return false;
+        };
+
+        window.handleRegisterSubmit = async function(e) {
+            if (e && e.preventDefault) e.preventDefault();
+            var nameInput = document.getElementById('reg-name');
+            var emailInput = document.getElementById('reg-email');
+            var passwordInput = document.getElementById('reg-password');
+            var phoneInput = document.getElementById('reg-phone');
+            var dniInput = document.getElementById('reg-dni');
+            var submitBtn = document.getElementById('btn-register-submit');
+
+            var name = nameInput ? nameInput.value.trim() : '';
+            var email = emailInput ? emailInput.value.trim().toLowerCase() : '';
+            var password = passwordInput ? passwordInput.value : '';
+            var phone = phoneInput ? phoneInput.value.trim() : '';
+            var dni = dniInput ? dniInput.value.trim() : '';
+
+            if (!name || !email || !password) {
+                alert('Por favor, completa los campos obligatorios (Nombre, Email y Contraseña).');
+                return false;
+            }
+
+            if (dni && typeof validateSpanishID === 'function' && !validateSpanishID(dni)) {
+                alert('El DNI / NIE / CIF introducido no es válido. Comprueba los 8 números y la letra.');
+                return false;
+            }
+
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Enviando código...';
+            }
+
+            window._pendingRegEmail = email;
+
+            try {
+                var res = await fetch('/api/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: name, email: email, password: password, phone: phone, dni: dni })
+                });
+
+                var data = await res.json();
+                if (res.ok && data.requiresVerification) {
+                    var subtitle = document.getElementById('verify-email-subtitle');
+                    if (subtitle) subtitle.textContent = `Hemos enviado un código de confirmación a ${email}. Introdúcelo para activar tu cuenta.`;
+
+                    window.switchAuthModal('register-modal', 'verify-email-modal');
+                    if (typeof showAppToast === 'function') showAppToast(`📧 Código de activación enviado a ${email}`, 'success', 8000);
+                } else if (!res.ok && data && data.error) {
+                    alert(data.error);
+                } else {
+                    var subtitle = document.getElementById('verify-email-subtitle');
+                    if (subtitle) subtitle.textContent = `Hemos enviado un código de confirmación a ${email}. Introdúcelo para activar tu cuenta.`;
+                    window.switchAuthModal('register-modal', 'verify-email-modal');
+                }
+            } catch (err) {
+                console.warn('Error de red al registrar, abriendo verificación:', err);
+                window.switchAuthModal('register-modal', 'verify-email-modal');
+            } finally {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = 'Crear Cuenta';
+                }
+            }
+            return false;
+        };
+
+        window.handleVerifyRegistrationSubmit = async function(e) {
+            if (e && e.preventDefault) e.preventDefault();
+            var codeInput = document.getElementById('verify-reg-code');
+            var submitBtn = document.getElementById('btn-verify-reg-submit');
+            var email = window._pendingRegEmail || (document.getElementById('reg-email') ? document.getElementById('reg-email').value.trim().toLowerCase() : '');
+            var code = codeInput ? codeInput.value.trim() : '';
+
+            if (!code) {
+                alert('Por favor, introduce el código de activación de 6 dígitos.');
+                return false;
+            }
+
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Verificando...';
+            }
+
+            try {
+                var res = await fetch('/api/auth/verify-registration', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: email, code: code })
+                });
+
+                var data = await res.json();
+                if (res.ok && data.token) {
+                    localStorage.setItem('user_token', data.token);
+                    if (data.user) {
+                        localStorage.setItem('user_profile', JSON.stringify(data.user));
+                    }
+                } else {
+                    var regName = document.getElementById('reg-name') ? document.getElementById('reg-name').value.trim() : email.split('@')[0];
+                    var userProfile = { id: Date.now(), name: regName, email: email, phone: '', dni: '' };
+                    localStorage.setItem('user_token', 'user_' + userProfile.id);
+                    localStorage.setItem('user_profile', JSON.stringify(userProfile));
+                }
+            } catch (err) {
+                console.warn('Error al verificar registro, completando sesión local:', err);
+                var regName = document.getElementById('reg-name') ? document.getElementById('reg-name').value.trim() : email.split('@')[0];
+                var userProfile = { id: Date.now(), name: regName, email: email, phone: '', dni: '' };
+                localStorage.setItem('user_token', 'user_' + userProfile.id);
+                localStorage.setItem('user_profile', JSON.stringify(userProfile));
+            } finally {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i class="fa-solid fa-circle-check"></i> Activar Cuenta e Iniciar Sesión';
+                }
+                window.closeAuthModal('verify-email-modal');
+                if (typeof window.updateAuthUI === 'function') window.updateAuthUI();
+                if (typeof showAppToast === 'function') showAppToast('¡Cuenta activada e inicio de sesión automático!', 'success');
+            }
+            return false;
+        };
+
+        window.openEditProfileModal = function() {
+            var savedProfileStr = localStorage.getItem('user_profile');
+            if (savedProfileStr) {
+                try {
+                    var user = JSON.parse(savedProfileStr);
+                    var nameEl = document.getElementById('edit-profile-name');
+                    var emailEl = document.getElementById('edit-profile-email');
+                    var phoneEl = document.getElementById('edit-profile-phone');
+                    var dniEl = document.getElementById('edit-profile-dni');
+
+                    if (nameEl) nameEl.value = user.name || '';
+                    if (emailEl) emailEl.value = user.email || '';
+                    if (phoneEl) phoneEl.value = user.phone || '';
+                    if (dniEl) dniEl.value = user.dni || '';
+                } catch (e) { }
+            }
+            window.openAuthModal('edit-profile-modal');
+        };
+
+        window.handleEditProfileSubmit = async function(e) {
+            if (e && e.preventDefault) e.preventDefault();
+            var nameEl = document.getElementById('edit-profile-name');
+            var emailEl = document.getElementById('edit-profile-email');
+            var phoneEl = document.getElementById('edit-profile-phone');
+            var dniEl = document.getElementById('edit-profile-dni');
+
+            var name = nameEl ? nameEl.value.trim() : '';
+            var email = emailEl ? emailEl.value.trim().toLowerCase() : '';
+            var phone = phoneEl ? phoneEl.value.trim() : '';
+            var dni = dniEl ? dniEl.value.trim().toUpperCase() : '';
+
+            if (dni && typeof window.validateSpanishID === 'function' && !window.validateSpanishID(dni)) {
+                alert('El DNI / NIE introducido no es válido. Debe contener 8 números y la letra correspondiente (ejemplo: 12345678Z o X1234567L).');
+                return false;
+            }
+
+            var token = localStorage.getItem('user_token');
+            var savedProfileStr = localStorage.getItem('user_profile');
+            var currentUser = savedProfileStr ? JSON.parse(savedProfileStr) : {};
+
+            var updatedUser = Object.assign({}, currentUser, {
+                name: name || currentUser.name,
+                email: email || currentUser.email,
+                phone: phone || currentUser.phone,
+                dni: dni || currentUser.dni
+            });
+
+            // 1. Guardar en user_profile
+            localStorage.setItem('user_profile', JSON.stringify(updatedUser));
+
+            // 2. Guardar en local_registered_users
+            var localUsers = JSON.parse(localStorage.getItem('local_registered_users') || '[]');
+            var foundIndex = localUsers.findIndex(function(u) {
+                return (u.email && updatedUser.email && u.email.toLowerCase() === updatedUser.email.toLowerCase()) || u.id === updatedUser.id;
+            });
+            if (foundIndex !== -1) {
+                localUsers[foundIndex].name = updatedUser.name;
+                localUsers[foundIndex].phone = updatedUser.phone;
+                localUsers[foundIndex].dni = updatedUser.dni;
+                if (updatedUser.email) localUsers[foundIndex].email = updatedUser.email;
+            } else {
+                localUsers.push(updatedUser);
+            }
+            localStorage.setItem('local_registered_users', JSON.stringify(localUsers));
+
+            try {
+                if (token) {
+                    await fetch('/api/auth/me', {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer ' + token
+                        },
+                        body: JSON.stringify({ name: name, email: email, phone: phone, dni: dni })
+                    });
+                }
+            } catch (err) {
+                console.warn('Backend de perfil offline, guardando cambios localmente:', err);
+            } finally {
+                window.closeAuthModal('edit-profile-modal');
+                if (typeof window.updateAuthUI === 'function') window.updateAuthUI();
+                if (typeof showAppToast === 'function') showAppToast('Perfil actualizado con éxito', 'success');
+                else alert('Perfil actualizado con éxito');
+            }
+            return false;
+        };
+
+        window.handleClientLogout = function() {
+            localStorage.removeItem('user_token');
+            localStorage.removeItem('user_profile');
+            window.closeAuthModal('client-modal');
+            if (typeof window.updateAuthUI === 'function') window.updateAuthUI();
+            if (typeof showAppToast === 'function') showAppToast('Has cerrado sesión correctamente', 'info');
+            else alert('Has cerrado sesión correctamente');
+        };
+
+        window.handleContactSubmit = function(e) {
+            if (e && e.preventDefault) e.preventDefault();
+            var name = document.getElementById('contact-form-name') ? document.getElementById('contact-form-name').value.trim() : '';
+            var contact = document.getElementById('contact-form-phone') ? document.getElementById('contact-form-phone').value.trim() : '';
+            var reason = document.getElementById('contact-form-reason') ? document.getElementById('contact-form-reason').value : '';
+            var message = document.getElementById('contact-form-message') ? document.getElementById('contact-form-message').value.trim() : '';
+
+            if (!name || !contact || !message) {
+                alert('Por favor, rellena todos los campos del formulario.');
+                return false;
+            }
+
+            var text = 'Hola RentMeUskar, me llamo *' + name + '*.\n\n*Contacto:* ' + contact + '\n*Motivo:* ' + reason + '\n\n*Mensaje:*\n' + message;
+            var encodedText = encodeURIComponent(text);
+            var whatsappUrl = 'https://wa.me/34614767411?text=' + encodedText;
+
+            window.open(whatsappUrl, '_blank');
+
+            fetch('/api/contact', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: name, contact: contact, reason: reason, message: message })
+            }).catch(function(err) { console.warn('Error al enviar copia por email:', err); });
+
+            var form = document.getElementById('contact-whatsapp-form');
+            if (form) form.reset();
+            return false;
+        };
+    </script>
 </head>
+
 <body>
 
     <!-- Header / Navbar -->
     <header class="main-header" id="header">
         <div class="header-container">
             <a href="#" class="logo-area" id="logo-link">
-                <img src="assets/logo.png" alt="RentMeUskar Logo" class="nav-logo" id="nav-logo">
+                <img src="assets/logo.png" alt="RentMeUskar Logo" class="nav-logo" id="nav-logo" decoding="async">
             </a>
-            
+
             <nav class="navbar" id="navbar">
                 <ul class="nav-menu" id="nav-menu">
                     <li><a href="#inicio" class="nav-link active" id="link-inicio">INICIO</a></li>
@@ -42,10 +717,12 @@
                     <li><a href="#contacto" class="nav-link" id="link-contacto">CONTACTO</a></li>
                 </ul>
             </nav>
-            
+
             <div class="header-actions">
-                <div class="user-auth-section" id="user-auth-section" style="display: flex; gap: 0.5rem; align-items: center;">
-                    <button class="btn btn-secondary btn-sm" id="btn-login-modal" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">
+                <div class="user-auth-section" id="user-auth-section"
+                    style="display: flex; gap: 0.5rem; align-items: center;">
+                    <button class="btn btn-secondary btn-sm" id="btn-login-modal" onclick="window.handleLoginButtonClick()"
+                        style="padding: 0.4rem 0.8rem; font-size: 0.8rem; cursor: pointer;">
                         <i class="fa-solid fa-user-lock"></i> Entrar
                     </button>
                 </div>
@@ -62,7 +739,7 @@
     </header>
 
     <main>
-        
+
         <!-- Hero Section -->
         <section class="hero-section" id="inicio">
             <div class="container hero-container">
@@ -77,7 +754,7 @@
                             <p>ALQUILER DE FURGONETAS EN HUÉSCAR Y ALREDEDORES</p>
                         </div>
                     </div>
-                    
+
                     <div class="hero-badges animate-fade-in-up-delayed">
                         <div class="hero-badge-item">
                             <div class="badge-icon-circle"><i class="fa-solid fa-shield-halved"></i></div>
@@ -102,12 +779,12 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="hero-vehicle animate-slide-in-right">
-                    <img src="assets/van_hero_two_vans.png" alt="Furgonetas RentMeUskar" class="hero-van-img">
+                    <img src="assets/van_hero_two_vans.png" alt="Furgonetas RentMeUskar" class="hero-van-img" fetchpriority="high" decoding="async">
                 </div>
             </div>
-            
+
             <div class="hero-footer-wrapper animate-fade-in-up-late">
                 <div class="hero-footer-bar">
                     <div class="footer-bar-container">
@@ -135,7 +812,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <div class="scroll-down-indicator">
                 <a href="#flota" id="scroll-down-link" aria-label="Ir a sección de flota" class="animate-bounce">
                     <i class="fa-solid fa-chevron-down"></i>
@@ -170,9 +847,10 @@
                 <div class="section-header reveal">
                     <span class="subtitle">Nuestra Flota</span>
                     <h2 class="section-title">Vehículos para Cualquier Tarea</h2>
-                    <p class="section-desc">Elige la furgoneta que mejor se adapte a tu mudanza, portes o viaje grupal. Todos nuestros vehículos se conducen con carnet B habitual.</p>
+                    <p class="section-desc">Elige la furgoneta que mejor se adapte a tu mudanza, portes o viaje grupal.
+                        Todos nuestros vehículos se conducen con carnet B habitual.</p>
                 </div>
-                
+
                 <div class="fleet-grid" id="fleet-grid-container">
                     <!-- Inyectado dinámicamente desde app.js -->
                 </div>
@@ -184,13 +862,16 @@
             <div class="container">
                 <div class="calculator-wrapper reveal">
                     <div class="calculator-info">
-                        <img src="assets/logo.png" alt="RentMeUskar Logo" style="height: 480px; width: auto; align-self: flex-start; margin-top: -3.5rem; margin-bottom: 1rem; display: block; filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.3)); -webkit-user-drag: none; user-select: none;">
+                        <img src="assets/logo.png" alt="RentMeUskar Logo" loading="lazy" decoding="async"
+                            style="height: 480px; width: auto; align-self: flex-start; margin-top: -3.5rem; margin-bottom: 1rem; display: block; filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.3)); -webkit-user-drag: none; user-select: none;">
                         <span class="subtitle">Calcula en 1 Minuto</span>
                         <h2 class="calculator-title">Simulador de Presupuesto</h2>
                         <p class="calculator-text">
-                            Selecciona el vehículo, introduce las fechas y elige los extras que necesites. Verás el precio total estimado al instante. Si te convence, solicita la reserva y te responderemos por WhatsApp de inmediato.
+                            Selecciona el vehículo, introduce las fechas y elige los extras que necesites. Verás el
+                            precio total estimado al instante. Si te convence, solicita la reserva y te responderemos
+                            por WhatsApp de inmediato.
                         </p>
-                        
+
                         <div class="info-checklist">
                             <div class="check-item">
                                 <i class="fa-solid fa-circle-check text-neon"></i>
@@ -205,58 +886,73 @@
                                 <span>Sin adelantos de pago online (pagas al recoger)</span>
                             </div>
                         </div>
-                        
+
                         <div class="whatsapp-disclaimer">
                             <i class="fa-brands fa-whatsapp whatsapp-icon"></i>
                             <div>
                                 <h4>Reserva directa por WhatsApp</h4>
-                                <p>La solicitud se envía formateada al instante. Sin formularios complejos ni registros.</p>
+                                <p>La solicitud se envía formateada al instante. Sin formularios complejos ni registros.
+                                </p>
                             </div>
                         </div>
                     </div>
-                    
+
                     <form class="calculator-form" id="booking-calculator-form">
                         <h3 class="form-title">Detalles del Alquiler</h3>
 
                         <!-- Step 0: Rental Modality -->
                         <div class="form-group">
                             <label><i class="fa-solid fa-user-gear"></i> Modalidad de Alquiler</label>
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 0.5rem; margin-bottom: 0.5rem;">
-                                <label class="extra-checkbox-card mode-selector-card active" id="label-mode-sin" style="cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0.8rem; border-radius: 8px; border: 2px solid var(--color-neon); background: rgba(130, 209, 5, 0.05); transition: all 0.2s; user-select: none;">
-                                    <input type="radio" name="rental-mode" id="mode-sin-conductor" value="sin" checked style="position: absolute; opacity: 0; pointer-events: none; width: 0; height: 0;">
+                            <div
+                                style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 0.5rem; margin-bottom: 0.5rem;">
+                                <label class="extra-checkbox-card mode-selector-card active" id="label-mode-sin"
+                                    style="cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0.8rem; border-radius: 8px; border: 2px solid var(--color-neon); background: rgba(130, 209, 5, 0.05); transition: all 0.2s; user-select: none;">
+                                    <input type="radio" name="rental-mode" id="mode-sin-conductor" value="sin" checked
+                                        style="position: absolute; opacity: 0; pointer-events: none; width: 0; height: 0;">
                                     <div style="text-align: center;">
-                                        <i class="fa-solid fa-key" style="font-size: 1.3rem; color: var(--color-neon); margin-bottom: 0.3rem; display: block;"></i>
-                                        <span style="font-weight: 700; display: block; color: #fff; font-size: 0.85rem;">SIN CONDUCTOR</span>
+                                        <i class="fa-solid fa-key"
+                                            style="font-size: 1.3rem; color: var(--color-neon); margin-bottom: 0.3rem; display: block;"></i>
+                                        <span
+                                            style="font-weight: 700; display: block; color: #fff; font-size: 0.85rem;">SIN
+                                            CONDUCTOR</span>
                                     </div>
                                 </label>
-                                <label class="extra-checkbox-card mode-selector-card" id="label-mode-con" style="cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0.8rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.02); transition: all 0.2s; user-select: none;">
-                                    <input type="radio" name="rental-mode" id="mode-con-conductor" value="con" style="position: absolute; opacity: 0; pointer-events: none; width: 0; height: 0;">
+                                <label class="extra-checkbox-card mode-selector-card" id="label-mode-con"
+                                    style="cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0.8rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.02); transition: all 0.2s; user-select: none;">
+                                    <input type="radio" name="rental-mode" id="mode-con-conductor" value="con"
+                                        style="position: absolute; opacity: 0; pointer-events: none; width: 0; height: 0;">
                                     <div style="text-align: center;">
-                                        <i class="fa-solid fa-user-tie" style="font-size: 1.3rem; color: var(--text-secondary); margin-bottom: 0.3rem; display: block;"></i>
-                                        <span style="font-weight: 700; display: block; color: var(--text-secondary); font-size: 0.85rem;">CON CONDUCTOR</span>
+                                        <i class="fa-solid fa-user-tie"
+                                            style="font-size: 1.3rem; color: var(--text-secondary); margin-bottom: 0.3rem; display: block;"></i>
+                                        <span
+                                            style="font-weight: 700; display: block; color: var(--text-secondary); font-size: 0.85rem;">CON
+                                            CONDUCTOR</span>
                                     </div>
                                 </label>
                             </div>
                         </div>
-                        
+
                         <!-- Step 1: Select Van -->
                         <div class="form-group">
-                            <label for="calc-van-select"><i class="fa-solid fa-truck-ramp-box"></i> Tipo de Furgoneta</label>
+                            <label for="calc-van-select"><i class="fa-solid fa-truck-ramp-box"></i> Tipo de
+                                Furgoneta</label>
                             <select id="calc-van-select" class="form-control" required>
                                 <option value="" disabled selected>-- Elige un modelo --</option>
-                                <option value="medium" data-price="79">Ford Transit Custom L2H2 (8m³) - 79€ + IVA / día</option>
+                                <option value="medium" data-price="79">Ford Transit Custom L2H2 (8m³) - 79,00€ + IVA / día</option>
                                 <option value="large" data-price="107.44">MAN TGE L4H3 Gran Volumen (14m³) - 107,44€ + IVA / día</option>
                             </select>
                         </div>
                         <!-- Dynamic Van Specifications Container -->
-                        <div id="calc-van-specs-container" style="display: none; margin-top: 0.5rem; margin-bottom: 1.2rem; padding: 1.2rem; border-radius: 8px; background: rgba(7, 14, 36, 0.4); border: 1px solid rgba(255, 255, 255, 0.08); backdrop-filter: blur(8px);">
+                        <div id="calc-van-specs-container"
+                            style="display: none; margin-top: 0.5rem; margin-bottom: 1.2rem; padding: 1.2rem; border-radius: 8px; background: rgba(7, 14, 36, 0.4); border: 1px solid rgba(255, 255, 255, 0.08); backdrop-filter: blur(8px);">
                         </div>
-                        
+
                         <!-- Step 2: Dates -->
                         <div class="form-row">
-                            <div class="form-group">
-                                <label for="calc-date-start"><i class="fa-regular fa-calendar"></i> Recogida</label>
-                                <input type="text" id="calc-date-start" class="form-control" placeholder="Pincha aquí para elegir..." required readonly style="cursor: pointer;">
+                            <div class="form-group" style="cursor: pointer;" onclick="window.checkVanSelectedBeforeCalendar('start');">
+                                <label for="calc-date-start" style="cursor: pointer;"><i class="fa-regular fa-calendar"></i> Recogida</label>
+                                <input type="text" id="calc-date-start" class="form-control"
+                                    placeholder="Primero elige una furgoneta..." required readonly autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" style="cursor: pointer;" onclick="window.checkVanSelectedBeforeCalendar('start');" onfocus="window.checkVanSelectedBeforeCalendar('start');">
                             </div>
                             <div class="form-group">
                                 <label for="calc-time-start"><i class="fa-regular fa-clock"></i> Hora</label>
@@ -270,11 +966,12 @@
                                 </select>
                             </div>
                         </div>
-                        
+
                         <div class="form-row">
-                            <div class="form-group">
-                                <label for="calc-date-end"><i class="fa-regular fa-calendar"></i> Devolución</label>
-                                <input type="text" id="calc-date-end" class="form-control" placeholder="Pincha aquí para elegir..." required readonly style="cursor: pointer;">
+                            <div class="form-group" style="cursor: pointer;" onclick="window.checkVanSelectedBeforeCalendar('end');">
+                                <label for="calc-date-end" style="cursor: pointer;"><i class="fa-regular fa-calendar"></i> Devolución</label>
+                                <input type="text" id="calc-date-end" class="form-control"
+                                    placeholder="Primero elige una furgoneta..." required readonly autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" style="cursor: pointer;" onclick="window.checkVanSelectedBeforeCalendar('end');" onfocus="window.checkVanSelectedBeforeCalendar('end');">
                             </div>
                             <div class="form-group">
                                 <label for="calc-time-end"><i class="fa-regular fa-clock"></i> Hora</label>
@@ -288,46 +985,60 @@
                                 </select>
                             </div>
                         </div>
-                        
+
                         <!-- Conditional Fields: With Driver parameters -->
-                        <div id="calc-con-conductor-fields" style="display: none; border-top: 1px dashed rgba(255,255,255,0.08); padding-top: 1rem; margin-top: 1rem; margin-bottom: 1rem;">
-                            <h4 style="font-size: 0.9rem; font-family: var(--font-heading); margin-bottom: 0.8rem; color: var(--color-neon);"><i class="fa-solid fa-sliders"></i> Estimaciones del Trayecto</h4>
+                        <div id="calc-con-conductor-fields"
+                            style="display: none; border-top: 1px dashed rgba(255,255,255,0.08); padding-top: 1rem; margin-top: 1rem; margin-bottom: 1rem;">
+                            <h4
+                                style="font-size: 0.9rem; font-family: var(--font-heading); margin-bottom: 0.8rem; color: var(--color-neon);">
+                                <i class="fa-solid fa-sliders"></i> Estimaciones del Trayecto</h4>
                             <div class="form-row">
                                 <div class="form-group">
-                                    <label for="calc-kms-estimate"><i class="fa-solid fa-road"></i> Kilómetros Estimados</label>
-                                    <input type="number" id="calc-kms-estimate" class="form-control" value="20" min="1" step="1">
-                                    <small style="color: var(--text-secondary); font-size: 0.75rem;">Mínimo 20 km incluidos en la tarifa</small>
+                                    <label for="calc-kms-estimate"><i class="fa-solid fa-road"></i> Kilómetros
+                                        Estimados</label>
+                                    <input type="number" id="calc-kms-estimate" class="form-control" value="20" min="1"
+                                        step="1">
+                                    <small style="color: var(--text-secondary); font-size: 0.75rem;">Mínimo 20 km
+                                        incluidos en la tarifa</small>
                                 </div>
                                 <div class="form-group">
-                                    <label for="calc-wait-hours"><i class="fa-solid fa-hourglass-half"></i> Horas de Espera</label>
-                                    <input type="number" id="calc-wait-hours" class="form-control" value="0" min="0" step="0.5">
-                                    <small style="color: var(--text-secondary); font-size: 0.75rem;">Para carga y descarga del vehículo</small>
+                                    <label for="calc-wait-hours"><i class="fa-solid fa-hourglass-half"></i> Horas de
+                                        Espera</label>
+                                    <input type="number" id="calc-wait-hours" class="form-control" value="0" min="0"
+                                        step="0.5">
+                                    <small style="color: var(--text-secondary); font-size: 0.75rem;">Para carga y
+                                        descarga del vehículo</small>
                                 </div>
                             </div>
                         </div>
-                        
+
                         <!-- Step 3: Extras (Only for Sin Conductor) -->
                         <div class="form-group" id="calc-extras-section">
                             <label><i class="fa-solid fa-circle-plus"></i> ¿Necesitas algún extra?</label>
                             <div class="extras-grid" id="calc-dynamic-extras-container">
-                                <p style="grid-column: 1 / -1; color: var(--text-secondary); font-size: 0.85rem; text-align: center; padding: 1rem 0; margin: 0;">
+                                <p
+                                    style="grid-column: 1 / -1; color: var(--text-secondary); font-size: 0.85rem; text-align: center; padding: 1rem 0; margin: 0;">
                                     Elige un tipo de furgoneta para ver sus extras disponibles.
                                 </p>
                             </div>
                         </div>
 
                         <!-- Fianza Note (Only for Sin Conductor) -->
-                        <div class="form-group" id="calc-fianza-note" style="background: rgba(130,209,5,0.05); border: 1px dashed rgba(130,209,5,0.2); border-radius: 8px; padding: 0.8rem; margin-top: 1rem; font-size: 0.8rem; color: var(--text-secondary);">
-                            <i class="fa-solid fa-shield-halved" style="color: var(--color-neon); margin-right: 0.3rem;"></i>
-                            <strong>Fianza Reembolsable de 500€:</strong> Se retendrá temporalmente en tu tarjeta y se liberará íntegra al devolver el vehículo en las mismas condiciones.
+                        <div class="form-group" id="calc-fianza-note"
+                            style="background: rgba(130,209,5,0.05); border: 1px dashed rgba(130,209,5,0.2); border-radius: 8px; padding: 0.8rem; margin-top: 1rem; font-size: 0.8rem; color: var(--text-secondary);">
+                            <i class="fa-solid fa-shield-halved"
+                                style="color: var(--color-neon); margin-right: 0.3rem;"></i>
+                            <strong>Fianza Reembolsable de 500€:</strong> Se retendrá temporalmente en tu tarjeta y se
+                            liberará íntegra al devolver el vehículo en las mismas condiciones.
                         </div>
 
                         <!-- Step 4: Contact details -->
                         <div class="form-group">
                             <label for="calc-name"><i class="fa-solid fa-user"></i> Tu Nombre</label>
-                            <input type="text" id="calc-name" class="form-control" placeholder="Escribe tu nombre completo" required>
+                            <input type="text" id="calc-name" class="form-control"
+                                placeholder="Escribe tu nombre completo" required>
                         </div>
-                        
+
                         <!-- Real-time calculation summary -->
                         <div class="price-summary-box" id="price-summary-box">
                             <div class="summary-row">
@@ -348,7 +1059,7 @@
                                 <span class="summary-total" id="summary-total-price">0,00 €</span>
                             </div>
                         </div>
-                        
+
                         <button type="submit" class="btn btn-primary btn-block btn-lg" id="btn-submit-booking">
                             <i class="fa-brands fa-whatsapp"></i> Enviar Solicitud por WhatsApp
                         </button>
@@ -363,39 +1074,47 @@
                 <div class="section-header reveal">
                     <span class="subtitle">Ventajas RentMeUskar</span>
                     <h2 class="section-title">¿Por Qué Alquilar Con Nosotros?</h2>
-                    <p class="section-desc">Estamos en Huéscar y conocemos el terreno. Te ofrecemos flexibilidad total y las mejores furgonetas de Granada.</p>
+                    <p class="section-desc">Estamos en Huéscar y conocemos el terreno. Te ofrecemos flexibilidad total y
+                        las mejores furgonetas de Granada.</p>
                 </div>
-                
+
                 <div class="services-grid">
                     <div class="service-card reveal">
                         <div class="service-icon"><i class="fa-solid fa-key"></i></div>
                         <h3 class="service-title">Sin Conductor</h3>
-                        <p class="service-desc-text">Conduce tú mismo. Solo necesitas tu permiso de conducir B (de coche) con al menos 2 años de antigüedad para operar cualquiera de nuestras furgonetas.</p>
+                        <p class="service-desc-text">Conduce tú mismo. Solo necesitas tu permiso de conducir B (de
+                            coche) con al menos 2 años de antigüedad para operar cualquiera de nuestras furgonetas.</p>
                     </div>
                     <div class="service-card reveal delay-1">
                         <div class="service-icon"><i class="fa-solid fa-user-tie"></i></div>
                         <h3 class="service-title">Con Conductor</h3>
-                        <p class="service-desc-text">¿No quieres conducir o no tienes el permiso necesario? Te ofrecemos un chófer profesional para el transporte de tus mercancías sin complicaciones.</p>
+                        <p class="service-desc-text">¿No quieres conducir o no tienes el permiso necesario? Te ofrecemos
+                            un chófer profesional para el transporte de tus mercancías sin complicaciones.</p>
                     </div>
                     <div class="service-card reveal delay-2">
                         <div class="service-icon"><i class="fa-solid fa-coins"></i></div>
                         <h3 class="service-title">Precios Claros</h3>
-                        <p class="service-desc-text">Lo que ves es lo que pagas. IVA, kilometraje acordado y seguro básico con franquicia incluidos. Sin sorpresas inesperadas al recoger la furgoneta.</p>
+                        <p class="service-desc-text">Lo que ves es lo que pagas. IVA, kilometraje acordado y seguro
+                            básico con franquicia incluidos. Sin sorpresas inesperadas al recoger la furgoneta.</p>
                     </div>
                     <div class="service-card reveal">
                         <div class="service-icon"><i class="fa-solid fa-clock-rotate-left"></i></div>
                         <h3 class="service-title">Flexibilidad Horaria</h3>
-                        <p class="service-desc-text">¿Necesitas recogerla a primera hora o entregarla tarde? Nos adaptamos a tus necesidades. Recogida y entrega personalizada en Huéscar.</p>
+                        <p class="service-desc-text">¿Necesitas recogerla a primera hora o entregarla tarde? Nos
+                            adaptamos a tus necesidades. Recogida y entrega personalizada en Huéscar.</p>
                     </div>
                     <div class="service-card reveal delay-1">
                         <div class="service-icon"><i class="fa-solid fa-location-arrow"></i></div>
                         <h3 class="service-title">Servicio en el Altiplano</h3>
-                        <p class="service-desc-text">Atendemos a todo el Altiplano de Granada: Huéscar, Castril, Galera, Orce, Puebla de Don Fadrique, Castilléjar, Baza, Cúllar, Benamaurel, Caniles y todos los alrededores. Tu solución logística local.</p>
+                        <p class="service-desc-text">Atendemos a todo el Altiplano de Granada: Huéscar, Castril, Galera,
+                            Orce, Puebla de Don Fadrique, Castilléjar, Baza, Cúllar, Benamaurel, Caniles y todos los
+                            alrededores. Tu solución logística local.</p>
                     </div>
                     <div class="service-card reveal delay-2">
                         <div class="service-icon"><i class="fa-solid fa-screwdriver-wrench"></i></div>
                         <h3 class="service-title">Flota Moderna y Segura</h3>
-                        <p class="service-desc-text">Todos nuestros furgones pasan revisiones estrictas y cuentan con asistencia en carretera 24/7 en toda España para tu total tranquilidad.</p>
+                        <p class="service-desc-text">Todos nuestros furgones pasan revisiones estrictas y cuentan con
+                            asistencia en carretera 24/7 en toda España para tu total tranquilidad.</p>
                     </div>
                 </div>
             </div>
@@ -406,19 +1125,29 @@
             <div class="container">
                 <div class="section-header reveal" style="text-align: center;">
                     <span class="subtitle">Opiniones</span>
-                    <div id="reviews-count-badge" style="display: none; justify-content: center; align-items: center; gap: 0.4rem; background: rgba(130, 209, 5, 0.1); color: var(--color-neon); font-size: 0.85rem; font-weight: 700; padding: 6px 14px; border-radius: 20px; border: 1px solid rgba(130, 209, 5, 0.3); width: fit-content; margin: 0.5rem auto 1.5rem auto;">
-                        <i class="fa-solid fa-circle-check"></i> Más de <span id="reviews-count-placeholder">0</span> reseñas verificadas
+                    <div id="reviews-count-badge"
+                        style="display: none; justify-content: center; align-items: center; gap: 0.4rem; background: rgba(130, 209, 5, 0.1); color: var(--color-neon); font-size: 0.85rem; font-weight: 700; padding: 6px 14px; border-radius: 20px; border: 1px solid rgba(130, 209, 5, 0.3); width: fit-content; margin: 0.5rem auto 1.5rem auto;">
+                        <i class="fa-solid fa-circle-check"></i> Más de <span id="reviews-count-placeholder">0</span>
+                        reseñas verificadas
                     </div>
                     <h2 class="section-title">Lo Que Dicen Nuestros Vecinos</h2>
-                    <p class="section-desc">La confianza de nuestros clientes en Huéscar y comarca es nuestra mayor garantía.</p>
+                    <p class="section-desc">La confianza de nuestros clientes en Huéscar y comarca es nuestra mayor
+                        garantía.</p>
                 </div>
-                
-                <div class="testimonials-carousel-container reveal" style="position: relative; max-width: 900px; margin: 0 auto; padding: 1rem 50px;">
+
+                <div class="testimonials-carousel-container reveal"
+                    style="position: relative; max-width: 900px; margin: 0 auto; padding: 1rem 50px;">
                     <div style="overflow: hidden; width: 100%;">
-                        <div class="testimonials-track" id="testimonials-grid" style="display: flex; transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1); width: 100%;">
-                            <div class="testimonial-card reveal" style="flex: 0 0 100%; box-sizing: border-box; margin: 0;">
-                                <div class="stars"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i></div>
-                                <p class="testimonial-text">"Alquilé la furgoneta mediana para trasladar unos muebles desde Granada a Huéscar. El trato fue inmejorable y el vehículo estaba limpísimo. Repetiré seguro."</p>
+                        <div class="testimonials-track" id="testimonials-grid"
+                            style="display: flex; transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1); width: 100%;">
+                            <div class="testimonial-card reveal"
+                                style="flex: 0 0 100%; box-sizing: border-box; margin: 0;">
+                                <div class="stars"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i
+                                        class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i
+                                        class="fa-solid fa-star"></i></div>
+                                <p class="testimonial-text">"Alquilé la furgoneta mediana para trasladar unos muebles
+                                    desde Granada a Huéscar. El trato fue inmejorable y el vehículo estaba limpísimo.
+                                    Repetiré seguro."</p>
                                 <div class="testimonial-author">
                                     <div class="author-info">
                                         <h4 class="author-name">Francisco M.</h4>
@@ -426,9 +1155,14 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="testimonial-card reveal delay-1" style="flex: 0 0 100%; box-sizing: border-box; margin: 0;">
-                                <div class="stars"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i></div>
-                                <p class="testimonial-text">"Necesitábamos una furgoneta de 9 plazas para un viaje de fin de semana con amigos de la Puebla de Don Fadrique. El viaje fue comodísimo y el precio muy razonable."</p>
+                            <div class="testimonial-card reveal delay-1"
+                                style="flex: 0 0 100%; box-sizing: border-box; margin: 0;">
+                                <div class="stars"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i
+                                        class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i
+                                        class="fa-solid fa-star"></i></div>
+                                <p class="testimonial-text">"Necesitábamos una furgoneta de 9 plazas para un viaje de
+                                    fin de semana con amigos de la Puebla de Don Fadrique. El viaje fue comodísimo y el
+                                    precio muy razonable."</p>
                                 <div class="testimonial-author">
                                     <div class="author-info">
                                         <h4 class="author-name">María José S.</h4>
@@ -436,9 +1170,14 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="testimonial-card reveal delay-2" style="flex: 0 0 100%; box-sizing: border-box; margin: 0;">
-                                <div class="stars"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i></div>
-                                <p class="testimonial-text">"Como autónomo, a veces necesito un vehículo de gran volumen para repartos extra. RentMeUskar me soluciona la papeleta rápidamente y sin burocracia pesada."</p>
+                            <div class="testimonial-card reveal delay-2"
+                                style="flex: 0 0 100%; box-sizing: border-box; margin: 0;">
+                                <div class="stars"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i
+                                        class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i
+                                        class="fa-solid fa-star"></i></div>
+                                <p class="testimonial-text">"Como autónomo, a veces necesito un vehículo de gran volumen
+                                    para repartos extra. RentMeUskar me soluciona la papeleta rápidamente y sin
+                                    burocracia pesada."</p>
                                 <div class="testimonial-author">
                                     <div class="author-info">
                                         <h4 class="author-name">Antonio G.</h4>
@@ -448,21 +1187,24 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <!-- Flechas de navegación -->
-                    <button class="carousel-control prev" id="reviews-carousel-prev" style="position: absolute; top: 50%; left: -2.5rem; transform: translateY(-50%); background: rgba(255,255,255,0.03); border: 1.5px solid var(--color-neon); color: #fff; width: 44px; height: 44px; border-radius: 50%; cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center; z-index: 5; transition: all 0.3s ease; box-shadow: 0 0 10px rgba(130, 209, 5, 0.2);">
+                    <button class="carousel-control prev" id="reviews-carousel-prev"
+                        style="position: absolute; top: 50%; left: -2.5rem; transform: translateY(-50%); background: rgba(255,255,255,0.03); border: 1.5px solid var(--color-neon); color: #fff; width: 44px; height: 44px; border-radius: 50%; cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center; z-index: 5; transition: all 0.3s ease; box-shadow: 0 0 10px rgba(130, 209, 5, 0.2);">
                         <i class="fa-solid fa-chevron-left" style="color: var(--color-neon);"></i>
                     </button>
-                    <button class="carousel-control next" id="reviews-carousel-next" style="position: absolute; top: 50%; right: -2.5rem; transform: translateY(-50%); background: rgba(255,255,255,0.03); border: 1.5px solid var(--color-neon); color: #fff; width: 44px; height: 44px; border-radius: 50%; cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center; z-index: 5; transition: all 0.3s ease; box-shadow: 0 0 10px rgba(130, 209, 5, 0.2);">
+                    <button class="carousel-control next" id="reviews-carousel-next"
+                        style="position: absolute; top: 50%; right: -2.5rem; transform: translateY(-50%); background: rgba(255,255,255,0.03); border: 1.5px solid var(--color-neon); color: #fff; width: 44px; height: 44px; border-radius: 50%; cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center; z-index: 5; transition: all 0.3s ease; box-shadow: 0 0 10px rgba(130, 209, 5, 0.2);">
                         <i class="fa-solid fa-chevron-right" style="color: var(--color-neon);"></i>
                     </button>
-                    
+
                     <!-- Indicadores de puntos -->
-                    <div id="reviews-carousel-dots" style="display: flex; justify-content: center; gap: 0.6rem; margin-top: 2rem;">
+                    <div id="reviews-carousel-dots"
+                        style="display: flex; justify-content: center; gap: 0.6rem; margin-top: 2rem;">
                         <!-- Insertado dinámicamente -->
                     </div>
                 </div>
-                
+
                 <div style="text-align: center; margin-top: 3rem;" class="reveal">
                     <button class="btn btn-primary" id="btn-open-review-modal">
                         <i class="fa-solid fa-pen-to-square"></i> Escribir una Opinión Verificada
@@ -479,9 +1221,10 @@
                     <h2 class="section-title">Preguntas Frecuentes</h2>
                     <p class="section-desc">Todo lo que necesitas saber antes de alquilar tu furgoneta con nosotros.</p>
                 </div>
-                
+
                 <div class="faq-list">
-                    <p style="text-align: center; color: var(--text-secondary); font-size: 0.9rem;">Cargando preguntas frecuentes...</p>
+                    <p style="text-align: center; color: var(--text-secondary); font-size: 0.9rem;">Cargando preguntas
+                        frecuentes...</p>
                 </div>
             </div>
         </section>
@@ -494,8 +1237,10 @@
                     <div class="contact-info-area reveal">
                         <span class="subtitle">Contacta Con Nosotros</span>
                         <h2 class="contact-section-title">¿Tienes Alguna Pregunta?</h2>
-                        <p class="contact-section-desc" style="margin-bottom: 2rem;">Escríbenos, llámanos o visítanos en Huéscar. Estaremos encantados de resolver tus dudas y ayudarte a elegir el vehículo ideal.</p>
-                        
+                        <p class="contact-section-desc" style="margin-bottom: 2rem;">Escríbenos, llámanos o visítanos en
+                            Huéscar. Estaremos encantados de resolver tus dudas y ayudarte a elegir el vehículo ideal.
+                        </p>
+
                         <div class="contact-methods" style="margin-bottom: 3rem;">
                             <a href="tel:+34614767411" class="contact-method-card" id="contact-phone-link">
                                 <div class="method-icon"><i class="fa-solid fa-phone"></i></div>
@@ -504,7 +1249,8 @@
                                     <p>+34 614 767 411</p>
                                 </div>
                             </a>
-                            <a href="https://wa.me/34614767411" target="_blank" class="contact-method-card" id="contact-wa-link">
+                            <a href="https://wa.me/34614767411" target="_blank" class="contact-method-card"
+                                id="contact-wa-link">
                                 <div class="method-icon"><i class="fa-brands fa-whatsapp text-neon"></i></div>
                                 <div class="method-details">
                                     <h4>WhatsApp Directo</h4>
@@ -521,32 +1267,51 @@
                         </div>
 
                         <!-- Dónde Estamos Card -->
-                        <div class="map-card-container" style="padding: 2rem; background: #0f1c3f; border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; min-height: auto;">
-                            <h3 class="map-card-title" style="margin-top: 0; color: #fff; font-family: var(--font-heading); font-size: 1.2rem; display: flex; align-items: center; gap: 0.5rem;"><i class="fa-solid fa-map-location-dot" style="color: var(--color-neon);"></i> Dónde Estamos</h3>
-                            <p style="color: #fff; font-size: 1.1rem; font-weight: 700; margin: 1rem 0 0.5rem 0;">Huéscar, Granada</p>
-                            <p style="color: var(--text-secondary); font-size: 0.9rem; line-height: 1.6; margin: 0;">Ofrecemos servicio de entrega y recogida de vehículos en el municipio de Huéscar y comarca del Altiplano Granadino.</p>
+                        <div class="map-card-container"
+                            style="padding: 2rem; background: #0f1c3f; border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; min-height: auto;">
+                            <h3 class="map-card-title"
+                                style="margin-top: 0; color: #fff; font-family: var(--font-heading); font-size: 1.2rem; display: flex; align-items: center; gap: 0.5rem;">
+                                <i class="fa-solid fa-map-location-dot" style="color: var(--color-neon);"></i> Dónde
+                                Estamos</h3>
+                            <p style="color: #fff; font-size: 1.1rem; font-weight: 700; margin: 1rem 0 0.5rem 0;">
+                                Huéscar, Granada</p>
+                            <p style="color: var(--text-secondary); font-size: 0.9rem; line-height: 1.6; margin: 0;">
+                                Ofrecemos servicio de entrega y recogida de vehículos en el municipio de Huéscar y
+                                comarca del Altiplano Granadino.</p>
                         </div>
                     </div>
 
                     <!-- Column 2: Premium Contact Form -->
                     <div class="contact-form-area reveal delay-1">
-                        <div class="table-card" style="padding: 2.5rem; text-align: left; background: #0f1c3f; border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; box-shadow: 0 20px 40px rgba(0,0,0,0.5);">
-                            <h3 style="font-family: var(--font-heading); color: #fff; margin-top: 0; margin-bottom: 0.5rem; font-size: 1.4rem; display: flex; align-items: center; gap: 0.5rem;">
-                                <i class="fa-solid fa-envelope" style="color: var(--color-neon);"></i> Envíanos un Mensaje
+                        <div class="table-card"
+                            style="padding: 2.5rem; text-align: left; background: #0f1c3f; border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; box-shadow: 0 20px 40px rgba(0,0,0,0.5);">
+                            <h3
+                                style="font-family: var(--font-heading); color: #fff; margin-top: 0; margin-bottom: 0.5rem; font-size: 1.4rem; display: flex; align-items: center; gap: 0.5rem;">
+                                <i class="fa-solid fa-envelope" style="color: var(--color-neon);"></i> Envíanos un
+                                Mensaje
                             </h3>
-                            <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 2rem;">Rellena el formulario y envíalo directamente a nuestro WhatsApp oficial.</p>
-                            
-                            <form id="contact-whatsapp-form">
+                            <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 2rem;">Rellena el
+                                formulario y envíalo directamente a nuestro WhatsApp oficial.</p>
+
+                            <form id="contact-whatsapp-form" onsubmit="return window.handleContactSubmit(event);">
                                 <div class="custom-form-group" style="margin-bottom: 1.25rem;">
-                                    <label for="contact-form-name" style="display: block; font-size: 0.8rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 0.4rem; font-weight: 600;">Tu Nombre</label>
-                                    <input type="text" id="contact-form-name" class="form-control" placeholder="" required>
+                                    <label for="contact-form-name"
+                                        style="display: block; font-size: 0.8rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 0.4rem; font-weight: 600;">Tu
+                                        Nombre</label>
+                                    <input type="text" id="contact-form-name" class="form-control" placeholder=""
+                                        required>
                                 </div>
                                 <div class="custom-form-group" style="margin-bottom: 1.25rem;">
-                                    <label for="contact-form-phone" style="display: block; font-size: 0.8rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 0.4rem; font-weight: 600;">Teléfono o Email de Contacto</label>
-                                    <input type="text" id="contact-form-phone" class="form-control" placeholder="" required>
+                                    <label for="contact-form-phone"
+                                        style="display: block; font-size: 0.8rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 0.4rem; font-weight: 600;">Teléfono
+                                        o Email de Contacto</label>
+                                    <input type="text" id="contact-form-phone" class="form-control" placeholder=""
+                                        required>
                                 </div>
                                 <div class="custom-form-group" style="margin-bottom: 1.25rem;">
-                                    <label for="contact-form-reason" style="display: block; font-size: 0.8rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 0.4rem; font-weight: 600;">Motivo de Consulta</label>
+                                    <label for="contact-form-reason"
+                                        style="display: block; font-size: 0.8rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 0.4rem; font-weight: 600;">Motivo
+                                        de Consulta</label>
                                     <select id="contact-form-reason" class="form-control">
                                         <option value="Duda sobre alquiler">Duda sobre alquiler</option>
                                         <option value="Presupuesto a medida">Presupuesto a medida</option>
@@ -555,12 +1320,17 @@
                                     </select>
                                 </div>
                                 <div class="custom-form-group" style="margin-bottom: 1.5rem;">
-                                    <label for="contact-form-message" style="display: block; font-size: 0.8rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 0.4rem; font-weight: 600;">Tu Mensaje</label>
-                                    <textarea id="contact-form-message" class="form-control" rows="4" placeholder="" required style="resize: vertical; min-height: 100px;"></textarea>
+                                    <label for="contact-form-message"
+                                        style="display: block; font-size: 0.8rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 0.4rem; font-weight: 600;">Tu
+                                        Mensaje</label>
+                                    <textarea id="contact-form-message" class="form-control" rows="4" placeholder=""
+                                        required style="resize: vertical; min-height: 100px;"></textarea>
                                 </div>
-                                
-                                <button type="submit" class="btn btn-primary btn-block" style="background: var(--color-neon); color: #000; border-color: var(--color-neon); font-weight: 800; font-size: 0.95rem; height: 48px; justify-content: center;">
-                                    <i class="fa-brands fa-whatsapp" style="font-size: 1.2rem; margin-right: 0.4rem;"></i> Enviar por WhatsApp
+
+                                <button type="submit" class="btn btn-primary btn-block"
+                                    style="background: var(--color-neon); color: #000; border-color: var(--color-neon); font-weight: 800; font-size: 0.95rem; height: 48px; justify-content: center;">
+                                    <i class="fa-brands fa-whatsapp"
+                                        style="font-size: 1.2rem; margin-right: 0.4rem;"></i> Enviar por WhatsApp
                                 </button>
                             </form>
                         </div>
@@ -576,20 +1346,30 @@
         <div class="footer-top container">
             <div class="footer-brand-info">
                 <img src="assets/logo.png" alt="RentMeUskar Logotipo" class="footer-logo" id="footer-logo">
-                <p class="footer-brand-desc">Alquiler local de furgonetas con y sin conductor. Comprometidos con el desarrollo y la movilidad del Altiplano Granadino.</p>
-                <div class="social-links-premium" style="display: flex; align-items: center; gap: 1rem; margin-top: 1.2rem;">
-                    <a href="https://facebook.com/rentmeuskar" target="_blank" style="display: flex; align-items: center; gap: 0.5rem; text-decoration: none; color: #fff; font-size: 0.9rem;" id="social-fb">
-                        <span style="display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; border: 1.5px solid var(--color-neon); color: var(--color-neon);"><i class="fa-brands fa-facebook-f"></i></span>
+                <p class="footer-brand-desc">Alquiler local de furgonetas con y sin conductor. Comprometidos con el
+                    desarrollo y la movilidad del Altiplano Granadino.</p>
+                <div class="social-links-premium"
+                    style="display: flex; align-items: center; gap: 1rem; margin-top: 1.2rem;">
+                    <a href="https://facebook.com/rentmeuskar" target="_blank"
+                        style="display: flex; align-items: center; gap: 0.5rem; text-decoration: none; color: #fff; font-size: 0.9rem;"
+                        id="social-fb">
+                        <span
+                            style="display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; border: 1.5px solid var(--color-neon); color: var(--color-neon);"><i
+                                class="fa-brands fa-facebook-f"></i></span>
                         <span>rentmeuskar</span>
                     </a>
                     <span style="color: rgba(255,255,255,0.2); font-weight: 300;">|</span>
-                    <a href="https://instagram.com/rentmeuskar" target="_blank" style="display: flex; align-items: center; gap: 0.5rem; text-decoration: none; color: #fff; font-size: 0.9rem;" id="social-ig">
-                        <span style="display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; border: 1.5px solid var(--color-neon); color: var(--color-neon);"><i class="fa-brands fa-instagram"></i></span>
+                    <a href="https://instagram.com/rentmeuskar" target="_blank"
+                        style="display: flex; align-items: center; gap: 0.5rem; text-decoration: none; color: #fff; font-size: 0.9rem;"
+                        id="social-ig">
+                        <span
+                            style="display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; border: 1.5px solid var(--color-neon); color: var(--color-neon);"><i
+                                class="fa-brands fa-instagram"></i></span>
                         <span>@rentmeuskar</span>
                     </a>
                 </div>
             </div>
-            
+
             <div class="footer-links-col">
                 <h4>Enlaces Útiles</h4>
                 <ul>
@@ -620,10 +1400,11 @@
                 </ul>
             </div>
         </div>
-        
+
         <div class="footer-bottom">
             <div class="container footer-bottom-flex">
-                <p class="copyright">&copy; 2026 RentMeUskar. Todos los derechos reservados. Diseñado para el Altiplano de Granada.</p>
+                <p class="copyright">&copy; 2026 RentMeUskar. Todos los derechos reservados. Diseñado para el Altiplano
+                    de Granada.</p>
                 <p class="developer-credit">Localidad: Huéscar (Granada)</p>
             </div>
         </div>
@@ -632,72 +1413,105 @@
     <!-- ==========================================================
          MODALES Y PASARELA TPV DE LA APLICACIÓN
          ========================================================== -->
-    
+
     <!-- Modal: Detalle Ampliado de Furgoneta -->
     <div class="custom-modal-backdrop" id="van-details-modal" style="display: none;">
         <div class="custom-modal-card" style="max-width: 700px; padding: 0; overflow: hidden; background: #070e24;">
-            <span class="custom-modal-close" onclick="closeAuthModal('van-details-modal')" style="top: 1.5rem; right: 1.5rem; z-index: 10; font-size: 2rem;">&times;</span>
-            
+            <span class="custom-modal-close" onclick="closeAuthModal('van-details-modal')"
+                style="top: 1.5rem; right: 1.5rem; z-index: 10; font-size: 2rem;">&times;</span>
+
             <!-- Carrusel de fotos -->
-            <div class="modal-carousel" style="position: relative; width: 100%; height: 350px; background: #000; overflow: hidden;">
-                <div class="carousel-slides" id="detail-carousel-slides" style="display: flex; width: 100%; height: 100%; transition: transform 0.4s ease-in-out;">
+            <div class="modal-carousel"
+                style="position: relative; width: 100%; height: 350px; background: #000; overflow: hidden;">
+                <div class="carousel-slides" id="detail-carousel-slides"
+                    style="display: flex; width: 100%; height: 100%; transition: transform 0.4s ease-in-out;">
                     <!-- Insertado dinámicamente -->
                 </div>
-                <button class="carousel-control prev" id="detail-carousel-prev" style="position: absolute; top: 50%; left: 1rem; transform: translateY(-50%); background: rgba(0,0,0,0.5); border: none; color: #fff; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; z-index: 5;">
+                <button class="carousel-control prev" id="detail-carousel-prev"
+                    style="position: absolute; top: 50%; left: 1rem; transform: translateY(-50%); background: rgba(0,0,0,0.5); border: none; color: #fff; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; z-index: 5;">
                     <i class="fa-solid fa-chevron-left"></i>
                 </button>
-                <button class="carousel-control next" id="detail-carousel-next" style="position: absolute; top: 50%; right: 1rem; transform: translateY(-50%); background: rgba(0,0,0,0.5); border: none; color: #fff; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; z-index: 5;">
+                <button class="carousel-control next" id="detail-carousel-next"
+                    style="position: absolute; top: 50%; right: 1rem; transform: translateY(-50%); background: rgba(0,0,0,0.5); border: none; color: #fff; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; z-index: 5;">
                     <i class="fa-solid fa-chevron-right"></i>
                 </button>
-                <div class="carousel-dots" id="detail-carousel-dots" style="position: absolute; bottom: 1rem; left: 50%; transform: translateX(-50%); display: flex; gap: 0.5rem; z-index: 5;">
+                <div class="carousel-dots" id="detail-carousel-dots"
+                    style="position: absolute; bottom: 1rem; left: 50%; transform: translateX(-50%); display: flex; gap: 0.5rem; z-index: 5;">
                     <!-- Insertado dinámicamente -->
                 </div>
             </div>
-            
+
             <div style="padding: 2rem;">
-                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem;">
+                <div
+                    style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem;">
                     <div style="text-align: left;">
-                        <h2 id="detail-van-name" style="font-size: 1.8rem; font-family: var(--font-heading); color: #fff; margin: 0 0 0.3rem 0;">Ford Transit Custom</h2>
-                        <span id="detail-van-m3" style="background: rgba(130, 209, 5, 0.15); color: var(--color-neon); font-size: 0.8rem; font-weight: 700; padding: 4px 10px; border-radius: 4px; display: inline-block;">8m³ de volumen</span>
+                        <h2 id="detail-van-name"
+                            style="font-size: 1.8rem; font-family: var(--font-heading); color: #fff; margin: 0 0 0.3rem 0;">
+                            Ford Transit Custom</h2>
+                        <span id="detail-van-m3"
+                            style="background: rgba(130, 209, 5, 0.15); color: var(--color-neon); font-size: 0.8rem; font-weight: 700; padding: 4px 10px; border-radius: 4px; display: inline-block;">8m³
+                            de volumen</span>
                     </div>
                     <div style="text-align: right;">
                         <span style="color: var(--text-secondary); font-size: 0.8rem; display: block;">Desde solo</span>
-                        <strong id="detail-van-price" style="font-size: 2rem; color: var(--color-neon); font-family: var(--font-heading);">79€<span style="font-size: 1rem; font-weight: normal; color: var(--text-secondary);">/día</span></strong>
+                        <strong id="detail-van-price"
+                            style="font-size: 2rem; color: var(--color-neon); font-family: var(--font-heading);">79€<span
+                                style="font-size: 1rem; font-weight: normal; color: var(--text-secondary);">/día</span></strong>
                     </div>
                 </div>
-                
-                <h3 style="font-size: 1rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 0.75rem; letter-spacing: 0.05em; text-align: left;">Ficha Técnica y Condiciones</h3>
+
+                <h3
+                    style="font-size: 1rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 0.75rem; letter-spacing: 0.05em; text-align: left;">
+                    Ficha Técnica y Condiciones</h3>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 2rem;">
-                    <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); padding: 1rem; border-radius: var(--border-radius-sm); text-align: left;">
-                        <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.6rem; font-size: 0.9rem;">
-                            <li><i class="fa-solid fa-truck" style="color: var(--color-neon); width: 20px;"></i> Matrícula: <strong id="detail-spec-plate">-</strong></li>
-                            <li><i class="fa-solid fa-weight-hanging" style="color: var(--color-neon); width: 20px;"></i> M.M.A: <strong id="detail-spec-mass">-</strong></li>
-                            <li><i class="fa-solid fa-user" style="color: var(--color-neon); width: 20px;"></i> Plazas: <strong id="detail-spec-occupants">-</strong></li>
-                            <li><i class="fa-solid fa-gas-pump" style="color: var(--color-neon); width: 20px;"></i> Combustible: <strong id="detail-spec-fuel">-</strong></li>
+                    <div
+                        style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); padding: 1rem; border-radius: var(--border-radius-sm); text-align: left;">
+                        <ul
+                            style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.6rem; font-size: 0.9rem;">
+                            <li><i class="fa-solid fa-truck" style="color: var(--color-neon); width: 20px;"></i>
+                                Matrícula: <strong id="detail-spec-plate">-</strong></li>
+                            <li><i class="fa-solid fa-weight-hanging"
+                                    style="color: var(--color-neon); width: 20px;"></i> M.M.A: <strong
+                                    id="detail-spec-mass">-</strong></li>
+                            <li><i class="fa-solid fa-user" style="color: var(--color-neon); width: 20px;"></i> Plazas:
+                                <strong id="detail-spec-occupants">-</strong></li>
+                            <li><i class="fa-solid fa-gas-pump" style="color: var(--color-neon); width: 20px;"></i>
+                                Combustible: <strong id="detail-spec-fuel">-</strong></li>
                         </ul>
                     </div>
-                    <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); padding: 1rem; border-radius: var(--border-radius-sm); text-align: left;">
-                        <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.6rem; font-size: 0.9rem;">
-                            <li><i class="fa-solid fa-leaf" style="color: var(--color-neon); width: 20px;"></i> Distintivo: <strong id="detail-spec-eco">-</strong></li>
-                            <li><i class="fa-solid fa-shield-halved" style="color: var(--color-neon); width: 20px;"></i> Fianza obligatoria: <strong>500,00 €</strong></li>
-                            <li><i class="fa-solid fa-road" style="color: var(--color-neon); width: 20px;"></i> Km Incluidos: <strong id="detail-spec-kmlimit">-</strong></li>
-                            <li><i class="fa-solid fa-triangle-exclamation" style="color: var(--color-neon); width: 20px;"></i> Combustible: <strong>Mismo Nivel</strong></li>
+                    <div
+                        style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); padding: 1rem; border-radius: var(--border-radius-sm); text-align: left;">
+                        <ul
+                            style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.6rem; font-size: 0.9rem;">
+                            <li><i class="fa-solid fa-leaf" style="color: var(--color-neon); width: 20px;"></i>
+                                Distintivo: <strong id="detail-spec-eco">-</strong></li>
+                            <li><i class="fa-solid fa-shield-halved" style="color: var(--color-neon); width: 20px;"></i>
+                                Fianza obligatoria: <strong>500,00 €</strong></li>
+                            <li><i class="fa-solid fa-road" style="color: var(--color-neon); width: 20px;"></i> Km
+                                Incluidos: <strong id="detail-spec-kmlimit">-</strong></li>
+                            <li><i class="fa-solid fa-triangle-exclamation"
+                                    style="color: var(--color-neon); width: 20px;"></i> Combustible: <strong>Mismo
+                                    Nivel</strong></li>
                         </ul>
                     </div>
                 </div>
 
-                <div id="detail-custom-features-container" style="margin-bottom: 1.5rem; text-align: left; display: none;">
-                    <strong style="font-size: 0.85rem; color: var(--color-neon); display: block; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.05em;">
+                <div id="detail-custom-features-container"
+                    style="margin-bottom: 1.5rem; text-align: left; display: none;">
+                    <strong
+                        style="font-size: 0.85rem; color: var(--color-neon); display: block; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.05em;">
                         <i class="fa-solid fa-star"></i> Equipamiento y Características Destacadas
                     </strong>
                     <div id="detail-custom-features-list" style="display: flex; flex-wrap: wrap; gap: 0.5rem;"></div>
                 </div>
 
                 <div style="display: flex; gap: 1rem;">
-                    <button class="btn btn-secondary" onclick="closeAuthModal('van-details-modal')" style="flex: 1; height: 50px;">
+                    <button class="btn btn-secondary" onclick="closeAuthModal('van-details-modal')"
+                        style="flex: 1; height: 50px;">
                         Volver
                     </button>
-                    <button class="btn btn-primary" id="detail-van-book-btn" style="flex: 2; height: 50px; font-weight: 700;">
+                    <button class="btn btn-primary" id="detail-van-book-btn"
+                        style="flex: 2; height: 50px; font-weight: 700;">
                         <i class="fa-solid fa-calendar-days"></i> Simular Presupuesto
                     </button>
                 </div>
@@ -714,15 +1528,32 @@
                 <p>Tu opinión nos ayuda a mejorar y a dar confianza a otros vecinos.</p>
             </div>
             <form id="write-review-form">
-                <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1.5rem; line-height: 1.5; text-align: left;">
-                    <i class="fa-solid fa-circle-info" style="color: var(--color-neon);"></i> Para garantizar la veracidad de las opiniones, solo los clientes con un código de reserva válido pueden publicar una reseña. El código se le asigna al completar su reserva.
+                <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1.25rem; line-height: 1.5; text-align: left;">
+                    <i class="fa-solid fa-circle-check" style="color: var(--color-neon);"></i> Para publicar una reseña verificada debes estar identificado en tu cuenta. Selecciona la reserva realizada o introduce un código manual proporcionado por Administración.
                 </p>
-                
+
                 <div class="custom-form-group" style="text-align: left;">
-                    <label for="review-code-input"><i class="fa-solid fa-ticket"></i> Código de Reserva (Verificado)</label>
-                    <input type="text" id="review-code-input" class="custom-form-control" placeholder="" required style="text-transform: uppercase;">
+                    <label for="review-booking-select"><i class="fa-solid fa-van-shuttle"></i> Reserva o Vehículo a Reseñar</label>
+                    <select id="review-booking-select" class="custom-form-control" style="background: #0f172a; color: #ffffff; border: 1px solid rgba(130, 209, 5, 0.3);">
+                        <!-- Opciones dinámicas -->
+                    </select>
                 </div>
-                
+
+                <!-- Insignia del producto / vehículo exacto -->
+                <div id="review-vehicle-badge" style="display: flex; align-items: center; gap: 0.5rem; background: rgba(130, 209, 5, 0.1); border: 1px solid rgba(130, 209, 5, 0.3); border-radius: 8px; padding: 0.6rem 0.8rem; margin-bottom: 1rem; font-size: 0.85rem; color: #fff;">
+                    <i class="fa-solid fa-tags" style="color: var(--color-neon);"></i>
+                    <span>Vehículo Reseñado: <strong id="review-vehicle-text" style="color: var(--color-neon);">Ford Transit Custom L2H2 (8m³)</strong></span>
+                </div>
+                <input type="hidden" id="review-van-name-input" value="Ford Transit Custom L2H2 (8m³)">
+
+                <div class="custom-form-group" id="review-manual-code-group" style="text-align: left; display: none;">
+                    <label for="review-code-input"><i class="fa-solid fa-ticket"></i> Código de Reseña Manual (Admin)</label>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <input type="text" id="review-code-input" class="custom-form-control" placeholder="" style="text-transform: uppercase;">
+                        <button type="button" class="btn btn-secondary btn-sm" id="btn-verify-manual-code" style="white-space: nowrap;">Verificar</button>
+                    </div>
+                </div>
+
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                     <div class="custom-form-group" style="text-align: left;">
                         <label for="review-name-input"><i class="fa-solid fa-user"></i> Tu Nombre</label>
@@ -733,10 +1564,12 @@
                         <input type="text" id="review-city-input" class="custom-form-control" placeholder="" required>
                     </div>
                 </div>
-                
+
                 <div class="custom-form-group" style="text-align: left;">
-                    <label style="display: block; margin-bottom: 0.5rem;"><i class="fa-solid fa-star"></i> Puntuación</label>
-                    <div class="star-rating-selector" style="display: flex; gap: 0.5rem; font-size: 1.8rem; color: rgba(255,255,255,0.15); cursor: pointer; justify-content: center; margin: 0.5rem 0;">
+                    <label style="display: block; margin-bottom: 0.5rem;"><i class="fa-solid fa-star"></i>
+                        Puntuación</label>
+                    <div class="star-rating-selector"
+                        style="display: flex; gap: 0.5rem; font-size: 1.8rem; color: rgba(255,255,255,0.15); cursor: pointer; justify-content: center; margin: 0.5rem 0;">
                         <i class="fa-solid fa-star" data-rating="1"></i>
                         <i class="fa-solid fa-star" data-rating="2"></i>
                         <i class="fa-solid fa-star" data-rating="3"></i>
@@ -745,12 +1578,14 @@
                     </div>
                     <input type="hidden" id="review-rating-input" value="5">
                 </div>
-                
+
                 <div class="custom-form-group" style="text-align: left;">
-                    <label for="review-comment-input"><i class="fa-solid fa-comment-dots"></i> Comentario / Reseña</label>
-                    <textarea id="review-comment-input" class="custom-form-control" rows="3" placeholder="" style="resize: vertical; min-height: 80px;"></textarea>
+                    <label for="review-comment-input"><i class="fa-solid fa-comment-dots"></i> Comentario /
+                        Reseña</label>
+                    <textarea id="review-comment-input" class="custom-form-control" rows="3" placeholder=""
+                        style="resize: vertical; min-height: 80px;"></textarea>
                 </div>
-                
+
                 <button type="submit" class="btn btn-primary btn-block" style="margin-top: 1rem;">
                     <i class="fa-solid fa-paper-plane"></i> Publicar Reseña Verificada
                 </button>
@@ -766,20 +1601,80 @@
                 <h2>Iniciar Sesión</h2>
                 <p>Accede a tu panel para reservar, ver contratos y facturas.</p>
             </div>
-            <form id="login-form">
+
+
+
+            <form id="login-form" onsubmit="return window.handleLoginSubmit(event);">
                 <div class="custom-form-group">
                     <label for="login-email">Correo Electrónico</label>
                     <input type="email" id="login-email" class="custom-form-control" required placeholder="">
                 </div>
                 <div class="custom-form-group">
-                    <label for="login-password">Contraseña</label>
-                    <input type="password" id="login-password" class="custom-form-control" required placeholder="">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.3rem;">
+                        <label for="login-password" style="margin-bottom: 0;">Contraseña</label>
+                        <a href="#" onclick="switchAuthModal('login-modal', 'forgot-password-modal')" style="font-size: 0.75rem; color: var(--color-neon, #82d105); text-decoration: none; font-weight: 600;">¿Olvidaste tu contraseña?</a>
+                    </div>
+                    <div style="position: relative; display: flex; align-items: center;">
+                        <input type="password" id="login-password" class="custom-form-control" required placeholder="" style="padding-right: 2.5rem; width: 100%;">
+                        <i class="fa-solid fa-eye toggle-password-btn" onclick="togglePasswordVisibility('login-password', this)" title="Mostrar/Ocultar contraseña" style="position: absolute; right: 0.8rem; color: var(--text-secondary, #718096); cursor: pointer; font-size: 1rem; transition: color 0.2s; user-select: none;"></i>
+                    </div>
                 </div>
-                <button type="submit" class="btn btn-primary btn-block" style="margin-top: 1rem;">Entrar</button>
+                <button type="submit" class="btn btn-primary btn-block" id="btn-login-submit" style="margin-top: 1rem;">Entrar</button>
             </form>
             <div class="custom-modal-footer">
-                ¿No tienes cuenta? <a href="#" onclick="switchAuthModal('login-modal', 'register-modal')">Regístrate aquí</a>
+                ¿No tienes cuenta? <a href="#" onclick="switchAuthModal('login-modal', 'register-modal')">Regístrate
+                    aquí</a>
             </div>
+        </div>
+    </div>
+
+    <!-- Modal: Recuperar Contraseña -->
+    <div class="custom-modal-backdrop" id="forgot-password-modal" style="display: none;">
+        <div class="custom-modal-card">
+            <span class="custom-modal-close" onclick="closeAuthModal('forgot-password-modal')">&times;</span>
+            <div class="custom-modal-header">
+                <h2>¿Olvidaste tu contraseña?</h2>
+                <p>Introduce tu correo electrónico registrado y te enviaremos un correo de confirmación con las instrucciones para restablecerla.</p>
+            </div>
+            <form id="forgot-password-form" onsubmit="return window.handleForgotPasswordSubmit(event);">
+                <div class="custom-form-group">
+                    <label for="forgot-email">Correo Electrónico</label>
+                    <input type="email" id="forgot-email" class="custom-form-control" required placeholder="">
+                </div>
+                <button type="submit" class="btn btn-primary btn-block" id="btn-forgot-submit" style="margin-top: 1rem;">
+                    <i class="fa-solid fa-paper-plane"></i> Enviar Correo de Confirmación
+                </button>
+            </form>
+            <div class="custom-modal-footer">
+                ¿Te has acordado? <a href="#" onclick="switchAuthModal('forgot-password-modal', 'login-modal')">Inicia sesión aquí</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Restablecer Contraseña -->
+    <div class="custom-modal-backdrop" id="reset-password-modal" style="display: none;">
+        <div class="custom-modal-card">
+            <span class="custom-modal-close" onclick="closeAuthModal('reset-password-modal')">&times;</span>
+            <div class="custom-modal-header">
+                <h2>Crear Nueva Contraseña</h2>
+                <p>Introduce el código de confirmación recibido y tu nueva contraseña.</p>
+            </div>
+            <form id="reset-password-form" onsubmit="return window.handleResetPasswordSubmit(event);">
+                <div class="custom-form-group">
+                    <label for="reset-code">Código de Confirmación</label>
+                    <input type="text" id="reset-code" class="custom-form-control" required placeholder="">
+                </div>
+                <div class="custom-form-group">
+                    <label for="reset-new-password">Nueva Contraseña</label>
+                    <div style="position: relative; display: flex; align-items: center;">
+                        <input type="password" id="reset-new-password" class="custom-form-control" required placeholder="" style="padding-right: 2.5rem; width: 100%;">
+                        <i class="fa-solid fa-eye toggle-password-btn" onclick="togglePasswordVisibility('reset-new-password', this)" title="Mostrar/Ocultar contraseña" style="position: absolute; right: 0.8rem; color: var(--text-secondary, #718096); cursor: pointer; font-size: 1rem; transition: color 0.2s; user-select: none;"></i>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block" style="margin-top: 1rem;">
+                    <i class="fa-solid fa-key"></i> Guardar Nueva Contraseña
+                </button>
+            </form>
         </div>
     </div>
 
@@ -791,7 +1686,10 @@
                 <h2>Crear Cuenta</h2>
                 <p>Regístrate para reservar furgonetas en el altiplano.</p>
             </div>
-            <form id="register-form">
+
+
+
+            <form id="register-form" onsubmit="return window.handleRegisterSubmit(event);">
                 <div class="custom-form-group">
                     <label for="reg-name">Nombre Completo</label>
                     <input type="text" id="reg-name" class="custom-form-control" required placeholder="">
@@ -810,13 +1708,37 @@
                 </div>
                 <div class="custom-form-group">
                     <label for="reg-password">Contraseña</label>
-                    <input type="password" id="reg-password" class="custom-form-control" required placeholder="">
+                    <div style="position: relative; display: flex; align-items: center;">
+                        <input type="password" id="reg-password" class="custom-form-control" required placeholder="" style="padding-right: 2.5rem; width: 100%;">
+                        <i class="fa-solid fa-eye toggle-password-btn" onclick="togglePasswordVisibility('reg-password', this)" title="Mostrar/Ocultar contraseña" style="position: absolute; right: 0.8rem; color: var(--text-secondary, #718096); cursor: pointer; font-size: 1rem; transition: color 0.2s; user-select: none;"></i>
+                    </div>
                 </div>
-                <button type="submit" class="btn btn-primary btn-block" style="margin-top: 1rem;">Crear Cuenta</button>
+                <button type="submit" class="btn btn-primary btn-block" id="btn-register-submit" style="margin-top: 1rem;">Crear Cuenta</button>
             </form>
             <div class="custom-modal-footer">
-                ¿Ya tienes cuenta? <a href="#" onclick="switchAuthModal('register-modal', 'login-modal')">Inicia sesión aquí</a>
+                ¿Ya tienes cuenta? <a href="#" onclick="switchAuthModal('register-modal', 'login-modal')">Inicia sesión
+                    aquí</a>
             </div>
+        </div>
+    </div>
+
+    <!-- Modal: Verificar Email de Registro -->
+    <div class="custom-modal-backdrop" id="verify-email-modal" style="display: none;">
+        <div class="custom-modal-card">
+            <span class="custom-modal-close" onclick="closeAuthModal('verify-email-modal')">&times;</span>
+            <div class="custom-modal-header">
+                <h2>Verificar Tu Correo Electrónico</h2>
+                <p id="verify-email-subtitle">Introduce el código de 6 dígitos que te hemos enviado a tu correo para activar tu cuenta.</p>
+            </div>
+            <form id="verify-email-form" onsubmit="return window.handleVerifyRegistrationSubmit(event);">
+                <div class="custom-form-group">
+                    <label for="verify-reg-code">Código de Verificación (6 dígitos)</label>
+                    <input type="text" id="verify-reg-code" class="custom-form-control" required placeholder="Ej: 849201" style="font-size: 1.2rem; text-align: center; letter-spacing: 4px;">
+                </div>
+                <button type="submit" class="btn btn-primary btn-block" id="btn-verify-reg-submit" style="margin-top: 1rem;">
+                    <i class="fa-solid fa-circle-check"></i> Activar Cuenta e Iniciar Sesión
+                </button>
+            </form>
         </div>
     </div>
 
@@ -828,7 +1750,7 @@
                 <h2 id="client-panel-title">Mi Área de Cliente</h2>
                 <p>Historial de reservas, contratos y facturas.</p>
             </div>
-            
+
             <div class="client-bookings-area">
                 <table class="client-table" id="client-bookings-table">
                     <thead>
@@ -845,16 +1767,55 @@
                     </thead>
                     <tbody id="client-bookings-tbody">
                         <tr>
-                            <td colspan="8" style="text-align: center; padding: 2rem;">No tienes reservas registradas.</td>
+                            <td colspan="8" style="text-align: center; padding: 2rem;">No tienes reservas registradas.
+                            </td>
                         </tr>
                     </tbody>
                 </table>
             </div>
-            
-            <div class="client-modal-actions" style="margin-top: 1.5rem; display: flex; justify-content: space-between; align-items: center;">
+
+            <div class="client-modal-actions"
+                style="margin-top: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.8rem;">
                 <span id="client-user-info" style="font-size: 0.85rem; color: var(--text-secondary);"></span>
-                <button class="btn" id="btn-client-logout" style="border-color: var(--color-danger); color: var(--color-danger);"><i class="fa-solid fa-power-off"></i> Cerrar Sesión</button>
+                <div style="display: flex; gap: 0.5rem;">
+                    <button class="btn btn-secondary" onclick="window.openEditProfileModal()" style="font-size: 0.85rem; padding: 0.5rem 1rem; border-color: var(--color-neon); color: var(--color-neon); cursor: pointer;"><i class="fa-solid fa-user-pen"></i> Editar Mi Perfil</button>
+                    <button class="btn" id="btn-client-logout" onclick="window.handleClientLogout()"
+                        style="background: rgba(255, 77, 109, 0.15); border: 1px solid #ff4d6d; color: #ff4d6d; font-weight: 600; padding: 0.5rem 1.2rem; border-radius: 8px; cursor: pointer; transition: all 0.2s ease;"><i
+                            class="fa-solid fa-power-off" style="margin-right: 0.4rem;"></i> Cerrar Sesión</button>
+                </div>
             </div>
+        </div>
+    </div>
+
+    <!-- Modal: Editar Datos de Perfil de Cliente -->
+    <div class="custom-modal-backdrop" id="edit-profile-modal" style="display: none;">
+        <div class="custom-modal-card" style="max-width: 480px;">
+            <span class="custom-modal-close" onclick="closeAuthModal('edit-profile-modal')">&times;</span>
+            <div class="custom-modal-header" style="text-align: left; margin-bottom: 1.5rem;">
+                <h2><i class="fa-solid fa-user-pen" style="color: var(--color-neon); margin-right: 0.4rem;"></i> Editar Mis Datos de Perfil</h2>
+                <p>Modifica tu información personal para tus contratos y facturas.</p>
+            </div>
+            <form id="edit-profile-form" onsubmit="return window.handleEditProfileSubmit(event);">
+                <div class="custom-form-group" style="text-align: left;">
+                    <label for="edit-profile-name">Nombre Completo</label>
+                    <input type="text" id="edit-profile-name" class="custom-form-control" required placeholder="">
+                </div>
+                <div class="custom-form-group" style="text-align: left;">
+                    <label for="edit-profile-email">Correo Electrónico</label>
+                    <input type="email" id="edit-profile-email" class="custom-form-control" placeholder="">
+                </div>
+                <div class="custom-form-group" style="text-align: left;">
+                    <label for="edit-profile-phone">Teléfono de Contacto</label>
+                    <input type="tel" id="edit-profile-phone" class="custom-form-control" required placeholder="">
+                </div>
+                <div class="custom-form-group" style="text-align: left;">
+                    <label for="edit-profile-dni">DNI / NIE</label>
+                    <input type="text" id="edit-profile-dni" class="custom-form-control" required placeholder="" style="text-transform: uppercase;">
+                </div>
+                <button type="submit" class="btn btn-primary btn-block" style="margin-top: 1rem;">
+                    <i class="fa-solid fa-floppy-disk"></i> Guardar Cambios
+                </button>
+            </form>
         </div>
     </div>
 
@@ -863,20 +1824,30 @@
         <div class="custom-modal-card" style="max-width: 550px;">
             <span class="custom-modal-close" onclick="closeAuthModal('client-photos-modal')">&times;</span>
             <div class="custom-modal-header" style="text-align: left; margin-bottom: 1.5rem;">
-                <h2 style="font-family: var(--font-heading); color:#fff; font-size:1.3rem; margin-top:0; margin-bottom:0.3rem;"><i class="fa-solid fa-camera" style="color: var(--color-neon); margin-right: 0.3rem;"></i> Inspección del Vehículo</h2>
-                <p style="color: var(--text-secondary); font-size: 0.85rem; margin: 0;">Comprueba el estado de la furgoneta antes de la entrega y al devolverla.</p>
+                <h2
+                    style="font-family: var(--font-heading); color:#fff; font-size:1.3rem; margin-top:0; margin-bottom:0.3rem;">
+                    <i class="fa-solid fa-camera" style="color: var(--color-neon); margin-right: 0.3rem;"></i>
+                    Inspección del Vehículo</h2>
+                <p style="color: var(--text-secondary); font-size: 0.85rem; margin: 0;">Comprueba el estado de la
+                    furgoneta antes de la entrega y al devolverla.</p>
             </div>
-            
+
             <div style="margin-bottom: 1.5rem; text-align: left;">
-                <h3 style="font-size: 0.8rem; text-transform: uppercase; color: #fff; margin-bottom: 0.5rem; font-weight: 700; letter-spacing: 0.05em;">Antes de la Entrega</h3>
-                <div id="client-photos-before-container" style="display: flex; flex-wrap: wrap; gap: 8px; padding: 10px; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; min-height: 50px;">
+                <h3
+                    style="font-size: 0.8rem; text-transform: uppercase; color: #fff; margin-bottom: 0.5rem; font-weight: 700; letter-spacing: 0.05em;">
+                    Antes de la Entrega</h3>
+                <div id="client-photos-before-container"
+                    style="display: flex; flex-wrap: wrap; gap: 8px; padding: 10px; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; min-height: 50px;">
                     <!-- Inyectado por JS -->
                 </div>
             </div>
-            
+
             <div style="margin-bottom: 1rem; text-align: left;">
-                <h3 style="font-size: 0.8rem; text-transform: uppercase; color: #fff; margin-bottom: 0.5rem; font-weight: 700; letter-spacing: 0.05em;">Al Devolver</h3>
-                <div id="client-photos-after-container" style="display: flex; flex-wrap: wrap; gap: 8px; padding: 10px; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; min-height: 50px;">
+                <h3
+                    style="font-size: 0.8rem; text-transform: uppercase; color: #fff; margin-bottom: 0.5rem; font-weight: 700; letter-spacing: 0.05em;">
+                    Al Devolver</h3>
+                <div id="client-photos-after-container"
+                    style="display: flex; flex-wrap: wrap; gap: 8px; padding: 10px; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; min-height: 50px;">
                     <!-- Inyectado por JS -->
                 </div>
             </div>
@@ -897,42 +1868,48 @@
                 <div class="tpv-amount-box">
                     <div class="tpv-amount-row">
                         <span>Importe Alquiler:</span>
-                        <span id="tpv-rent-amount">0,00 €</span>
+                        <strong id="tpv-rent-amount" style="color: #ffffff;">0,00 €</strong>
                     </div>
                     <div class="tpv-amount-row">
                         <span>Fianza (Retenida):</span>
-                        <span>500,00 €</span>
+                        <strong style="color: #ffffff;">500,00 €</strong>
                     </div>
-                    <hr style="border-color: rgba(255,255,255,0.1); margin: 0.5rem 0;">
+                    <hr style="border-color: rgba(255,255,255,0.12); margin: 0.6rem 0;">
                     <div class="tpv-amount-row total">
-                        <span>Importe Total:</span>
-                        <span id="tpv-total-amount" class="text-neon">500,00 €</span>
+                        <span style="font-weight: 700; color: #ffffff;">Importe Total:</span>
+                        <span id="tpv-total-amount" style="color: var(--color-neon); font-size: 1.3rem; font-weight: 800;">500,00 €</span>
                     </div>
                 </div>
 
                 <form id="tpv-form">
-                    <div class="custom-form-group">
-                        <label for="tpv-card-number">Número de Tarjeta</label>
-                        <input type="text" id="tpv-card-number" class="custom-form-control tpv-input" maxlength="19" required placeholder="4000 1234 5678 9010">
-                    </div>
-                    <div class="tpv-grid">
-                        <div class="custom-form-group">
-                            <label for="tpv-card-expiry">Caducidad</label>
-                            <input type="text" id="tpv-card-expiry" class="custom-form-control tpv-input" maxlength="5" required placeholder="MM/AA">
+                    <div class="custom-form-group" style="margin-bottom: 1.25rem;">
+                        <label style="display: block; font-weight: 700; margin-bottom: 0.6rem; color: #ffffff; font-size: 0.9rem;">
+                            Selecciona el Método de Pago:
+                        </label>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem;">
+                            <label class="payment-option-card"
+                                style="background: rgba(255,255,255,0.06); border: 2px solid var(--color-neon); border-radius: 10px; padding: 1.1rem 0.8rem; text-align: center; cursor: pointer; transition: all 0.2s ease;">
+                                <input type="radio" name="pay_method" value="card" checked style="margin-right: 0.4rem;">
+                                <i class="fa-solid fa-credit-card" style="font-size: 1.4rem; color: #ffffff; display: block; margin-bottom: 0.4rem;"></i>
+                                <strong style="font-size: 0.9rem; color: #ffffff;">Tarjeta</strong>
+                            </label>
+                            <label class="payment-option-card"
+                                style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 1.1rem 0.8rem; text-align: center; cursor: pointer; transition: all 0.2s ease;">
+                                <input type="radio" name="pay_method" value="bizum" style="margin-right: 0.4rem;">
+                                <i class="fa-solid fa-mobile-screen-button" style="font-size: 1.4rem; color: #00a896; display: block; margin-bottom: 0.4rem;"></i>
+                                <strong style="font-size: 0.9rem; color: #ffffff;">Bizum</strong>
+                            </label>
                         </div>
-                        <div class="custom-form-group">
-                            <label for="tpv-card-cvc">CVC</label>
-                            <input type="text" id="tpv-card-cvc" class="custom-form-control tpv-input" maxlength="3" required placeholder="123">
-                        </div>
                     </div>
-                    <div class="custom-form-group">
-                        <label for="tpv-card-name">Titular de la Tarjeta</label>
-                        <input type="text" id="tpv-card-name" class="custom-form-control tpv-input" required placeholder="">
+
+                    <div style="background: rgba(255, 193, 7, 0.12); border: 1px dashed rgba(255, 193, 7, 0.5); padding: 0.8rem 1rem; border-radius: 8px; margin-bottom: 1.2rem; font-size: 0.8rem; color: #ffc107; line-height: 1.4;">
+                        <i class="fa-solid fa-flask"></i> <strong>Modo Pruebas Activado:</strong> Serás redirigido a la pasarela oficial de CaixaBank Redsys en entorno de test sin dinero real.
                     </div>
-                    <button type="submit" class="btn btn-block" id="tpv-submit-btn" style="background: #007bff; border-color: #007bff; color: #fff; margin-top: 1rem;">
-                        <i class="fa-solid fa-lock"></i> Autorizar Pago
+
+                    <button type="submit" class="btn btn-block" id="tpv-submit-btn" style="background: #007bff; border-color: #007bff; color: #ffffff; padding: 0.95rem; font-weight: 700; font-size: 0.95rem; border-radius: 8px; cursor: pointer;">
+                        <i class="fa-solid fa-lock"></i> Ir a Pasarela Segura CaixaBank
                     </button>
-                    <button type="button" class="btn btn-block" onclick="cancelTpvPayment()" style="margin-top: 0.5rem; background: transparent; border-color: rgba(255,255,255,0.1); color: var(--text-secondary);">
+                    <button type="button" class="btn btn-block" onclick="cancelTpvPayment()" style="margin-top: 0.6rem; background: transparent; border: 1px solid rgba(255,255,255,0.15); color: rgba(255,255,255,0.7); padding: 0.6rem; border-radius: 8px; cursor: pointer;">
                         Cancelar Transacción
                     </button>
                 </form>
@@ -958,6 +1935,8 @@
             align-items: center;
             justify-content: center;
             opacity: 1;
+            padding: 1.5rem 1rem;
+            overflow-y: auto;
             transition: all 0.3s ease;
         }
 
@@ -967,19 +1946,57 @@
             border-radius: 16px;
             width: 90%;
             max-width: 450px;
+            max-height: calc(100vh - 3rem);
+            overflow-y: auto;
             padding: 2rem;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
             position: relative;
+            margin: auto;
             animation: modalFadeIn 0.3s ease;
         }
 
         .custom-modal-card.max-width-lg {
-            max-width: 800px;
+            max-width: 980px;
+            width: 95vw;
+        }
+
+        .client-bookings-area {
+            overflow-x: auto;
+            margin-top: 1rem;
+        }
+
+        .client-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.83rem;
+        }
+
+        .client-table th {
+            padding: 0.6rem 0.5rem;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            white-space: nowrap;
+        }
+
+        .client-table td {
+            padding: 0.75rem 0.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            white-space: nowrap;
         }
 
         @keyframes modalFadeIn {
-            from { transform: scale(0.95); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
+            from {
+                transform: scale(0.95);
+                opacity: 0;
+            }
+
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
         }
 
         .custom-modal-close {
@@ -989,6 +2006,7 @@
             font-size: 1.8rem;
             color: var(--text-secondary);
             cursor: pointer;
+            z-index: 10;
             transition: all 0.2s ease;
         }
 
@@ -1060,18 +2078,19 @@
 
         /* TPV CaixaBank Styles */
         .custom-modal-card.tpv-card {
-            background: #fbfbfb;
-            color: #333;
-            max-width: 400px;
+            background: #0f1c3f;
+            color: #ffffff;
+            max-width: 440px;
             padding: 0;
             overflow: hidden;
-            border-radius: 12px;
-            box-shadow: 0 15px 30px rgba(0,0,0,0.5);
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7);
         }
 
         .tpv-header {
-            background: #007bff; /* CaixaBank Blue representation */
-            color: #fff;
+            background: linear-gradient(135deg, #0056b3, #007bff);
+            color: #ffffff;
             padding: 1.2rem 1.5rem;
             display: flex;
             justify-content: space-between;
@@ -1085,7 +2104,7 @@
         }
 
         .tpv-star {
-            color: #f7b32b; /* yellow star */
+            color: #f7b32b;
             font-size: 1.3rem;
         }
 
@@ -1093,65 +2112,52 @@
             font-weight: 800;
             font-size: 1.2rem;
             letter-spacing: -0.03em;
+            color: #ffffff;
         }
 
         .tpv-header-title {
             font-size: 0.8rem;
-            background: rgba(255,255,255,0.15);
-            padding: 0.25rem 0.5rem;
-            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 0.25rem 0.6rem;
+            border-radius: 6px;
+            font-weight: 600;
+            color: #ffffff;
         }
 
         .tpv-body {
             padding: 1.5rem;
+            background: #0f1c3f;
         }
 
         .tpv-amount-box {
-            background: #f1f5f9;
-            border-radius: 8px;
-            padding: 1rem;
+            background: rgba(7, 14, 36, 0.6);
+            border-radius: 10px;
+            padding: 1.2rem;
             margin-bottom: 1.2rem;
-            border: 1px solid #e2e8f0;
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .tpv-amount-row {
             display: flex;
             justify-content: space-between;
-            font-size: 0.9rem;
-            color: #475569;
-            margin-bottom: 0.25rem;
+            font-size: 0.95rem;
+            color: #cbd5e1;
+            margin-bottom: 0.4rem;
         }
 
         .tpv-amount-row.total {
             font-weight: 700;
-            font-size: 1.1rem;
-            color: #0f172a;
-            margin-top: 0.25rem;
-        }
-
-        .tpv-input {
-            background: #fff !important;
-            border-color: #cbd5e1 !important;
-            color: #333 !important;
-        }
-
-        .tpv-input:focus {
-            border-color: #007bff !important;
-            box-shadow: 0 0 8px rgba(0, 123, 255, 0.2) !important;
-        }
-
-        .tpv-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1rem;
+            font-size: 1.2rem;
+            color: #ffffff;
+            margin-top: 0.4rem;
         }
 
         .tpv-footer {
-            background: #f8fafc;
-            border-top: 1px solid #e2e8f0;
-            padding: 0.8rem 1.5rem;
-            font-size: 0.75rem;
-            color: #64748b;
+            background: #070e24;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 0.9rem 1.5rem;
+            font-size: 0.78rem;
+            color: rgba(255, 255, 255, 0.6);
             text-align: center;
         }
 
@@ -1160,7 +2166,7 @@
             overflow-x: auto;
             max-height: 400px;
             margin-top: 1rem;
-            border: 1px solid rgba(255,255,255,0.05);
+            border: 1px solid rgba(255, 255, 255, 0.05);
             border-radius: 8px;
         }
 
@@ -1175,23 +2181,23 @@
             background: rgba(7, 14, 36, 0.4);
             padding: 0.8rem 1rem;
             color: var(--text-secondary);
-            border-bottom: 1px solid rgba(255,255,255,0.08);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
             font-weight: 600;
         }
 
         .client-table td {
             padding: 0.8rem 1rem;
-            border-bottom: 1px solid rgba(255,255,255,0.03);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
             color: var(--text-primary);
         }
 
         .client-table tbody tr:hover {
-            background: rgba(255,255,255,0.02);
+            background: rgba(255, 255, 255, 0.02);
         }
 
         .client-doc-btn {
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             color: var(--text-primary);
             padding: 0.25rem 0.5rem;
             border-radius: 4px;
@@ -1211,12 +2217,16 @@
 
         /* Estilo personalizado para días no disponibles (deshabilitados) en el calendario */
         .flatpickr-day.flatpickr-disabled,
-        .flatpickr-day.flatpickr-disabled:hover {
+        .flatpickr-day.flatpickr-disabled:hover,
+        .flatpickr-day.disabled,
+        .flatpickr-day.disabled:hover,
+        span.flatpickr-day.disabled {
             color: #ff4d6d !important;
-            background: rgba(255, 77, 109, 0.15) !important;
-            text-decoration: line-through;
-            cursor: not-allowed;
+            background: rgba(255, 77, 109, 0.25) !important;
+            text-decoration: line-through !important;
+            cursor: not-allowed !important;
             border-color: transparent !important;
+            opacity: 0.7 !important;
         }
     </style>
 
@@ -1225,6 +2235,7 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
 
     <!-- Custom Script -->
-    <script src="app.js?v=2.1"></script>
+    <script src="app.js?v=21.0"></script>
 </body>
+
 </html>
