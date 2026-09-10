@@ -2442,15 +2442,19 @@ const initApp = () => {
         contactForm.addEventListener('submit', (e) => {
             e.preventDefault();
             const name = document.getElementById('contact-form-name').value.trim();
-            const contact = document.getElementById('contact-form-phone').value.trim();
             const reason = document.getElementById('contact-form-reason').value;
             const message = document.getElementById('contact-form-message').value.trim();
 
-            const text = `Hola RentMeUskar, me llamo *${name}*.\n\n*Contacto:* ${contact}\n*Motivo:* ${reason}\n\n*Mensaje:*\n${message}`;
+            const text = `Hola RentMeUskar, me llamo *${name}*.\n\n*Motivo:* ${reason}\n\n*Mensaje:*\n${message}`;
             const encodedText = encodeURIComponent(text);
             const whatsappUrl = `https://wa.me/34614767411?text=${encodedText}`;
 
             window.open(whatsappUrl, '_blank');
+            fetch('/api/contact', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, contact: 'WhatsApp Directo', reason, message })
+            }).catch(err => console.warn('Error al enviar copia por email:', err));
             contactForm.reset();
         });
     }

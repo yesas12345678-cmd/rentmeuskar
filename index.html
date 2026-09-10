@@ -696,16 +696,15 @@
         window.handleContactSubmit = function(e) {
             if (e && e.preventDefault) e.preventDefault();
             var name = document.getElementById('contact-form-name') ? document.getElementById('contact-form-name').value.trim() : '';
-            var contact = document.getElementById('contact-form-phone') ? document.getElementById('contact-form-phone').value.trim() : '';
             var reason = document.getElementById('contact-form-reason') ? document.getElementById('contact-form-reason').value : '';
             var message = document.getElementById('contact-form-message') ? document.getElementById('contact-form-message').value.trim() : '';
 
-            if (!name || !contact || !message) {
-                alert('Por favor, rellena todos los campos del formulario.');
+            if (!name || !message) {
+                alert('Por favor, introduce tu nombre y tu mensaje.');
                 return false;
             }
 
-            var text = 'Hola RentMeUskar, me llamo *' + name + '*.\n\n*Contacto:* ' + contact + '\n*Motivo:* ' + reason + '\n\n*Mensaje:*\n' + message;
+            var text = 'Hola RentMeUskar, me llamo *' + name + '*.\n\n*Motivo:* ' + reason + '\n\n*Mensaje:*\n' + message;
             var encodedText = encodeURIComponent(text);
             var whatsappUrl = 'https://wa.me/34614767411?text=' + encodedText;
 
@@ -714,7 +713,7 @@
             fetch('/api/contact', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: name, contact: contact, reason: reason, message: message })
+                body: JSON.stringify({ name: name, contact: 'WhatsApp Directo', reason: reason, message: message })
             }).catch(function(err) { console.warn('Error al enviar copia por email:', err); });
 
             var form = document.getElementById('contact-whatsapp-form');
@@ -1324,13 +1323,6 @@
                                         style="display: block; font-size: 0.8rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 0.4rem; font-weight: 600;">Tu
                                         Nombre</label>
                                     <input type="text" id="contact-form-name" class="form-control" placeholder=""
-                                        required>
-                                </div>
-                                <div class="custom-form-group" style="margin-bottom: 1.25rem;">
-                                    <label for="contact-form-phone"
-                                        style="display: block; font-size: 0.8rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 0.4rem; font-weight: 600;">Teléfono
-                                        o Email de Contacto</label>
-                                    <input type="text" id="contact-form-phone" class="form-control" placeholder=""
                                         required>
                                 </div>
                                 <div class="custom-form-group" style="margin-bottom: 1.25rem;">
