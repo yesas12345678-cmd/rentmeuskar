@@ -70,31 +70,10 @@ let fallbackSettings = {
   fianza_amount: '500,00',
   show_reviews_count: 'true'
 };
-let fallbackVans = [
-  { id: 1, van_type: 'medium', name: 'Ford Transit Custom L2H2 (8m³)', plate: '3681 MCC', m3: '8m³', price_sin: 79.00, min_price_con: 50.00, km_price_con: 1.00, status: 'active', images: [], custom_extras: [
-    { name: 'GPS Navegador', price: 5.00, type: 'daily' },
-    { name: 'Segundo Conductor', price: 8.00, type: 'daily' },
-    { name: 'Kit Mudanza', price: 10.00, type: 'once' }
-  ]},
-  { id: 2, van_type: 'large', name: 'MAN TGE L4H3 Gran Volumen (14m³)', plate: '3758 MDW', m3: '14m³', price_sin: 107.44, min_price_con: 60.00, km_price_con: 1.40, status: 'active', images: [], custom_extras: [
-    { name: 'GPS Navegador', price: 5.00, type: 'daily' },
-    { name: 'Segundo Conductor', price: 8.00, type: 'daily' },
-    { name: 'Kit Mudanza', price: 10.00, type: 'once' }
-  ]}
-];
-let fallbackReviews = [
-  { id: 1, booking_code: 'RMU-MOCK1', client_name: 'Francisco M.', rating: 5, comment: 'Alquilé la furgoneta Ford Transit Custom para una mudanza desde Granada a Huéscar. El trato fue inmejorable y el vehículo impecable.', role_or_city: 'Particular (Huéscar)', van_name: 'Ford Transit Custom L2H2 (8m³)' },
-  { id: 2, booking_code: 'RMU-MOCK2', client_name: 'María José S.', rating: 5, comment: 'Necesitábamos una furgoneta MAN TGE Gran Volumen de 14m³ para trasladar mobiliario. El vehículo comodísimo y excelente atención.', role_or_city: 'Particular (Puebla Don Fadrique)', van_name: 'MAN TGE L4H3 Gran Volumen (14m³)' },
-  { id: 3, booking_code: 'RMU-MOCK3', client_name: 'Antonio G.', rating: 5, comment: 'Como autónomo, a veces necesito un vehículo de gran volumen para repartos extra. RentMeUskar me soluciona la papeleta rápidamente.', role_or_city: 'Autónomo (Castril)', van_name: 'MAN TGE L4H3 Gran Volumen (14m³)' }
-];
+let fallbackVans = [];
+let fallbackReviews = [];
 let manualReviewCodes = [];
-let fallbackFaqs = [
-  { id: 1, question: '¿Qué requisitos necesito cumplir para alquilar sin conductor?', answer: 'Necesitas tener al menos 23 años (21 para furgonetas compactas) y estar en posesión del permiso de conducir tipo B vigente con una antigüedad mínima de 2 años. Deberás presentar el DNI/NIE y el carnet de conducir originales al retirar el vehículo.', display_order: 1 },
-  { id: 2, question: '¿Hay que dejar alguna fianza o depósito?', answer: 'Sí, se requiere una fianza de 500€ que se deposita en persona al recoger el vehículo (mediante tarjeta o efectivo). Esta fianza se reembolsará íntegramente tras revisar que el vehículo se devuelve en las mismas condiciones, limpio y sin daños.', display_order: 2 },
-  { id: 3, question: '¿Cómo funciona la política de combustible?', answer: 'Nuestra política es Lleno-Lleno (Full-to-Full). Te entregamos la furgoneta con el depósito de combustible lleno (diésel) y debes devolverla de la misma forma. De lo contrario, se cobrará el coste del combustible faltante más un cargo de gestión de repostaje.', display_order: 3 },
-  { id: 4, question: '¿Qué seguro está incluido en el precio base?', answer: 'El precio incluye seguro obligatorio de responsabilidad civil y seguro de colisión básico con franquicia. Esto significa que en caso de accidente o daños, la responsabilidad máxima del cliente está limitada al importe de la franquicia establecida (salvo negligencia).', display_order: 4 },
-  { id: 5, question: '¿Puedo viajar fuera de España con la furgoneta?', answer: 'Por defecto, el uso de las furgonetas está autorizada en territorio nacional (Península Ibérica). Si tienes pensado viajar a Portugal, Francia u otros países de Europa, debes comunicarlo con antelación para tramitar la cobertura del seguro correspondiente y asistencia en el extranjero.', display_order: 5 }
-];
+let fallbackFaqs = [];
 
 // Registro en memoria de solicitudes de cambio de credenciales de administrador
 const pendingAdminCredentialChanges = {};
@@ -445,58 +424,69 @@ const initDb = async () => {
     await client.query(createSettingsTableQuery);
     console.log('Tabla "settings" verificada/creada.');
 
-    // Pre-poblar furgonetas por defecto SOLO la primera vez que se inicializa el sistema
+    // Pre-poblar furgonetas por defecto SOLO la primera vez (vía flag persistente en PostgreSQL settings)
+    const vanInitCheck = await client.query("SELECT value FROM settings WHERE key = 'vans_initialized'");
     const countVans = await client.query('SELECT COUNT(*) FROM vans');
-    if (parseInt(countVans.rows[0].count) === 0 && !fs.existsSync(vansInitFlagPath)) {
-      await client.query(`
-        INSERT INTO vans (van_type, name, plate, m3, price_sin, min_price_con, km_price_con, status) VALUES
-        ('medium', 'Ford Transit Custom L2H2 (8m³)', '3681 MCC', '8m³', 79.00, 50.00, 1.00, 'active'),
-        ('large', 'MAN TGE L4H3 Gran Volumen (14m³)', '3758 MDW', '14m³', 107.44, 60.00, 1.40, 'active')
-      `);
-      fs.writeFileSync(vansInitFlagPath, 'true', 'utf8');
-      console.log('Furgonetas por defecto insertadas por primera vez.');
-    } else {
-      if (!fs.existsSync(vansInitFlagPath)) {
-        fs.writeFileSync(vansInitFlagPath, 'true', 'utf8');
+    if (vanInitCheck.rowCount === 0) {
+      if (parseInt(countVans.rows[0].count) === 0) {
+        await client.query(`
+          INSERT INTO vans (van_type, name, plate, m3, price_sin, min_price_con, km_price_con, status) VALUES
+          ('medium', 'Ford Transit Custom L2H2 (8m³)', '3681 MCC', '8m³', 79.00, 50.00, 1.00, 'active'),
+          ('large', 'MAN TGE L4H3 Gran Volumen (14m³)', '3758 MDW', '14m³', 107.44, 60.00, 1.40, 'active')
+        `);
+        console.log('Furgonetas por defecto insertadas por primera vez en PostgreSQL.');
       }
+      await client.query("INSERT INTO settings (key, value) VALUES ('vans_initialized', 'true') ON CONFLICT (key) DO NOTHING");
     }
 
-    // Pre-poblar FAQs por defecto si está vacía
+    // Pre-poblar FAQs por defecto SOLO la primera vez
+    const faqInitCheck = await client.query("SELECT value FROM settings WHERE key = 'faqs_initialized'");
     const countFaqs = await client.query('SELECT COUNT(*) FROM faqs');
-    if (parseInt(countFaqs.rows[0].count) === 0) {
-      await client.query(`
-        INSERT INTO faqs (question, answer, display_order) VALUES
-        ('¿Qué requisitos necesito cumplir para alquilar sin conductor?', 'Necesitas tener al menos 23 años (21 para furgonetas compactas) y estar en posesión del permiso de conducir tipo B vigente con una antigüedad mínima de 2 años. Deberás presentar el DNI/NIE y el carnet de conducir originales al retirar el vehículo.', 1),
-        ('¿Hay que dejar alguna fianza o depósito?', 'Sí, se requiere una fianza de 500€ que se deposita en persona al recoger el vehículo (mediante tarjeta o efectivo). Esta fianza se reembolsará íntegramente tras revisar que el vehículo se devuelve en las mismas condiciones, limpio y sin daños.', 2),
-        ('¿Cómo funciona la política de combustible?', 'Nuestra política es Lleno-Lleno (Full-to-Full). Te entregamos la furgoneta con el depósito de combustible lleno (diésel) y debes devolverla de la misma forma. De lo contrario, se cobrará el coste del combustible faltante más un cargo de gestión de repostaje.', 3),
-        ('¿Qué seguro está incluido en el precio base?', 'El precio incluye seguro obligatorio de responsabilidad civil y seguro de colisión básico con franquicia. Esto significa que en caso de accidente o daños, la responsabilidad máxima del cliente está limitada al importe de la franquicia establecida (salvo negligencia).', 4),
-        ('¿Puedo viajar fuera de España con la furgoneta?', 'Por defecto, el uso de las furgonetas está autorizada en territorio nacional (Península Ibérica). Si tienes pensado viajar a Portugal, Francia u otros países de Europa, debes comunicarlo con antelación para tramitar la cobertura del seguro correspondiente y asistencia en el extranjero.', 5)
-      `);
-      console.log('FAQs por defecto insertadas.');
+    if (faqInitCheck.rowCount === 0) {
+      if (parseInt(countFaqs.rows[0].count) === 0) {
+        await client.query(`
+          INSERT INTO faqs (question, answer, display_order) VALUES
+          ('¿Qué requisitos necesito cumplir para alquilar sin conductor?', 'Necesitas tener al menos 23 años (21 para furgonetas compactas) y estar en posesión del permiso de conducir tipo B vigente con una antigüedad mínima de 2 años. Deberás presentar el DNI/NIE y el carnet de conducir originales al retirar el vehículo.', 1),
+          ('¿Hay que dejar alguna fianza o depósito?', 'Sí, se requiere una fianza de 500€ que se deposita en persona al recoger el vehículo (mediante tarjeta o efectivo). Esta fianza se reembolsará íntegramente tras revisar que el vehículo se devuelve en las mismas condiciones, limpio y sin daños.', 2),
+          ('¿Cómo funciona la política de combustible?', 'Nuestra política es Lleno-Lleno (Full-to-Full). Te entregamos la furgoneta con el depósito de combustible lleno (diésel) y debes devolverla de la misma forma. De lo contrario, se cobrará el coste del combustible faltante más un cargo de gestión de repostaje.', 3),
+          ('¿Qué seguro está incluido en el precio base?', 'El precio incluye seguro obligatorio de responsabilidad civil y seguro de colisión básico con franquicia. Esto significa que en caso de accidente o daños, la responsabilidad máxima del cliente está limitada al importe de la franquicia establecida (salvo negligencia).', 4),
+          ('¿Puedo viajar fuera de España con la furgoneta?', 'Por defecto, el uso de las furgonetas está autorizada en territorio nacional (Península Ibérica). Si tienes pensado viajar a Portugal, Francia u otros países de Europa, debes comunicarlo con antelación para tramitar la cobertura del seguro correspondiente y asistencia en el extranjero.', 5)
+        `);
+        console.log('FAQs por defecto insertadas.');
+      }
+      await client.query("INSERT INTO settings (key, value) VALUES ('faqs_initialized', 'true') ON CONFLICT (key) DO NOTHING");
     }
 
-    // Pre-poblar opiniones por defecto si está vacía
+    // Pre-poblar opiniones por defecto SOLO la primera vez
+    const revInitCheck = await client.query("SELECT value FROM settings WHERE key = 'reviews_initialized'");
     const countReviews = await client.query('SELECT COUNT(*) FROM reviews');
-    if (parseInt(countReviews.rows[0].count) === 0) {
-      await client.query(`
-        INSERT INTO reviews (booking_code, client_name, rating, comment, role_or_city) VALUES
-        ('MOCK-1', 'Francisco M.', 5, 'Alquilé la furgoneta mediana para trasladar unos muebles desde Granada a Huéscar. El trato fue inmejorable y el vehículo estaba limpísimo. Repetiré seguro.', 'Particular (Huéscar)'),
-        ('MOCK-2', 'María José S.', 5, 'Necesitábamos una furgoneta de 9 plazas para un viaje de fin de semana con amigos de la Puebla de Don Fadrique. El viaje fue comodísimo y el precio muy razonable.', 'Viaje Familiar'),
-        ('MOCK-3', 'Antonio G.', 5, 'Como autónomo, a veces necesito un vehículo de gran volumen para repartos extra. RentMeUskar me soluciona la papeleta rápidamente y sin burocracia pesada.', 'Autónomo (Castril)')
-      `);
-      console.log('Opiniones por defecto insertadas.');
+    if (revInitCheck.rowCount === 0) {
+      if (parseInt(countReviews.rows[0].count) === 0) {
+        await client.query(`
+          INSERT INTO reviews (booking_code, client_name, rating, comment, role_or_city) VALUES
+          ('MOCK-1', 'Francisco M.', 5, 'Alquilé la furgoneta mediana para trasladar unos muebles desde Granada a Huéscar. El trato fue inmejorable y el vehículo estaba limpísimo. Repetiré seguro.', 'Particular (Huéscar)'),
+          ('MOCK-2', 'María José S.', 5, 'Necesitábamos una furgoneta de 9 plazas para un viaje de fin de semana con amigos de la Puebla de Don Fadrique. El viaje fue comodísimo y el precio muy razonable.', 'Viaje Familiar'),
+          ('MOCK-3', 'Antonio G.', 5, 'Como autónomo, a veces necesito un vehículo de gran volumen para repartos extra. RentMeUskar me soluciona la papeleta rápidamente y sin burocracia pesada.', 'Autónomo (Castril)')
+        `);
+        console.log('Opiniones por defecto insertadas.');
+      }
+      await client.query("INSERT INTO settings (key, value) VALUES ('reviews_initialized', 'true') ON CONFLICT (key) DO NOTHING");
     }
 
-    // Pre-poblar configuraciones de horarios si están vacías
+    // Pre-poblar configuraciones de horarios SOLO la primera vez
+    const setInitCheck = await client.query("SELECT value FROM settings WHERE key = 'settings_initialized'");
     const countSettings = await client.query('SELECT COUNT(*) FROM settings');
-    if (parseInt(countSettings.rows[0].count) === 0) {
-      await client.query(`
-        INSERT INTO settings (key, value) VALUES
-        ('hours_weekdays', '08:00 - 14:00, 16:00 - 20:00'),
-        ('hours_saturdays', '09:00 - 13:30'),
-        ('hours_sundays', 'Cerrado (Devoluciones pactadas)')
-      `);
-      console.log('Horarios de atención por defecto insertados.');
+    if (setInitCheck.rowCount === 0) {
+      if (parseInt(countSettings.rows[0].count) === 0) {
+        await client.query(`
+          INSERT INTO settings (key, value) VALUES
+          ('hours_weekdays', '08:00 - 14:00, 16:00 - 20:00'),
+          ('hours_saturdays', '09:00 - 13:30'),
+          ('hours_sundays', 'Cerrado (Devoluciones pactadas)')
+        `);
+        console.log('Horarios de atención por defecto insertados.');
+      }
+      await client.query("INSERT INTO settings (key, value) VALUES ('settings_initialized', 'true') ON CONFLICT (key) DO NOTHING");
     }
 
     // Alterar tabla de reservas para añadir columnas adicionales
