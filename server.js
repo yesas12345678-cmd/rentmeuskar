@@ -71,9 +71,19 @@ let fallbackSettings = {
   show_reviews_count: 'true'
 };
 let fallbackVans = [];
-let fallbackReviews = [];
+let fallbackReviews = [
+  { id: 1, booking_code: 'RMU-MOCK1', client_name: 'Francisco M.', rating: 5, comment: 'Alquilé la furgoneta Ford Transit Custom para una mudanza desde Granada a Huéscar. El trato fue inmejorable y el vehículo impecable.', role_or_city: 'Particular (Huéscar)', van_name: 'Ford Transit Custom L2H2 (8m³)' },
+  { id: 2, booking_code: 'RMU-MOCK2', client_name: 'María José S.', rating: 5, comment: 'Necesitábamos una furgoneta MAN TGE Gran Volumen de 14m³ para trasladar mobiliario. El vehículo comodísimo y excelente atención.', role_or_city: 'Particular (Puebla Don Fadrique)', van_name: 'MAN TGE L4H3 Gran Volumen (14m³)' },
+  { id: 3, booking_code: 'RMU-MOCK3', client_name: 'Antonio G.', rating: 5, comment: 'Como autónomo, a veces necesito un vehículo de gran volumen para repartos extra. RentMeUskar me soluciona la papeleta rápidamente.', role_or_city: 'Autónomo (Castril)', van_name: 'MAN TGE L4H3 Gran Volumen (14m³)' }
+];
 let manualReviewCodes = [];
-let fallbackFaqs = [];
+let fallbackFaqs = [
+  { id: 1, question: '¿Qué requisitos necesito cumplir para alquilar sin conductor?', answer: 'Necesitas tener al menos 23 años (21 para furgonetas compactas) y estar en posesión del permiso de conducir tipo B vigente con una antigüedad mínima de 2 años. Deberás presentar el DNI/NIE y el carnet de conducir originales al retirar el vehículo.', display_order: 1 },
+  { id: 2, question: '¿Hay que dejar alguna fianza o depósito?', answer: 'Sí, se requiere una fianza de 500€ que se deposita en persona al recoger el vehículo (mediante tarjeta o efectivo). Esta fianza se reembolsará íntegramente tras revisar que el vehículo se devuelve en las mismas condiciones, limpio y sin daños.', display_order: 2 },
+  { id: 3, question: '¿Cómo funciona la política de combustible?', answer: 'Nuestra política es Lleno-Lleno (Full-to-Full). Te entregamos la furgoneta con el depósito de combustible lleno (diésel) y debes devolverla de la misma forma. De lo contrario, se cobrará el coste del combustible faltante más un cargo de gestión de repostaje.', display_order: 3 },
+  { id: 4, question: '¿Qué seguro está incluido en el precio base?', answer: 'El precio incluye seguro obligatorio de responsabilidad civil y seguro de colisión básico con franquicia. Esto significa que en caso de accidente o daños, la responsabilidad máxima del cliente está limitada al importe de la franquicia establecida (salvo negligencia).', display_order: 4 },
+  { id: 5, question: '¿Puedo viajar fuera de España con la furgoneta?', answer: 'Por defecto, el uso de las furgonetas está autorizada en territorio nacional (Península Ibérica). Si tienes pensado viajar a Portugal, Francia u otros países de Europa, debes comunicarlo con antelación para tramitar la cobertura del seguro correspondiente y asistencia en el extranjero.', display_order: 5 }
+];
 
 // Registro en memoria de solicitudes de cambio de credenciales de administrador
 const pendingAdminCredentialChanges = {};
@@ -439,38 +449,30 @@ const initDb = async () => {
       await client.query("INSERT INTO settings (key, value) VALUES ('vans_initialized', 'true') ON CONFLICT (key) DO NOTHING");
     }
 
-    // Pre-poblar FAQs por defecto SOLO la primera vez
-    const faqInitCheck = await client.query("SELECT value FROM settings WHERE key = 'faqs_initialized'");
+    // Pre-poblar FAQs por defecto si está vacía
     const countFaqs = await client.query('SELECT COUNT(*) FROM faqs');
-    if (faqInitCheck.rowCount === 0) {
-      if (parseInt(countFaqs.rows[0].count) === 0) {
-        await client.query(`
-          INSERT INTO faqs (question, answer, display_order) VALUES
-          ('¿Qué requisitos necesito cumplir para alquilar sin conductor?', 'Necesitas tener al menos 23 años (21 para furgonetas compactas) y estar en posesión del permiso de conducir tipo B vigente con una antigüedad mínima de 2 años. Deberás presentar el DNI/NIE y el carnet de conducir originales al retirar el vehículo.', 1),
-          ('¿Hay que dejar alguna fianza o depósito?', 'Sí, se requiere una fianza de 500€ que se deposita en persona al recoger el vehículo (mediante tarjeta o efectivo). Esta fianza se reembolsará íntegramente tras revisar que el vehículo se devuelve en las mismas condiciones, limpio y sin daños.', 2),
-          ('¿Cómo funciona la política de combustible?', 'Nuestra política es Lleno-Lleno (Full-to-Full). Te entregamos la furgoneta con el depósito de combustible lleno (diésel) y debes devolverla de la misma forma. De lo contrario, se cobrará el coste del combustible faltante más un cargo de gestión de repostaje.', 3),
-          ('¿Qué seguro está incluido en el precio base?', 'El precio incluye seguro obligatorio de responsabilidad civil y seguro de colisión básico con franquicia. Esto significa que en caso de accidente o daños, la responsabilidad máxima del cliente está limitada al importe de la franquicia establecida (salvo negligencia).', 4),
-          ('¿Puedo viajar fuera de España con la furgoneta?', 'Por defecto, el uso de las furgonetas está autorizada en territorio nacional (Península Ibérica). Si tienes pensado viajar a Portugal, Francia u otros países de Europa, debes comunicarlo con antelación para tramitar la cobertura del seguro correspondiente y asistencia en el extranjero.', 5)
-        `);
-        console.log('FAQs por defecto insertadas.');
-      }
-      await client.query("INSERT INTO settings (key, value) VALUES ('faqs_initialized', 'true') ON CONFLICT (key) DO NOTHING");
+    if (parseInt(countFaqs.rows[0].count) === 0) {
+      await client.query(`
+        INSERT INTO faqs (question, answer, display_order) VALUES
+        ('¿Qué requisitos necesito cumplir para alquilar sin conductor?', 'Necesitas tener al menos 23 años (21 para furgonetas compactas) y estar en posesión del permiso de conducir tipo B vigente con una antigüedad mínima de 2 años. Deberás presentar el DNI/NIE y el carnet de conducir originales al retirar el vehículo.', 1),
+        ('¿Hay que dejar alguna fianza o depósito?', 'Sí, se requiere una fianza de 500€ que se deposita en persona al recoger el vehículo (mediante tarjeta o efectivo). Esta fianza se reembolsará íntegramente tras revisar que el vehículo se devuelve en las mismas condiciones, limpio y sin daños.', 2),
+        ('¿Cómo funciona la política de combustible?', 'Nuestra política es Lleno-Lleno (Full-to-Full). Te entregamos la furgoneta con el depósito de combustible lleno (diésel) y debes devolverla de la misma forma. De lo contrario, se cobrará el coste del combustible faltante más un cargo de gestión de repostaje.', 3),
+        ('¿Qué seguro está incluido en el precio base?', 'El precio incluye seguro obligatorio de responsabilidad civil y seguro de colisión básico con franquicia. Esto significa que en caso de accidente o daños, la responsabilidad máxima del cliente está limitada al importe de la franquicia establecida (salvo negligencia).', 4),
+        ('¿Puedo viajar fuera de España con la furgoneta?', 'Por defecto, el uso de las furgonetas está autorizada en territorio nacional (Península Ibérica). Si tienes pensado viajar a Portugal, Francia u otros países de Europa, debes comunicarlo con antelación para tramitar la cobertura del seguro correspondiente y asistencia en el extranjero.', 5)
+      `);
+      console.log('FAQs por defecto insertadas.');
     }
 
-    // Pre-poblar opiniones por defecto SOLO la primera vez
-    const revInitCheck = await client.query("SELECT value FROM settings WHERE key = 'reviews_initialized'");
+    // Pre-poblar opiniones por defecto si está vacía
     const countReviews = await client.query('SELECT COUNT(*) FROM reviews');
-    if (revInitCheck.rowCount === 0) {
-      if (parseInt(countReviews.rows[0].count) === 0) {
-        await client.query(`
-          INSERT INTO reviews (booking_code, client_name, rating, comment, role_or_city) VALUES
-          ('MOCK-1', 'Francisco M.', 5, 'Alquilé la furgoneta mediana para trasladar unos muebles desde Granada a Huéscar. El trato fue inmejorable y el vehículo estaba limpísimo. Repetiré seguro.', 'Particular (Huéscar)'),
-          ('MOCK-2', 'María José S.', 5, 'Necesitábamos una furgoneta de 9 plazas para un viaje de fin de semana con amigos de la Puebla de Don Fadrique. El viaje fue comodísimo y el precio muy razonable.', 'Viaje Familiar'),
-          ('MOCK-3', 'Antonio G.', 5, 'Como autónomo, a veces necesito un vehículo de gran volumen para repartos extra. RentMeUskar me soluciona la papeleta rápidamente y sin burocracia pesada.', 'Autónomo (Castril)')
-        `);
-        console.log('Opiniones por defecto insertadas.');
-      }
-      await client.query("INSERT INTO settings (key, value) VALUES ('reviews_initialized', 'true') ON CONFLICT (key) DO NOTHING");
+    if (parseInt(countReviews.rows[0].count) === 0) {
+      await client.query(`
+        INSERT INTO reviews (booking_code, client_name, rating, comment, role_or_city) VALUES
+        ('MOCK-1', 'Francisco M.', 5, 'Alquilé la furgoneta mediana para trasladar unos muebles desde Granada a Huéscar. El trato fue inmejorable y el vehículo estaba limpísimo. Repetiré seguro.', 'Particular (Huéscar)'),
+        ('MOCK-2', 'María José S.', 5, 'Necesitábamos una furgoneta de 9 plazas para un viaje de fin de semana con amigos de la Puebla de Don Fadrique. El viaje fue comodísimo y el precio muy razonable.', 'Viaje Familiar'),
+        ('MOCK-3', 'Antonio G.', 5, 'Como autónomo, a veces necesito un vehículo de gran volumen para repartos extra. RentMeUskar me soluciona la papeleta rápidamente y sin burocracia pesada.', 'Autónomo (Castril)')
+      `);
+      console.log('Opiniones por defecto insertadas.');
     }
 
     // Pre-poblar configuraciones de horarios SOLO la primera vez
