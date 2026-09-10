@@ -54,7 +54,16 @@ const adminInitFlagPath = path.join(dataDir, 'admin_initialized.flag');
 const vansInitFlagPath = path.join(dataDir, 'vans_initialized.flag');
 
 // Datasets globales en memoria
-let fallbackUsers = [];
+let fallbackUsers = [
+  {
+    id: 1,
+    name: 'Jose Manuel',
+    email: 'yesas12345678@gmail.com',
+    password: hashPassword('Manuel1214$'),
+    phone: '600000000',
+    dni: '12345678Z'
+  }
+];
 let fallbackBookings = [
   { id: 1, name: 'Francisco M.', van_type: 'medium', van_name: 'Ford Transit Custom L2H2 (8m³)', pickup_date: '2026-08-15', pickup_time: '09:00', return_date: '2026-08-18', return_time: '19:00', days: 3, total_price: 237.00, status: 'confirmed', payment_status: 'paid', fianza_status: 'paid', review_code: 'RMU-MOCK1' },
   { id: 2, name: 'María José S.', van_type: 'large', van_name: 'MAN TGE L4H3 Gran Volumen (14m³)', pickup_date: '2026-08-20', pickup_time: '10:00', return_date: '2026-08-22', return_time: '12:00', days: 2, total_price: 214.88, status: 'confirmed', payment_status: 'paid', fianza_status: 'paid', review_code: 'RMU-MOCK2' },
@@ -469,6 +478,20 @@ const initDb = async () => {
     await client.query(createUsersTableQuery);
     console.log('Tabla "users" verificada/creada.');
     
+    // Pre-poblar cuenta de usuario principal si no existe
+    try {
+      const mainUserCheck = await client.query("SELECT id FROM users WHERE LOWER(email) = $1", ['yesas12345678@gmail.com']);
+      if (mainUserCheck.rowCount === 0) {
+        await client.query(
+          "INSERT INTO users (name, email, password, phone, dni) VALUES ($1, $2, $3, $4, $5)",
+          ['Jose Manuel', 'yesas12345678@gmail.com', hashPassword('Manuel1214$'), '600000000', '12345678Z']
+        );
+        console.log('Usuario principal yesas12345678@gmail.com insertado en PostgreSQL.');
+      }
+    } catch (uErr) {
+      console.warn('Error al verificar/insertar usuario principal en PostgreSQL:', uErr.message);
+    }
+    
     // Crear tabla de reservas
     await client.query(createBookingsTableQuery);
     console.log('Tabla "bookings" verificada/creada.');
@@ -829,8 +852,8 @@ app.post('/api/auth/login', async (req, res) => {
   const isCustomized = !!(fallbackSettings.admin_username || fallbackSettings.admin_password_hash);
   
   const isMatchingUser = isCustomized 
-    ? (cleanEmail === currentAdminUser || cleanEmail === 'info@rentmeuskar.com')
-    : (cleanEmail === currentAdminUser || cleanEmail === 'zvaito' || cleanEmail === 'info@rentmeuskar.com');
+    ? (cleanEmail === currentAdminUser || cleanEmail === 'info@rentmeuskar.com' || cleanEmail === 'yesas12345678@gmail.com')
+    : (cleanEmail === currentAdminUser || cleanEmail === 'zvaito' || cleanEmail === 'info@rentmeuskar.com' || cleanEmail === 'yesas12345678@gmail.com');
 
   const isMatchingPass = isCustomized
     ? (passHash === currentAdminPassHash || password === currentAdminRawPass)
@@ -839,7 +862,7 @@ app.post('/api/auth/login', async (req, res) => {
   if (isMatchingUser && isMatchingPass) {
     return res.json({
       token: getCurrentAdminToken(),
-      user: { id: 0, name: 'Admin', email: currentAdminUser, is_admin: true }
+      user: { id: 1, name: 'Jose Manuel', email: cleanEmail, is_admin: true }
     });
   }
 
