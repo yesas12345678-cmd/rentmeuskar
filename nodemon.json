@@ -1,0 +1,13 @@
+{
+  "verbose": true,
+  "ignore": [
+    "data/*",
+    "data/**",
+    "uploads/*",
+    "uploads/**",
+    "admin_store.json"
+  ],
+  "watch": [
+    "server.js"
+  ]
+}

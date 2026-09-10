@@ -141,28 +141,44 @@ loadAdminStoreFromFile();
 async function syncDatabaseWithDisk(clientOrPool) {
   const targetPool = clientOrPool || pool;
   try {
-    // 1. Furgonetas
-    const vansRes = await targetPool.query("SELECT * FROM vans ORDER BY id ASC");
-    if (vansRes.rows.length > 0) {
-      fallbackVans = vansRes.rows;
-    } else if (fallbackVans.length > 0) {
+    // 1. Furgonetas (MERGE)
+    if (Array.isArray(fallbackVans) && fallbackVans.length > 0) {
       for (const van of fallbackVans) {
         await targetPool.query(
           `INSERT INTO vans (id, van_type, name, plate, m3, price_sin, min_price_con, km_price_con, status, images, custom_extras, max_occupants, eco_label, daily_km_limit, max_mass, fuel_type, waiting_hour_price, custom_features)
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
-           ON CONFLICT (id) DO NOTHING`,
+           ON CONFLICT (van_type) DO UPDATE SET
+             name = EXCLUDED.name, plate = EXCLUDED.plate, m3 = EXCLUDED.m3, price_sin = EXCLUDED.price_sin,
+             min_price_con = EXCLUDED.min_price_con, km_price_con = EXCLUDED.km_price_con, status = EXCLUDED.status,
+             images = EXCLUDED.images, custom_extras = EXCLUDED.custom_extras, max_occupants = EXCLUDED.max_occupants,
+             eco_label = EXCLUDED.eco_label, daily_km_limit = EXCLUDED.daily_km_limit, max_mass = EXCLUDED.max_mass,
+             fuel_type = EXCLUDED.fuel_type, waiting_hour_price = EXCLUDED.waiting_hour_price, custom_features = EXCLUDED.custom_features`,
           [
             van.id, van.van_type, van.name, van.plate, van.m3, van.price_sin, van.min_price_con, van.km_price_con,
             van.status || 'active', van.images || [], JSON.stringify(van.custom_extras || []),
             van.max_occupants || 3, van.eco_label || 'C', van.daily_km_limit || 350, van.max_mass || 2800,
             van.fuel_type || 'GASOIL', van.waiting_hour_price || 30.00, JSON.stringify(van.custom_features || [])
           ]
-        );
+        ).catch(e => console.warn('Error syncing van to DB:', e.message));
       }
     }
+    const vansRes = await targetPool.query("SELECT * FROM vans ORDER BY id ASC");
+    if (vansRes.rows.length > 0) {
+      fallbackVans = vansRes.rows;
+    }
 
-    // 2. Bloqueos de Disponibilidad
+    // 2. Bloqueos de Disponibilidad (MERGE)
     try {
+      if (Array.isArray(fallbackBlockages) && fallbackBlockages.length > 0) {
+        for (const block of fallbackBlockages) {
+          await targetPool.query(
+            `INSERT INTO van_blockages (id, van_type, start_date, end_date, reason)
+             VALUES ($1, $2, $3, $4, $5)
+             ON CONFLICT (id) DO NOTHING`,
+            [block.id, block.van_type, block.start_date, block.end_date, block.reason]
+          ).catch(e => console.warn('Error syncing blockage to DB:', e.message));
+        }
+      }
       const blockRes = await targetPool.query("SELECT * FROM van_blockages ORDER BY id ASC");
       if (blockRes.rows.length > 0) {
         fallbackBlockages = blockRes.rows.map(b => ({
@@ -170,56 +186,48 @@ async function syncDatabaseWithDisk(clientOrPool) {
           start_date: formatDateISO(b.start_date),
           end_date: formatDateISO(b.end_date)
         }));
-      } else if (fallbackBlockages.length > 0) {
-        for (const block of fallbackBlockages) {
-          await targetPool.query(
-            `INSERT INTO van_blockages (id, van_type, start_date, end_date, reason)
-             VALUES ($1, $2, $3, $4, $5)
-             ON CONFLICT (id) DO NOTHING`,
-            [block.id, block.van_type, block.start_date, block.end_date, block.reason]
-          );
-        }
       }
     } catch (e) {
       console.warn('[SYNC WARN] Error al sincronizar bloqueos:', e.message);
     }
 
-    // 3. FAQs (Preguntas Frecuentes)
-    const faqsRes = await targetPool.query("SELECT * FROM faqs ORDER BY display_order ASC, id ASC");
-    if (faqsRes.rows.length > 0) {
-      fallbackFaqs = faqsRes.rows;
-    } else if (fallbackFaqs.length > 0) {
+    // 3. FAQs (MERGE)
+    if (Array.isArray(fallbackFaqs) && fallbackFaqs.length > 0) {
       for (const faq of fallbackFaqs) {
         await targetPool.query(
           `INSERT INTO faqs (id, question, answer, display_order)
            VALUES ($1, $2, $3, $4)
-           ON CONFLICT (id) DO NOTHING`,
+           ON CONFLICT (id) DO UPDATE SET question = EXCLUDED.question, answer = EXCLUDED.answer, display_order = EXCLUDED.display_order`,
           [faq.id, faq.question, faq.answer, faq.display_order || 0]
-        );
+        ).catch(e => console.warn('Error syncing faq to DB:', e.message));
       }
     }
+    const faqsRes = await targetPool.query("SELECT * FROM faqs ORDER BY display_order ASC, id ASC");
+    if (faqsRes.rows.length > 0) {
+      fallbackFaqs = faqsRes.rows;
+    }
 
-    // 4. Configuraciones (Horarios, teléfonos, fianza, etc.)
+    // 4. Configuraciones (MERGE)
+    for (const [key, value] of Object.entries(fallbackSettings)) {
+      await targetPool.query(
+        "INSERT INTO settings (key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value",
+        [key, String(value)]
+      ).catch(e => console.warn('Error syncing setting to DB:', e.message));
+    }
     const settingsRes = await targetPool.query("SELECT * FROM settings");
     if (settingsRes.rows.length > 0) {
       settingsRes.rows.forEach(row => {
         fallbackSettings[row.key] = row.value;
       });
     }
-    for (const [key, value] of Object.entries(fallbackSettings)) {
-      await targetPool.query(
-        "INSERT INTO settings (key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value",
-        [key, String(value)]
-      );
-    }
 
-    // 5. Reservas
+    // 5. Reservas (MERGE)
     const bookingsRes = await targetPool.query("SELECT * FROM bookings ORDER BY id DESC");
     if (bookingsRes.rows.length > 0) {
       fallbackBookings = bookingsRes.rows;
     }
 
-    // 6. Reseñas
+    // 6. Reseñas (MERGE)
     try {
       const reviewsRes = await targetPool.query("SELECT * FROM reviews ORDER BY id DESC");
       if (reviewsRes.rows.length > 0) {
@@ -229,8 +237,18 @@ async function syncDatabaseWithDisk(clientOrPool) {
       console.warn('[SYNC WARN] Error al sincronizar reseñas:', e.message);
     }
 
-    // 7. Usuarios registrados
+    // 7. Usuarios registrados (MERGE)
     try {
+      if (Array.isArray(fallbackUsers) && fallbackUsers.length > 0) {
+        for (const u of fallbackUsers) {
+          await targetPool.query(
+            `INSERT INTO users (id, name, email, password, phone, dni)
+             VALUES ($1, $2, $3, $4, $5, $6)
+             ON CONFLICT (id) DO NOTHING`,
+            [u.id, u.name, u.email, u.password, u.phone || '', u.dni || '']
+          ).catch(e => console.warn('Error syncing user to DB:', e.message));
+        }
+      }
       const usersRes = await targetPool.query("SELECT * FROM users ORDER BY id ASC");
       if (usersRes.rows.length > 0) {
         usersRes.rows.forEach(dbUser => {
@@ -241,22 +259,13 @@ async function syncDatabaseWithDisk(clientOrPool) {
             fallbackUsers.push(dbUser);
           }
         });
-      } else if (fallbackUsers.length > 0) {
-        for (const u of fallbackUsers) {
-          await targetPool.query(
-            `INSERT INTO users (id, name, email, password, phone, dni)
-             VALUES ($1, $2, $3, $4, $5, $6)
-             ON CONFLICT (id) DO NOTHING`,
-            [u.id, u.name, u.email, u.password, u.phone || '', u.dni || '']
-          );
-        }
       }
     } catch (e) {
       console.warn('[SYNC WARN] Error al sincronizar usuarios:', e.message);
     }
 
     saveAdminStoreToFile();
-    console.log(`[PERSISTENCE SAFE SYNC] Sincronización completa: ${fallbackVans.length} furgonetas, ${fallbackBookings.length} reservas, ${fallbackFaqs.length} FAQs, ${fallbackBlockages.length} bloqueos, ${fallbackUsers.length} usuarios.`);
+    console.log(`[PERSISTENCE SAFE SYNC] Sincronización bidireccional completa: ${fallbackVans.length} furgonetas, ${fallbackBookings.length} reservas, ${fallbackFaqs.length} FAQs, ${fallbackBlockages.length} bloqueos, ${fallbackUsers.length} usuarios.`);
   } catch (err) {
     console.warn('[PERSISTENCE SYNC WARN] Error al sincronizar PostgreSQL:', err.message);
   }
