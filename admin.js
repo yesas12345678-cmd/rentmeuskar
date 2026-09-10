@@ -184,6 +184,9 @@ const initAdmin = () => {
     const settingHoursSaturdays = document.getElementById('setting-hours-saturdays');
     const settingHoursSundays = document.getElementById('setting-hours-sundays');
     const settingShowReviewsCount = document.getElementById('setting-show-reviews-count');
+    const settingContactPhone = document.getElementById('setting-contact-phone');
+    const settingContactEmail = document.getElementById('setting-contact-email');
+    const settingFianzaAmount = document.getElementById('setting-fianza-amount');
     
     // Elementos de la Pestaña de Disponibilidad
     const tabAvailability = document.getElementById('tab-availability');
@@ -1064,6 +1067,9 @@ const initAdmin = () => {
             settingHoursWeekdays.value = data.hours_weekdays || '';
             settingHoursSaturdays.value = data.hours_saturdays || '';
             settingHoursSundays.value = data.hours_sundays || '';
+            if (settingContactPhone) settingContactPhone.value = data.contact_phone || '34614767411';
+            if (settingContactEmail) settingContactEmail.value = data.contact_email || 'info@rentmeuskar.com';
+            if (settingFianzaAmount) settingFianzaAmount.value = data.fianza_amount || '500,00';
             if (settingShowReviewsCount) {
                 settingShowReviewsCount.checked = data.show_reviews_count === 'true';
             }
@@ -1289,6 +1295,37 @@ const initAdmin = () => {
             filterVan.appendChild(opt);
         });
         filterVan.value = currentVal;
+
+        // Actualizar también selector de código de reseña y de bloqueos
+        const genSelect = document.getElementById('admin-gen-van-select');
+        if (genSelect) {
+            const genVal = genSelect.value;
+            genSelect.innerHTML = '';
+            fleet.forEach(van => {
+                const opt = document.createElement('option');
+                opt.value = van.name;
+                opt.textContent = van.name;
+                genSelect.appendChild(opt);
+            });
+            if (genVal && Array.from(genSelect.options).some(o => o.value === genVal)) {
+                genSelect.value = genVal;
+            }
+        }
+
+        const blockSelect = document.getElementById('block-van-type');
+        if (blockSelect) {
+            const blockVal = blockSelect.value;
+            blockSelect.innerHTML = '<option value="" disabled selected>-- Selecciona Furgoneta --</option>';
+            fleet.forEach(van => {
+                const opt = document.createElement('option');
+                opt.value = van.van_type;
+                opt.textContent = `${van.name} (${van.van_type})`;
+                blockSelect.appendChild(opt);
+            });
+            if (blockVal && Array.from(blockSelect.options).some(o => o.value === blockVal)) {
+                blockSelect.value = blockVal;
+            }
+        }
     };
 
     // Renderizar la tabla de furgonetas
@@ -1779,13 +1816,16 @@ const initAdmin = () => {
                     hours_weekdays: settingHoursWeekdays.value.trim(),
                     hours_saturdays: settingHoursSaturdays.value.trim(),
                     hours_sundays: settingHoursSundays.value.trim(),
-                    show_reviews_count: settingShowReviewsCount.checked ? 'true' : 'false'
+                    show_reviews_count: settingShowReviewsCount.checked ? 'true' : 'false',
+                    contact_phone: settingContactPhone ? settingContactPhone.value.trim() : '34614767411',
+                    contact_email: settingContactEmail ? settingContactEmail.value.trim() : 'info@rentmeuskar.com',
+                    fianza_amount: settingFianzaAmount ? settingFianzaAmount.value.trim() : '500,00'
                 })
             });
             
             const data = await res.json();
             if (res.ok) {
-                showToast('Horarios actualizados con éxito.', 'success');
+                showToast('Configuración guardada con éxito.', 'success');
             } else {
                 showToast(data.error || 'Error al actualizar horarios.', 'error');
             }

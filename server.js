@@ -1400,11 +1400,15 @@ let fallbackBookings = [
 // Bloqueos de furgonetas fallback en memoria
 let fallbackBlockages = [];
 
-// Configuraciones de horario fallback en memoria
+// Configuraciones de horario y negocio fallback en memoria
 let fallbackSettings = {
   hours_weekdays: '08:00 - 14:00, 16:00 - 20:00',
   hours_saturdays: '09:00 - 13:30',
-  hours_sundays: 'Cerrado (Devoluciones pactadas)'
+  hours_sundays: 'Cerrado (Devoluciones pactadas)',
+  contact_phone: '34614767411',
+  contact_email: 'info@rentmeuskar.com',
+  fianza_amount: '500,00',
+  show_reviews_count: 'true'
 };
 
 // Catálogo fallback en memoria en caso de que la base de datos PostgreSQL remota esté caída
@@ -1768,14 +1772,17 @@ app.get('/api/settings', async (req, res) => {
 });
 
 app.put('/api/settings', verifyAdmin, async (req, res) => {
-  const { hours_weekdays, hours_saturdays, hours_sundays, show_reviews_count } = req.body;
+  const { hours_weekdays, hours_saturdays, hours_sundays, show_reviews_count, contact_phone, contact_email, fianza_amount } = req.body;
   
   try {
     const queries = [
       { key: 'hours_weekdays', value: hours_weekdays },
       { key: 'hours_saturdays', value: hours_saturdays },
       { key: 'hours_sundays', value: hours_sundays },
-      { key: 'show_reviews_count', value: show_reviews_count }
+      { key: 'show_reviews_count', value: show_reviews_count },
+      { key: 'contact_phone', value: contact_phone },
+      { key: 'contact_email', value: contact_email },
+      { key: 'fianza_amount', value: fianza_amount }
     ];
     
     for (const q of queries) {
@@ -1788,15 +1795,18 @@ app.put('/api/settings', verifyAdmin, async (req, res) => {
       }
     }
     
-    res.json({ message: 'Horarios actualizados con éxito.', settings: fallbackSettings });
+    res.json({ message: 'Configuración actualizada con éxito.', settings: fallbackSettings });
   } catch (err) {
     console.warn('Base de datos offline, actualizando settings en memoria:', err.message);
     if (hours_weekdays !== undefined) fallbackSettings.hours_weekdays = hours_weekdays;
     if (hours_saturdays !== undefined) fallbackSettings.hours_saturdays = hours_saturdays;
     if (hours_sundays !== undefined) fallbackSettings.hours_sundays = hours_sundays;
     if (show_reviews_count !== undefined) fallbackSettings.show_reviews_count = show_reviews_count;
+    if (contact_phone !== undefined) fallbackSettings.contact_phone = contact_phone;
+    if (contact_email !== undefined) fallbackSettings.contact_email = contact_email;
+    if (fianza_amount !== undefined) fallbackSettings.fianza_amount = fianza_amount;
     
-    res.json({ message: 'Horarios actualizados temporalmente en memoria (Modo offline sin BD).', settings: fallbackSettings });
+    res.json({ message: 'Configuración actualizada temporalmente en memoria (Modo offline sin BD).', settings: fallbackSettings });
   }
 });
 

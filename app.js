@@ -937,6 +937,9 @@ const initApp = () => {
             document.querySelector('.price-summary-box .summary-row:nth-child(3) span:first-child').textContent = 'IVA (21%):';
         }
 
+        updateCalculatorUI();
+    };
+
     // Función auxiliar para parsear fechas en español (DD/MM/YYYY o YYYY-MM-DD)
     const parseSpanishDate = (dateStr) => {
         if (!dateStr) return null;
@@ -1588,7 +1591,6 @@ const initApp = () => {
         }
 
         // Calcular precio exacto numérico de forma robusta
-        const van = databaseVans.find(v => v.van_type === vanType);
         let totalPriceNum = 0;
 
         if (rentalMode === 'sin') {
@@ -2407,7 +2409,7 @@ const initApp = () => {
         }
     };
 
-    // Cargar configuraciones de horario y de visualización del badge de opiniones
+    // Cargar configuraciones de horario, contacto y de visualización del badge de opiniones
     const loadSettings = async () => {
         try {
             const res = await fetch('/api/settings');
@@ -2421,6 +2423,33 @@ const initApp = () => {
                 if (sat && data.hours_saturdays) sat.textContent = data.hours_saturdays;
                 if (sun && data.hours_sundays) sun.textContent = data.hours_sundays;
 
+                // Actualizar teléfono y whatsapp
+                if (data.contact_phone) {
+                    CONFIG.whatsappNumber = data.contact_phone.replace(/\D/g, '');
+                    const cleanPhone = CONFIG.whatsappNumber;
+                    const formattedPhone = cleanPhone.length >= 11 
+                        ? '+' + cleanPhone.slice(0, 2) + ' ' + cleanPhone.slice(2, 5) + ' ' + cleanPhone.slice(5, 8) + ' ' + cleanPhone.slice(8)
+                        : cleanPhone;
+                    
+                    const phoneLink = document.getElementById('contact-phone-link');
+                    const phoneText = document.getElementById('contact-phone-text');
+                    const waLink = document.getElementById('contact-wa-link');
+                    const waText = document.getElementById('contact-wa-text');
+
+                    if (phoneLink) phoneLink.href = 'tel:+' + cleanPhone;
+                    if (phoneText) phoneText.textContent = formattedPhone;
+                    if (waLink) waLink.href = 'https://wa.me/' + cleanPhone;
+                    if (waText) waText.textContent = formattedPhone;
+                }
+
+                // Actualizar email
+                if (data.contact_email) {
+                    const emailLink = document.getElementById('contact-email-link');
+                    const emailText = document.getElementById('contact-email-text');
+                    if (emailLink) emailLink.href = 'mailto:' + data.contact_email;
+                    if (emailText) emailText.textContent = data.contact_email;
+                }
+
                 // Mostrar/ocultar placa de cantidad de opiniones verificadas
                 const badge = document.getElementById('reviews-count-badge');
                 if (badge) {
@@ -2432,7 +2461,7 @@ const initApp = () => {
                 }
             }
         } catch (err) {
-            console.error('Error al cargar horarios:', err);
+            console.error('Error al cargar configuraciones:', err);
         }
     };
 
@@ -2447,7 +2476,7 @@ const initApp = () => {
 
             const text = `Hola RentMeUskar, me llamo *${name}*.\n\n*Motivo:* ${reason}\n\n*Mensaje:*\n${message}`;
             const encodedText = encodeURIComponent(text);
-            const whatsappUrl = `https://wa.me/34614767411?text=${encodedText}`;
+            const whatsappUrl = `https://wa.me/${CONFIG.whatsappNumber}?text=${encodedText}`;
 
             window.open(whatsappUrl, '_blank');
             fetch('/api/contact', {
@@ -2461,11 +2490,20 @@ const initApp = () => {
 
     // Ejecutar inicializaciones dinámicas en paralelo para acelerar la carga
     Promise.allSettled([
+        loadVans(),
         loadReviews(),
         loadFaqs(),
         loadSettings()
     ]);
     initStarRating();
+
+    // Sincronización automática de datos en segundo plano cada 30 segundos
+    setInterval(() => {
+        loadVans();
+        loadSettings();
+        loadFaqs();
+        loadReviews();
+    }, 30000);
 };
 
 if (document.readyState === 'loading') {
