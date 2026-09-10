@@ -1661,7 +1661,7 @@ const initAdmin = () => {
             vanFormType.disabled = true;
             vanFormName.value = van.name;
             vanFormPlate.value = van.plate;
-            vanFormM3.value = van.m3 ? van.m3.replace(/[^0-9]/g, '') : '';
+            vanFormM3.value = van.m3 ? van.m3.replace(/[^0-9.,]/g, '').replace(',', '.') : '';
             vanFormPriceSin.value = van.price_sin;
             vanFormMinPriceCon.value = van.min_price_con;
             vanFormKmPriceCon.value = van.km_price_con;
@@ -1859,7 +1859,7 @@ const initAdmin = () => {
         formData.append('van_type', typeVal);
         formData.append('name', vanFormName.value.trim());
         formData.append('plate', vanFormPlate.value.trim());
-        let m3Val = vanFormM3.value.trim();
+        let m3Val = vanFormM3.value.trim().replace(',', '.');
         if (m3Val && !m3Val.endsWith('m³')) {
             m3Val += 'm³';
         }
