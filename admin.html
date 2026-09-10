@@ -1009,11 +1009,11 @@
                     <form id="admin-credentials-form" onsubmit="return false;">
                         <div class="custom-form-group" style="margin-bottom: 1.2rem;">
                             <label style="display: block; font-size: 0.8rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 0.5rem; font-weight: 600; letter-spacing: 0.05em;">Nuevo Nombre de Usuario / Email Admin</label>
-                            <input type="text" id="admin-new-username" class="search-input" style="padding-left: 1rem;" placeholder="Ej: info@rentmeuskar.com o zvaito" required>
+                            <input type="text" id="admin-new-username" class="search-input" style="padding-left: 1rem;" placeholder="Nuevo usuario o email" required>
                         </div>
                         <div class="custom-form-group" style="margin-bottom: 1.5rem;">
                             <label style="display: block; font-size: 0.8rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 0.5rem; font-weight: 600; letter-spacing: 0.05em;">Nueva Contraseña Admin</label>
-                            <input type="password" id="admin-new-password" class="search-input" style="padding-left: 1rem;" placeholder="Escribe la nueva contraseña" required>
+                            <input type="password" id="admin-new-password" class="search-input" style="padding-left: 1rem;" placeholder="Nueva contraseña" required>
                         </div>
 
                         <button type="button" class="btn btn-primary" id="btn-request-admin-code" style="width: 100%; height: 46px; background: rgba(0, 210, 255, 0.15); border-color: #00d2ff; color: #00d2ff; font-weight: 700;">
@@ -1863,16 +1863,16 @@
             <form id="admin-reset-pass-form" style="display: none;">
                 <div class="custom-form-group" style="margin-bottom: 1rem; text-align: left;">
                     <label style="display: block; font-size: 0.8rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 0.3rem; font-weight: 600;">Código de Verificación (6 dígitos)</label>
-                    <input type="text" id="admin-reset-code" class="search-input" style="padding-left: 1rem; text-align: center; letter-spacing: 4px; font-size: 1.1rem;" required placeholder="Ej: 123456">
+                    <input type="text" id="admin-reset-code" class="search-input" style="padding-left: 1rem; text-align: center; letter-spacing: 4px; font-size: 1.1rem;" required placeholder="Código de 6 dígitos">
                 </div>
                 <div class="custom-form-group" style="margin-bottom: 1rem; text-align: left;">
                     <label style="display: block; font-size: 0.8rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 0.3rem; font-weight: 600;">Nuevo Usuario Admin (Opcional)</label>
-                    <input type="text" id="admin-reset-new-user" class="search-input" style="padding-left: 1rem; width: 100%;" placeholder="Ej: zvaito">
+                    <input type="text" id="admin-reset-new-user" class="search-input" style="padding-left: 1rem; width: 100%;" placeholder="Nuevo usuario">
                 </div>
                 <div class="custom-form-group" style="margin-bottom: 1.5rem; text-align: left;">
                     <label style="display: block; font-size: 0.8rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 0.3rem; font-weight: 600;">Nueva Contraseña Admin</label>
                     <div style="position: relative; display: flex; align-items: center; width: 100%;">
-                        <input type="password" id="admin-reset-new-pass" class="search-input" style="padding-left: 1rem; padding-right: 2.5rem; width: 100%;" required placeholder="Introduce tu nueva contraseña">
+                        <input type="password" id="admin-reset-new-pass" class="search-input" style="padding-left: 1rem; padding-right: 2.5rem; width: 100%;" required placeholder="Nueva contraseña">
                         <i class="fa-solid fa-eye toggle-password-btn" onclick="togglePasswordVisibility('admin-reset-new-pass', this)" style="position: absolute; right: 0.8rem; color: var(--text-secondary); cursor: pointer;"></i>
                     </div>
                 </div>
