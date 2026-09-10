@@ -132,32 +132,96 @@ loadAdminStoreFromFile();
 async function syncDatabaseWithDisk(clientOrPool) {
   const targetPool = clientOrPool || pool;
   try {
-    // 1. Cargar furgonetas reales de PostgreSQL si existen
+    // 1. Furgonetas
     const vansRes = await targetPool.query("SELECT * FROM vans ORDER BY id ASC");
-    fallbackVans = vansRes.rows;
+    if (vansRes.rows.length > 0) {
+      fallbackVans = vansRes.rows;
+    } else if (fallbackVans.length > 0) {
+      for (const van of fallbackVans) {
+        await targetPool.query(
+          `INSERT INTO vans (id, van_type, name, plate, m3, price_sin, min_price_con, km_price_con, status, images, custom_extras, max_occupants, eco_label, daily_km_limit, max_mass, fuel_type, waiting_hour_price, custom_features)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
+           ON CONFLICT (id) DO NOTHING`,
+          [
+            van.id, van.van_type, van.name, van.plate, van.m3, van.price_sin, van.min_price_con, van.km_price_con,
+            van.status || 'active', van.images || [], JSON.stringify(van.custom_extras || []),
+            van.max_occupants || 3, van.eco_label || 'C', van.daily_km_limit || 350, van.max_mass || 2800,
+            van.fuel_type || 'GASOIL', van.waiting_hour_price || 30.00, JSON.stringify(van.custom_features || [])
+          ]
+        );
+      }
+    }
 
-    // 2. Cargar FAQs reales de PostgreSQL si existen
+    // 2. Bloqueos de Disponibilidad
+    try {
+      const blockRes = await targetPool.query("SELECT * FROM van_blockages ORDER BY id ASC");
+      if (blockRes.rows.length > 0) {
+        fallbackBlockages = blockRes.rows.map(b => ({
+          ...b,
+          start_date: formatDateISO(b.start_date),
+          end_date: formatDateISO(b.end_date)
+        }));
+      } else if (fallbackBlockages.length > 0) {
+        for (const block of fallbackBlockages) {
+          await targetPool.query(
+            `INSERT INTO van_blockages (id, van_type, start_date, end_date, reason)
+             VALUES ($1, $2, $3, $4, $5)
+             ON CONFLICT (id) DO NOTHING`,
+            [block.id, block.van_type, block.start_date, block.end_date, block.reason]
+          );
+        }
+      }
+    } catch (e) {
+      console.warn('[SYNC WARN] Error al sincronizar bloqueos:', e.message);
+    }
+
+    // 3. FAQs (Preguntas Frecuentes)
     const faqsRes = await targetPool.query("SELECT * FROM faqs ORDER BY display_order ASC, id ASC");
     if (faqsRes.rows.length > 0) {
       fallbackFaqs = faqsRes.rows;
+    } else if (fallbackFaqs.length > 0) {
+      for (const faq of fallbackFaqs) {
+        await targetPool.query(
+          `INSERT INTO faqs (id, question, answer, display_order)
+           VALUES ($1, $2, $3, $4)
+           ON CONFLICT (id) DO NOTHING`,
+          [faq.id, faq.question, faq.answer, faq.display_order || 0]
+        );
+      }
     }
 
-    // 3. Cargar Configuraciones reales de PostgreSQL si existen
+    // 4. Configuraciones (Horarios, teléfonos, fianza, etc.)
     const settingsRes = await targetPool.query("SELECT * FROM settings");
     if (settingsRes.rows.length > 0) {
       settingsRes.rows.forEach(row => {
         fallbackSettings[row.key] = row.value;
       });
     }
+    for (const [key, value] of Object.entries(fallbackSettings)) {
+      await targetPool.query(
+        "INSERT INTO settings (key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value",
+        [key, String(value)]
+      );
+    }
 
-    // 4. Cargar Reservas reales de PostgreSQL si existen
+    // 5. Reservas
     const bookingsRes = await targetPool.query("SELECT * FROM bookings ORDER BY id DESC");
     if (bookingsRes.rows.length > 0) {
       fallbackBookings = bookingsRes.rows;
     }
 
+    // 6. Reseñas
+    try {
+      const reviewsRes = await targetPool.query("SELECT * FROM reviews ORDER BY id DESC");
+      if (reviewsRes.rows.length > 0) {
+        fallbackReviews = reviewsRes.rows;
+      }
+    } catch (e) {
+      console.warn('[SYNC WARN] Error al sincronizar reseñas:', e.message);
+    }
+
     saveAdminStoreToFile();
-    console.log(`[PERSISTENCE SAFE SYNC] Sincronización realizada sin borrados: ${fallbackVans.length} furgonetas, ${fallbackBookings.length} reservas, ${fallbackFaqs.length} FAQs.`);
+    console.log(`[PERSISTENCE SAFE SYNC] Sincronización completa: ${fallbackVans.length} furgonetas, ${fallbackBookings.length} reservas, ${fallbackFaqs.length} FAQs, ${fallbackBlockages.length} bloqueos.`);
   } catch (err) {
     console.warn('[PERSISTENCE SYNC WARN] Error al sincronizar PostgreSQL:', err.message);
   }
@@ -1268,6 +1332,7 @@ app.post('/api/bookings', async (req, res) => {
     
     // Sincronizar catálogo local
     fallbackBookings.push(result.rows[0]);
+    saveAdminStoreToFile();
 
     res.status(201).json({
       message: 'Reserva registrada con éxito.',
@@ -1303,6 +1368,7 @@ app.post('/api/bookings', async (req, res) => {
       created_at: new Date().toISOString()
     };
     fallbackBookings.push(mockBooking);
+    saveAdminStoreToFile();
     res.status(201).json({
       message: 'Reserva registrada temporalmente (Modo offline sin BD).',
       booking: mockBooking
@@ -1402,6 +1468,12 @@ app.put('/api/bookings/:id', async (req, res) => {
     `;
     const result = await pool.query(query, [newStatus, newFianzaStatus, newPaymentStatus, id]);
 
+    const fbIndex = fallbackBookings.findIndex(b => b.id == id);
+    if (fbIndex !== -1) {
+      fallbackBookings[fbIndex] = result.rows[0];
+    }
+    saveAdminStoreToFile();
+
     res.json({
       message: 'Reserva actualizada con éxito.',
       booking: result.rows[0]
@@ -1418,6 +1490,7 @@ app.put('/api/bookings/:id', async (req, res) => {
         payment_status: payment_status !== undefined ? payment_status : current.payment_status
       };
       fallbackBookings[index] = updated;
+      saveAdminStoreToFile();
       return res.json({
         message: 'Reserva actualizada en memoria fallback (offline).',
         booking: updated
@@ -1477,6 +1550,7 @@ app.delete('/api/bookings/:id', async (req, res) => {
     if (fbIndex !== -1) {
       fallbackBookings.splice(fbIndex, 1);
     }
+    saveAdminStoreToFile();
 
     if (result.rowCount === 0 && fbIndex === -1) {
       return res.status(404).json({ error: 'Reserva no encontrada.' });
@@ -1488,6 +1562,7 @@ app.delete('/api/bookings/:id', async (req, res) => {
     const index = fallbackBookings.findIndex(b => b.id == id);
     if (index !== -1) {
       fallbackBookings.splice(index, 1);
+      saveAdminStoreToFile();
       return res.json({ message: 'Reserva eliminada de memoria fallback (offline).' });
     }
     res.status(500).json({ error: 'Error del servidor al eliminar la reserva.' });
@@ -2011,6 +2086,7 @@ app.put('/api/settings', verifyAdmin, async (req, res) => {
       }
     }
     
+    saveAdminStoreToFile();
     res.json({ message: 'Configuración actualizada con éxito.', settings: fallbackSettings });
   } catch (err) {
     console.warn('Base de datos offline, actualizando settings en memoria:', err.message);
@@ -2022,6 +2098,7 @@ app.put('/api/settings', verifyAdmin, async (req, res) => {
     if (contact_email !== undefined) fallbackSettings.contact_email = contact_email;
     if (fianza_amount !== undefined) fallbackSettings.fianza_amount = fianza_amount;
     
+    saveAdminStoreToFile();
     res.json({ message: 'Configuración actualizada temporalmente en memoria (Modo offline sin BD).', settings: fallbackSettings });
   }
 });
@@ -2428,8 +2505,9 @@ app.post('/api/blockages', verifyAdmin, async (req, res) => {
       end_date: formatDateISO(result.rows[0].end_date)
     };
     
-    // Sincronizar en fallback
+    // Sincronizar en fallback y guardar en disco
     fallbackBlockages.push(created);
+    saveAdminStoreToFile();
     
     res.status(201).json({ message: 'Bloqueo registrado correctamente.', blockage: created });
   } catch (err) {
@@ -2444,6 +2522,7 @@ app.post('/api/blockages', verifyAdmin, async (req, res) => {
       created_at: new Date().toISOString()
     };
     fallbackBlockages.push(mockBlock);
+    saveAdminStoreToFile();
     res.status(201).json({ message: 'Bloqueo registrado correctamente en memoria fallback.', blockage: mockBlock });
   }
 });
@@ -2460,6 +2539,7 @@ app.delete('/api/blockages/:id', verifyAdmin, async (req, res) => {
     if (index !== -1) {
       fallbackBlockages.splice(index, 1);
     }
+    saveAdminStoreToFile();
     
     if (result.rowCount === 0) {
       // Intentar en fallback si no existía en BD
@@ -2475,6 +2555,7 @@ app.delete('/api/blockages/:id', verifyAdmin, async (req, res) => {
     const index = fallbackBlockages.findIndex(b => b.id == id);
     if (index !== -1) {
       fallbackBlockages.splice(index, 1);
+      saveAdminStoreToFile();
       return res.json({ message: 'Bloqueo eliminado correctamente de memoria fallback (offline).' });
     }
     res.status(500).json({ error: 'Error del servidor al eliminar el bloqueo.' });
@@ -2509,6 +2590,7 @@ app.post('/api/faqs', verifyAdmin, async (req, res) => {
     `;
     const result = await pool.query(query, [question, answer, parseInt(display_order) || 0]);
     fallbackFaqs.push(result.rows[0]);
+    saveAdminStoreToFile();
     res.status(201).json({ message: 'FAQ creada con éxito.', faq: result.rows[0] });
   } catch (err) {
     console.warn('Base de datos offline al crear FAQ, usando fallback:', err.message);
@@ -2520,6 +2602,7 @@ app.post('/api/faqs', verifyAdmin, async (req, res) => {
       display_order: parseInt(display_order) || 0
     };
     fallbackFaqs.push(mockFaq);
+    saveAdminStoreToFile();
     res.status(201).json({ message: 'FAQ creada con éxito en memoria fallback.', faq: mockFaq });
   }
 });
@@ -2546,6 +2629,7 @@ app.put('/api/faqs/:id', verifyAdmin, async (req, res) => {
     if (index !== -1) {
       fallbackFaqs[index] = result.rows[0];
     }
+    saveAdminStoreToFile();
     
     if (result.rowCount === 0) {
       if (index !== -1) {
@@ -2566,6 +2650,7 @@ app.put('/api/faqs/:id', verifyAdmin, async (req, res) => {
         display_order: parseInt(display_order) || 0
       };
       fallbackFaqs[index] = updated;
+      saveAdminStoreToFile();
       return res.json({ message: 'FAQ actualizada con éxito en memoria fallback.', faq: updated });
     }
     res.status(500).json({ error: 'Error del servidor al actualizar FAQ.' });
@@ -2583,6 +2668,7 @@ app.delete('/api/faqs/:id', verifyAdmin, async (req, res) => {
     if (index !== -1) {
       fallbackFaqs.splice(index, 1);
     }
+    saveAdminStoreToFile();
     
     if (result.rowCount === 0) {
       if (index !== -1) {
@@ -2597,6 +2683,7 @@ app.delete('/api/faqs/:id', verifyAdmin, async (req, res) => {
     const index = fallbackFaqs.findIndex(f => f.id == id);
     if (index !== -1) {
       fallbackFaqs.splice(index, 1);
+      saveAdminStoreToFile();
       return res.json({ message: 'FAQ eliminada de memoria fallback (offline).' });
     }
     res.status(500).json({ error: 'Error del servidor al eliminar FAQ.' });
