@@ -2257,6 +2257,30 @@ const initAdmin = () => {
         btnAddFaq.addEventListener('click', () => openFaqModal());
     }
 
+    // Botón de refrescar / actualizar datos del panel de administración
+    if (btnRefresh) {
+        btnRefresh.addEventListener('click', async () => {
+            btnRefresh.disabled = true;
+            const icon = btnRefresh.querySelector('i');
+            if (icon) icon.classList.add('fa-spin');
+            
+            try {
+                if (typeof fetchBookings === 'function') await fetchBookings();
+                if (typeof fetchVans === 'function') await fetchVans();
+                if (typeof fetchFaqs === 'function') await fetchFaqs();
+                if (typeof fetchReviews === 'function') await fetchReviews();
+                if (typeof fetchSettings === 'function') await fetchSettings();
+                showToast('¡Datos del panel actualizados con éxito!', 'success');
+            } catch (err) {
+                console.error('Error al actualizar datos:', err);
+                showToast('Error al refrescar la información.', 'error');
+            } finally {
+                btnRefresh.disabled = false;
+                if (icon) icon.classList.remove('fa-spin');
+            }
+        });
+    }
+
     // Registrar event listeners de pestañas de Disponibilidad y FAQs
     tabAvailability.addEventListener('click', () => switchTab('availability'));
     tabFaqs.addEventListener('click', () => switchTab('faqs'));
