@@ -2159,7 +2159,7 @@ const initAdmin = () => {
     const openFaqModal = (faq = null) => {
         if (!faqModal) return;
         
-        faqModal.style.display = 'flex';
+        faqModal.classList.add('active');
         if (faq) {
             faqModalTitle.textContent = 'Editar Pregunta Frecuente';
             faqFormId.value = faq.id;
@@ -2177,7 +2177,7 @@ const initAdmin = () => {
 
     // Cerrar modal FAQ
     const closeFaqModal = () => {
-        if (faqModal) faqModal.style.display = 'none';
+        if (faqModal) faqModal.classList.remove('active');
     };
 
     // Cerrar modal al hacer clic en cruz o cancelar
