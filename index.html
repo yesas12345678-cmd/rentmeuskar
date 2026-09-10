@@ -269,6 +269,26 @@
             window.closeAuthModal(closeId);
             window.openAuthModal(openId);
         };
+        window.togglePasswordVisibility = function(inputId, iconElement) {
+            var input = document.getElementById(inputId);
+            if (!input) return;
+            var targetIcon = iconElement || (event && event.currentTarget ? event.currentTarget : null);
+            if (input.type === 'password') {
+                input.type = 'text';
+                if (targetIcon) {
+                    targetIcon.classList.remove('fa-eye');
+                    targetIcon.classList.add('fa-eye-slash');
+                    targetIcon.style.color = 'var(--color-neon, #82d105)';
+                }
+            } else {
+                input.type = 'password';
+                if (targetIcon) {
+                    targetIcon.classList.remove('fa-eye-slash');
+                    targetIcon.classList.add('fa-eye');
+                    targetIcon.style.color = 'var(--text-secondary, #718096)';
+                }
+            }
+        };
         window.handleLoginButtonClick = function() {
             var btn = document.getElementById('btn-login-modal');
             var isEntrarButton = !btn || btn.textContent.indexOf('Entrar') !== -1;

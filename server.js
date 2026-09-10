@@ -599,6 +599,15 @@ app.post('/api/auth/login', async (req, res) => {
       user: { id: 0, name: 'Admin', email: 'info@rentmeuskar.com', is_admin: true }
     });
   }
+
+  // Login de Cliente Demo (100% fiable para pruebas rápidas sin registro)
+  if (cleanEmail === 'cliente@rentmeuskar.com' && password === '123456') {
+    return res.json({
+      message: 'Inicio de sesión exitoso.',
+      token: 'user_9999',
+      user: { id: 9999, name: 'Cliente Demo', email: 'cliente@rentmeuskar.com', phone: '600000000', dni: '12345678Z' }
+    });
+  }
   
   const passHash = hashPassword(password);
 
@@ -642,6 +651,10 @@ app.get('/api/auth/me', async (req, res) => {
   const token = authHeader.replace('Bearer ', '');
   if (token === 'admin_token_rentmeuskar') {
     return res.json({ id: 0, name: 'Admin', email: 'info@rentmeuskar.com', is_admin: true });
+  }
+  
+  if (token === 'user_9999') {
+    return res.json({ id: 9999, name: 'Cliente Demo', email: 'cliente@rentmeuskar.com', phone: '600000000', dni: '12345678Z' });
   }
   
   if (token.startsWith('user_')) {
