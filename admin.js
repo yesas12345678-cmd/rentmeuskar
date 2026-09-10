@@ -229,17 +229,43 @@ const initAdmin = () => {
     /* ==========================================================================
        1. AUTENTICACIÓN
        ========================================================================== */
-    const checkAuth = () => {
+    const checkAuth = async () => {
         const token = localStorage.getItem('admin_token');
-        if (token === 'admin_token_rentmeuskar') {
-            loginLayout.style.display = 'none';
-            dashboardLayout.style.display = 'block';
-            fetchBookings();
-            fetchFleet();
-        } else {
+        if (!token) {
             loginLayout.style.display = 'flex';
             dashboardLayout.style.display = 'none';
+            return;
         }
+
+        try {
+            const response = await fetch('/api/auth/me', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (response.ok) {
+                const user = await response.json();
+                if (user && user.is_admin) {
+                    loginLayout.style.display = 'none';
+                    dashboardLayout.style.display = 'block';
+                    if (tbody && tbody.children.length === 0) {
+                        fetchBookings();
+                        fetchFleet();
+                    }
+                    return;
+                }
+            } else if (response.status === 401) {
+                const data = await response.json().catch(() => ({}));
+                localStorage.removeItem('admin_token');
+                loginLayout.style.display = 'flex';
+                dashboardLayout.style.display = 'none';
+                showToast(data.error || 'La sesión ha caducado porque el usuario o la contraseña cambiaron desde otro dispositivo.', 'error');
+                return;
+            }
+        } catch (err) {
+            console.warn('Error al verificar sesión con el servidor:', err);
+        }
+
+        loginLayout.style.display = 'flex';
+        dashboardLayout.style.display = 'none';
     };
 
     loginForm.addEventListener('submit', async (e) => {
@@ -338,11 +364,15 @@ const initAdmin = () => {
                 });
                 const data = await res.json();
                 if (res.ok) {
+                    if (data.token) {
+                        localStorage.setItem('admin_token', data.token);
+                    }
                     showToast(data.message || 'Credenciales restablecidas correctamente.', 'success');
                     adminForgotModal.classList.remove('active');
                     adminResetPassForm.reset();
                     adminResetPassForm.style.display = 'none';
                     if (btnSendAdminForgotCode) btnSendAdminForgotCode.style.display = 'block';
+                    checkAuth();
                 } else {
                     showToast(data.error || 'Error al restablecer la contraseña.', 'error');
                 }
@@ -2485,6 +2515,13 @@ const initAdmin = () => {
     
     // Inicializar página
     checkAuth();
+
+    // Comprobación periódica automática de sesión cada 15 segundos para invalidar inmediatamente las sesiones de otros dispositivos al cambiar credenciales
+    setInterval(() => {
+        if (localStorage.getItem('admin_token')) {
+            checkAuth();
+        }
+    }, 15000);
 };
 
 if (document.readyState === 'loading') {

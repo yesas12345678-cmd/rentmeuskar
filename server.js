@@ -191,6 +191,13 @@ function hashPassword(password) {
   return crypto.createHash('sha256').update(password).digest('hex');
 }
 
+function getCurrentAdminToken() {
+  const currentPassHash = fallbackSettings.admin_password_hash || hashPassword('Manuel1214$');
+  const currentAdminUser = (fallbackSettings.admin_username || 'zvaito').toLowerCase();
+  const secret = crypto.createHash('sha256').update(`${currentAdminUser}:${currentPassHash}`).digest('hex').substring(0, 16);
+  return `admin_token_${secret}`;
+}
+
 const compression = require('compression');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
@@ -763,10 +770,19 @@ app.post('/api/auth/login', async (req, res) => {
   const currentAdminPassHash = fallbackSettings.admin_password_hash || hashPassword('Manuel1214$');
   const currentAdminRawPass = fallbackSettings.admin_password || 'Manuel1214$';
 
-  if ((cleanEmail === currentAdminUser || cleanEmail === 'zvaito' || cleanEmail === 'info@rentmeuskar.com') &&
-      (passHash === currentAdminPassHash || password === currentAdminRawPass || password === 'Manuel1214$')) {
+  const isCustomized = !!(fallbackSettings.admin_username || fallbackSettings.admin_password_hash);
+  
+  const isMatchingUser = isCustomized 
+    ? (cleanEmail === currentAdminUser || cleanEmail === 'info@rentmeuskar.com')
+    : (cleanEmail === currentAdminUser || cleanEmail === 'zvaito' || cleanEmail === 'info@rentmeuskar.com');
+
+  const isMatchingPass = isCustomized
+    ? (passHash === currentAdminPassHash || password === currentAdminRawPass)
+    : (passHash === currentAdminPassHash || password === currentAdminRawPass || password === 'Manuel1214$');
+
+  if (isMatchingUser && isMatchingPass) {
     return res.json({
-      token: 'admin_token_rentmeuskar',
+      token: getCurrentAdminToken(),
       user: { id: 0, name: 'Admin', email: currentAdminUser, is_admin: true }
     });
   }
@@ -930,7 +946,7 @@ app.post('/api/auth/reset-password', async (req, res) => {
     saveAdminStoreToFile();
     delete pendingPasswordResets[cleanEmail];
     delete pendingPasswordResets['info@rentmeuskar.com'];
-    return res.json({ success: true, message: '¡Credenciales de Administrador restablecidas correctamente! Ya puedes acceder.' });
+    return res.json({ success: true, token: getCurrentAdminToken(), message: '¡Credenciales de Administrador restablecidas correctamente! Ya puedes acceder.' });
   }
 
   // Restablecer cliente normal
@@ -959,8 +975,15 @@ app.get('/api/auth/me', async (req, res) => {
   }
   
   const token = authHeader.replace('Bearer ', '');
-  if (token === 'admin_token_rentmeuskar') {
-    return res.json({ id: 0, name: 'Admin', email: 'info@rentmeuskar.com', is_admin: true });
+  const validAdminToken = getCurrentAdminToken();
+
+  if (token === validAdminToken || token === 'admin_token_rentmeuskar') {
+    const isCustomized = !!(fallbackSettings.admin_username || fallbackSettings.admin_password_hash);
+    if (isCustomized && token !== validAdminToken) {
+      return res.status(401).json({ error: 'La sesión ha caducado. El usuario o la contraseña se han cambiado desde otro dispositivo.' });
+    }
+    const adminUser = fallbackSettings.admin_username || 'zvaito';
+    return res.json({ id: 0, name: 'Admin', email: adminUser, is_admin: true });
   }
   
   if (token === 'user_9999') {
