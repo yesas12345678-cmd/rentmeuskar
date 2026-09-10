@@ -51,6 +51,7 @@ if (!fs.existsSync(dataDir)) {
 
 const adminStorePath = path.join(dataDir, 'admin_store.json');
 const adminInitFlagPath = path.join(dataDir, 'admin_initialized.flag');
+const vansInitFlagPath = path.join(dataDir, 'vans_initialized.flag');
 
 // Datasets globales en memoria
 let fallbackUsers = [];
@@ -144,23 +145,7 @@ async function syncDatabaseWithDisk(clientOrPool) {
   try {
     // 1. Cargar furgonetas reales de PostgreSQL si existen
     const vansRes = await targetPool.query("SELECT * FROM vans ORDER BY id ASC");
-    if (vansRes.rows.length > 0) {
-      fallbackVans = vansRes.rows;
-    } else if (fallbackVans.length > 0) {
-      // Si la tabla en BD está totalmente vacía, insertar las furgonetas iniciales
-      for (const v of fallbackVans) {
-        await targetPool.query(`
-          INSERT INTO vans (van_type, name, plate, m3, price_sin, min_price_con, km_price_con, status, images, custom_extras, max_occupants, eco_label, daily_km_limit, max_mass, fuel_type, waiting_hour_price, custom_features)
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
-          ON CONFLICT (van_type) DO NOTHING
-        `, [
-          v.van_type, v.name, v.plate, v.m3, parseFloat(v.price_sin), parseFloat(v.min_price_con), parseFloat(v.km_price_con),
-          v.status || 'active', v.images || [], JSON.stringify(v.custom_extras || []),
-          parseInt(v.max_occupants) || 3, v.eco_label || 'C', parseInt(v.daily_km_limit) || 350, parseInt(v.max_mass) || 2800,
-          v.fuel_type || 'GASOIL', parseFloat(v.waiting_hour_price) || 30.00, JSON.stringify(v.custom_features || [])
-        ]);
-      }
-    }
+    fallbackVans = vansRes.rows;
 
     // 2. Cargar FAQs reales de PostgreSQL si existen
     const faqsRes = await targetPool.query("SELECT * FROM faqs ORDER BY display_order ASC, id ASC");
