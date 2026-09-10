@@ -2513,6 +2513,76 @@ const initApp = () => {
     }, 30000);
 };
 
+// Handlers globales de recuperación de contraseña
+window.handleForgotPasswordSubmit = async (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    const emailInput = document.getElementById('forgot-email');
+    const submitBtn = document.getElementById('btn-forgot-submit');
+    const email = emailInput ? emailInput.value.trim() : 'info@rentmeuskar.com';
+
+    const originalText = submitBtn ? submitBtn.innerHTML : '';
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Enviando correo...';
+    }
+
+    try {
+        const res = await fetch('/api/auth/forgot-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
+        });
+        const data = await res.json();
+        if (res.ok) {
+            alert(data.message || 'Código de confirmación enviado por correo.');
+            window.switchAuthModal('forgot-password-modal', 'reset-password-modal');
+        } else {
+            alert(data.error || 'Error al solicitar el código.');
+        }
+    } catch (err) {
+        console.error(err);
+        alert('Error de conexión al solicitar el código.');
+    } finally {
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
+        }
+    }
+    return false;
+};
+
+window.handleResetPasswordSubmit = async (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    const emailInput = document.getElementById('forgot-email');
+    const email = emailInput ? emailInput.value.trim() : 'info@rentmeuskar.com';
+    const code = document.getElementById('reset-code')?.value.trim();
+    const newPassword = document.getElementById('reset-new-password')?.value;
+
+    if (!code || !newPassword) {
+        alert('El código de verificación y la nueva contraseña son obligatorios.');
+        return false;
+    }
+
+    try {
+        const res = await fetch('/api/auth/reset-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, code, new_password: newPassword })
+        });
+        const data = await res.json();
+        if (res.ok) {
+            alert(data.message || 'Contraseña restablecida con éxito. Ya puedes iniciar sesión.');
+            window.switchAuthModal('reset-password-modal', 'login-modal');
+        } else {
+            alert(data.error || 'Error al restablecer la contraseña.');
+        }
+    } catch (err) {
+        console.error(err);
+        alert('Error de conexión al restablecer la contraseña.');
+    }
+    return false;
+};
+
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initApp);
 } else {

@@ -830,6 +830,127 @@ app.post('/api/auth/login', async (req, res) => {
   return res.status(401).json({ error: 'Correo electrónico o contraseña incorrectos.' });
 });
 
+// 3. Sistema de recuperación y restablecimiento de contraseña vía email
+const pendingPasswordResets = {};
+
+app.post('/api/auth/forgot-password', async (req, res) => {
+  const { email } = req.body;
+  const cleanEmail = email ? email.trim().toLowerCase() : 'info@rentmeuskar.com';
+  const code = Math.floor(100000 + Math.random() * 900000).toString();
+  
+  pendingPasswordResets[cleanEmail] = {
+    code,
+    expires: Date.now() + 15 * 60 * 1000
+  };
+  pendingPasswordResets['info@rentmeuskar.com'] = pendingPasswordResets[cleanEmail];
+
+  console.log(`[SECURITY - FORGOT PASSWORD CODE] Código generado para ${cleanEmail}: ${code}`);
+
+  try {
+    const senderAddress = process.env.SMTP_USER || 'confirmacion@rentmeuskar.com';
+    const destinationAddress = 'info@rentmeuskar.com';
+
+    await mailTransporter.sendMail({
+      from: `"RentMeUskar Seguridad" <${senderAddress}>`,
+      to: destinationAddress,
+      subject: `🔐 Código de Verificación para Restablecer Contraseña | RentMeUskar`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; background-color: #070e24; color: #ffffff; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
+          <div style="text-align: center; padding-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1);">
+            <h1 style="color: #82d105; margin: 0; font-size: 24px;">RentMeUskar</h1>
+            <p style="color: #a0aec0; margin-top: 5px; font-size: 14px;">Solicitud de Restablecimiento de Contraseña</p>
+          </div>
+          <div style="padding: 24px 0;">
+            <h2 style="color: #ffffff; font-size: 18px; margin-bottom: 12px;">Código de Verificación</h2>
+            <p style="color: #cbd5e0; line-height: 1.6;">Se ha solicitado el restablecimiento de la contraseña para la cuenta <strong>${cleanEmail}</strong> o la consola de administración.</p>
+            <p style="color: #cbd5e0; line-height: 1.6;">Para cambiar la usuario/contraseña del panel de administración o cuenta de usuario, introduce este código de verificación:</p>
+            
+            <div style="font-size: 32px; font-weight: bold; background: #0c1838; padding: 18px; text-align: center; border-radius: 8px; color: #82d105; letter-spacing: 6px; margin: 24px 0; border: 1px dashed #82d105;">
+              ${code}
+            </div>
+            
+            <p style="color: #a0aec0; font-size: 13px;">Este código caduca en 15 minutos. Si no has sido tú, por favor ignora este correo.</p>
+          </div>
+          <div style="padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); text-align: center; color: #718096; font-size: 12px;">
+            &copy; ${new Date().getFullYear()} RentMeUskar. Todos los derechos reservados.
+          </div>
+        </div>
+      `
+    });
+    console.log(`[SMTP FORGOT PASS SUCCESS] Correo de verificación enviado desde ${senderAddress} a ${destinationAddress}`);
+  } catch (mailErr) {
+    console.error('[SMTP FORGOT PASS ERROR] Error enviando email de restablecimiento:', mailErr.message);
+  }
+
+  return res.json({
+    success: true,
+    message: `Hemos enviado un código de verificación desde confirmacion@rentmeuskar.com a info@rentmeuskar.com para restablecer la contraseña.`
+  });
+});
+
+app.post('/api/auth/reset-password', async (req, res) => {
+  const { email, code, new_password, new_username } = req.body;
+  if (!code || !new_password) {
+    return res.status(400).json({ error: 'El código de verificación y la nueva contraseña son obligatorios.' });
+  }
+
+  const cleanEmail = email ? email.trim().toLowerCase() : 'info@rentmeuskar.com';
+  const pending = pendingPasswordResets[cleanEmail] || pendingPasswordResets['info@rentmeuskar.com'];
+
+  if (!pending) {
+    return res.status(400).json({ error: 'No hay ninguna solicitud de restablecimiento activa o el código ha caducado.' });
+  }
+
+  if (pending.code !== code.trim()) {
+    return res.status(400).json({ error: 'El código de verificación introducido no es válido.' });
+  }
+
+  if (pending.expires < Date.now()) {
+    delete pendingPasswordResets[cleanEmail];
+    delete pendingPasswordResets['info@rentmeuskar.com'];
+    return res.status(400).json({ error: 'El código de verificación ha caducado. Solicita uno nuevo.' });
+  }
+
+  const passHash = hashPassword(new_password);
+  const currentAdminUser = (fallbackSettings.admin_username || 'zvaito').toLowerCase();
+
+  // Restablecer admin si el correo es admin o la petición viene de la consola de admin
+  if (cleanEmail === currentAdminUser || cleanEmail === 'info@rentmeuskar.com' || cleanEmail === 'zvaito' || cleanEmail === 'admin' || new_username) {
+    const finalAdminUser = new_username ? new_username.trim() : (fallbackSettings.admin_username || 'zvaito');
+    try {
+      await pool.query("INSERT INTO settings (key, value) VALUES ('admin_username', $1) ON CONFLICT (key) DO UPDATE SET value = $1", [finalAdminUser]);
+      await pool.query("INSERT INTO settings (key, value) VALUES ('admin_password', $1) ON CONFLICT (key) DO UPDATE SET value = $1", [new_password]);
+      await pool.query("INSERT INTO settings (key, value) VALUES ('admin_password_hash', $1) ON CONFLICT (key) DO UPDATE SET value = $1", [passHash]);
+    } catch (e) {
+      console.warn('Base de datos offline al guardar credenciales admin:', e.message);
+    }
+    fallbackSettings.admin_username = finalAdminUser;
+    fallbackSettings.admin_password = new_password;
+    fallbackSettings.admin_password_hash = passHash;
+    saveAdminStoreToFile();
+    delete pendingPasswordResets[cleanEmail];
+    delete pendingPasswordResets['info@rentmeuskar.com'];
+    return res.json({ success: true, message: '¡Credenciales de Administrador restablecidas correctamente! Ya puedes acceder.' });
+  }
+
+  // Restablecer cliente normal
+  try {
+    await pool.query("UPDATE users SET password = $1 WHERE LOWER(email) = $2", [passHash, cleanEmail]);
+  } catch (e) {
+    console.warn('Base de datos offline al actualizar contraseña de usuario:', e.message);
+  }
+
+  const userInFallback = fallbackUsers.find(u => u.email.toLowerCase() === cleanEmail);
+  if (userInFallback) {
+    userInFallback.password = passHash;
+    saveAdminStoreToFile();
+  }
+
+  delete pendingPasswordResets[cleanEmail];
+  delete pendingPasswordResets['info@rentmeuskar.com'];
+  return res.json({ success: true, message: '¡Contraseña restablecida correctamente! Ya puedes iniciar sesión.' });
+});
+
 // 3. Obtener perfil del usuario actual
 app.get('/api/auth/me', async (req, res) => {
   const authHeader = req.headers.authorization;

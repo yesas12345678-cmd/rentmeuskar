@@ -267,6 +267,95 @@ const initAdmin = () => {
         }
     });
 
+    // Gestión de recuperación de contraseña admin
+    const btnOpenAdminForgotModal = document.getElementById('btn-open-admin-forgot-modal');
+    const adminForgotModal = document.getElementById('admin-forgot-modal');
+    const adminForgotModalClose = document.getElementById('admin-forgot-modal-close');
+    const btnSendAdminForgotCode = document.getElementById('btn-send-admin-forgot-code');
+    const adminResetPassForm = document.getElementById('admin-reset-pass-form');
+
+    if (btnOpenAdminForgotModal && adminForgotModal) {
+        btnOpenAdminForgotModal.addEventListener('click', (e) => {
+            e.preventDefault();
+            adminForgotModal.classList.add('active');
+        });
+    }
+
+    if (adminForgotModalClose && adminForgotModal) {
+        adminForgotModalClose.addEventListener('click', () => {
+            adminForgotModal.classList.remove('active');
+        });
+    }
+
+    if (btnSendAdminForgotCode) {
+        btnSendAdminForgotCode.addEventListener('click', async () => {
+            btnSendAdminForgotCode.disabled = true;
+            btnSendAdminForgotCode.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Enviando correo desde confirmacion@rentmeuskar.com...';
+            try {
+                const res = await fetch('/api/auth/forgot-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: 'info@rentmeuskar.com' })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    showToast(data.message || 'Código enviado a info@rentmeuskar.com', 'success');
+                    if (adminResetPassForm) adminResetPassForm.style.display = 'block';
+                    btnSendAdminForgotCode.style.display = 'none';
+                } else {
+                    showToast(data.error || 'Error al enviar código.', 'error');
+                }
+            } catch (err) {
+                console.error(err);
+                showToast('Error de conexión al enviar el código.', 'error');
+            } finally {
+                btnSendAdminForgotCode.disabled = false;
+            }
+        });
+    }
+
+    if (adminResetPassForm) {
+        adminResetPassForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const code = document.getElementById('admin-reset-code').value.trim();
+            const newUsername = document.getElementById('admin-reset-new-user').value.trim();
+            const newPassword = document.getElementById('admin-reset-new-pass').value;
+
+            const submitBtn = document.getElementById('btn-admin-reset-submit');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Restableciendo...';
+
+            try {
+                const res = await fetch('/api/auth/reset-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'info@rentmeuskar.com',
+                        code,
+                        new_username: newUsername || undefined,
+                        new_password: newPassword
+                    })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    showToast(data.message || 'Credenciales restablecidas correctamente.', 'success');
+                    adminForgotModal.classList.remove('active');
+                    adminResetPassForm.reset();
+                    adminResetPassForm.style.display = 'none';
+                    if (btnSendAdminForgotCode) btnSendAdminForgotCode.style.display = 'block';
+                } else {
+                    showToast(data.error || 'Error al restablecer la contraseña.', 'error');
+                }
+            } catch (err) {
+                console.error(err);
+                showToast('Error al conectar con el servidor.', 'error');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fa-solid fa-key"></i> Restablecer Contraseña Admin';
+            }
+        });
+    }
+
     btnAdminLogout.addEventListener('click', () => {
         localStorage.removeItem('admin_token');
         showToast('Sesión cerrada correctamente.', 'info');
