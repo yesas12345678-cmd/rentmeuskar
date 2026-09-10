@@ -38,10 +38,39 @@ mailTransporter.verify((error, success) => {
   }
 });
 
-// Asegurar que existe la carpeta de subidas (uploads)
+// Asegurar que existe la carpeta de subidas (uploads) y datos (data)
 const uploadsDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir);
+}
+
+const dataDir = path.join(__dirname, 'data');
+if (!fs.existsSync(dataDir)) {
+  fs.mkdirSync(dataDir);
+}
+
+const vansJsonPath = path.join(dataDir, 'vans_fallback.json');
+const vansInitFlagPath = path.join(dataDir, 'vans_initialized.flag');
+
+function saveFallbackVansToFile() {
+  try {
+    fs.writeFileSync(vansJsonPath, JSON.stringify(fallbackVans, null, 2), 'utf8');
+    console.log('[PERSISTENCE] Flota de furgonetas guardada en disco.');
+  } catch (e) {
+    console.error('[PERSISTENCE ERROR] Error al guardar furgonetas en disco:', e.message);
+  }
+}
+
+function loadFallbackVansFromFile() {
+  if (fs.existsSync(vansJsonPath)) {
+    try {
+      const data = fs.readFileSync(vansJsonPath, 'utf8');
+      fallbackVans = JSON.parse(data);
+      console.log(`[PERSISTENCE] Cargadas ${fallbackVans.length} furgonetas desde disco.`);
+    } catch (e) {
+      console.error('[PERSISTENCE ERROR] Error al leer furgonetas desde disco:', e.message);
+    }
+  }
 }
 
 // Configuración de Multer para la subida de fotos antes/después
@@ -308,15 +337,20 @@ const initDb = async () => {
     await client.query(createSettingsTableQuery);
     console.log('Tabla "settings" verificada/creada.');
 
-    // Pre-poblar furgonetas por defecto si está vacía
+    // Pre-poblar furgonetas por defecto SOLO la primera vez que se inicializa el sistema
     const countVans = await client.query('SELECT COUNT(*) FROM vans');
-    if (parseInt(countVans.rows[0].count) === 0) {
+    if (parseInt(countVans.rows[0].count) === 0 && !fs.existsSync(vansInitFlagPath)) {
       await client.query(`
         INSERT INTO vans (van_type, name, plate, m3, price_sin, min_price_con, km_price_con, status) VALUES
         ('medium', 'Ford Transit Custom L2H2 (8m³)', '3681 MCC', '8m³', 79.00, 50.00, 1.00, 'active'),
         ('large', 'MAN TGE L4H3 Gran Volumen (14m³)', '3758 MDW', '14m³', 107.44, 60.00, 1.40, 'active')
       `);
-      console.log('Furgonetas por defecto insertadas.');
+      fs.writeFileSync(vansInitFlagPath, 'true', 'utf8');
+      console.log('Furgonetas por defecto insertadas por primera vez.');
+    } else {
+      if (!fs.existsSync(vansInitFlagPath)) {
+        fs.writeFileSync(vansInitFlagPath, 'true', 'utf8');
+      }
     }
 
     // Pre-poblar FAQs por defecto si está vacía
@@ -1455,6 +1489,9 @@ let fallbackVans = [
   ]}
 ];
 
+// Cargar estado de la flota desde disco si existe
+loadFallbackVansFromFile();
+
 // Middleware de verificación de Administrador
 const verifyAdmin = (req, res, next) => {
   const authHeader = req.headers.authorization;
@@ -1569,13 +1606,14 @@ app.post('/api/vans', verifyAdmin, upload.array('images', 20), async (req, res) 
     ];
     const result = await pool.query(query, values);
     
-    // Sincronizar catálogo local
+    // Sincronizar catálogo local y guardar en disco
     const index = fallbackVans.findIndex(v => v.van_type === van_type);
     if (index === -1) {
       fallbackVans.push(result.rows[0]);
     } else {
       fallbackVans[index] = result.rows[0];
     }
+    saveFallbackVansToFile();
     
     res.status(201).json({
       message: 'Furgoneta registrada con éxito.',
@@ -1607,6 +1645,7 @@ app.post('/api/vans', verifyAdmin, upload.array('images', 20), async (req, res) 
       custom_features: customFeatures
     };
     fallbackVans.push(newVan);
+    saveFallbackVansToFile();
     res.status(201).json({
       message: 'Furgoneta añadida temporalmente (Modo offline sin BD).',
       van: newVan
@@ -1712,11 +1751,12 @@ app.put('/api/vans/:id', verifyAdmin, upload.array('images', 20), async (req, re
 
     const result = await pool.query(query, values);
     
-    // Sincronizar catálogo local
+    // Sincronizar catálogo local y guardar en disco
     const index = fallbackVans.findIndex(v => v.id == id);
     if (index !== -1) {
       fallbackVans[index] = result.rows[0];
     }
+    saveFallbackVansToFile();
     
     res.json({
       message: 'Furgoneta actualizada con éxito.',
@@ -1750,6 +1790,7 @@ app.put('/api/vans/:id', verifyAdmin, upload.array('images', 20), async (req, re
       custom_features: customFeatures
     };
     fallbackVans[index] = updated;
+    saveFallbackVansToFile();
     res.json({
       message: 'Furgoneta actualizada temporalmente (Modo offline sin BD).',
       van: updated
@@ -1767,11 +1808,12 @@ app.delete('/api/vans/:id', verifyAdmin, async (req, res) => {
       return res.status(404).json({ error: 'Furgoneta no encontrada en base de datos.' });
     }
     
-    // Sincronizar catálogo local
+    // Sincronizar catálogo local y guardar en disco
     const index = fallbackVans.findIndex(v => v.id == id);
     if (index !== -1) {
       fallbackVans.splice(index, 1);
     }
+    saveFallbackVansToFile();
     
     res.json({ message: 'Furgoneta eliminada con éxito.' });
   } catch (err) {
@@ -1781,6 +1823,7 @@ app.delete('/api/vans/:id', verifyAdmin, async (req, res) => {
       return res.status(404).json({ error: 'Furgoneta no encontrada.' });
     }
     fallbackVans.splice(index, 1);
+    saveFallbackVansToFile();
     res.json({ message: 'Furgoneta eliminada temporalmente de memoria (Modo offline sin BD).' });
   }
 });

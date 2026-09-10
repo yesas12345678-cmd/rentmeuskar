@@ -581,7 +581,7 @@ const initApp = () => {
         const selectedVal = vanSelect.value;
         vanSelect.innerHTML = '<option value="" disabled selected>-- Elige un modelo --</option>';
 
-        const list = Array.isArray(vansList) && vansList.length > 0 ? vansList : databaseVans;
+        const list = Array.isArray(vansList) ? vansList : databaseVans;
         const activeVans = list.filter(v => v.status === 'active' || !v.status);
 
         activeVans.forEach(van => {
@@ -608,7 +608,7 @@ const initApp = () => {
             if (response.ok) {
                 const rawVans = await response.json();
                 
-                if (Array.isArray(rawVans) && rawVans.length > 0) {
+                if (Array.isArray(rawVans)) {
                     databaseVans = rawVans;
                 }
                 
