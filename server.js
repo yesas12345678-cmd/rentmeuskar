@@ -139,78 +139,50 @@ loadAdminStoreFromFile();
 async function syncDatabaseWithDisk(clientOrPool) {
   const targetPool = clientOrPool || pool;
   try {
-    if (fs.existsSync(adminStorePath)) {
-      const fileData = fs.readFileSync(adminStorePath, 'utf8');
-      const store = JSON.parse(fileData);
-      
-      // 1. Sincronizar Furgonetas
-      if (Array.isArray(store.fallbackVans)) {
-        fallbackVans = store.fallbackVans;
-        const validTypes = fallbackVans.map(v => v.van_type).filter(Boolean);
-        if (validTypes.length > 0) {
-          const typePlaceholders = validTypes.map((_, i) => `$${i + 1}`).join(',');
-          await targetPool.query(`DELETE FROM vans WHERE van_type NOT IN (${typePlaceholders})`, validTypes);
-        } else {
-          await targetPool.query('DELETE FROM vans');
-        }
-
-        for (const v of fallbackVans) {
-          await targetPool.query(`
-            INSERT INTO vans (id, van_type, name, plate, m3, price_sin, min_price_con, km_price_con, status, images, custom_extras, max_occupants, eco_label, daily_km_limit, max_mass, fuel_type, waiting_hour_price, custom_features)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
-            ON CONFLICT (van_type) DO UPDATE SET
-              name = EXCLUDED.name, plate = EXCLUDED.plate, m3 = EXCLUDED.m3,
-              price_sin = EXCLUDED.price_sin, min_price_con = EXCLUDED.min_price_con, km_price_con = EXCLUDED.km_price_con,
-              status = EXCLUDED.status, images = EXCLUDED.images, custom_extras = EXCLUDED.custom_extras,
-              max_occupants = EXCLUDED.max_occupants, eco_label = EXCLUDED.eco_label, daily_km_limit = EXCLUDED.daily_km_limit,
-              max_mass = EXCLUDED.max_mass, fuel_type = EXCLUDED.fuel_type, waiting_hour_price = EXCLUDED.waiting_hour_price,
-              custom_features = EXCLUDED.custom_features
-          `, [
-            v.id, v.van_type, v.name, v.plate, v.m3, parseFloat(v.price_sin), parseFloat(v.min_price_con), parseFloat(v.km_price_con),
-            v.status || 'active', v.images || [], JSON.stringify(v.custom_extras || []),
-            parseInt(v.max_occupants) || 3, v.eco_label || 'C', parseInt(v.daily_km_limit) || 350, parseInt(v.max_mass) || 2800,
-            v.fuel_type || 'GASOIL', parseFloat(v.waiting_hour_price) || 30.00, JSON.stringify(v.custom_features || [])
-          ]);
-        }
+    // 1. Cargar furgonetas reales de PostgreSQL si existen
+    const vansRes = await targetPool.query("SELECT * FROM vans ORDER BY id ASC");
+    if (vansRes.rows.length > 0) {
+      fallbackVans = vansRes.rows;
+    } else if (fallbackVans.length > 0) {
+      // Si la tabla en BD está totalmente vacía, insertar las furgonetas iniciales
+      for (const v of fallbackVans) {
+        await targetPool.query(`
+          INSERT INTO vans (van_type, name, plate, m3, price_sin, min_price_con, km_price_con, status, images, custom_extras, max_occupants, eco_label, daily_km_limit, max_mass, fuel_type, waiting_hour_price, custom_features)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+          ON CONFLICT (van_type) DO NOTHING
+        `, [
+          v.van_type, v.name, v.plate, v.m3, parseFloat(v.price_sin), parseFloat(v.min_price_con), parseFloat(v.km_price_con),
+          v.status || 'active', v.images || [], JSON.stringify(v.custom_extras || []),
+          parseInt(v.max_occupants) || 3, v.eco_label || 'C', parseInt(v.daily_km_limit) || 350, parseInt(v.max_mass) || 2800,
+          v.fuel_type || 'GASOIL', parseFloat(v.waiting_hour_price) || 30.00, JSON.stringify(v.custom_features || [])
+        ]);
       }
-
-      // 2. Sincronizar FAQs
-      if (Array.isArray(store.fallbackFaqs)) {
-        fallbackFaqs = store.fallbackFaqs;
-        const validIds = fallbackFaqs.map(f => f.id).filter(Boolean);
-        if (validIds.length > 0) {
-          const idPlaceholders = validIds.map((_, i) => `$${i + 1}`).join(',');
-          await targetPool.query(`DELETE FROM faqs WHERE id NOT IN (${idPlaceholders})`, validIds);
-        } else {
-          await targetPool.query('DELETE FROM faqs');
-        }
-        for (const f of fallbackFaqs) {
-          await targetPool.query(`
-            INSERT INTO faqs (id, question, answer, display_order)
-            VALUES ($1, $2, $3, $4)
-            ON CONFLICT (id) DO UPDATE SET
-              question = EXCLUDED.question, answer = EXCLUDED.answer, display_order = EXCLUDED.display_order
-          `, [f.id, f.question, f.answer, parseInt(f.display_order) || 0]);
-        }
-      }
-
-      // 3. Sincronizar Configuraciones
-      if (store.fallbackSettings) {
-        fallbackSettings = { ...fallbackSettings, ...store.fallbackSettings };
-        for (const [key, value] of Object.entries(fallbackSettings)) {
-          await targetPool.query(`
-            INSERT INTO settings (key, value) VALUES ($1, $2)
-            ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
-          `, [key, String(value)]);
-        }
-      }
-
-      console.log('[PERSISTENCE SYNC] Base de datos PostgreSQL sincronizada completamente desde admin_store.json');
-    } else {
-      saveAdminStoreToFile();
     }
+
+    // 2. Cargar FAQs reales de PostgreSQL si existen
+    const faqsRes = await targetPool.query("SELECT * FROM faqs ORDER BY display_order ASC, id ASC");
+    if (faqsRes.rows.length > 0) {
+      fallbackFaqs = faqsRes.rows;
+    }
+
+    // 3. Cargar Configuraciones reales de PostgreSQL si existen
+    const settingsRes = await targetPool.query("SELECT * FROM settings");
+    if (settingsRes.rows.length > 0) {
+      settingsRes.rows.forEach(row => {
+        fallbackSettings[row.key] = row.value;
+      });
+    }
+
+    // 4. Cargar Reservas reales de PostgreSQL si existen
+    const bookingsRes = await targetPool.query("SELECT * FROM bookings ORDER BY id DESC");
+    if (bookingsRes.rows.length > 0) {
+      fallbackBookings = bookingsRes.rows;
+    }
+
+    saveAdminStoreToFile();
+    console.log(`[PERSISTENCE SAFE SYNC] Sincronización realizada sin borrados: ${fallbackVans.length} furgonetas, ${fallbackBookings.length} reservas, ${fallbackFaqs.length} FAQs.`);
   } catch (err) {
-    console.warn('[PERSISTENCE SYNC WARN] Error al sincronizar PostgreSQL y disco:', err.message);
+    console.warn('[PERSISTENCE SYNC WARN] Error al sincronizar PostgreSQL:', err.message);
   }
 }
 
@@ -1713,7 +1685,7 @@ app.post('/api/vans', verifyAdmin, upload.array('images', 20), async (req, res) 
     } else {
       fallbackVans[index] = result.rows[0];
     }
-    saveFallbackVansToFile();
+    saveAdminStoreToFile();
     
     res.status(201).json({
       message: 'Furgoneta registrada con éxito.',
@@ -1745,7 +1717,7 @@ app.post('/api/vans', verifyAdmin, upload.array('images', 20), async (req, res) 
       custom_features: customFeatures
     };
     fallbackVans.push(newVan);
-    saveFallbackVansToFile();
+    saveAdminStoreToFile();
     res.status(201).json({
       message: 'Furgoneta añadida temporalmente (Modo offline sin BD).',
       van: newVan
@@ -1856,7 +1828,7 @@ app.put('/api/vans/:id', verifyAdmin, upload.array('images', 20), async (req, re
     if (index !== -1) {
       fallbackVans[index] = result.rows[0];
     }
-    saveFallbackVansToFile();
+    saveAdminStoreToFile();
     
     res.json({
       message: 'Furgoneta actualizada con éxito.',
@@ -1890,7 +1862,7 @@ app.put('/api/vans/:id', verifyAdmin, upload.array('images', 20), async (req, re
       custom_features: customFeatures
     };
     fallbackVans[index] = updated;
-    saveFallbackVansToFile();
+    saveAdminStoreToFile();
     res.json({
       message: 'Furgoneta actualizada temporalmente (Modo offline sin BD).',
       van: updated
@@ -1913,7 +1885,7 @@ app.delete('/api/vans/:id', verifyAdmin, async (req, res) => {
     if (index !== -1) {
       fallbackVans.splice(index, 1);
     }
-    saveFallbackVansToFile();
+    saveAdminStoreToFile();
     
     res.json({ message: 'Furgoneta eliminada con éxito.' });
   } catch (err) {
@@ -1923,7 +1895,7 @@ app.delete('/api/vans/:id', verifyAdmin, async (req, res) => {
       return res.status(404).json({ error: 'Furgoneta no encontrada.' });
     }
     fallbackVans.splice(index, 1);
-    saveFallbackVansToFile();
+    saveAdminStoreToFile();
     res.json({ message: 'Furgoneta eliminada temporalmente de memoria (Modo offline sin BD).' });
   }
 });
