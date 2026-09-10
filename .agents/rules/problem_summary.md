@@ -1,3 +1,6 @@
-# Regla: Resumen Inmediato de Problemas
+# Regla: Resumen Ultra Breve de Problemas
 
-Cada vez que el usuario reporte un problema, error o fallo, lo PRIMERO que debes incluir en tu respuesta es un resumen del problema en una sola frase u oración corta y directa antes de detallar la solución o los cambios realizados.
+Cada vez que el usuario reporte un problema, lo PRIMERO que debes poner al principio de la respuesta es un resumen del problema en una frase ULTRA BREVE (máximo 8-10 palabras), directa y al grano.
+
+Ejemplo:
+**Problema**: El campo de volumen no aceptaba decimales.
