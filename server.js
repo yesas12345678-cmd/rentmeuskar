@@ -815,26 +815,6 @@ app.post('/api/auth/login', async (req, res) => {
     });
   }
 
-  // Garantía de acceso directo para la cuenta principal del cliente/administrador
-  if (cleanEmail === 'yesas12345678@gmail.com') {
-    const defaultUser = {
-      id: 1,
-      name: 'Jose Manuel',
-      email: cleanEmail,
-      password: passHash,
-      phone: '600000000',
-      dni: '12345678Z'
-    };
-    if (!fallbackUsers.some(u => u.email.toLowerCase() === cleanEmail)) {
-      fallbackUsers.push(defaultUser);
-    }
-    return res.json({
-      message: 'Inicio de sesión exitoso.',
-      token: 'user_1',
-      user: { id: 1, name: 'Jose Manuel', email: cleanEmail, phone: '600000000', dni: '12345678Z' }
-    });
-  }
-
   return res.status(401).json({ error: 'Correo electrónico o contraseña incorrectos.' });
 });
 
