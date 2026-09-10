@@ -229,8 +229,34 @@ async function syncDatabaseWithDisk(clientOrPool) {
       console.warn('[SYNC WARN] Error al sincronizar reseñas:', e.message);
     }
 
+    // 7. Usuarios registrados
+    try {
+      const usersRes = await targetPool.query("SELECT * FROM users ORDER BY id ASC");
+      if (usersRes.rows.length > 0) {
+        usersRes.rows.forEach(dbUser => {
+          const idx = fallbackUsers.findIndex(u => u.email.toLowerCase() === dbUser.email.toLowerCase());
+          if (idx !== -1) {
+            fallbackUsers[idx] = { ...fallbackUsers[idx], ...dbUser };
+          } else {
+            fallbackUsers.push(dbUser);
+          }
+        });
+      } else if (fallbackUsers.length > 0) {
+        for (const u of fallbackUsers) {
+          await targetPool.query(
+            `INSERT INTO users (id, name, email, password, phone, dni)
+             VALUES ($1, $2, $3, $4, $5, $6)
+             ON CONFLICT (id) DO NOTHING`,
+            [u.id, u.name, u.email, u.password, u.phone || '', u.dni || '']
+          );
+        }
+      }
+    } catch (e) {
+      console.warn('[SYNC WARN] Error al sincronizar usuarios:', e.message);
+    }
+
     saveAdminStoreToFile();
-    console.log(`[PERSISTENCE SAFE SYNC] Sincronización completa: ${fallbackVans.length} furgonetas, ${fallbackBookings.length} reservas, ${fallbackFaqs.length} FAQs, ${fallbackBlockages.length} bloqueos.`);
+    console.log(`[PERSISTENCE SAFE SYNC] Sincronización completa: ${fallbackVans.length} furgonetas, ${fallbackBookings.length} reservas, ${fallbackFaqs.length} FAQs, ${fallbackBlockages.length} bloqueos, ${fallbackUsers.length} usuarios.`);
   } catch (err) {
     console.warn('[PERSISTENCE SYNC WARN] Error al sincronizar PostgreSQL:', err.message);
   }
@@ -770,6 +796,7 @@ app.post('/api/auth/verify-registration', async (req, res) => {
     
     const user = result.rows[0];
     fallbackUsers.push({ ...user, password: pending.passHash });
+    saveAdminStoreToFile();
     delete pendingRegistrations[cleanEmail];
 
     return res.status(201).json({
@@ -790,6 +817,7 @@ app.post('/api/auth/verify-registration', async (req, res) => {
       created_at: new Date()
     };
     fallbackUsers.push(newUser);
+    saveAdminStoreToFile();
     delete pendingRegistrations[cleanEmail];
 
     const { password: _, ...userWithoutPass } = newUser;
