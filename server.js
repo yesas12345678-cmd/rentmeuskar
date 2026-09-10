@@ -822,63 +822,126 @@ app.post('/api/auth/login', async (req, res) => {
 const pendingPasswordResets = {};
 
 app.post('/api/auth/forgot-password', async (req, res) => {
-  const { email } = req.body;
+  const { email, isAdmin } = req.body;
+  if (!email && !isAdmin) {
+    return res.status(400).json({ error: 'El correo electrónico es obligatorio.' });
+  }
+
   const cleanEmail = email ? email.trim().toLowerCase() : 'info@rentmeuskar.com';
   const code = Math.floor(100000 + Math.random() * 900000).toString();
-  
+
+  const currentAdminUser = (fallbackSettings.admin_username || 'zvaito').toLowerCase();
+  const isAdminRequest = !!(isAdmin || cleanEmail === 'info@rentmeuskar.com' || cleanEmail === currentAdminUser || cleanEmail === 'zvaito' || cleanEmail === 'admin');
+
   pendingPasswordResets[cleanEmail] = {
     code,
     expires: Date.now() + 15 * 60 * 1000
   };
-  pendingPasswordResets['info@rentmeuskar.com'] = pendingPasswordResets[cleanEmail];
 
-  console.log(`[SECURITY - FORGOT PASSWORD CODE] Código generado para ${cleanEmail}: ${code}`);
-
-  try {
-    const senderAddress = process.env.SMTP_USER || 'confirmacion@rentmeuskar.com';
-    const destinationAddress = 'info@rentmeuskar.com';
-
-    await mailTransporter.sendMail({
-      from: `"RentMeUskar Seguridad" <${senderAddress}>`,
-      to: destinationAddress,
-      subject: `🔐 Código de Verificación para Restablecer Contraseña | RentMeUskar`,
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; background-color: #070e24; color: #ffffff; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
-          <div style="text-align: center; padding-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1);">
-            <h1 style="color: #82d105; margin: 0; font-size: 24px;">RentMeUskar</h1>
-            <p style="color: #a0aec0; margin-top: 5px; font-size: 14px;">Solicitud de Restablecimiento de Contraseña</p>
-          </div>
-          <div style="padding: 24px 0;">
-            <h2 style="color: #ffffff; font-size: 18px; margin-bottom: 12px;">Código de Verificación</h2>
-            <p style="color: #cbd5e0; line-height: 1.6;">Se ha solicitado el restablecimiento de la contraseña para la cuenta <strong>${cleanEmail}</strong> o la consola de administración.</p>
-            <p style="color: #cbd5e0; line-height: 1.6;">Para cambiar la usuario/contraseña del panel de administración o cuenta de usuario, introduce este código de verificación:</p>
-            
-            <div style="font-size: 32px; font-weight: bold; background: #0c1838; padding: 18px; text-align: center; border-radius: 8px; color: #82d105; letter-spacing: 6px; margin: 24px 0; border: 1px dashed #82d105;">
-              ${code}
-            </div>
-            
-            <p style="color: #a0aec0; font-size: 13px;">Este código caduca en 15 minutos. Si no has sido tú, por favor ignora este correo.</p>
-          </div>
-          <div style="padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); text-align: center; color: #718096; font-size: 12px;">
-            &copy; ${new Date().getFullYear()} RentMeUskar. Todos los derechos reservados.
-          </div>
-        </div>
-      `
-    });
-    console.log(`[SMTP FORGOT PASS SUCCESS] Correo de verificación enviado desde ${senderAddress} a ${destinationAddress}`);
-  } catch (mailErr) {
-    console.error('[SMTP FORGOT PASS ERROR] Error enviando email de restablecimiento:', mailErr.message);
+  if (isAdminRequest) {
+    pendingPasswordResets['info@rentmeuskar.com'] = pendingPasswordResets[cleanEmail];
+    pendingPasswordResets[currentAdminUser] = pendingPasswordResets[cleanEmail];
   }
 
-  return res.json({
-    success: true,
-    message: `Hemos enviado un código de verificación desde confirmacion@rentmeuskar.com a info@rentmeuskar.com para restablecer la contraseña.`
-  });
+  console.log(`[SECURITY - FORGOT PASSWORD CODE] Código generado para ${cleanEmail} (isAdmin: ${isAdminRequest}): ${code}`);
+
+  const senderAddress = process.env.SMTP_USER || 'confirmacion@rentmeuskar.com';
+
+  if (isAdminRequest) {
+    // Si la solicitud viene de /admin o es para la cuenta de administración, se envía a info@rentmeuskar.com
+    const destinationAddress = 'info@rentmeuskar.com';
+
+    if (mailTransporter) {
+      try {
+        await mailTransporter.sendMail({
+          from: `"RentMeUskar Seguridad" <${senderAddress}>`,
+          to: destinationAddress,
+          subject: `🔐 Código de Verificación | Cambio de Credenciales del Panel Admin - RentMeUskar`,
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; background-color: #070e24; color: #ffffff; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
+              <div style="text-align: center; padding-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                <h1 style="color: #82d105; margin: 0; font-size: 24px;">RentMeUskar - Panel de Administración</h1>
+                <p style="color: #a0aec0; margin-top: 5px; font-size: 14px;">Solicitud de Cambio / Restablecimiento de Credenciales de Admin</p>
+              </div>
+              <div style="padding: 24px 0;">
+                <h2 style="color: #ffffff; font-size: 18px; margin-bottom: 12px;">Código de Verificación de Administrador</h2>
+                <p style="color: #cbd5e0; line-height: 1.6;">Se ha solicitado un código de confirmación desde <strong>${senderAddress}</strong> para modificar el usuario y la contraseña del panel de administración.</p>
+                <p style="color: #cbd5e0; line-height: 1.6;">Introduce el siguiente <strong>código de 6 dígitos</strong> en la pantalla de administración para proceder al cambio:</p>
+                
+                <div style="font-size: 32px; font-weight: bold; background: #0c1838; padding: 18px; text-align: center; border-radius: 8px; color: #82d105; letter-spacing: 6px; margin: 24px 0; border: 1px dashed #82d105;">
+                  ${code}
+                </div>
+                
+                <p style="color: #a0aec0; font-size: 13px;">Este código caduca en 15 minutos. Si no has solicitado este cambio, por favor revisa la seguridad de tu panel de administración.</p>
+              </div>
+              <div style="padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); text-align: center; color: #718096; font-size: 12px;">
+                &copy; ${new Date().getFullYear()} RentMeUskar. Todos los derechos reservados.
+              </div>
+            </div>
+          `
+        });
+        console.log(`[SMTP ADMIN FORGOT PASS SUCCESS] Correo de verificación enviado desde ${senderAddress} a ${destinationAddress}`);
+      } catch (mailErr) {
+        console.error('[SMTP ADMIN FORGOT PASS ERROR] Error enviando email admin:', mailErr.message);
+      }
+    }
+
+    return res.json({
+      success: true,
+      message: `Hemos enviado un código de verificación desde ${senderAddress} a info@rentmeuskar.com para restablecer las credenciales del panel de administración.`
+    });
+  } else {
+    // Si la solicitud es de un usuario cliente normal (desde el formulario web), se envía al correo introducido
+    const destinationAddress = cleanEmail;
+
+    if (mailTransporter) {
+      try {
+        await mailTransporter.sendMail({
+          from: `"RentMeUskar" <${senderAddress}>`,
+          to: destinationAddress,
+          subject: '🔐 Código de confirmación - Restablecer Contraseña | RentMeUskar',
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; background-color: #070e24; color: #ffffff; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
+              <div style="text-align: center; padding-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                <h1 style="color: #82d105; margin: 0; font-size: 24px;">RentMeUskar</h1>
+                <p style="color: #a0aec0; margin-top: 5px; font-size: 14px;">Alquiler de Vehículos en Huéscar y Altiplano Granadino</p>
+              </div>
+              <div style="padding: 24px 0;">
+                <h2 style="color: #ffffff; font-size: 18px; margin-bottom: 12px;">Restablecimiento de Contraseña</h2>
+                <p style="color: #cbd5e0; line-height: 1.6;">Hola,</p>
+                <p style="color: #cbd5e0; line-height: 1.6;">Hemos recibido una solicitud para restablecer la contraseña de tu cuenta registrada en <strong>RentMeUskar</strong> (<strong>${cleanEmail}</strong>).</p>
+                <p style="color: #cbd5e0; line-height: 1.6;">Introduce el siguiente <strong>código de confirmación de 6 dígitos</strong> en la pantalla de la aplicación:</p>
+                
+                <div style="font-size: 32px; font-weight: bold; background: #0c1838; padding: 18px; text-align: center; border-radius: 8px; color: #82d105; letter-spacing: 6px; margin: 24px 0; border: 1px dashed #82d105;">
+                  ${code}
+                </div>
+                
+                <p style="color: #a0aec0; font-size: 13px;">Este código expirará en <strong>15 minutos</strong>. Si no solicitaste este cambio, puedes ignorar este correo con total tranquilidad.</p>
+              </div>
+              <div style="padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); text-align: center; color: #718096; font-size: 12px;">
+                &copy; ${new Date().getFullYear()} RentMeUskar. Todos los derechos reservados.
+              </div>
+            </div>
+          `
+        });
+        console.log(`[SMTP CLIENT FORGOT PASS SUCCESS] Correo de confirmación enviado a ${destinationAddress}`);
+      } catch (mailErr) {
+        console.error('[SMTP CLIENT FORGOT PASS ERROR] Error enviando email cliente:', mailErr.message);
+      }
+    }
+
+    return res.json({
+      success: true,
+      message: `Hemos enviado un código de verificación a ${destinationAddress} para restablecer tu contraseña.`
+    });
+  }
 });
 
 app.post('/api/auth/reset-password', async (req, res) => {
-  const { email, code, new_password, new_username } = req.body;
-  if (!code || !new_password) {
+  const { email, code, new_password, newPassword, new_username } = req.body;
+  const targetPassword = new_password || newPassword;
+
+  if (!code || !targetPassword) {
     return res.status(400).json({ error: 'El código de verificación y la nueva contraseña son obligatorios.' });
   }
 
@@ -899,7 +962,7 @@ app.post('/api/auth/reset-password', async (req, res) => {
     return res.status(400).json({ error: 'El código de verificación ha caducado. Solicita uno nuevo.' });
   }
 
-  const passHash = hashPassword(new_password);
+  const passHash = hashPassword(targetPassword);
   const currentAdminUser = (fallbackSettings.admin_username || 'zvaito').toLowerCase();
 
   // Restablecer admin si el correo es admin o la petición viene de la consola de admin
@@ -907,13 +970,13 @@ app.post('/api/auth/reset-password', async (req, res) => {
     const finalAdminUser = new_username ? new_username.trim() : (fallbackSettings.admin_username || 'zvaito');
     try {
       await pool.query("INSERT INTO settings (key, value) VALUES ('admin_username', $1) ON CONFLICT (key) DO UPDATE SET value = $1", [finalAdminUser]);
-      await pool.query("INSERT INTO settings (key, value) VALUES ('admin_password', $1) ON CONFLICT (key) DO UPDATE SET value = $1", [new_password]);
+      await pool.query("INSERT INTO settings (key, value) VALUES ('admin_password', $1) ON CONFLICT (key) DO UPDATE SET value = $1", [targetPassword]);
       await pool.query("INSERT INTO settings (key, value) VALUES ('admin_password_hash', $1) ON CONFLICT (key) DO UPDATE SET value = $1", [passHash]);
     } catch (e) {
       console.warn('Base de datos offline al guardar credenciales admin:', e.message);
     }
     fallbackSettings.admin_username = finalAdminUser;
-    fallbackSettings.admin_password = new_password;
+    fallbackSettings.admin_password = targetPassword;
     fallbackSettings.admin_password_hash = passHash;
     saveAdminStoreToFile();
     delete pendingPasswordResets[cleanEmail];
@@ -1037,114 +1100,7 @@ app.put('/api/auth/me', async (req, res) => {
   return res.status(401).json({ error: 'Token inválido.' });
 });
 
-// Almacenamiento temporal de códigos de recuperación de contraseña
-const passwordResetCodes = {};
 
-// 3.b Recuperación de contraseña (generación de código de confirmación)
-app.post('/api/auth/forgot-password', async (req, res) => {
-  const { email } = req.body;
-  if (!email) {
-    return res.status(400).json({ error: 'El correo electrónico es obligatorio.' });
-  }
-
-  const cleanEmail = email.trim().toLowerCase();
-  const code = Math.floor(100000 + Math.random() * 900000).toString();
-  passwordResetCodes[cleanEmail] = { code, expires: Date.now() + 15 * 60 * 1000 };
-
-  console.log(`[SECURITY - PASSWORD RESET] Código confidencial para ${cleanEmail}: ${code}`);
-
-  // Enviar correo electrónico real si hay un servidor de correo (SMTP) configurado
-  if (mailTransporter) {
-    try {
-      const senderAddress = process.env.SMTP_USER || 'confirmacion@rentmeuskar.com';
-      await mailTransporter.sendMail({
-        from: `"RentMeUskar" <${senderAddress}>`,
-        to: cleanEmail,
-        subject: '🔐 Código de confirmación - Restablecer Contraseña | RentMeUskar',
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; background-color: #070e24; color: #ffffff; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
-            <div style="text-align: center; padding-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1);">
-              <h1 style="color: #82d105; margin: 0; font-size: 24px;">RentMeUskar</h1>
-              <p style="color: #a0aec0; margin-top: 5px; font-size: 14px;">Alquiler de Vehículos en Huéscar y Altiplano Granadino</p>
-            </div>
-            <div style="padding: 24px 0;">
-              <h2 style="color: #ffffff; font-size: 18px; margin-bottom: 12px;">Restablecimiento de Contraseña</h2>
-              <p style="color: #cbd5e0; line-height: 1.6;">Hola,</p>
-              <p style="color: #cbd5e0; line-height: 1.6;">Hemos recibido una solicitud para restablecer la contraseña de tu cuenta registrada en <strong>RentMeUskar</strong>.</p>
-              <p style="color: #cbd5e0; line-height: 1.6;">Introduce el siguiente <strong>código de confirmación de 6 dígitos</strong> en la pantalla de la aplicación:</p>
-              
-              <div style="font-size: 32px; font-weight: bold; background: #0c1838; padding: 18px; text-align: center; border-radius: 8px; color: #82d105; letter-spacing: 6px; margin: 24px 0; border: 1px dashed #82d105;">
-                ${code}
-              </div>
-              
-              <p style="color: #a0aec0; font-size: 13px;">Este código expirará en <strong>15 minutos</strong>. Si no solicitaste este cambio, puedes ignorar este correo con total tranquilidad.</p>
-            </div>
-            <div style="padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); text-align: center; color: #718096; font-size: 12px;">
-              &copy; ${new Date().getFullYear()} RentMeUskar. Todos los derechos reservados.
-            </div>
-          </div>
-        `
-      });
-      console.log(`[SMTP EMAIL SUCCESS] Correo de confirmación enviado a ${cleanEmail}`);
-    } catch (mailErr) {
-      console.error('[SMTP EMAIL ERROR] No se pudo enviar el correo por SMTP:', mailErr.message);
-    }
-  } else {
-    console.log(`[SMTP INFO] Para enviar correos automáticos reales a la bandeja de entrada, añade SMTP_HOST, SMTP_USER y SMTP_PASS en el archivo .env.`);
-  }
-
-  return res.json({
-    success: true,
-    message: `Te hemos enviado un correo de confirmación a ${cleanEmail} con las instrucciones para restablecer tu contraseña.`
-  });
-});
-
-// 3.c Restablecer contraseña con código de confirmación
-app.post('/api/auth/reset-password', async (req, res) => {
-  const { email, code, newPassword } = req.body;
-  if (!code || !newPassword) {
-    return res.status(400).json({ error: 'El código y la nueva contraseña son obligatorios.' });
-  }
-
-  const passHash = hashPassword(newPassword);
-
-  if (email) {
-    const cleanEmail = email.trim().toLowerCase();
-    const stored = passwordResetCodes[cleanEmail];
-    const inputCode = code ? code.trim() : '';
-    if (stored && stored.code !== inputCode) {
-      return res.status(400).json({ error: 'El código de confirmación introducido no es correcto.' });
-    }
-
-    try {
-      await pool.query('UPDATE users SET password = $1 WHERE LOWER(email) = $2', [passHash, cleanEmail]);
-    } catch (e) {
-      console.warn('Error al actualizar contraseña en PostgreSQL DB:', e.message);
-    }
-
-    let user = fallbackUsers.find(u => u.email.toLowerCase() === cleanEmail);
-    if (user) {
-      user.password = passHash;
-    } else {
-      const mockId = fallbackUsers.length > 0 ? Math.max(...fallbackUsers.map(u => u.id)) + 1 : 1;
-      user = {
-        id: mockId,
-        name: cleanEmail.split('@')[0],
-        email: cleanEmail,
-        password: passHash,
-        phone: '',
-        dni: ''
-      };
-      fallbackUsers.push(user);
-    }
-    delete passwordResetCodes[cleanEmail];
-  }
-
-  return res.json({
-    success: true,
-    message: 'Contraseña actualizada correctamente.'
-  });
-});
 
 // Helper para dar formato a fechas locales YYYY-MM-DD
 const formatDateISO = (d) => {

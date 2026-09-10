@@ -321,7 +321,7 @@ const initAdmin = () => {
                 const res = await fetch('/api/auth/forgot-password', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email: 'info@rentmeuskar.com' })
+                    body: JSON.stringify({ email: 'info@rentmeuskar.com', isAdmin: true })
                 });
                 const data = await res.json();
                 if (res.ok) {
