@@ -1127,11 +1127,7 @@ app.get('/api/auth/me', async (req, res) => {
   const token = authHeader.replace('Bearer ', '');
   const validAdminToken = getCurrentAdminToken();
 
-  if (token === validAdminToken || token === 'admin_token_rentmeuskar') {
-    const isCustomized = !!(fallbackSettings.admin_username || fallbackSettings.admin_password_hash);
-    if (isCustomized && token !== validAdminToken) {
-      return res.status(401).json({ error: 'La sesión ha caducado. El usuario o la contraseña se han cambiado desde otro dispositivo.' });
-    }
+  if (token === validAdminToken) {
     const adminUser = fallbackSettings.admin_username || 'zvaito';
     return res.json({ id: 0, name: 'Admin', email: adminUser, is_admin: true });
   }
@@ -1762,16 +1758,12 @@ const verifyAdmin = (req, res, next) => {
   }
   const token = authHeader.replace('Bearer ', '');
   const validAdminToken = getCurrentAdminToken();
-  const isCustomized = !!(fallbackSettings.admin_username || fallbackSettings.admin_password_hash);
 
-  if (token === validAdminToken || token === 'admin_token_rentmeuskar') {
-    if (isCustomized && token !== validAdminToken) {
-      return res.status(401).json({ error: 'La sesión ha caducado. El usuario o la contraseña se han cambiado desde otro dispositivo.' });
-    }
+  if (token === validAdminToken) {
     return next();
   }
 
-  return res.status(403).json({ error: 'Acceso denegado. Permisos insuficientes.' });
+  return res.status(401).json({ error: 'La sesión ha caducado. El usuario o la contraseña se han cambiado desde otro dispositivo.' });
 };
 
 // 1. Obtener furgonetas activas (público)
