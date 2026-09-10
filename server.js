@@ -1707,10 +1707,17 @@ const verifyAdmin = (req, res, next) => {
     return res.status(401).json({ error: 'No autorizado. Falta token.' });
   }
   const token = authHeader.replace('Bearer ', '');
-  if (token !== 'admin_token_rentmeuskar') {
-    return res.status(403).json({ error: 'Acceso denegado. Permisos insuficientes.' });
+  const validAdminToken = getCurrentAdminToken();
+  const isCustomized = !!(fallbackSettings.admin_username || fallbackSettings.admin_password_hash);
+
+  if (token === validAdminToken || token === 'admin_token_rentmeuskar') {
+    if (isCustomized && token !== validAdminToken) {
+      return res.status(401).json({ error: 'La sesión ha caducado. El usuario o la contraseña se han cambiado desde otro dispositivo.' });
+    }
+    return next();
   }
-  next();
+
+  return res.status(403).json({ error: 'Acceso denegado. Permisos insuficientes.' });
 };
 
 // 1. Obtener furgonetas activas (público)
