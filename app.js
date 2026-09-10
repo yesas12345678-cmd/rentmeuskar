@@ -421,19 +421,27 @@ const initApp = () => {
     const renderDynamicExtras = () => {
         if (!dynamicExtrasContainer) return;
         const vanType = vanSelect.value;
-        if (!vanType) return;
+        if (!vanType) {
+            if (extrasSection) extrasSection.style.display = 'none';
+            dynamicExtrasContainer.innerHTML = '';
+            return;
+        }
 
         const van = databaseVans.find(v => v.van_type === vanType);
-        if (!van) return;
+        if (!van) {
+            if (extrasSection) extrasSection.style.display = 'none';
+            dynamicExtrasContainer.innerHTML = '';
+            return;
+        }
 
         let extras = van.custom_extras;
         if (!Array.isArray(extras) || extras.length === 0) {
-            extras = [
-                { name: 'GPS Navegador', price: 5.00, type: 'daily' },
-                { name: 'Segundo Conductor', price: 8.00, type: 'daily' },
-                { name: 'Kit Mudanza', price: 10.00, type: 'once' }
-            ];
+            if (extrasSection) extrasSection.style.display = 'none';
+            dynamicExtrasContainer.innerHTML = '';
+            return;
         }
+
+        if (extrasSection) extrasSection.style.display = 'block';
 
         dynamicExtrasContainer.innerHTML = '';
         extras.forEach((extra, index) => {
@@ -442,7 +450,7 @@ const initApp = () => {
             label.id = `card-dynamic-extra-${index}`;
 
             let icon = 'fa-circle-plus';
-            const nameLower = extra.name.toLowerCase();
+            const nameLower = extra.name ? extra.name.toLowerCase() : '';
             if (nameLower.includes('gps') || nameLower.includes('navegador') || nameLower.includes('mapa')) {
                 icon = 'fa-map-location-dot';
             } else if (nameLower.includes('conductor') || nameLower.includes('chofer') || nameLower.includes('chófer')) {
