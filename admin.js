@@ -486,6 +486,9 @@ const initAdmin = () => {
             
             updateKPIs();
             renderBookings();
+            if (!fleet || fleet.length === 0) {
+                fetchFleet();
+            }
         } catch (err) {
             console.error(err);
             showToast('Error al conectar con la base de datos.', 'error');
@@ -624,9 +627,14 @@ const initAdmin = () => {
         const statusFilter = filterStatus.value;
         
         const filteredBookings = bookings.filter(booking => {
-            const clientNameVal = (booking.client_name || booking.name).toLowerCase();
+            const clientNameVal = (booking.client_name || booking.name || '').toLowerCase();
             const matchesName = clientNameVal.includes(query);
-            const matchesVan = vanFilter === 'all' || booking.van_type === vanFilter;
+            const matchesVan = vanFilter === 'all' || 
+                               booking.van_type === vanFilter || 
+                               booking.van_name === vanFilter ||
+                               (booking.van_id && String(booking.van_id) === String(vanFilter)) ||
+                               (vanFilter === 'medium' && (booking.van_type === 'medium' || (booking.van_name && booking.van_name.toLowerCase().includes('transit')))) ||
+                               (vanFilter === 'large' && (booking.van_type === 'large' || (booking.van_name && booking.van_name.toLowerCase().includes('man'))));
             const matchesStatus = statusFilter === 'all' || booking.status === statusFilter;
             return matchesName && matchesVan && matchesStatus;
         });
@@ -1403,44 +1411,59 @@ const initAdmin = () => {
         }
     };
 
-    // Actualizar el select filter-van de la pestaña de reservas
+    // Actualizar el select filter-van de la pestaña de reservas y todos los selectores de vehículos
     const updateFilterVanSelect = () => {
-        const currentVal = filterVan.value;
-        filterVan.innerHTML = '<option value="all">Todos los vehículos</option>';
-        fleet.forEach(van => {
-            const opt = document.createElement('option');
-            opt.value = van.van_type;
-            opt.textContent = `${van.name} (${van.plate})`;
-            filterVan.appendChild(opt);
-        });
-        filterVan.value = currentVal;
+        if (filterVan) {
+            const currentVal = filterVan.value;
+            filterVan.innerHTML = '<option value="all">Todos los vehículos</option>';
+            if (fleet && fleet.length > 0) {
+                fleet.forEach(van => {
+                    const opt = document.createElement('option');
+                    opt.value = van.van_type || van.name;
+                    const plateText = van.plate ? ` (${van.plate})` : '';
+                    opt.textContent = `${van.name}${plateText}`;
+                    filterVan.appendChild(opt);
+                });
+            }
+            if (currentVal && Array.from(filterVan.options).some(o => o.value === currentVal)) {
+                filterVan.value = currentVal;
+            } else {
+                filterVan.value = 'all';
+            }
+        }
 
-        // Actualizar también selector de código de reseña y de bloqueos
+        // Actualizar también selector de código de reseña
         const genSelect = document.getElementById('admin-gen-van-select');
         if (genSelect) {
             const genVal = genSelect.value;
             genSelect.innerHTML = '';
-            fleet.forEach(van => {
-                const opt = document.createElement('option');
-                opt.value = van.name;
-                opt.textContent = van.name;
-                genSelect.appendChild(opt);
-            });
+            if (fleet && fleet.length > 0) {
+                fleet.forEach(van => {
+                    const opt = document.createElement('option');
+                    opt.value = van.name;
+                    opt.textContent = van.name;
+                    genSelect.appendChild(opt);
+                });
+            }
             if (genVal && Array.from(genSelect.options).some(o => o.value === genVal)) {
                 genSelect.value = genVal;
             }
         }
 
+        // Actualizar selector del formulario de bloqueos
         const blockSelect = document.getElementById('block-van-type');
         if (blockSelect) {
             const blockVal = blockSelect.value;
-            blockSelect.innerHTML = '<option value="" disabled selected>-- Selecciona Furgoneta --</option>';
-            fleet.forEach(van => {
-                const opt = document.createElement('option');
-                opt.value = van.van_type;
-                opt.textContent = `${van.name} (${van.van_type})`;
-                blockSelect.appendChild(opt);
-            });
+            blockSelect.innerHTML = '<option value="" disabled selected>-- Selecciona un vehículo --</option>';
+            if (fleet && fleet.length > 0) {
+                fleet.forEach(van => {
+                    const opt = document.createElement('option');
+                    opt.value = van.van_type || van.name;
+                    const plateText = van.plate ? ` (${van.plate})` : '';
+                    opt.textContent = `${van.name}${plateText}`;
+                    blockSelect.appendChild(opt);
+                });
+            }
             if (blockVal && Array.from(blockSelect.options).some(o => o.value === blockVal)) {
                 blockSelect.value = blockVal;
             }
