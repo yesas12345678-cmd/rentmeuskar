@@ -1353,7 +1353,7 @@ const initApp = () => {
 
                         const statusLabel = b.status === 'pending' ? 'Pendiente' : b.status === 'confirmed' ? 'Confirmado' : 'Cancelado';
                         const paymentLabel = b.payment_status === 'paid' ? 'Pagado' : 'Pendiente';
-                        const fianzaLabel = b.fianza_status === 'paid' ? 'Retenida (500€)' : b.fianza_status === 'refunded' ? 'Devuelta' : 'Pendiente';
+                        const fianzaLabel = b.fianza_status === 'paid' ? 'Depositada (500€)' : b.fianza_status === 'refunded' ? 'Devuelta' : 'En persona (500€)';
 
                         const formatDate = (dateStr) => {
                             if (!dateStr) return '-';
@@ -1666,13 +1666,12 @@ const initApp = () => {
 
         // DETERMINACIÓN DE FLUJO SEGÚN DURACIÓN Y MODALIDAD (Con Conductor nunca paga online)
         if (days <= 7 && rentalMode === 'sin') {
-            // FLUJO A: Pago online obligatorio de alquiler + fianza de 500€ (solo si es sin conductor)
-            const fianzaAmount = rentalMode === 'sin' ? 500 : 0;
+            // FLUJO A: Pago online del alquiler (la fianza de 500€ se abona en persona al recoger)
             const rentAmountEl = document.getElementById('tpv-rent-amount');
             const totalAmountEl = document.getElementById('tpv-total-amount');
 
             if (rentAmountEl) rentAmountEl.textContent = `${totalPriceNum.toFixed(2)} €`;
-            if (totalAmountEl) totalAmountEl.textContent = `${(totalPriceNum + fianzaAmount).toFixed(2)} €`;
+            if (totalAmountEl) totalAmountEl.textContent = `${totalPriceNum.toFixed(2)} €`;
 
             const cardNameEl = document.getElementById('tpv-card-name');
             if (cardNameEl) cardNameEl.value = user.name || '';
@@ -1742,7 +1741,7 @@ const initApp = () => {
                         `- *Devolución:* ${returnDateStr} a las ${returnTimeStr}${extraDetailsText}\n` +
                         `- *Duración:* ${days} días\n\n` +
                         `*Precio estimado total:* ${totalPriceText}\n` +
-                        `*Fianza:* 500,00 € (Pendiente de cobro/depósito)\n\n` +
+                        `*Fianza:* 500,00 € (A depositar/abonar en persona al recoger el vehículo)\n\n` +
                         `(Solicitud pendiente de confirmación de disponibilidad del propietario).`;
                 }
 
