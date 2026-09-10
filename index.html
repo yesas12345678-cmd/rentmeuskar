@@ -520,16 +520,16 @@
                 var data = await res.json();
                 if (res.ok && data.requiresVerification) {
                     var subtitle = document.getElementById('verify-email-subtitle');
-                    if (subtitle) subtitle.textContent = `Hemos enviado un código de confirmación a ${email}. Introdúcelo para activar tu cuenta (o usa 123456).`;
+                    if (subtitle) subtitle.textContent = `Hemos enviado un código de confirmación a ${email}. Revisa tu bandeja de entrada o spam e introdúcelo para activar tu cuenta.`;
 
                     window.switchAuthModal('register-modal', 'verify-email-modal');
-                    var toastMsg = data.message ? data.message : `📧 Código de activación generado para ${email}.`;
+                    var toastMsg = data.message ? data.message : `📧 Hemos enviado un código de confirmación a ${email}. Revisa tu correo electrónico (o carpeta de spam).`;
                     if (typeof showAppToast === 'function') showAppToast(toastMsg, 'success', 10000);
                 } else if (!res.ok && data && data.error) {
                     alert(data.error);
                 } else {
                     var subtitle = document.getElementById('verify-email-subtitle');
-                    if (subtitle) subtitle.textContent = `Hemos enviado un código de confirmación a ${email}. Introdúcelo para activar tu cuenta (o usa 123456).`;
+                    if (subtitle) subtitle.textContent = `Hemos enviado un código de confirmación a ${email}. Revisa tu bandeja de entrada o spam e introdúcelo para activar tu cuenta.`;
                     window.switchAuthModal('register-modal', 'verify-email-modal');
                 }
             } catch (err) {

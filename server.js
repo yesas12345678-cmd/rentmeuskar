@@ -19,18 +19,24 @@ const smtpSecure = process.env.SMTP_SECURE ? (process.env.SMTP_SECURE === 'true'
 const smtpUser = process.env.SMTP_USER || 'confirmacion@rentmeuskar.com';
 const smtpPass = process.env.SMTP_PASS || 'Follete_87';
 
-if (smtpUser && smtpPass) {
-  mailTransporter = nodemailer.createTransport({
-    host: smtpHost,
-    port: smtpPort,
-    secure: smtpSecure,
-    auth: {
-      user: smtpUser,
-      pass: smtpPass
-    }
-  });
-  console.log('[SMTP] Transporte de correo Zoho Mail activado.');
-}
+mailTransporter = nodemailer.createTransport({
+  host: smtpHost,
+  port: smtpPort,
+  secure: smtpSecure,
+  auth: {
+    user: smtpUser,
+    pass: smtpPass
+  }
+});
+console.log(`[SMTP] Transporte de correo Zoho Mail activado para ${smtpUser}`);
+
+mailTransporter.verify((error, success) => {
+  if (error) {
+    console.error('[SMTP ERROR] Error de autenticación/conexión con Zoho Mail SMTP:', error.message);
+  } else {
+    console.log('[SMTP SUCCESS] Conexión SMTP verificada correctamente con Zoho Mail (confirmacion@rentmeuskar.com)');
+  }
+});
 
 // Asegurar que existe la carpeta de subidas (uploads)
 const uploadsDir = path.join(__dirname, 'uploads');
@@ -472,53 +478,44 @@ app.post('/api/auth/register', async (req, res) => {
 
   console.log(`[SECURITY - REGISTRATION CODE] Código de verificación para ${cleanEmail}: ${code}`);
 
-  let mailSent = false;
-  // Enviar correo electrónico real de verificación si hay transporte SMTP
-  if (mailTransporter) {
-    try {
-      const senderAddress = process.env.SMTP_USER || process.env.GMAIL_USER || 'info@rentmeuskar.com';
-      await mailTransporter.sendMail({
-        from: `"RentMeUskar" <${senderAddress}>`,
-        to: cleanEmail,
-        subject: '🔐 Código de Verificación de Registro | RentMeUskar',
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; background-color: #070e24; color: #ffffff; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
-            <div style="text-align: center; padding-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1);">
-              <h1 style="color: #82d105; margin: 0; font-size: 24px;">RentMeUskar</h1>
-              <p style="color: #a0aec0; margin-top: 5px; font-size: 14px;">Bienvenido a RentMeUskar</p>
-            </div>
-            <div style="padding: 24px 0;">
-              <h2 style="color: #ffffff; font-size: 18px; margin-bottom: 12px;">Verifica tu Correo Electrónico</h2>
-              <p style="color: #cbd5e0; line-height: 1.6;">Hola <strong>${cleanName}</strong>,</p>
-              <p style="color: #cbd5e0; line-height: 1.6;">Para completar la creación de tu cuenta en <strong>RentMeUskar</strong> y verificar que la dirección de correo te pertenece, introduce este código de activación:</p>
-              
-              <div style="font-size: 32px; font-weight: bold; background: #0c1838; padding: 18px; text-align: center; border-radius: 8px; color: #82d105; letter-spacing: 6px; margin: 24px 0; border: 1px dashed #82d105;">
-                ${code}
-              </div>
-              
-              <p style="color: #a0aec0; font-size: 13px;">Si tú no solicitaste este registro, por favor ignora este mensaje.</p>
-            </div>
-            <div style="padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); text-align: center; color: #718096; font-size: 12px;">
-              &copy; ${new Date().getFullYear()} RentMeUskar. Todos los derechos reservados.
-            </div>
+  try {
+    const senderAddress = process.env.SMTP_USER || 'confirmacion@rentmeuskar.com';
+    await mailTransporter.sendMail({
+      from: `"RentMeUskar" <${senderAddress}>`,
+      to: cleanEmail,
+      subject: '🔐 Código de Verificación de Registro | RentMeUskar',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; background-color: #070e24; color: #ffffff; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
+          <div style="text-align: center; padding-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1);">
+            <h1 style="color: #82d105; margin: 0; font-size: 24px;">RentMeUskar</h1>
+            <p style="color: #a0aec0; margin-top: 5px; font-size: 14px;">Bienvenido a RentMeUskar</p>
           </div>
-        `
-      });
-      mailSent = true;
-      console.log(`[SMTP REGISTRATION SUCCESS] Correo enviado a ${cleanEmail}`);
-    } catch (mailErr) {
-      console.error('[SMTP REGISTRATION ERROR] Error al enviar correo de verificación:', mailErr.message);
-    }
+          <div style="padding: 24px 0;">
+            <h2 style="color: #ffffff; font-size: 18px; margin-bottom: 12px;">Verifica tu Correo Electrónico</h2>
+            <p style="color: #cbd5e0; line-height: 1.6;">Hola <strong>${cleanName}</strong>,</p>
+            <p style="color: #cbd5e0; line-height: 1.6;">Para completar la creación de tu cuenta en <strong>RentMeUskar</strong> y verificar que la dirección de correo te pertenece, introduce este código de activación:</p>
+            
+            <div style="font-size: 32px; font-weight: bold; background: #0c1838; padding: 18px; text-align: center; border-radius: 8px; color: #82d105; letter-spacing: 6px; margin: 24px 0; border: 1px dashed #82d105;">
+              ${code}
+            </div>
+            
+            <p style="color: #a0aec0; font-size: 13px;">Si tú no solicitaste este registro, por favor ignora este mensaje.</p>
+          </div>
+          <div style="padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); text-align: center; color: #718096; font-size: 12px;">
+            &copy; ${new Date().getFullYear()} RentMeUskar. Todos los derechos reservados.
+          </div>
+        </div>
+      `
+    });
+    console.log(`[SMTP REGISTRATION SUCCESS] Correo de activación enviado a ${cleanEmail} desde ${senderAddress}`);
+  } catch (mailErr) {
+    console.error('[SMTP REGISTRATION ERROR] Error al enviar correo de verificación:', mailErr.message);
   }
 
   return res.json({
     success: true,
     requiresVerification: true,
-    mailSent,
-    devCode: code,
-    message: mailSent
-      ? `Hemos enviado un código de confirmación a ${cleanEmail} para activar tu cuenta.`
-      : `Hemos generado tu código de confirmación (${code}). Si no recibes el correo, también puedes usar el código maestro 123456.`
+    message: `Hemos enviado un código de confirmación a ${cleanEmail} para activar tu cuenta.`
   });
 });
 
@@ -537,7 +534,7 @@ app.post('/api/auth/verify-registration', async (req, res) => {
   }
 
   const inputCode = code.trim();
-  if (pending.code !== inputCode && inputCode !== '123456' && inputCode !== '000000') {
+  if (pending.code !== inputCode) {
     return res.status(400).json({ error: 'El código de verificación introducido no es correcto.' });
   }
 
@@ -588,9 +585,10 @@ app.post('/api/contact', async (req, res) => {
 
   if (mailTransporter) {
     try {
-      const adminEmail = process.env.SMTP_USER || process.env.GMAIL_USER || 'info@rentmeuskar.com';
+      const senderAddress = process.env.SMTP_USER || 'confirmacion@rentmeuskar.com';
+      const adminEmail = process.env.CONTACT_EMAIL || senderAddress;
       await mailTransporter.sendMail({
-        from: `"RentMeUskar Web" <${adminEmail}>`,
+        from: `"RentMeUskar Web" <${senderAddress}>`,
         to: adminEmail,
         subject: `📩 Nuevo Mensaje Web de ${name} (${reason})`,
         html: `
@@ -781,7 +779,7 @@ app.post('/api/auth/forgot-password', async (req, res) => {
   // Enviar correo electrónico real si hay un servidor de correo (SMTP) configurado
   if (mailTransporter) {
     try {
-      const senderAddress = process.env.SMTP_USER || process.env.GMAIL_USER || 'info@rentmeuskar.com';
+      const senderAddress = process.env.SMTP_USER || 'confirmacion@rentmeuskar.com';
       await mailTransporter.sendMail({
         from: `"RentMeUskar" <${senderAddress}>`,
         to: cleanEmail,
@@ -837,7 +835,7 @@ app.post('/api/auth/reset-password', async (req, res) => {
     const cleanEmail = email.trim().toLowerCase();
     const stored = passwordResetCodes[cleanEmail];
     const inputCode = code ? code.trim() : '';
-    if (stored && stored.code !== inputCode && inputCode !== '123456' && inputCode !== '000000') {
+    if (stored && stored.code !== inputCode) {
       return res.status(400).json({ error: 'El código de confirmación introducido no es correcto.' });
     }
 
