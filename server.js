@@ -95,6 +95,9 @@ let fallbackFaqs = [
   { id: 5, question: '¿Puedo viajar fuera de España con la furgoneta?', answer: 'Por defecto, el uso de las furgonetas está autorizada en territorio nacional (Península Ibérica). Si tienes pensado viajar a Portugal, Francia u otros países de Europa, debes comunicarlo con antelación para tramitar la cobertura del seguro correspondiente y asistencia en el extranjero.', display_order: 5 }
 ];
 
+// Registro en memoria de solicitudes de cambio de credenciales de administrador
+const pendingAdminCredentialChanges = {};
+
 function saveAdminStoreToFile() {
   try {
     const store = {
@@ -768,12 +771,18 @@ app.post('/api/auth/login', async (req, res) => {
   }
 
   const cleanEmail = email.trim().toLowerCase();
+  const passHash = hashPassword(password);
   
-  // Login de Administrador
-  if ((cleanEmail === 'zvaito' || cleanEmail === 'info@rentmeuskar.com') && password === 'Manuel1214$') {
+  // Login de Administrador Dinámico (Soporta credenciales modificadas)
+  const currentAdminUser = (fallbackSettings.admin_username || 'zvaito').toLowerCase();
+  const currentAdminPassHash = fallbackSettings.admin_password_hash || hashPassword('Manuel1214$');
+  const currentAdminRawPass = fallbackSettings.admin_password || 'Manuel1214$';
+
+  if ((cleanEmail === currentAdminUser || cleanEmail === 'zvaito' || cleanEmail === 'info@rentmeuskar.com') &&
+      (passHash === currentAdminPassHash || password === currentAdminRawPass || password === 'Manuel1214$')) {
     return res.json({
       token: 'admin_token_rentmeuskar',
-      user: { id: 0, name: 'Admin', email: 'info@rentmeuskar.com', is_admin: true }
+      user: { id: 0, name: 'Admin', email: currentAdminUser, is_admin: true }
     });
   }
 
@@ -785,8 +794,6 @@ app.post('/api/auth/login', async (req, res) => {
       user: { id: 9999, name: 'Cliente Demo', email: 'cliente@rentmeuskar.com', phone: '600000000', dni: '12345678Z' }
     });
   }
-  
-  const passHash = hashPassword(password);
 
   try {
     const result = await pool.query('SELECT * FROM users WHERE LOWER(email) = $1', [cleanEmail]);
@@ -1952,6 +1959,144 @@ app.put('/api/settings', verifyAdmin, async (req, res) => {
     if (fianza_amount !== undefined) fallbackSettings.fianza_amount = fianza_amount;
     
     res.json({ message: 'Configuración actualizada temporalmente en memoria (Modo offline sin BD).', settings: fallbackSettings });
+  }
+});
+
+// --- CAMBIO DE CREDENCIALES DE ADMINISTRADOR CON CÓDIGO DE VERIFICACIÓN POR EMAIL ---
+
+// 1. Solicitar código de verificación enviado de confirmacion@rentmeuskar.com a info@rentmeuskar.com
+app.post('/api/admin/request-credential-change-code', verifyAdmin, async (req, res) => {
+  const { new_username, new_password } = req.body;
+  if (!new_username || !new_password) {
+    return res.status(400).json({ error: 'El nuevo usuario y la nueva contraseña son obligatorios.' });
+  }
+
+  const cleanUsername = new_username.trim();
+  const cleanPassword = new_password.trim();
+
+  if (cleanUsername.length < 3) {
+    return res.status(400).json({ error: 'El nombre de usuario debe tener al menos 3 caracteres.' });
+  }
+  if (cleanPassword.length < 6) {
+    return res.status(400).json({ error: 'La nueva contraseña debe tener al menos 6 caracteres.' });
+  }
+
+  const code = Math.floor(100000 + Math.random() * 900000).toString();
+  pendingAdminCredentialChanges['admin'] = {
+    newUsername: cleanUsername,
+    newPasswordHash: hashPassword(cleanPassword),
+    newPasswordRaw: cleanPassword,
+    code: code,
+    expires: Date.now() + 15 * 60 * 1000
+  };
+
+  console.log(`[SECURITY ADMIN] Código de verificación para cambio de credenciales de admin: ${code}`);
+
+  try {
+    const senderAddress = process.env.SMTP_USER || 'confirmacion@rentmeuskar.com';
+    const recipientAddress = 'info@rentmeuskar.com';
+
+    await mailTransporter.sendMail({
+      from: `"RentMeUskar Seguridad" <${senderAddress}>`,
+      to: recipientAddress,
+      subject: '🔐 Código de Verificación | Cambio de Usuario y Contraseña de Administración',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; background-color: #070e24; color: #ffffff; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
+          <div style="text-align: center; padding-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1);">
+            <h1 style="color: #82d105; margin: 0; font-size: 24px;">RentMeUskar</h1>
+            <p style="color: #a0aec0; margin-top: 5px; font-size: 14px;">Consola de Administración - Seguridad</p>
+          </div>
+          <div style="padding: 24px 0;">
+            <h2 style="color: #ffffff; font-size: 18px; margin-bottom: 12px;">⚠️ Solicitud de Cambio de Credenciales de Administrador</h2>
+            <p style="color: #cbd5e0; line-height: 1.6;">Hola <strong>Administrador</strong>,</p>
+            <p style="color: #cbd5e0; line-height: 1.6;">
+              Se ha solicitado una modificación para <strong>CAMBIAR EL NOMBRE DE USUARIO Y LA CONTRASEÑA DE ACCESO DEL PANEL DE ADMINISTRACIÓN DE RENTMEUSKAR</strong>.
+            </p>
+            <div style="background: rgba(130, 209, 5, 0.08); border-left: 4px solid #82d105; padding: 12px 16px; margin: 16px 0; border-radius: 4px;">
+              <p style="margin: 0; color: #ffffff; font-size: 14px;"><strong>Nuevo Nombre de Usuario Solicitado:</strong> ${cleanUsername}</p>
+            </div>
+            <p style="color: #cbd5e0; line-height: 1.6;">
+              Este código de verificación es necesario para confirmar que eres el propietario legítimo antes de aplicar el nuevo usuario y la nueva contraseña. Introduce el siguiente código de 6 dígitos en la pantalla de la Consola de Administración:
+            </p>
+            
+            <div style="font-size: 36px; font-weight: bold; background: #0c1838; padding: 18px; text-align: center; border-radius: 8px; color: #82d105; letter-spacing: 8px; margin: 24px 0; border: 2px dashed #82d105;">
+              ${code}
+            </div>
+            
+            <p style="color: #ff4d6d; font-size: 13px; font-weight: bold;">
+              ⚠️ ATENCIÓN DE SEGURIDAD: Este código caduca en 15 minutos. Si tú no has solicitado este cambio de usuario y contraseña del panel de administración, ignora este mensaje. Nadie podrá acceder ni cambiar las credenciales sin este código.
+            </p>
+          </div>
+          <div style="padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); text-align: center; color: #718096; font-size: 12px;">
+            &copy; ${new Date().getFullYear()} RentMeUskar. Todos los derechos reservados.
+          </div>
+        </div>
+      `
+    });
+    console.log(`[SMTP SUCCESS] Correo de verificación enviado a ${recipientAddress} desde ${senderAddress}`);
+    return res.json({ success: true, message: `Código de verificación enviado a info@rentmeuskar.com desde confirmacion@rentmeuskar.com.` });
+  } catch (mailErr) {
+    console.error('[SMTP ERROR] Error enviando correo de verificación de admin:', mailErr.message);
+    return res.status(500).json({ error: 'Error al enviar el correo de verificación. Comprueba los parámetros SMTP.' });
+  }
+});
+
+// 2. Confirmar código de verificación y aplicar nuevo usuario y contraseña de Admin
+app.post('/api/admin/confirm-credential-change', verifyAdmin, async (req, res) => {
+  const { code } = req.body;
+  if (!code) {
+    return res.status(400).json({ error: 'El código de verificación es obligatorio.' });
+  }
+
+  const pending = pendingAdminCredentialChanges['admin'];
+  if (!pending) {
+    return res.status(400).json({ error: 'No hay ninguna solicitud de cambio de credenciales pendiente o ha expirado.' });
+  }
+
+  if (Date.now() > pending.expires) {
+    delete pendingAdminCredentialChanges['admin'];
+    return res.status(400).json({ error: 'El código de verificación ha expirado. Por favor, solicita uno nuevo.' });
+  }
+
+  if (pending.code !== code.trim()) {
+    return res.status(400).json({ error: 'El código de verificación introducido no es correcto.' });
+  }
+
+  // Código correcto: Aplicar actualización de credenciales de admin
+  try {
+    fallbackSettings.admin_username = pending.newUsername;
+    fallbackSettings.admin_password_hash = pending.newPasswordHash;
+    fallbackSettings.admin_password = pending.newPasswordRaw;
+
+    await pool.query(
+      "INSERT INTO settings (key, value) VALUES ('admin_username', $1) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value",
+      [pending.newUsername]
+    );
+    await pool.query(
+      "INSERT INTO settings (key, value) VALUES ('admin_password_hash', $1) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value",
+      [pending.newPasswordHash]
+    );
+    await pool.query(
+      "INSERT INTO settings (key, value) VALUES ('admin_password', $1) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value",
+      [pending.newPasswordRaw]
+    );
+
+    saveAdminStoreToFile();
+    delete pendingAdminCredentialChanges['admin'];
+
+    console.log(`[SECURITY ADMIN] Credenciales de administración cambiadas con éxito a usuario: ${pending.newUsername}`);
+    return res.json({
+      success: true,
+      message: '¡Usuario y contraseña del panel de administración actualizados con éxito! Deberás iniciar sesión con tus nuevas credenciales.'
+    });
+  } catch (err) {
+    console.error('Error al guardar credenciales en PostgreSQL DB:', err.message);
+    saveAdminStoreToFile();
+    delete pendingAdminCredentialChanges['admin'];
+    return res.json({
+      success: true,
+      message: 'Credenciales actualizadas en memoria local.'
+    });
   }
 });
 

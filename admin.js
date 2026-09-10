@@ -2281,6 +2281,115 @@ const initAdmin = () => {
         });
     }
 
+    // --- LÓGICA DE CAMBIO DE CREDENCIALES DE ADMIN CON CÓDIGO DE VERIFICACIÓN POR EMAIL ---
+    const btnRequestAdminCode = document.getElementById('btn-request-admin-code');
+    const btnConfirmAdminCredentials = document.getElementById('btn-confirm-admin-credentials');
+    const adminCodeVerifyContainer = document.getElementById('admin-code-verify-container');
+    const adminNewUsernameInput = document.getElementById('admin-new-username');
+    const adminNewPasswordInput = document.getElementById('admin-new-password');
+    const adminVerifyCodeInput = document.getElementById('admin-verify-code-input');
+
+    if (btnRequestAdminCode) {
+        btnRequestAdminCode.addEventListener('click', async () => {
+            const token = localStorage.getItem('admin_token');
+            if (!token) return;
+
+            const new_username = adminNewUsernameInput ? adminNewUsernameInput.value.trim() : '';
+            const new_password = adminNewPasswordInput ? adminNewPasswordInput.value.trim() : '';
+
+            if (!new_username) {
+                showToast('Introduce el nuevo nombre de usuario o correo de administración.', 'error');
+                if (adminNewUsernameInput) adminNewUsernameInput.focus();
+                return;
+            }
+            if (!new_password || new_password.length < 6) {
+                showToast('La nueva contraseña debe tener al menos 6 caracteres.', 'error');
+                if (adminNewPasswordInput) adminNewPasswordInput.focus();
+                return;
+            }
+
+            btnRequestAdminCode.disabled = true;
+            btnRequestAdminCode.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Enviando Código por Email...';
+
+            try {
+                const res = await fetch('/api/admin/request-credential-change-code', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ new_username, new_password })
+                });
+
+                const data = await res.json();
+                if (res.ok && data.success) {
+                    showToast(data.message || 'Código enviado por email a info@rentmeuskar.com desde confirmacion@rentmeuskar.com', 'success');
+                    if (adminCodeVerifyContainer) adminCodeVerifyContainer.style.display = 'block';
+                    if (adminVerifyCodeInput) adminVerifyCodeInput.focus();
+                } else {
+                    showToast(data.error || 'Error al enviar el código de verificación.', 'error');
+                }
+            } catch (err) {
+                console.error(err);
+                showToast('Error de conexión al solicitar código.', 'error');
+            } finally {
+                btnRequestAdminCode.disabled = false;
+                btnRequestAdminCode.innerHTML = '<i class="fa-solid fa-paper-plane"></i> 1. Solicitar Código por Email';
+            }
+        });
+    }
+
+    if (btnConfirmAdminCredentials) {
+        btnConfirmAdminCredentials.addEventListener('click', async () => {
+            const token = localStorage.getItem('admin_token');
+            if (!token) return;
+
+            const code = adminVerifyCodeInput ? adminVerifyCodeInput.value.trim() : '';
+            if (!code || code.length !== 6) {
+                showToast('Por favor, introduce el código de verificación de 6 dígitos enviado a tu correo.', 'error');
+                if (adminVerifyCodeInput) adminVerifyCodeInput.focus();
+                return;
+            }
+
+            btnConfirmAdminCredentials.disabled = true;
+            btnConfirmAdminCredentials.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Verificando y Guardando...';
+
+            try {
+                const res = await fetch('/api/admin/confirm-credential-change', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ code })
+                });
+
+                const data = await res.json();
+                if (res.ok && data.success) {
+                    showToast(data.message, 'success');
+                    if (adminNewUsernameInput) adminNewUsernameInput.value = '';
+                    if (adminNewPasswordInput) adminNewPasswordInput.value = '';
+                    if (adminVerifyCodeInput) adminVerifyCodeInput.value = '';
+                    if (adminCodeVerifyContainer) adminCodeVerifyContainer.style.display = 'none';
+
+                    setTimeout(() => {
+                        localStorage.removeItem('admin_token');
+                        checkAuth();
+                        showToast('Inicia sesión con tu nuevo usuario y contraseña.', 'info');
+                    }, 2500);
+                } else {
+                    showToast(data.error || 'Código incorrecto o expirado.', 'error');
+                }
+            } catch (err) {
+                console.error(err);
+                showToast('Error de conexión al confirmar cambio.', 'error');
+            } finally {
+                btnConfirmAdminCredentials.disabled = false;
+                btnConfirmAdminCredentials.innerHTML = '<i class="fa-solid fa-shield-check"></i> 2. Confirmar y Cambiar Credenciales';
+            }
+        });
+    }
+
     // Registrar event listeners de pestañas de Disponibilidad y FAQs
     tabAvailability.addEventListener('click', () => switchTab('availability'));
     tabFaqs.addEventListener('click', () => switchTab('faqs'));
