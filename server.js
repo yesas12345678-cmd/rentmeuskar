@@ -49,27 +49,168 @@ if (!fs.existsSync(dataDir)) {
   fs.mkdirSync(dataDir);
 }
 
-const vansJsonPath = path.join(dataDir, 'vans_fallback.json');
-const vansInitFlagPath = path.join(dataDir, 'vans_initialized.flag');
+const adminStorePath = path.join(dataDir, 'admin_store.json');
+const adminInitFlagPath = path.join(dataDir, 'admin_initialized.flag');
 
-function saveFallbackVansToFile() {
+// Datasets globales en memoria
+let fallbackUsers = [];
+let fallbackBookings = [
+  { id: 1, name: 'Francisco M.', van_type: 'medium', van_name: 'Ford Transit Custom L2H2 (8m³)', pickup_date: '2026-08-15', pickup_time: '09:00', return_date: '2026-08-18', return_time: '19:00', days: 3, total_price: 237.00, status: 'confirmed', payment_status: 'paid', fianza_status: 'paid', review_code: 'RMU-MOCK1' },
+  { id: 2, name: 'María José S.', van_type: 'large', van_name: 'MAN TGE L4H3 Gran Volumen (14m³)', pickup_date: '2026-08-20', pickup_time: '10:00', return_date: '2026-08-22', return_time: '12:00', days: 2, total_price: 214.88, status: 'confirmed', payment_status: 'paid', fianza_status: 'paid', review_code: 'RMU-MOCK2' },
+  { id: 3, name: 'Antonio G.', van_type: 'large', van_name: 'MAN TGE L4H3 Gran Volumen (14m³)', pickup_date: '2026-08-25', pickup_time: '16:00', return_date: '2026-08-26', return_time: '19:00', days: 1, total_price: 107.44, status: 'confirmed', payment_status: 'paid', fianza_status: 'paid', review_code: 'RMU-MOCK3' }
+];
+let fallbackBlockages = [];
+let fallbackSettings = {
+  hours_weekdays: '08:00 - 14:00, 16:00 - 20:00',
+  hours_saturdays: '09:00 - 13:30',
+  hours_sundays: 'Cerrado (Devoluciones pactadas)',
+  contact_phone: '34614767411',
+  contact_email: 'info@rentmeuskar.com',
+  fianza_amount: '500,00',
+  show_reviews_count: 'true'
+};
+let fallbackVans = [
+  { id: 1, van_type: 'medium', name: 'Ford Transit Custom L2H2 (8m³)', plate: '3681 MCC', m3: '8m³', price_sin: 79.00, min_price_con: 50.00, km_price_con: 1.00, status: 'active', images: [], custom_extras: [
+    { name: 'GPS Navegador', price: 5.00, type: 'daily' },
+    { name: 'Segundo Conductor', price: 8.00, type: 'daily' },
+    { name: 'Kit Mudanza', price: 10.00, type: 'once' }
+  ]},
+  { id: 2, van_type: 'large', name: 'MAN TGE L4H3 Gran Volumen (14m³)', plate: '3758 MDW', m3: '14m³', price_sin: 107.44, min_price_con: 60.00, km_price_con: 1.40, status: 'active', images: [], custom_extras: [
+    { name: 'GPS Navegador', price: 5.00, type: 'daily' },
+    { name: 'Segundo Conductor', price: 8.00, type: 'daily' },
+    { name: 'Kit Mudanza', price: 10.00, type: 'once' }
+  ]}
+];
+let fallbackReviews = [
+  { id: 1, booking_code: 'RMU-MOCK1', client_name: 'Francisco M.', rating: 5, comment: 'Alquilé la furgoneta Ford Transit Custom para una mudanza desde Granada a Huéscar. El trato fue inmejorable y el vehículo impecable.', role_or_city: 'Particular (Huéscar)', van_name: 'Ford Transit Custom L2H2 (8m³)' },
+  { id: 2, booking_code: 'RMU-MOCK2', client_name: 'María José S.', rating: 5, comment: 'Necesitábamos una furgoneta MAN TGE Gran Volumen de 14m³ para trasladar mobiliario. El vehículo comodísimo y excelente atención.', role_or_city: 'Particular (Puebla Don Fadrique)', van_name: 'MAN TGE L4H3 Gran Volumen (14m³)' },
+  { id: 3, booking_code: 'RMU-MOCK3', client_name: 'Antonio G.', rating: 5, comment: 'Como autónomo, a veces necesito un vehículo de gran volumen para repartos extra. RentMeUskar me soluciona la papeleta rápidamente.', role_or_city: 'Autónomo (Castril)', van_name: 'MAN TGE L4H3 Gran Volumen (14m³)' }
+];
+let manualReviewCodes = [];
+let fallbackFaqs = [
+  { id: 1, question: '¿Qué requisitos necesito cumplir para alquilar sin conductor?', answer: 'Necesitas tener al menos 23 años (21 para furgonetas compactas) y estar en posesión del permiso de conducir tipo B vigente con una antigüedad mínima de 2 años. Deberás presentar el DNI/NIE y el carnet de conducir originales al retirar el vehículo.', display_order: 1 },
+  { id: 2, question: '¿Hay que dejar alguna fianza o depósito?', answer: 'Sí, se requiere una fianza de 500€ que se retiene o paga mediante tarjeta en la web (para reservas de una semana o menos) o se gestiona manualmente. Esta fianza se reembolsará íntegramente tras revisar que el vehículo se devuelve en las mismas condiciones, limpio y sin daños.', display_order: 2 },
+  { id: 3, question: '¿Cómo funciona la política de combustible?', answer: 'Nuestra política es Lleno-Lleno (Full-to-Full). Te entregamos la furgoneta con el depósito de combustible lleno (diésel) y debes devolverla de la misma forma. De lo contrario, se cobrará el coste del combustible faltante más un cargo de gestión de repostaje.', display_order: 3 },
+  { id: 4, question: '¿Qué seguro está incluido en el precio base?', answer: 'El precio incluye seguro obligatorio de responsabilidad civil y seguro de colisión básico con franquicia. Esto significa que en caso de accidente o daños, la responsabilidad máxima del cliente está limitada al importe de la franquicia establecida (salvo negligencia).', display_order: 4 },
+  { id: 5, question: '¿Puedo viajar fuera de España con la furgoneta?', answer: 'Por defecto, el uso de las furgonetas está autorizada en territorio nacional (Península Ibérica). Si tienes pensado viajar a Portugal, Francia u otros países de Europa, debes comunicarlo con antelación para tramitar la cobertura del seguro correspondiente y asistencia en el extranjero.', display_order: 5 }
+];
+
+function saveAdminStoreToFile() {
   try {
-    fs.writeFileSync(vansJsonPath, JSON.stringify(fallbackVans, null, 2), 'utf8');
-    console.log('[PERSISTENCE] Flota de furgonetas guardada en disco.');
+    const store = {
+      fallbackUsers,
+      fallbackBookings,
+      fallbackBlockages,
+      fallbackSettings,
+      fallbackVans,
+      fallbackReviews,
+      manualReviewCodes,
+      fallbackFaqs
+    };
+    fs.writeFileSync(adminStorePath, JSON.stringify(store, null, 2), 'utf8');
+    console.log('[PERSISTENCE] Todos los datos del panel de administración guardados en disco (admin_store.json)');
   } catch (e) {
-    console.error('[PERSISTENCE ERROR] Error al guardar furgonetas en disco:', e.message);
+    console.error('[PERSISTENCE ERROR] Error al guardar admin_store:', e.message);
   }
 }
 
-function loadFallbackVansFromFile() {
-  if (fs.existsSync(vansJsonPath)) {
+function loadAdminStoreFromFile() {
+  if (fs.existsSync(adminStorePath)) {
     try {
-      const data = fs.readFileSync(vansJsonPath, 'utf8');
-      fallbackVans = JSON.parse(data);
-      console.log(`[PERSISTENCE] Cargadas ${fallbackVans.length} furgonetas desde disco.`);
+      const data = fs.readFileSync(adminStorePath, 'utf8');
+      const store = JSON.parse(data);
+      if (Array.isArray(store.fallbackUsers)) fallbackUsers = store.fallbackUsers;
+      if (Array.isArray(store.fallbackBookings)) fallbackBookings = store.fallbackBookings;
+      if (Array.isArray(store.fallbackBlockages)) fallbackBlockages = store.fallbackBlockages;
+      if (store.fallbackSettings) fallbackSettings = { ...fallbackSettings, ...store.fallbackSettings };
+      if (Array.isArray(store.fallbackVans)) fallbackVans = store.fallbackVans;
+      if (Array.isArray(store.fallbackReviews)) fallbackReviews = store.fallbackReviews;
+      if (Array.isArray(store.manualReviewCodes)) manualReviewCodes = store.manualReviewCodes;
+      if (Array.isArray(store.fallbackFaqs)) fallbackFaqs = store.fallbackFaqs;
+      console.log(`[PERSISTENCE] Carga completa desde disco (admin_store.json): ${fallbackVans.length} vans, ${fallbackBookings.length} reservas, ${fallbackFaqs.length} FAQs, ${fallbackReviews.length} reseñas.`);
     } catch (e) {
-      console.error('[PERSISTENCE ERROR] Error al leer furgonetas desde disco:', e.message);
+      console.error('[PERSISTENCE ERROR] Error al cargar admin_store:', e.message);
     }
+  }
+}
+
+loadAdminStoreFromFile();
+
+async function syncDatabaseWithDisk(clientOrPool) {
+  const targetPool = clientOrPool || pool;
+  try {
+    if (fs.existsSync(adminStorePath)) {
+      const fileData = fs.readFileSync(adminStorePath, 'utf8');
+      const store = JSON.parse(fileData);
+      
+      // 1. Sincronizar Furgonetas
+      if (Array.isArray(store.fallbackVans)) {
+        fallbackVans = store.fallbackVans;
+        const validTypes = fallbackVans.map(v => v.van_type).filter(Boolean);
+        if (validTypes.length > 0) {
+          const typePlaceholders = validTypes.map((_, i) => `$${i + 1}`).join(',');
+          await targetPool.query(`DELETE FROM vans WHERE van_type NOT IN (${typePlaceholders})`, validTypes);
+        } else {
+          await targetPool.query('DELETE FROM vans');
+        }
+
+        for (const v of fallbackVans) {
+          await targetPool.query(`
+            INSERT INTO vans (id, van_type, name, plate, m3, price_sin, min_price_con, km_price_con, status, images, custom_extras, max_occupants, eco_label, daily_km_limit, max_mass, fuel_type, waiting_hour_price, custom_features)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
+            ON CONFLICT (van_type) DO UPDATE SET
+              name = EXCLUDED.name, plate = EXCLUDED.plate, m3 = EXCLUDED.m3,
+              price_sin = EXCLUDED.price_sin, min_price_con = EXCLUDED.min_price_con, km_price_con = EXCLUDED.km_price_con,
+              status = EXCLUDED.status, images = EXCLUDED.images, custom_extras = EXCLUDED.custom_extras,
+              max_occupants = EXCLUDED.max_occupants, eco_label = EXCLUDED.eco_label, daily_km_limit = EXCLUDED.daily_km_limit,
+              max_mass = EXCLUDED.max_mass, fuel_type = EXCLUDED.fuel_type, waiting_hour_price = EXCLUDED.waiting_hour_price,
+              custom_features = EXCLUDED.custom_features
+          `, [
+            v.id, v.van_type, v.name, v.plate, v.m3, parseFloat(v.price_sin), parseFloat(v.min_price_con), parseFloat(v.km_price_con),
+            v.status || 'active', v.images || [], JSON.stringify(v.custom_extras || []),
+            parseInt(v.max_occupants) || 3, v.eco_label || 'C', parseInt(v.daily_km_limit) || 350, parseInt(v.max_mass) || 2800,
+            v.fuel_type || 'GASOIL', parseFloat(v.waiting_hour_price) || 30.00, JSON.stringify(v.custom_features || [])
+          ]);
+        }
+      }
+
+      // 2. Sincronizar FAQs
+      if (Array.isArray(store.fallbackFaqs)) {
+        fallbackFaqs = store.fallbackFaqs;
+        const validIds = fallbackFaqs.map(f => f.id).filter(Boolean);
+        if (validIds.length > 0) {
+          const idPlaceholders = validIds.map((_, i) => `$${i + 1}`).join(',');
+          await targetPool.query(`DELETE FROM faqs WHERE id NOT IN (${idPlaceholders})`, validIds);
+        } else {
+          await targetPool.query('DELETE FROM faqs');
+        }
+        for (const f of fallbackFaqs) {
+          await targetPool.query(`
+            INSERT INTO faqs (id, question, answer, display_order)
+            VALUES ($1, $2, $3, $4)
+            ON CONFLICT (id) DO UPDATE SET
+              question = EXCLUDED.question, answer = EXCLUDED.answer, display_order = EXCLUDED.display_order
+          `, [f.id, f.question, f.answer, parseInt(f.display_order) || 0]);
+        }
+      }
+
+      // 3. Sincronizar Configuraciones
+      if (store.fallbackSettings) {
+        fallbackSettings = { ...fallbackSettings, ...store.fallbackSettings };
+        for (const [key, value] of Object.entries(fallbackSettings)) {
+          await targetPool.query(`
+            INSERT INTO settings (key, value) VALUES ($1, $2)
+            ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
+          `, [key, String(value)]);
+        }
+      }
+
+      console.log('[PERSISTENCE SYNC] Base de datos PostgreSQL sincronizada completamente desde admin_store.json');
+    } else {
+      saveAdminStoreToFile();
+    }
+  } catch (err) {
+    console.warn('[PERSISTENCE SYNC WARN] Error al sincronizar PostgreSQL y disco:', err.message);
   }
 }
 
@@ -413,6 +554,8 @@ const initDb = async () => {
     }
     console.log('Restricción de comentarios de "reviews" verificada/actualizada.');
     
+    await syncDatabaseWithDisk(client);
+
     client.release();
   } catch (err) {
     console.error('Error inicializando la base de datos:', err);
@@ -1451,47 +1594,6 @@ app.post('/api/redsys/notification', async (req, res) => {
   }
 });
 
-// Usuarios fallback en memoria
-let fallbackUsers = [];
-
-// Reservas fallback en memoria
-let fallbackBookings = [
-  { id: 1, name: 'Francisco M.', van_type: 'medium', van_name: 'Ford Transit Custom L2H2 (8m³)', pickup_date: '2026-08-15', pickup_time: '09:00', return_date: '2026-08-18', return_time: '19:00', days: 3, total_price: 237.00, status: 'confirmed', payment_status: 'paid', fianza_status: 'paid', review_code: 'RMU-MOCK1' },
-  { id: 2, name: 'María José S.', van_type: 'large', van_name: 'MAN TGE L4H3 Gran Volumen (14m³)', pickup_date: '2026-08-20', pickup_time: '10:00', return_date: '2026-08-22', return_time: '12:00', days: 2, total_price: 214.88, status: 'confirmed', payment_status: 'paid', fianza_status: 'paid', review_code: 'RMU-MOCK2' },
-  { id: 3, name: 'Antonio G.', van_type: 'large', van_name: 'MAN TGE L4H3 Gran Volumen (14m³)', pickup_date: '2026-08-25', pickup_time: '16:00', return_date: '2026-08-26', return_time: '19:00', days: 1, total_price: 107.44, status: 'confirmed', payment_status: 'paid', fianza_status: 'paid', review_code: 'RMU-MOCK3' }
-];
-
-// Bloqueos de furgonetas fallback en memoria
-let fallbackBlockages = [];
-
-// Configuraciones de horario y negocio fallback en memoria
-let fallbackSettings = {
-  hours_weekdays: '08:00 - 14:00, 16:00 - 20:00',
-  hours_saturdays: '09:00 - 13:30',
-  hours_sundays: 'Cerrado (Devoluciones pactadas)',
-  contact_phone: '34614767411',
-  contact_email: 'info@rentmeuskar.com',
-  fianza_amount: '500,00',
-  show_reviews_count: 'true'
-};
-
-// Catálogo fallback en memoria en caso de que la base de datos PostgreSQL remota esté caída
-let fallbackVans = [
-  { id: 1, van_type: 'medium', name: 'Ford Transit Custom L2H2 (8m³)', plate: '3681 MCC', m3: '8m³', price_sin: 79.00, min_price_con: 50.00, km_price_con: 1.00, status: 'active', images: [], custom_extras: [
-    { name: 'GPS Navegador', price: 5.00, type: 'daily' },
-    { name: 'Segundo Conductor', price: 8.00, type: 'daily' },
-    { name: 'Kit Mudanza', price: 10.00, type: 'once' }
-  ]},
-  { id: 2, van_type: 'large', name: 'MAN TGE L4H3 Gran Volumen (14m³)', plate: '3758 MDW', m3: '14m³', price_sin: 107.44, min_price_con: 60.00, km_price_con: 1.40, status: 'active', images: [], custom_extras: [
-    { name: 'GPS Navegador', price: 5.00, type: 'daily' },
-    { name: 'Segundo Conductor', price: 8.00, type: 'daily' },
-    { name: 'Kit Mudanza', price: 10.00, type: 'once' }
-  ]}
-];
-
-// Cargar estado de la flota desde disco si existe
-loadFallbackVansFromFile();
-
 // Middleware de verificación de Administrador
 const verifyAdmin = (req, res, next) => {
   const authHeader = req.headers.authorization;
@@ -1887,14 +1989,6 @@ app.put('/api/settings', verifyAdmin, async (req, res) => {
 
 // --- OPINIONES DE COMPRAS VERIFICADAS ---
 
-let fallbackReviews = [
-  { id: 1, booking_code: 'RMU-MOCK1', client_name: 'Francisco M.', rating: 5, comment: 'Alquilé la furgoneta Ford Transit Custom para una mudanza desde Granada a Huéscar. El trato fue inmejorable y el vehículo impecable.', role_or_city: 'Particular (Huéscar)', van_name: 'Ford Transit Custom L2H2 (8m³)' },
-  { id: 2, booking_code: 'RMU-MOCK2', client_name: 'María José S.', rating: 5, comment: 'Necesitábamos una furgoneta MAN TGE Gran Volumen de 14m³ para trasladar mobiliario. El vehículo comodísimo y excelente atención.', role_or_city: 'Particular (Puebla Don Fadrique)', van_name: 'MAN TGE L4H3 Gran Volumen (14m³)' },
-  { id: 3, booking_code: 'RMU-MOCK3', client_name: 'Antonio G.', rating: 5, comment: 'Como autónomo, a veces necesito un vehículo de gran volumen para repartos extra. RentMeUskar me soluciona la papeleta rápidamente.', role_or_city: 'Autónomo (Castril)', van_name: 'MAN TGE L4H3 Gran Volumen (14m³)' }
-];
-
-let manualReviewCodes = [];
-
 // Generar código de reseña manual desde admin con especificaciones completas de la reserva
 app.post('/api/admin/generate-review-code', verifyAdmin, (req, res) => {
   const { van_name, client_name, city, rental_days, rental_mode, pickup_date, pickup_time, return_date, return_time } = req.body;
@@ -2207,15 +2301,6 @@ app.delete('/api/blockages/:id', verifyAdmin, async (req, res) => {
     res.status(500).json({ error: 'Error del servidor al eliminar el bloqueo.' });
   }
 });
-
-// Fallback FAQs en memoria
-let fallbackFaqs = [
-  { id: 1, question: '¿Qué requisitos necesito cumplir para alquilar sin conductor?', answer: 'Necesitas tener al menos 23 años (21 para furgonetas compactas) y estar en posesión del permiso de conducir tipo B vigente con una antigüedad mínima de 2 años. Deberás presentar el DNI/NIE y el carnet de conducir originales al retirar el vehículo.', display_order: 1 },
-  { id: 2, question: '¿Hay que dejar alguna fianza o depósito?', answer: 'Sí, se requiere una fianza de 500€ que se retiene o paga mediante tarjeta en la web (para reservas de una semana o menos) o se gestiona manualmente. Esta fianza se reembolsará íntegramente tras revisar que el vehículo se devuelve en las mismas condiciones, limpio y sin daños.', display_order: 2 },
-  { id: 3, question: '¿Cómo funciona la política de combustible?', answer: 'Nuestra política es Lleno-Lleno (Full-to-Full). Te entregamos la furgoneta con el depósito de combustible lleno (diésel) y debes devolverla de la misma forma. De lo contrario, se cobrará el coste del combustible faltante más un cargo de gestión de repostaje.', display_order: 3 },
-  { id: 4, question: '¿Qué seguro está incluido en el precio base?', answer: 'El precio incluye seguro obligatorio de responsabilidad civil y seguro de colisión básico con franquicia. Esto significa que en caso de accidente o daños, la responsabilidad máxima del cliente está limitada al importe de la franquicia establecida (salvo negligencia).', display_order: 4 },
-  { id: 5, question: '¿Puedo viajar fuera de España con la furgoneta?', answer: 'Por defecto, el uso de las furgonetas está autorizada en territorio nacional (Península Ibérica). Si tienes pensado viajar a Portugal, Francia u otros países de Europa, debes comunicarlo con antelación para tramitar la cobertura del seguro correspondiente y asistencia en el extranjero.', display_order: 5 }
-];
 
 // --- RUTAS DE PREGUNTAS FRECUENTES (FAQS) ---
 
