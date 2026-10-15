@@ -123,8 +123,11 @@
             </div>
         </div>
 
-        <a href="index.html" class="btn-primary">
+        <a href="index.html#booking-section" class="btn-primary">
             <i class="fa-solid fa-rotate-left"></i> Volver a la web y reintentar
+        </a>
+        <a href="https://api.whatsapp.com/send?phone=34614767411&text=Hola%20RentMeUskar%2C%20he%20tenido%20un%20problema%20al%20realizar%20un%20pago" target="_blank" style="display: inline-flex; align-items: center; justify-content: center; gap: 0.6rem; background: transparent; color: #ffffff; border: 1px solid rgba(255, 255, 255, 0.2); font-weight: 600; padding: 0.75rem 1.4rem; border-radius: 8px; text-decoration: none; width: 100%; margin-top: 0.6rem; font-size: 0.9rem;">
+            <i class="fa-brands fa-whatsapp" style="color: #25d366;"></i> Contactar por WhatsApp
         </a>
     </div>
 
@@ -132,6 +135,14 @@
         const urlParams = new URLSearchParams(window.location.search);
         const orderId = urlParams.get('order') || '-';
         document.getElementById('order-id').innerText = orderId;
+
+        if (orderId && orderId !== '-') {
+            fetch('/api/redsys/cancel-payment', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ orderId: orderId })
+            }).catch(e => console.warn('Liberación de fechas:', e));
+        }
     </script>
 </body>
 </html>

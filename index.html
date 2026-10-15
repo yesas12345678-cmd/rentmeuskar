@@ -1865,7 +1865,7 @@
 
     <!-- Modal: Pasarela TPV Virtual CaixaBank -->
     <div class="custom-modal-backdrop" id="tpv-modal" style="display: none;">
-        <div class="custom-modal-card tpv-card">
+        <div class="custom-modal-card tpv-card" style="max-width: 480px; width: 100%;">
             <div class="tpv-header">
                 <div class="tpv-logo-box">
                     <span class="tpv-star"><i class="fa-solid fa-star-of-david"></i></span>
@@ -1891,34 +1891,73 @@
                 </div>
 
                 <form id="tpv-form">
-                    <div class="custom-form-group" style="margin-bottom: 1.25rem;">
+                    <div class="custom-form-group" style="margin-bottom: 1rem;">
                         <label style="display: block; font-weight: 700; margin-bottom: 0.6rem; color: #ffffff; font-size: 0.9rem;">
                             Selecciona el Método de Pago:
                         </label>
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem;">
-                            <label class="payment-option-card"
-                                style="background: rgba(255,255,255,0.06); border: 2px solid var(--color-neon); border-radius: 10px; padding: 1.1rem 0.8rem; text-align: center; cursor: pointer; transition: all 0.2s ease;">
+                            <label class="payment-option-card" id="card-option-label"
+                                style="background: rgba(255,255,255,0.06); border: 2px solid var(--color-neon); border-radius: 10px; padding: 1rem 0.8rem; text-align: center; cursor: pointer; transition: all 0.2s ease;">
                                 <input type="radio" name="pay_method" value="card" checked style="margin-right: 0.4rem;">
                                 <i class="fa-solid fa-credit-card" style="font-size: 1.4rem; color: #ffffff; display: block; margin-bottom: 0.4rem;"></i>
                                 <strong style="font-size: 0.9rem; color: #ffffff;">Tarjeta</strong>
                             </label>
-                            <label class="payment-option-card"
-                                style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 1.1rem 0.8rem; text-align: center; cursor: pointer; transition: all 0.2s ease;">
+                            <label class="payment-option-card" id="bizum-option-label"
+                                style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 1rem 0.8rem; text-align: center; cursor: pointer; transition: all 0.2s ease;">
                                 <input type="radio" name="pay_method" value="bizum" style="margin-right: 0.4rem;">
-                                <i class="fa-solid fa-mobile-screen-button" style="font-size: 1.4rem; color: #00a896; display: block; margin-bottom: 0.4rem;"></i>
+                                <i class="fa-solid fa-mobile-screen-button" style="font-size: 1.4rem; color: #00d2ff; display: block; margin-bottom: 0.4rem;"></i>
                                 <strong style="font-size: 0.9rem; color: #ffffff;">Bizum</strong>
                             </label>
                         </div>
                     </div>
 
-                    <div style="background: rgba(255, 193, 7, 0.12); border: 1px dashed rgba(255, 193, 7, 0.5); padding: 0.8rem 1rem; border-radius: 8px; margin-bottom: 1.2rem; font-size: 0.8rem; color: #ffc107; line-height: 1.4;">
-                        <i class="fa-solid fa-flask"></i> <strong>Modo Pruebas Activado:</strong> Serás redirigido a la pasarela oficial de CaixaBank Redsys en entorno de test sin dinero real.
+                    <!-- Datos para la prueba en entorno de test -->
+                    <div style="background: rgba(15, 28, 63, 0.8); border: 1px solid rgba(130, 209, 5, 0.3); border-radius: 8px; padding: 0.75rem 0.9rem; margin-bottom: 1rem; font-size: 0.8rem;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.4rem;">
+                            <span style="color: var(--color-neon); font-weight: 700;">
+                                <i class="fa-solid fa-flask"></i> Datos para Prueba:
+                            </span>
+                            <span class="test-env-tag" style="background: rgba(255, 193, 7, 0.2); color: #ffc107; padding: 1px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: 700;">Sandbox Oficial</span>
+                        </div>
+                        <div id="tpv-card-test-info">
+                            <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 4px; margin-bottom: 4px;">
+                                <span>Tarjeta: <code style="color: #ffffff; font-weight: 700; letter-spacing: 1px;">4548 8100 0000 0003</code></span>
+                                <button type="button" onclick="navigator.clipboard.writeText('4548810000000003'); alert('Tarjeta de test copiada al portapapeles');" style="background: var(--color-neon); color: #000; border: none; padding: 2px 8px; font-size: 0.72rem; font-weight: 700; border-radius: 4px; cursor: pointer;">Copiar</button>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #a0aec0; padding: 0 2px;">
+                                <span>Cad: <strong>12/29</strong></span>
+                                <span>CVV: <strong>123</strong></span>
+                                <span>SMS/PIN: <strong>123456</strong></span>
+                            </div>
+                        </div>
+                        <div id="tpv-bizum-test-info" style="display: none;">
+                            <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 4px; margin-bottom: 4px;">
+                                <span>Teléfono: <code style="color: #ffffff; font-weight: 700;">600000000</code></span>
+                                <button type="button" onclick="navigator.clipboard.writeText('600000000'); alert('Teléfono de test copiado al portapapeles');" style="background: #00d2ff; color: #000; border: none; padding: 2px 8px; font-size: 0.72rem; font-weight: 700; border-radius: 4px; cursor: pointer;">Copiar</button>
+                            </div>
+                            <div style="font-size: 0.75rem; color: #a0aec0; padding: 0 2px;">
+                                <span>Clave Bizum / SMS: <strong>123456</strong></span>
+                            </div>
+                        </div>
                     </div>
 
-                    <button type="submit" class="btn btn-block" id="tpv-submit-btn" style="background: #007bff; border-color: #007bff; color: #ffffff; padding: 0.95rem; font-weight: 700; font-size: 0.95rem; border-radius: 8px; cursor: pointer;">
-                        <i class="fa-solid fa-lock"></i> Ir a Pasarela Segura CaixaBank
+                    <!-- Botón 1: Pasarela Oficial Redsys CaixaBank -->
+                    <button type="submit" class="btn btn-block" id="tpv-submit-btn" style="background: #007bff; border-color: #007bff; color: #ffffff; padding: 0.85rem; font-weight: 700; font-size: 0.95rem; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem; width: 100%;">
+                        <i class="fa-solid fa-lock"></i> Ir a Pasarela Oficial CaixaBank Redsys
                     </button>
-                    <button type="button" class="btn btn-block" onclick="cancelTpvPayment()" style="margin-top: 0.6rem; background: transparent; border: 1px solid rgba(255,255,255,0.15); color: rgba(255,255,255,0.7); padding: 0.6rem; border-radius: 8px; cursor: pointer;">
+
+                    <!-- Botón 2: Simulación Instantánea en 1-Clic -->
+                    <button type="button" class="btn btn-block" id="tpv-simulate-btn" style="margin-top: 0.5rem; background: rgba(130, 209, 5, 0.15); border: 1px solid var(--color-neon); color: var(--color-neon); padding: 0.75rem; font-weight: 700; font-size: 0.9rem; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem; width: 100%;">
+                        <i class="fa-solid fa-bolt"></i> Simular Pago Aprobado Directo (1 Clic)
+                    </button>
+
+                    <!-- Botón 3: Simulación de Rechazo / Error -->
+                    <button type="button" class="btn btn-block" id="tpv-simulate-fail-btn" style="margin-top: 0.4rem; background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; padding: 0.45rem; font-size: 0.78rem; font-weight: 600; border-radius: 8px; cursor: pointer; width: 100%;">
+                        <i class="fa-solid fa-triangle-exclamation"></i> Simular Pago Denegado (Prueba de Error)
+                    </button>
+
+                    <!-- Botón 4: Cancelar -->
+                    <button type="button" class="btn btn-block" onclick="cancelTpvPayment()" style="margin-top: 0.5rem; background: transparent; border: 1px solid rgba(255,255,255,0.15); color: rgba(255,255,255,0.7); padding: 0.5rem; border-radius: 8px; cursor: pointer; font-size: 0.85rem; width: 100%;">
                         Cancelar Transacción
                     </button>
                 </form>

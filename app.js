@@ -1351,7 +1351,7 @@ const initApp = () => {
                     bookingsList.forEach(b => {
                         const tr = document.createElement('tr');
 
-                        const statusLabel = b.status === 'pending' ? 'Pendiente' : b.status === 'confirmed' ? 'Confirmado' : 'Cancelado';
+                        const statusLabel = b.status === 'confirmed' ? 'Confirmado' : b.status === 'paid_pending' ? 'Pagado (Pendiente Aprobación)' : b.status === 'pending' ? 'Pendiente' : 'Cancelado';
                         const paymentLabel = b.payment_status === 'paid' ? 'Pagado' : 'Pendiente';
                         const fianzaLabel = b.fianza_status === 'paid' ? 'Depositada (500€)' : b.fianza_status === 'refunded' ? 'Devuelta' : 'En persona (500€)';
 
@@ -1371,7 +1371,7 @@ const initApp = () => {
                             <td>${formatDate(b.return_date)} ${b.return_time || ''}</td>
                             <td><strong>${parseFloat(b.total_price || 0).toFixed(2)} €</strong></td>
                             <td><span style="font-size: 0.8rem; padding: 2px 6px; border-radius: 4px; background: rgba(255,255,255,0.05);">${fianzaLabel}</span></td>
-                            <td><span style="font-size: 0.8rem; font-weight: 700; color: ${b.status === 'confirmed' ? '#82d105' : b.status === 'pending' ? '#ffb703' : '#ff4d6d'};">${statusLabel}</span></td>
+                            <td><span style="font-size: 0.8rem; font-weight: 700; color: ${b.status === 'confirmed' ? '#82d105' : b.status === 'paid_pending' ? '#00d2ff' : b.status === 'pending' ? '#ffb703' : '#ff4d6d'};">${statusLabel}</span></td>
                             <td>
                                 ${b.status === 'confirmed' ? `
                                     <button class="client-doc-btn" onclick="window.open('/contract/${b.id}', '_blank')"><i class="fa-solid fa-file-signature"></i> Contrato</button>
@@ -1761,20 +1761,56 @@ const initApp = () => {
     });
 
     // Procesar pago en la TPV Redsys / Cyberpac CaixaBank
+    // Manejar selección de método de pago (Tarjeta vs Bizum) y actualizar visuales
+    const payMethodRadios = tpvForm.querySelectorAll('input[name="pay_method"]');
+    const cardTestInfo = document.getElementById('tpv-card-test-info');
+    const bizumTestInfo = document.getElementById('tpv-bizum-test-info');
+    const cardOptionLabel = document.getElementById('card-option-label');
+    const bizumOptionLabel = document.getElementById('bizum-option-label');
+
+    payMethodRadios.forEach(radio => {
+        radio.addEventListener('change', (e) => {
+            const isBizum = e.target.value === 'bizum';
+            if (cardTestInfo && bizumTestInfo) {
+                cardTestInfo.style.display = isBizum ? 'none' : 'block';
+                bizumTestInfo.style.display = isBizum ? 'block' : 'none';
+            }
+            if (cardOptionLabel && bizumOptionLabel) {
+                if (isBizum) {
+                    bizumOptionLabel.style.border = '2px solid var(--color-neon)';
+                    bizumOptionLabel.style.background = 'rgba(130, 209, 5, 0.1)';
+                    cardOptionLabel.style.border = '1px solid rgba(255,255,255,0.15)';
+                    cardOptionLabel.style.background = 'rgba(255,255,255,0.06)';
+                } else {
+                    cardOptionLabel.style.border = '2px solid var(--color-neon)';
+                    cardOptionLabel.style.background = 'rgba(130, 209, 5, 0.1)';
+                    bizumOptionLabel.style.border = '1px solid rgba(255,255,255,0.15)';
+                    bizumOptionLabel.style.background = 'rgba(255,255,255,0.06)';
+                }
+            }
+        });
+    });
+
+    // 1. Procesar pago en la pasarela oficial Redsys / CaixaBank Test
     tpvForm.addEventListener('submit', async (e) => {
         e.preventDefault();
+
+        if (!pendingBookingData) {
+            alert('No hay ninguna reserva pendiente de procesar.');
+            return;
+        }
 
         const tpvSubmitBtn = document.getElementById('tpv-submit-btn');
         const originalBtnHtml = tpvSubmitBtn.innerHTML;
 
         tpvSubmitBtn.disabled = true;
-        tpvSubmitBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Generando firma Redsys...';
+        tpvSubmitBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Conectando con Redsys...';
 
         try {
             const payMethodRadio = tpvForm.querySelector('input[name="pay_method"]:checked');
             const selectedPayMethod = payMethodRadio ? payMethodRadio.value : 'card';
 
-            // 1. Solicitar la firma y los parámetros oficiales a nuestro backend Redsys
+            // 1. Solicitar firma y parámetros oficiales a backend Redsys
             const redsysResponse = await fetch('/api/redsys/create-payment', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -1794,22 +1830,24 @@ const initApp = () => {
                 ...pendingBookingData,
                 status: 'pending_payment',
                 payment_status: 'unpaid',
-                payment_id: redsysData.orderId
+                payment_id: redsysData.orderId,
+                payment_method: selectedPayMethod === 'bizum' ? 'Bizum' : 'Tarjeta'
             };
 
-            try {
-                await fetch('/api/bookings', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(finalBookingData)
-                });
-            } catch (bErr) {
-                console.warn('Almacenamiento reserva local/offline:', bErr.message);
+            const bookRes = await fetch('/api/bookings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(finalBookingData)
+            });
+
+            const bookData = await bookRes.json();
+            if (!bookRes.ok) {
+                throw new Error(bookData.error || 'No se pudo registrar la reserva temporal.');
             }
 
             tpvSubmitBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Redirigiendo a CaixaBank...';
 
-            // 3. Crear formulario HTML transparente y enviarlo POST a Redsys
+            // 3. Crear formulario transparente y redirigir a Redsys sis-t
             const form = document.createElement('form');
             form.method = 'POST';
             form.action = redsysData.actionUrl;
@@ -1826,12 +1864,67 @@ const initApp = () => {
             form.submit();
 
         } catch (err) {
-            console.error(err);
+            console.error('Error al iniciar pago en pasarela Redsys:', err);
             alert('Error al iniciar el pago seguro: ' + err.message);
             tpvSubmitBtn.disabled = false;
             tpvSubmitBtn.innerHTML = originalBtnHtml;
         }
     });
+
+    // 2. Simular pago de prueba aprobado instantáneo (1 Clic)
+    const tpvSimulateBtn = document.getElementById('tpv-simulate-btn');
+    if (tpvSimulateBtn) {
+        tpvSimulateBtn.addEventListener('click', async () => {
+            if (!pendingBookingData) {
+                alert('No hay ninguna reserva seleccionada para pagar.');
+                return;
+            }
+
+            const payMethodRadio = tpvForm.querySelector('input[name="pay_method"]:checked');
+            const selectedPayMethod = payMethodRadio ? payMethodRadio.value : 'card';
+
+            const originalHtml = tpvSimulateBtn.innerHTML;
+            tpvSimulateBtn.disabled = true;
+            tpvSimulateBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Autorizando pago de prueba...';
+
+            try {
+                const response = await fetch('/api/redsys/simulate-payment', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        bookingData: pendingBookingData,
+                        payMethod: selectedPayMethod
+                    })
+                });
+
+                const data = await response.json();
+                if (!response.ok) {
+                    throw new Error(data.error || 'Error al procesar el pago de prueba.');
+                }
+
+                if (typeof window.updateCalendarAvailability === 'function') {
+                    window.updateCalendarAvailability();
+                }
+
+                // Redirigir a página de confirmación con los datos reales
+                window.location.href = data.redirectUrl || `/payment-success.html?order=${data.orderId}`;
+            } catch (err) {
+                console.error(err);
+                alert('Error al simular pago: ' + err.message);
+                tpvSimulateBtn.disabled = false;
+                tpvSimulateBtn.innerHTML = originalHtml;
+            }
+        });
+    }
+
+    // 3. Simular pago de prueba denegado / error
+    const tpvSimulateFailBtn = document.getElementById('tpv-simulate-fail-btn');
+    if (tpvSimulateFailBtn) {
+        tpvSimulateFailBtn.addEventListener('click', () => {
+            const fakeOrder = 'DENIED-' + Math.floor(100000 + Math.random() * 900000);
+            window.location.href = `/payment-error.html?order=${fakeOrder}`;
+        });
+    }
 
     window.cancelTpvPayment = () => {
         if (confirm('¿Deseas cancelar la transacción? Los importes no se cobrarán y la reserva no se registrará.')) {

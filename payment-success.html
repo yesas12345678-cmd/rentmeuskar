@@ -22,12 +22,12 @@
             padding: 2rem 1rem;
         }
         .success-card {
-            background: rgba(15, 28, 63, 0.75);
+            background: rgba(15, 28, 63, 0.85);
             backdrop-filter: blur(16px);
-            border: 1px solid rgba(130, 209, 5, 0.3);
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), 0 0 30px rgba(130, 209, 5, 0.15);
-            border-radius: 16px;
-            max-width: 550px;
+            border: 1px solid rgba(130, 209, 5, 0.35);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), 0 0 35px rgba(130, 209, 5, 0.18);
+            border-radius: 18px;
+            max-width: 600px;
             width: 100%;
             padding: 2.5rem 2rem;
             text-align: center;
@@ -41,19 +41,21 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            margin: 0 auto 1.5rem auto;
+            margin: 0 auto 1.25rem auto;
             color: var(--color-neon, #82d105);
             font-size: 2.5rem;
             box-shadow: 0 0 25px rgba(130, 209, 5, 0.4);
         }
         .test-badge {
-            display: inline-block;
-            background: rgba(255, 193, 7, 0.2);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            background: rgba(255, 193, 7, 0.15);
             color: #ffc107;
             border: 1px solid rgba(255, 193, 7, 0.4);
-            font-size: 0.8rem;
+            font-size: 0.78rem;
             font-weight: 700;
-            padding: 0.3rem 0.8rem;
+            padding: 0.35rem 0.85rem;
             border-radius: 20px;
             margin-bottom: 1rem;
             text-transform: uppercase;
@@ -62,39 +64,47 @@
         h1 {
             font-family: 'Outfit', sans-serif;
             font-size: 2rem;
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.4rem;
             color: #ffffff;
         }
         p {
             color: #a0aec0;
             font-size: 0.95rem;
-            line-height: 1.6;
+            line-height: 1.5;
             margin-bottom: 1.5rem;
         }
         .order-info {
-            background: rgba(3, 7, 18, 0.6);
+            background: rgba(3, 7, 18, 0.65);
             border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 10px;
-            padding: 1rem 1.5rem;
-            margin-bottom: 2rem;
+            border-radius: 12px;
+            padding: 1.2rem 1.4rem;
+            margin-bottom: 1.8rem;
             text-align: left;
         }
         .order-row {
             display: flex;
             justify-content: space-between;
-            padding: 0.4rem 0;
-            font-size: 0.9rem;
-            border-bottom: 1px dashed rgba(255, 255, 255, 0.05);
+            align-items: center;
+            padding: 0.45rem 0;
+            font-size: 0.88rem;
+            border-bottom: 1px dashed rgba(255, 255, 255, 0.07);
         }
         .order-row:last-child {
             border-bottom: none;
         }
         .order-label {
             color: #718096;
+            font-weight: 500;
         }
         .order-value {
             font-weight: 700;
             color: #ffffff;
+            text-align: right;
+        }
+        .actions-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
         }
         .btn-primary {
             display: inline-flex;
@@ -104,12 +114,14 @@
             background: var(--color-neon, #82d105);
             color: #000000;
             font-weight: 800;
-            padding: 0.9rem 1.8rem;
+            padding: 0.85rem 1.5rem;
             border-radius: 8px;
             text-decoration: none;
             transition: all 0.3s ease;
             width: 100%;
-            margin-bottom: 0.8rem;
+            border: none;
+            cursor: pointer;
+            font-size: 0.95rem;
         }
         .btn-primary:hover {
             transform: translateY(-2px);
@@ -124,15 +136,25 @@
             color: #ffffff;
             border: 1px solid rgba(255, 255, 255, 0.2);
             font-weight: 600;
-            padding: 0.8rem 1.5rem;
+            padding: 0.75rem 1.4rem;
             border-radius: 8px;
             text-decoration: none;
             transition: all 0.3s ease;
             width: 100%;
+            font-size: 0.9rem;
         }
         .btn-secondary:hover {
-            background: rgba(255, 255, 255, 0.05);
+            background: rgba(255, 255, 255, 0.06);
             border-color: #ffffff;
+        }
+        .btn-whatsapp {
+            border-color: rgba(37, 211, 102, 0.4);
+            color: #25d366;
+            background: rgba(37, 211, 102, 0.08);
+        }
+        .btn-whatsapp:hover {
+            background: rgba(37, 211, 102, 0.15);
+            border-color: #25d366;
         }
     </style>
 </head>
@@ -141,37 +163,112 @@
         <div class="icon-badge">
             <i class="fa-solid fa-circle-check"></i>
         </div>
-        <div class="test-badge"><i class="fa-solid fa-flask"></i> Entorno de Pruebas TPV / Bizum</div>
-        <h1>¡Operación Autorizada!</h1>
-        <p>Tu solicitud de pago se ha procesado correctamente en el entorno de test de Redsys Cyberpac CaixaBank.</p>
+        <div class="test-badge"><i class="fa-solid fa-flask"></i> Entorno de Pruebas TPV / Bizum Autorizado</div>
+        <h1>¡Pago de Prueba Completado!</h1>
+        <p>Tu solicitud de pago se ha procesado y verificado correctamente en el entorno de pruebas de Redsys CaixaBank.</p>
 
         <div class="order-info">
             <div class="order-row">
                 <span class="order-label">N.º de Pedido (TPV):</span>
                 <span class="order-value" id="order-id">Cargando...</span>
             </div>
+            <div class="order-row" id="booking-id-row" style="display: none;">
+                <span class="order-label">N.º de Reserva:</span>
+                <span class="order-value" id="booking-id-val" style="color: var(--color-neon, #82d105);">-</span>
+            </div>
             <div class="order-row">
-                <span class="order-label">Comercio:</span>
-                <span class="order-value">RentMeUskar</span>
+                <span class="order-label">Cliente:</span>
+                <span class="order-value" id="client-name">Cliente RentMeUskar</span>
+            </div>
+            <div class="order-row">
+                <span class="order-label">Vehículo:</span>
+                <span class="order-value" id="van-name">Furgoneta de Alquiler</span>
+            </div>
+            <div class="order-row">
+                <span class="order-label">Periodo:</span>
+                <span class="order-value" id="rental-dates">-</span>
+            </div>
+            <div class="order-row">
+                <span class="order-label">Importe Abonado:</span>
+                <span class="order-value" id="total-amount" style="color: var(--color-neon, #82d105); font-size: 1.05rem;">0,00 €</span>
+            </div>
+            <div class="order-row">
+                <span class="order-label">Fianza (500,00 €):</span>
+                <span class="order-value" style="color: #ffc107; font-size: 0.8rem;">A depositar en persona al recoger</span>
             </div>
             <div class="order-row">
                 <span class="order-label">Estado de la Operación:</span>
-                <span class="order-value" style="color: var(--color-neon, #82d105);"><i class="fa-solid fa-check"></i> Aprobado (0000)</span>
+                <span class="order-value" style="color: var(--color-neon, #82d105);"><i class="fa-solid fa-circle-check"></i> Aprobado (0000)</span>
             </div>
         </div>
 
-        <a href="index.html" class="btn-primary">
-            <i class="fa-solid fa-house"></i> Volver a RentMeUskar
-        </a>
-        <a href="https://api.whatsapp.com/send?phone=34614767411&text=Hola%20RentMeUskar%2C%20he%20realizado%20un%20pago%20de%20prueba%20para%20mi%20reserva" target="_blank" class="btn-secondary">
-            <i class="fa-brands fa-whatsapp"></i> Notificar por WhatsApp
-        </a>
+        <div class="actions-group">
+            <a href="#" id="btn-invoice" class="btn-primary" style="display: none;" target="_blank">
+                <i class="fa-solid fa-file-invoice"></i> Ver Justificante / Factura
+            </a>
+            <a href="#" id="btn-contract" class="btn-secondary" style="display: none;" target="_blank">
+                <i class="fa-solid fa-file-signature"></i> Ver Contrato de Alquiler
+            </a>
+            <a href="https://api.whatsapp.com/send?phone=34614767411" id="btn-whatsapp" target="_blank" class="btn-secondary btn-whatsapp">
+                <i class="fa-brands fa-whatsapp"></i> Notificar a RentMeUskar por WhatsApp
+            </a>
+            <a href="index.html" class="btn-secondary">
+                <i class="fa-solid fa-house"></i> Volver a la Web Principal
+            </a>
+        </div>
     </div>
 
     <script>
-        const urlParams = new URLSearchParams(window.location.search);
-        const orderId = urlParams.get('order') || 'DEMO-' + Math.floor(Math.random() * 1000000);
-        document.getElementById('order-id').innerText = orderId;
+        document.addEventListener('DOMContentLoaded', async () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const orderId = urlParams.get('order') || 'DEMO-' + Math.floor(Math.random() * 1000000);
+            document.getElementById('order-id').innerText = orderId;
+
+            try {
+                // Confirmar pago en backend y recuperar datos actualizados de la reserva
+                const res = await fetch('/api/redsys/confirm-payment', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ orderId: orderId })
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data && data.booking) {
+                        const b = data.booking;
+                        if (b.id) {
+                            document.getElementById('booking-id-row').style.display = 'flex';
+                            document.getElementById('booking-id-val').innerText = '#' + b.id;
+
+                            // Habilitar botones de factura y contrato
+                            const btnInvoice = document.getElementById('btn-invoice');
+                            btnInvoice.href = '/invoice/' + b.id;
+                            btnInvoice.style.display = 'inline-flex';
+
+                            const btnContract = document.getElementById('btn-contract');
+                            btnContract.href = '/contract/' + b.id;
+                            btnContract.style.display = 'inline-flex';
+                        }
+
+                        if (b.name) document.getElementById('client-name').innerText = b.name;
+                        if (b.van_name) document.getElementById('van-name').innerText = b.van_name;
+                        if (b.total_price) document.getElementById('total-amount').innerText = parseFloat(b.total_price).toFixed(2) + ' €';
+
+                        if (b.pickup_date && b.return_date) {
+                            const pDate = b.pickup_date.split('T')[0];
+                            const rDate = b.return_date.split('T')[0];
+                            document.getElementById('rental-dates').innerText = `${pDate} al ${rDate}`;
+                        }
+
+                        // Personalizar mensaje de WhatsApp
+                        const waMsg = `Hola RentMeUskar, he realizado un pago de prueba para mi reserva #${b.id || ''} (${b.van_name || 'furgoneta'}) con N.º Pedido ${orderId}. Quedo a la espera de confirmación. ¡Gracias!`;
+                        document.getElementById('btn-whatsapp').href = `https://api.whatsapp.com/send?phone=34614767411&text=${encodeURIComponent(waMsg)}`;
+                    }
+                }
+            } catch (err) {
+                console.warn('Confirmación automática de pago:', err);
+            }
+        });
     </script>
 </body>
 </html>

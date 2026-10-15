@@ -1385,6 +1385,7 @@ app.post('/api/bookings', async (req, res) => {
     fianza_status,
     payment_status,
     payment_id,
+    payment_method,
     status,
     rental_mode,
     estimated_kms,
@@ -1434,6 +1435,17 @@ app.post('/api/bookings', async (req, res) => {
       }
     }
 
+    // Validar user_id frente a la tabla users para no violar la Foreign Key constraint si es invitado
+    let validUserId = null;
+    if (user_id && typeof user_id === 'number') {
+      try {
+        const uRes = await pool.query('SELECT id FROM users WHERE id = $1', [user_id]);
+        if (uRes.rowCount > 0) validUserId = uRes.rows[0].id;
+      } catch (e) {
+        validUserId = null;
+      }
+    }
+
     const reviewCode = 'RMU-' + Math.random().toString(36).substring(2, 8).toUpperCase();
     const query = `
       INSERT INTO bookings (
@@ -1441,8 +1453,8 @@ app.post('/api/bookings', async (req, res) => {
         return_date, return_time, days, extras, total_price,
         user_id, fianza_status, payment_status, payment_id, status,
         rental_mode, estimated_kms, waiting_hours, van_plate, van_m3,
-        review_code
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
+        review_code, payment_method
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)
       RETURNING *;
     `;
 
@@ -1457,7 +1469,7 @@ app.post('/api/bookings', async (req, res) => {
       days,
       JSON.stringify(extras || []),
       total_price,
-      user_id || null,
+      validUserId,
       fianza_status || 'pending',
       payment_status || 'pending',
       payment_id || null,
@@ -1467,7 +1479,8 @@ app.post('/api/bookings', async (req, res) => {
       waiting_hours || 0.00,
       realPlate,
       realM3,
-      reviewCode
+      reviewCode,
+      payment_method || 'tarjeta'
     ];
 
     const result = await pool.query(query, values);
@@ -1500,6 +1513,7 @@ app.post('/api/bookings', async (req, res) => {
       fianza_status: fianza_status || 'pending',
       payment_status: payment_status || 'pending',
       payment_id: payment_id || null,
+      payment_method: payment_method || 'tarjeta',
       status: status || 'pending',
       rental_mode: rental_mode || 'sin',
       estimated_kms: estimated_kms || 0,
@@ -1713,18 +1727,23 @@ app.delete('/api/bookings/:id', async (req, res) => {
 
 // --- INTEGRACIÓN DE REDSYS TPV VIRTUAL / CYBERPAC CAIXABANK Y BIZUM ---
 
-function encrypt3DES(order, secretKeyBase64) {
+function encrypt3DES_zeroPad(order, secretKeyBase64) {
   const keyBuffer = Buffer.from(secretKeyBase64, 'base64');
   const iv = Buffer.alloc(8, 0);
+
+  const orderBuf = Buffer.from(order, 'utf8');
+  const padLen = 8 - (orderBuf.length % 8);
+  const totalLen = (padLen === 8) ? orderBuf.length : orderBuf.length + padLen;
+  const padded = Buffer.alloc(totalLen, 0);
+  orderBuf.copy(padded);
+
   const cipher = crypto.createCipheriv('des-ede3-cbc', keyBuffer, iv);
-  cipher.setAutoPadding(true);
-  let res = cipher.update(order, 'utf8', 'base64');
-  res += cipher.final('base64');
-  return Buffer.from(res, 'base64');
+  cipher.setAutoPadding(false);
+  return Buffer.concat([cipher.update(padded), cipher.final()]);
 }
 
 function createRedsysSignature(secretKeyBase64, order, merchantParamsBase64) {
-  const orderKey = encrypt3DES(order, secretKeyBase64);
+  const orderKey = encrypt3DES_zeroPad(order, secretKeyBase64);
   const hmac = crypto.createHmac('sha256', orderKey);
   hmac.update(merchantParamsBase64);
   const signatureBase64 = hmac.digest('base64');
@@ -1737,7 +1756,14 @@ function decodeRedsysParameters(merchantParamsBase64) {
   return JSON.parse(jsonStr);
 }
 
-// 1. Crear parámetros para enviar el pago a Redsys (Tarjeta o Bizum)
+function generateRedsysOrderId() {
+  const now = new Date();
+  const prefix = String(now.getFullYear()).slice(-2) + String(now.getMonth() + 1).padStart(2, '0');
+  const suffix = Math.floor(100000 + Math.random() * 900000);
+  return `${prefix}${suffix}`;
+}
+
+// 1. Crear parámetros para enviar el pago a Redsys (Tarjeta o Bizum en entorno Oficial Test)
 app.post('/api/redsys/create-payment', async (req, res) => {
   try {
     const { bookingData, payMethod } = req.body;
@@ -1754,10 +1780,10 @@ app.post('/api/redsys/create-payment', async (req, res) => {
     const totalEuros = rentAmount;
     const amountCents = Math.round(totalEuros * 100).toString();
 
-    // Generar número de pedido único de 10 dígitos (empezando por dígitos)
-    const numOrder = Date.now().toString().slice(-10);
+    // Generar número de pedido único de 10 dígitos que cumple con la normativa Redsys
+    const numOrder = generateRedsysOrderId();
 
-    const merchantCode = process.env.REDSYS_MERCHANT_CODE || '369636824';
+    const merchantCode = process.env.REDSYS_MERCHANT_CODE || '999008881';
     const terminal = process.env.REDSYS_TERMINAL || '1';
     const currency = process.env.REDSYS_CURRENCY || '978';
     const secretKey = process.env.REDSYS_SECRET_KEY || 'sq7HjrUOBfKmC576ILgskD5srU870gJ7';
@@ -1803,7 +1829,234 @@ app.post('/api/redsys/create-payment', async (req, res) => {
   }
 });
 
-// 2. Notificación en segundo plano enviada por Redsys
+// 2. Simulación instantánea de pago aprobado para pruebas directas en la web (1-Clic)
+app.post('/api/redsys/simulate-payment', async (req, res) => {
+  try {
+    const { bookingData, payMethod } = req.body;
+    if (!bookingData) {
+      return res.status(400).json({ error: 'Faltan datos de la reserva para simular el pago.' });
+    }
+
+    const rentAmount = parseFloat(bookingData.total_price) || 0;
+    if (rentAmount <= 0) {
+      return res.status(400).json({ error: 'El importe del alquiler no es válido.' });
+    }
+
+    const numOrder = 'SIM-' + generateRedsysOrderId();
+    const methodName = payMethod === 'bizum' ? 'Bizum (Test)' : 'Tarjeta CaixaBank (Test)';
+
+    // Validar colisión de fechas
+    if ((bookingData.rental_mode || 'sin') === 'sin') {
+      try {
+        const checkRes = await pool.query(`
+          SELECT id FROM bookings 
+          WHERE van_type = $1 
+            AND status != 'cancelled'
+            AND rental_mode = 'sin'
+            AND (
+              (pickup_date <= $2 AND return_date >= $2) OR
+              (pickup_date <= $3 AND return_date >= $3) OR
+              (pickup_date >= $2 AND return_date <= $3)
+            )
+        `, [bookingData.van_type, bookingData.pickup_date, bookingData.return_date]);
+        if (checkRes.rowCount > 0) {
+          return res.status(400).json({ error: 'La furgoneta seleccionada no está disponible en las fechas elegidas.' });
+        }
+      } catch (chkErr) {
+        console.warn('Verificación de fechas offline/memoria:', chkErr.message);
+      }
+    }
+
+    // Obtener matrícula y volumen m3
+    let realPlate = '';
+    let realM3 = '';
+    try {
+      const vanRes = await pool.query('SELECT plate, m3 FROM vans WHERE van_type = $1', [bookingData.van_type]);
+      if (vanRes.rowCount > 0) {
+        realPlate = vanRes.rows[0].plate;
+        realM3 = vanRes.rows[0].m3;
+      } else {
+        realPlate = bookingData.van_type === 'medium' ? '3681 MCC' : '3758 MDW';
+        realM3 = bookingData.van_type === 'medium' ? '8m³' : '14m³';
+      }
+    } catch (e) {
+      realPlate = bookingData.van_type === 'medium' ? '3681 MCC' : '3758 MDW';
+      realM3 = bookingData.van_type === 'medium' ? '8m³' : '14m³';
+    }
+
+    // Validar user_id frente a tabla users
+    let validUserId = null;
+    if (bookingData.user_id && typeof bookingData.user_id === 'number') {
+      try {
+        const uRes = await pool.query('SELECT id FROM users WHERE id = $1', [bookingData.user_id]);
+        if (uRes.rowCount > 0) validUserId = uRes.rows[0].id;
+      } catch (e) {}
+    }
+
+    const reviewCode = 'RMU-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+    let savedBooking = null;
+
+    try {
+      const query = `
+        INSERT INTO bookings (
+          name, van_type, van_name, pickup_date, pickup_time, 
+          return_date, return_time, days, extras, total_price,
+          user_id, fianza_status, payment_status, payment_id, status,
+          rental_mode, estimated_kms, waiting_hours, van_plate, van_m3,
+          review_code, payment_method
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)
+        RETURNING *;
+      `;
+      const values = [
+        bookingData.name,
+        bookingData.van_type,
+        bookingData.van_name,
+        bookingData.pickup_date,
+        bookingData.pickup_time,
+        bookingData.return_date,
+        bookingData.return_time,
+        bookingData.days,
+        JSON.stringify(bookingData.extras || []),
+        rentAmount,
+        validUserId,
+        bookingData.rental_mode === 'sin' ? 'pending' : 'refunded',
+        'paid',
+        numOrder,
+        'paid_pending',
+        bookingData.rental_mode || 'sin',
+        bookingData.estimated_kms || 0,
+        bookingData.waiting_hours || 0.00,
+        realPlate,
+        realM3,
+        reviewCode,
+        methodName
+      ];
+      const result = await pool.query(query, values);
+      savedBooking = result.rows[0];
+      fallbackBookings.push(savedBooking);
+      saveAdminStoreToFile();
+    } catch (dbErr) {
+      console.warn('Simulación con guardado en memoria fallback:', dbErr.message);
+      const mockId = fallbackBookings.length > 0 ? Math.max(...fallbackBookings.map(b => b.id)) + 1 : 1;
+      savedBooking = {
+        id: mockId,
+        name: bookingData.name,
+        van_type: bookingData.van_type,
+        van_name: bookingData.van_name,
+        pickup_date: bookingData.pickup_date,
+        pickup_time: bookingData.pickup_time,
+        return_date: bookingData.return_date,
+        return_time: bookingData.return_time,
+        days: bookingData.days,
+        extras: bookingData.extras || [],
+        total_price: rentAmount,
+        user_id: validUserId,
+        fianza_status: bookingData.rental_mode === 'sin' ? 'pending' : 'refunded',
+        payment_status: 'paid',
+        payment_id: numOrder,
+        payment_method: methodName,
+        status: 'paid_pending',
+        rental_mode: bookingData.rental_mode || 'sin',
+        estimated_kms: bookingData.estimated_kms || 0,
+        waiting_hours: bookingData.waiting_hours || 0.00,
+        van_plate: realPlate,
+        van_m3: realM3,
+        review_code: reviewCode,
+        created_at: new Date().toISOString()
+      };
+      fallbackBookings.push(savedBooking);
+      saveAdminStoreToFile();
+    }
+
+    res.status(201).json({
+      success: true,
+      orderId: numOrder,
+      redirectUrl: `/payment-success.html?order=${encodeURIComponent(numOrder)}`,
+      booking: savedBooking
+    });
+  } catch (err) {
+    console.error('Error al simular pago Redsys:', err);
+    res.status(500).json({ error: 'Error en la simulación de pago: ' + err.message });
+  }
+});
+
+// 3. Confirmación de pago desde el cliente (llamado al cargar payment-success.html)
+app.post('/api/redsys/confirm-payment', async (req, res) => {
+  try {
+    const { orderId } = req.body;
+    if (!orderId) {
+      return res.status(400).json({ error: 'Se requiere orderId' });
+    }
+
+    let booking = null;
+    try {
+      const bRes = await pool.query(
+        "UPDATE bookings SET status = 'paid_pending', payment_status = 'paid' WHERE payment_id = $1 RETURNING *",
+        [orderId]
+      );
+      if (bRes.rowCount > 0) {
+        booking = bRes.rows[0];
+      }
+    } catch (dbErr) {
+      console.warn('Error confirmando pago en PostgreSQL:', dbErr.message);
+    }
+
+    // Actualizar también en fallbackBookings si existe
+    const fBooking = fallbackBookings.find(b => b.payment_id == orderId);
+    if (fBooking) {
+      fBooking.status = 'paid_pending';
+      fBooking.payment_status = 'paid';
+      saveAdminStoreToFile();
+      if (!booking) booking = fBooking;
+    }
+
+    // Si no se encuentra exactamente, intentar buscar por ID reciente
+    if (!booking) {
+      try {
+        const lastRes = await pool.query("SELECT * FROM bookings ORDER BY id DESC LIMIT 1");
+        if (lastRes.rowCount > 0) booking = lastRes.rows[0];
+      } catch (e) {}
+    }
+
+    res.json({
+      success: true,
+      orderId,
+      booking: booking || { id: orderId, name: 'Cliente RentMeUskar', total_price: 0, van_name: 'Furgoneta RentMeUskar' }
+    });
+  } catch (err) {
+    console.error('Error al confirmar pago:', err);
+    res.status(500).json({ error: 'Error al confirmar pago: ' + err.message });
+  }
+});
+
+// 4. Cancelación de pago (llamado al cargar payment-error.html o cancelar)
+app.post('/api/redsys/cancel-payment', async (req, res) => {
+  try {
+    const { orderId } = req.body;
+    if (orderId) {
+      try {
+        await pool.query(
+          "UPDATE bookings SET status = 'cancelled', payment_status = 'failed' WHERE payment_id = $1",
+          [orderId]
+        );
+      } catch (dbErr) {
+        console.warn('Error cancelando pago en PostgreSQL:', dbErr.message);
+      }
+      const fBooking = fallbackBookings.find(b => b.payment_id == orderId);
+      if (fBooking) {
+        fBooking.status = 'cancelled';
+        fBooking.payment_status = 'failed';
+        saveAdminStoreToFile();
+      }
+    }
+    res.json({ success: true, message: 'Pago cancelado y disponibilidad liberada.' });
+  } catch (err) {
+    console.error('Error al cancelar pago:', err);
+    res.status(500).json({ error: 'Error al cancelar pago.' });
+  }
+});
+
+// 5. Notificación webhook en segundo plano enviada por Redsys
 app.post('/api/redsys/notification', async (req, res) => {
   try {
     const { Ds_SignatureVersion, Ds_MerchantParameters, Ds_Signature } = req.body;
@@ -1834,6 +2087,12 @@ app.post('/api/redsys/notification', async (req, res) => {
       } catch (dbErr) {
         console.warn('[REDSYS] BD offline, actualizando reserva fallback:', dbErr.message);
       }
+      const fBooking = fallbackBookings.find(b => b.payment_id == orderId);
+      if (fBooking) {
+        fBooking.status = 'paid_pending';
+        fBooking.payment_status = 'paid';
+        saveAdminStoreToFile();
+      }
       return res.status(200).send('OK');
     } else {
       console.warn(`[REDSYS] Pago denegado o cancelado. Orden: ${orderId}, Código: ${responseCodeStr}`);
@@ -1843,6 +2102,29 @@ app.post('/api/redsys/notification', async (req, res) => {
     console.error('Error en webhook de Redsys:', err);
     res.status(500).send('Error interno');
   }
+});
+
+// Soporte para redirecciones POST de vuelta desde Redsys hacia URLOK y URLKO
+app.post('/payment-success.html', (req, res) => {
+  let orderId = req.query.order || '';
+  if (req.body && req.body.Ds_MerchantParameters) {
+    try {
+      const decoded = decodeRedsysParameters(req.body.Ds_MerchantParameters);
+      orderId = decoded.DS_ORDER || decoded.Ds_Order || orderId;
+    } catch (e) {}
+  }
+  res.redirect(`/payment-success.html?order=${encodeURIComponent(orderId)}`);
+});
+
+app.post('/payment-error.html', (req, res) => {
+  let orderId = req.query.order || '';
+  if (req.body && req.body.Ds_MerchantParameters) {
+    try {
+      const decoded = decodeRedsysParameters(req.body.Ds_MerchantParameters);
+      orderId = decoded.DS_ORDER || decoded.Ds_Order || orderId;
+    } catch (e) {}
+  }
+  res.redirect(`/payment-error.html?order=${encodeURIComponent(orderId)}`);
 });
 
 // Middleware de verificación de Administrador
