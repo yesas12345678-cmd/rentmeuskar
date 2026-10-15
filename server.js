@@ -403,6 +403,7 @@ const authLimiter = rateLimit({
 });
 
 // Security & Optimization Middleware
+app.set('trust proxy', 1);
 app.disable('x-powered-by');
 app.use(helmet({
   contentSecurityPolicy: false, // Permitir CDN estáticos de FontAwesome y Flatpickr
@@ -1788,8 +1789,9 @@ app.post('/api/redsys/create-payment', async (req, res) => {
     const currency = process.env.REDSYS_CURRENCY || '978';
     const secretKey = process.env.REDSYS_SECRET_KEY || 'sq7HjrUOBfKmC576ILgskD5srU870gJ7';
     const redsysUrl = process.env.REDSYS_URL || 'https://sis-t.redsys.es:25443/sis/realizarPago';
-    const host = req.headers.host || 'localhost:3000';
-    const protocol = req.protocol || 'http';
+    const host = req.headers['x-forwarded-host'] || req.headers.host || 'rentmeuskar.com';
+    const isLocal = host.includes('localhost') || host.includes('127.0.0.1');
+    const protocol = req.headers['x-forwarded-proto'] || (req.secure ? 'https' : (isLocal ? 'http' : 'https'));
     const baseUrl = process.env.BASE_URL || `${protocol}://${host}`;
 
     const merchantParamsObj = {
