@@ -1331,6 +1331,11 @@ const initApp = () => {
                 userInfoEl.textContent = `Conectado como: ${user.name} (${user.email}) | DNI: ${user.dni || 'No especificado'}`;
             }
 
+            const btnGoAdmin = document.getElementById('btn-client-go-admin');
+            if (btnGoAdmin) {
+                btnGoAdmin.style.display = (user && user.is_admin) ? 'inline-flex' : 'none';
+            }
+
             // Obtener reservas del cliente (resiliente)
             let bookingsList = [];
             try {

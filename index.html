@@ -435,19 +435,20 @@
 
                 var data = await res.json();
                 if (res.ok && data && data.token) {
-                    if (data.user && data.user.is_admin) {
-                        localStorage.setItem('admin_token', data.token);
-                        window.location.href = 'admin.html';
-                        return false;
-                    }
-
                     localStorage.setItem('user_token', data.token);
                     if (data.user) {
                         localStorage.setItem('user_profile', JSON.stringify(data.user));
+                        if (data.user.is_admin) {
+                            localStorage.setItem('admin_token', data.token);
+                        }
                     }
                     window.closeAuthModal('login-modal');
                     if (typeof window.updateAuthUI === 'function') window.updateAuthUI();
-                    if (typeof showAppToast === 'function') showAppToast('¡Sesión iniciada correctamente!', 'success');
+                    if (typeof showAppToast === 'function') {
+                        showAppToast('¡Sesión iniciada correctamente!', 'success');
+                    } else {
+                        alert('¡Sesión iniciada correctamente!');
+                    }
                 } else {
                     localStorage.removeItem('user_token');
                     localStorage.removeItem('user_profile');
@@ -1786,7 +1787,8 @@
             <div class="client-modal-actions"
                 style="margin-top: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.8rem;">
                 <span id="client-user-info" style="font-size: 0.85rem; color: var(--text-secondary);"></span>
-                <div style="display: flex; gap: 0.5rem;">
+                <div style="display: flex; gap: 0.5rem; align-items: center;">
+                    <a href="admin.html" id="btn-client-go-admin" class="btn btn-secondary" style="display: none; font-size: 0.85rem; padding: 0.5rem 1rem; border-color: #00d2ff; color: #00d2ff; text-decoration: none;"><i class="fa-solid fa-shield-halved"></i> Panel Admin</a>
                     <button class="btn btn-secondary" onclick="window.openEditProfileModal()" style="font-size: 0.85rem; padding: 0.5rem 1rem; border-color: var(--color-neon); color: var(--color-neon); cursor: pointer;"><i class="fa-solid fa-user-pen"></i> Editar Mi Perfil</button>
                     <button class="btn" id="btn-client-logout" onclick="window.handleClientLogout()"
                         style="background: rgba(255, 77, 109, 0.15); border: 1px solid #ff4d6d; color: #ff4d6d; font-weight: 600; padding: 0.5rem 1.2rem; border-radius: 8px; cursor: pointer; transition: all 0.2s ease;"><i
