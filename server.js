@@ -1784,7 +1784,7 @@ app.post('/api/redsys/create-payment', async (req, res) => {
     // Generar número de pedido único de 10 dígitos que cumple con la normativa Redsys
     const numOrder = generateRedsysOrderId();
 
-    const merchantCode = process.env.REDSYS_MERCHANT_CODE || '999008881';
+    const merchantCode = process.env.REDSYS_MERCHANT_CODE || '369636824';
     const terminal = process.env.REDSYS_TERMINAL || '1';
     const currency = process.env.REDSYS_CURRENCY || '978';
     const secretKey = process.env.REDSYS_SECRET_KEY || 'sq7HjrUOBfKmC576ILgskD5srU870gJ7';
@@ -1842,14 +1842,26 @@ const handleTestPayment = async (req, res) => {
     // Doble validación de seguridad: en entorno de pruebas ÚNICAMENTE se autorizan tarjetas de test de Redsys / CaixaBank
     if (payMethod === 'card' && cardDetails && cardDetails.cardNumber) {
       const cleanCard = String(cardDetails.cardNumber).replace(/\s+/g, '');
-      const isTestCard = /^(454881|519999)\d{10}$/.test(cleanCard) ||
-                         cleanCard === '4548810000000003' ||
-                         cleanCard === '4548810000000004' ||
-                         cleanCard === '5199999999999999' ||
-                         cleanCard === '4548810000000000';
-      if (!isTestCard) {
+      const isApprovedTestCard = /^(454881|519999)\d{10}$/.test(cleanCard) ||
+                                 cleanCard === '4548810000000003' ||
+                                 cleanCard === '4548810000000004' ||
+                                 cleanCard === '5199999999999999' ||
+                                 cleanCard === '4548810000000000';
+      const isDeniedTestCard = cleanCard === '1111111111111117';
+
+      if (!isApprovedTestCard && !isDeniedTestCard) {
         return res.status(400).json({
-          error: 'Operación denegada (Error SIS0054): En este entorno de demostración únicamente se autorizan tarjetas de prueba oficiales de CaixaBank (ej. 4548 8100 0000 0003). Por seguridad de su cuenta bancaria, las tarjetas reales no están permitidas.'
+          error: 'Operación denegada (Error SIS0054): En este entorno de demostración únicamente se autorizan tarjetas de prueba oficiales de CaixaBank (Aprobada: 4548 8100 0000 0003 | Denegada: 1111 1111 1111 1117). Por seguridad de su cuenta bancaria, las tarjetas reales no están permitidas.'
+        });
+      }
+
+      // Si es la tarjeta oficial de prueba denegada, simular denegación bancaria SIS0051 / 101
+      if (isDeniedTestCard) {
+        const deniedOrder = 'TPV-DENIED-' + generateRedsysOrderId();
+        return res.status(402).json({
+          error: 'Operación denegada por la entidad emisora (Código SIS0051 / 101: Tarjeta rechazada).',
+          orderId: deniedOrder,
+          redirectUrl: `/payment-error.html?order=${deniedOrder}`
         });
       }
     }

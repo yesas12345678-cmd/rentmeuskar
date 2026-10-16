@@ -1943,18 +1943,20 @@ const initApp = () => {
                 return;
             }
 
-            // REGLA FUNDAMENTAL SOLICITADA: En este entorno solo se aceptan tarjetas de prueba autorizadas de Redsys
-            const isAuthorizedTestCard = /^(454881|519999)\d{10}$/.test(rawCard) ||
-                                         rawCard === '4548810000000003' ||
-                                         rawCard === '4548810000000004' ||
-                                         rawCard === '5199999999999999' ||
-                                         rawCard === '4548810000000000';
+            // REGLA OFICIAL CAIXABANK REDSYS: Tarjetas de prueba aceptadas vs denegadas
+            const isApprovedTestCard = /^(454881|519999)\d{10}$/.test(rawCard) ||
+                                       rawCard === '4548810000000003' ||
+                                       rawCard === '4548810000000004' ||
+                                       rawCard === '5199999999999999' ||
+                                       rawCard === '4548810000000000';
+            const isDeniedTestCard = rawCard === '1111111111111117';
 
-            if (!isAuthorizedTestCard) {
+            if (!isApprovedTestCard && !isDeniedTestCard) {
                 showTpvError(
                     '<strong>Operación denegada (Error SIS0054):</strong><br>' +
-                    'En este entorno de pruebas únicamente se autorizan tarjetas de test oficiales de CaixaBank / Redsys (ej. <code>4548 8100 0000 0003</code>). ' +
-                    'Por su propia seguridad, las tarjetas bancarias reales no están permitidas.',
+                    'En este entorno de pruebas únicamente se autorizan tarjetas de test oficiales de CaixaBank / Redsys ' +
+                    '(Aprobada: <code>4548 8100 0000 0003</code> | Denegada: <code>1111 1111 1111 1117</code>). ' +
+                    'Por su propia seguridad, las tarjetas reales no están permitidas.',
                     tpvCardNumber
                 );
                 return;
@@ -1972,8 +1974,8 @@ const initApp = () => {
                 return;
             }
 
-            // Validar CVV
-            if (rawCvc.length < 3) {
+            // Validar CVV (en tarjeta de prueba denegada no es obligatorio según Redsys)
+            if (!isDeniedTestCard && rawCvc.length < 3) {
                 showTpvError('El código de seguridad CVV/CVC debe contener 3 dígitos.', tpvCardCvc);
                 return;
             }
@@ -2035,6 +2037,15 @@ const initApp = () => {
             });
 
             const data = await response.json();
+            if (response.status === 402 && data.redirectUrl) {
+                // Denegación oficial bancaria simulada para la tarjeta de test denegada
+                if (statusText) statusText.innerHTML = '<span style="color: #ef4444;"><i class="fa-solid fa-triangle-exclamation"></i> Operación Denegada</span>';
+                if (substatusText) substatusText.innerHTML = '<span style="color: #fca5a5;">' + (data.error || 'Tarjeta rechazada por la entidad emisora (SIS0051)') + '</span>';
+                await new Promise(r => setTimeout(r, 900));
+                window.location.href = data.redirectUrl;
+                return;
+            }
+
             if (!response.ok) {
                 throw new Error(data.error || 'Error al autorizar el pago.');
             }
