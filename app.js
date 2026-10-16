@@ -1874,34 +1874,7 @@ const initApp = () => {
         });
     }
 
-    // Botón de autocompletado discreto de tarjeta de prueba oficial CaixaBank
-    const btnAutofillCard = document.getElementById('tpv-autofill-card-btn');
-    if (btnAutofillCard) {
-        btnAutofillCard.addEventListener('click', () => {
-            if (tpvCardNumber) {
-                tpvCardNumber.value = '4548 8100 0000 0003';
-                tpvCardNumber.dispatchEvent(new Event('input'));
-            }
-            if (tpvCardExpiry) tpvCardExpiry.value = '12/29';
-            if (tpvCardCvc) tpvCardCvc.value = '123';
-            if (tpvCardName && !tpvCardName.value) {
-                tpvCardName.value = pendingBookingData?.name || 'Cliente Prueba CaixaBank';
-            }
-            if (tpvErrorBanner) tpvErrorBanner.style.display = 'none';
-        });
-    }
 
-    // Botón de autocompletado discreto de móvil demo para Bizum
-    const btnAutofillBizum = document.getElementById('tpv-autofill-bizum-btn');
-    if (btnAutofillBizum) {
-        btnAutofillBizum.addEventListener('click', () => {
-            if (tpvBizumPhone) {
-                tpvBizumPhone.value = '600 000 000';
-                tpvBizumPhone.dispatchEvent(new Event('input'));
-            }
-            if (tpvErrorBanner) tpvErrorBanner.style.display = 'none';
-        });
-    }
 
     // Función auxiliar para mostrar errores bancarios en el banner
     const showTpvError = (message, inputElement) => {

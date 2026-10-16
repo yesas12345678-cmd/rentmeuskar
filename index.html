@@ -1930,7 +1930,7 @@
                         <div class="tpv-field-group">
                             <label for="tpv-card-number">Número de Tarjeta</label>
                             <div class="tpv-input-with-icon">
-                                <input type="text" id="tpv-card-number" class="tpv-input" maxlength="19" inputmode="numeric" placeholder="4548 8100 0000 0003" required>
+                                <input type="text" id="tpv-card-number" class="tpv-input" maxlength="19" inputmode="numeric" placeholder="0000 0000 0000 0000" required>
                                 <span class="tpv-card-icon" id="tpv-brand-icon">
                                     <i class="fa-solid fa-credit-card"></i>
                                 </span>
@@ -1955,17 +1955,6 @@
                             <label for="tpv-card-name">Titular de la Tarjeta</label>
                             <input type="text" id="tpv-card-name" class="tpv-input" maxlength="60" placeholder="Nombre y apellidos del titular" required>
                         </div>
-
-                        <!-- Indicador sutil de entorno de pruebas oficial con autocompletado demo -->
-                        <div class="tpv-test-notice">
-                            <div class="tpv-test-notice-text">
-                                <i class="fa-solid fa-circle-info" style="color: var(--color-neon);"></i>
-                                <span>Entorno de Pruebas · Solo tarjetas autorizadas</span>
-                            </div>
-                            <button type="button" id="tpv-autofill-card-btn" class="tpv-autofill-btn" title="Completar con tarjeta de prueba autorizada">
-                                <i class="fa-solid fa-wand-magic-sparkles"></i> Tarjeta Demo
-                            </button>
-                        </div>
                     </div>
 
                     <!-- Panel de Bizum (oculto por defecto) -->
@@ -1974,7 +1963,7 @@
                             <label for="tpv-bizum-phone">Teléfono Asociado a Bizum</label>
                             <div class="tpv-input-with-icon">
                                 <span class="tpv-prefix-flag">🇪🇸 +34</span>
-                                <input type="tel" id="tpv-bizum-phone" class="tpv-input" maxlength="11" inputmode="numeric" placeholder="600 000 000" style="padding-left: 70px;">
+                                <input type="tel" id="tpv-bizum-phone" class="tpv-input" maxlength="11" inputmode="numeric" placeholder="600 123 456" style="padding-left: 70px;">
                                 <span class="tpv-card-icon"><i class="fa-solid fa-mobile-screen"></i></span>
                             </div>
                         </div>
@@ -1984,16 +1973,6 @@
                             <div style="font-size: 0.82rem; color: #cbd5e1; line-height: 1.4;">
                                 Al pulsar <strong>Pagar con Bizum</strong>, recibirás una solicitud de confirmación instantánea en la app de tu entidad bancaria.
                             </div>
-                        </div>
-
-                        <div class="tpv-test-notice" style="margin-top: 0.8rem;">
-                            <div class="tpv-test-notice-text">
-                                <i class="fa-solid fa-circle-info" style="color: #00d2ff;"></i>
-                                <span>Entorno de Pruebas Bizum</span>
-                            </div>
-                            <button type="button" id="tpv-autofill-bizum-btn" class="tpv-autofill-btn" title="Completar con número demo">
-                                <i class="fa-solid fa-wand-magic-sparkles"></i> Teléfono Demo
-                            </button>
                         </div>
                     </div>
 
@@ -2419,43 +2398,7 @@
             40%, 80% { transform: translateX(4px); }
         }
 
-        /* Indicador sutil de entorno de pruebas */
-        .tpv-test-notice {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            background: rgba(15, 28, 63, 0.7);
-            border: 1px dashed rgba(130, 209, 5, 0.3);
-            border-radius: 8px;
-            padding: 0.45rem 0.75rem;
-            margin-top: 0.75rem;
-            margin-bottom: 0.95rem;
-            font-size: 0.75rem;
-            color: #94a3b8;
-        }
 
-        .tpv-test-notice-text {
-            display: flex;
-            align-items: center;
-            gap: 0.45rem;
-        }
-
-        .tpv-autofill-btn {
-            background: rgba(130, 209, 5, 0.14);
-            border: 1px solid var(--color-neon);
-            color: var(--color-neon);
-            padding: 3px 8px;
-            border-radius: 5px;
-            font-size: 0.72rem;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .tpv-autofill-btn:hover {
-            background: var(--color-neon);
-            color: #000000;
-        }
 
         .tpv-bizum-info-box {
             display: flex;
