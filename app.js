@@ -1674,12 +1674,23 @@ const initApp = () => {
             // FLUJO A: Pago online del alquiler (la fianza de 500€ se abona en persona al recoger)
             const rentAmountEl = document.getElementById('tpv-rent-amount');
             const totalAmountEl = document.getElementById('tpv-total-amount');
+            const btnAmountEl = document.getElementById('tpv-btn-amount');
+            const formattedPrice = `${totalPriceNum.toFixed(2)} €`;
 
-            if (rentAmountEl) rentAmountEl.textContent = `${totalPriceNum.toFixed(2)} €`;
-            if (totalAmountEl) totalAmountEl.textContent = `${totalPriceNum.toFixed(2)} €`;
+            if (rentAmountEl) rentAmountEl.textContent = formattedPrice;
+            if (totalAmountEl) totalAmountEl.textContent = formattedPrice;
+            if (btnAmountEl) btnAmountEl.textContent = formattedPrice;
 
             const cardNameEl = document.getElementById('tpv-card-name');
-            if (cardNameEl) cardNameEl.value = user.name || '';
+            if (cardNameEl && !cardNameEl.value) cardNameEl.value = user.name || '';
+
+            // Limpiar errores o estados de carga previos
+            const errorBanner = document.getElementById('tpv-error-banner');
+            if (errorBanner) errorBanner.style.display = 'none';
+            const overlay3ds = document.getElementById('tpv-3ds-overlay');
+            if (overlay3ds) overlay3ds.style.display = 'none';
+            const cardNumberInput = document.getElementById('tpv-card-number');
+            if (cardNumberInput) cardNumberInput.classList.remove('input-error');
 
             // Mostrar pasarela TPV
             window.openAuthModal('tpv-modal');
@@ -1765,175 +1776,299 @@ const initApp = () => {
         }
     });
 
-    // Procesar pago en la TPV Redsys / Cyberpac CaixaBank
-    // Manejar selección de método de pago (Tarjeta vs Bizum) y actualizar visuales
-    const payMethodRadios = tpvForm.querySelectorAll('input[name="pay_method"]');
-    const cardTestInfo = document.getElementById('tpv-card-test-info');
-    const bizumTestInfo = document.getElementById('tpv-bizum-test-info');
-    const cardOptionLabel = document.getElementById('card-option-label');
-    const bizumOptionLabel = document.getElementById('bizum-option-label');
+    // ==========================================================================
+    // 8. PASARELA TPV VIRTUAL CAIXABANK / REDSYS (ENTORNO DEMO - SOLO TEST CARDS)
+    // ==========================================================================
+    const tabMethodCard = document.getElementById('tab-method-card');
+    const tabMethodBizum = document.getElementById('tab-method-bizum');
+    const tpvCardFields = document.getElementById('tpv-card-fields');
+    const tpvBizumFields = document.getElementById('tpv-bizum-fields');
+    const tpvSubmitLabel = document.getElementById('tpv-submit-label');
+    const tpvErrorBanner = document.getElementById('tpv-error-banner');
+    const tpvErrorText = document.getElementById('tpv-error-text');
 
-    payMethodRadios.forEach(radio => {
-        radio.addEventListener('change', (e) => {
-            const isBizum = e.target.value === 'bizum';
-            if (cardTestInfo && bizumTestInfo) {
-                cardTestInfo.style.display = isBizum ? 'none' : 'block';
-                bizumTestInfo.style.display = isBizum ? 'block' : 'none';
-            }
-            if (cardOptionLabel && bizumOptionLabel) {
-                if (isBizum) {
-                    bizumOptionLabel.style.border = '2px solid var(--color-neon)';
-                    bizumOptionLabel.style.background = 'rgba(130, 209, 5, 0.1)';
-                    cardOptionLabel.style.border = '1px solid rgba(255,255,255,0.15)';
-                    cardOptionLabel.style.background = 'rgba(255,255,255,0.06)';
+    const tpvCardNumber = document.getElementById('tpv-card-number');
+    const tpvBrandIcon = document.getElementById('tpv-brand-icon');
+    const tpvCardExpiry = document.getElementById('tpv-card-expiry');
+    const tpvCardCvc = document.getElementById('tpv-card-cvc');
+    const tpvCardName = document.getElementById('tpv-card-name');
+    const tpvBizumPhone = document.getElementById('tpv-bizum-phone');
+
+    // Manejar cambio de pestañas de método de pago (Tarjeta vs Bizum)
+    const setTpvMethod = (method) => {
+        const isBizum = method === 'bizum';
+        if (tabMethodCard && tabMethodBizum) {
+            tabMethodCard.classList.toggle('active', !isBizum);
+            tabMethodBizum.classList.toggle('active', isBizum);
+            const cardRadio = tabMethodCard.querySelector('input');
+            const bizumRadio = tabMethodBizum.querySelector('input');
+            if (cardRadio) cardRadio.checked = !isBizum;
+            if (bizumRadio) bizumRadio.checked = isBizum;
+        }
+        if (tpvCardFields) tpvCardFields.style.display = isBizum ? 'none' : 'block';
+        if (tpvBizumFields) tpvBizumFields.style.display = isBizum ? 'block' : 'none';
+        if (tpvSubmitLabel) {
+            const amountText = document.getElementById('tpv-total-amount')?.textContent || '0,00 €';
+            tpvSubmitLabel.innerHTML = isBizum
+                ? `Pagar con Bizum <strong id="tpv-btn-amount">${amountText}</strong>`
+                : `Pagar <strong id="tpv-btn-amount">${amountText}</strong>`;
+        }
+        if (tpvErrorBanner) tpvErrorBanner.style.display = 'none';
+        if (tpvCardNumber) tpvCardNumber.classList.remove('input-error');
+        if (tpvBizumPhone) tpvBizumPhone.classList.remove('input-error');
+    };
+
+    if (tabMethodCard) tabMethodCard.addEventListener('click', () => setTpvMethod('card'));
+    if (tabMethodBizum) tabMethodBizum.addEventListener('click', () => setTpvMethod('bizum'));
+
+    // Formateo de número de tarjeta en bloques de 4 dígitos con detección visual de marca
+    if (tpvCardNumber) {
+        tpvCardNumber.addEventListener('input', (e) => {
+            let val = e.target.value.replace(/\D/g, '').substring(0, 16);
+            let formatted = val.match(/.{1,4}/g)?.join(' ') || val;
+            e.target.value = formatted;
+            tpvCardNumber.classList.remove('input-error');
+            if (tpvErrorBanner) tpvErrorBanner.style.display = 'none';
+
+            if (tpvBrandIcon) {
+                if (val.startsWith('4')) {
+                    tpvBrandIcon.innerHTML = '<i class="fa-brands fa-cc-visa" style="color: #0077b6; font-size: 1.25rem;"></i>';
+                } else if (/^(5[1-5]|2[2-7])/.test(val)) {
+                    tpvBrandIcon.innerHTML = '<i class="fa-brands fa-cc-mastercard" style="color: #ff5f00; font-size: 1.25rem;"></i>';
                 } else {
-                    cardOptionLabel.style.border = '2px solid var(--color-neon)';
-                    cardOptionLabel.style.background = 'rgba(130, 209, 5, 0.1)';
-                    bizumOptionLabel.style.border = '1px solid rgba(255,255,255,0.15)';
-                    bizumOptionLabel.style.background = 'rgba(255,255,255,0.06)';
+                    tpvBrandIcon.innerHTML = '<i class="fa-solid fa-credit-card"></i>';
                 }
             }
         });
-    });
+    }
 
-    // 1. Procesar pago en la pasarela oficial Redsys / CaixaBank Test
+    // Formateo de fecha de caducidad MM/AA
+    if (tpvCardExpiry) {
+        tpvCardExpiry.addEventListener('input', (e) => {
+            let val = e.target.value.replace(/\D/g, '').substring(0, 4);
+            if (val.length >= 3) {
+                val = val.substring(0, 2) + '/' + val.substring(2);
+            }
+            e.target.value = val;
+            tpvCardExpiry.classList.remove('input-error');
+            if (tpvErrorBanner) tpvErrorBanner.style.display = 'none';
+        });
+    }
+
+    // Formateo de CVC (máximo 3 dígitos)
+    if (tpvCardCvc) {
+        tpvCardCvc.addEventListener('input', (e) => {
+            e.target.value = e.target.value.replace(/\D/g, '').substring(0, 3);
+            tpvCardCvc.classList.remove('input-error');
+        });
+    }
+
+    // Formateo de Teléfono Bizum (formato 600 000 000)
+    if (tpvBizumPhone) {
+        tpvBizumPhone.addEventListener('input', (e) => {
+            let val = e.target.value.replace(/\D/g, '').substring(0, 9);
+            let formatted = val.match(/.{1,3}/g)?.join(' ') || val;
+            e.target.value = formatted;
+            tpvBizumPhone.classList.remove('input-error');
+            if (tpvErrorBanner) tpvErrorBanner.style.display = 'none';
+        });
+    }
+
+    // Botón de autocompletado discreto de tarjeta de prueba oficial CaixaBank
+    const btnAutofillCard = document.getElementById('tpv-autofill-card-btn');
+    if (btnAutofillCard) {
+        btnAutofillCard.addEventListener('click', () => {
+            if (tpvCardNumber) {
+                tpvCardNumber.value = '4548 8100 0000 0003';
+                tpvCardNumber.dispatchEvent(new Event('input'));
+            }
+            if (tpvCardExpiry) tpvCardExpiry.value = '12/29';
+            if (tpvCardCvc) tpvCardCvc.value = '123';
+            if (tpvCardName && !tpvCardName.value) {
+                tpvCardName.value = pendingBookingData?.name || 'Cliente Prueba CaixaBank';
+            }
+            if (tpvErrorBanner) tpvErrorBanner.style.display = 'none';
+        });
+    }
+
+    // Botón de autocompletado discreto de móvil demo para Bizum
+    const btnAutofillBizum = document.getElementById('tpv-autofill-bizum-btn');
+    if (btnAutofillBizum) {
+        btnAutofillBizum.addEventListener('click', () => {
+            if (tpvBizumPhone) {
+                tpvBizumPhone.value = '600 000 000';
+                tpvBizumPhone.dispatchEvent(new Event('input'));
+            }
+            if (tpvErrorBanner) tpvErrorBanner.style.display = 'none';
+        });
+    }
+
+    // Función auxiliar para mostrar errores bancarios en el banner
+    const showTpvError = (message, inputElement) => {
+        if (tpvErrorBanner && tpvErrorText) {
+            tpvErrorText.innerHTML = message;
+            tpvErrorBanner.style.display = 'flex';
+        } else {
+            alert(message);
+        }
+        if (inputElement) {
+            inputElement.classList.add('input-error');
+            inputElement.focus();
+        }
+    };
+
+    // Procesar transacción en la Pasarela TPV Virtual CaixaBank
     tpvForm.addEventListener('submit', async (e) => {
         e.preventDefault();
 
         if (!pendingBookingData) {
-            alert('No hay ninguna reserva pendiente de procesar.');
+            alert('No hay ninguna reserva seleccionada para pagar.');
             return;
         }
 
-        const tpvSubmitBtn = document.getElementById('tpv-submit-btn');
-        const originalBtnHtml = tpvSubmitBtn.innerHTML;
+        const isBizum = tabMethodBizum && tabMethodBizum.classList.contains('active');
+        const selectedPayMethod = isBizum ? 'bizum' : 'card';
 
-        tpvSubmitBtn.disabled = true;
-        tpvSubmitBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Conectando con Redsys...';
+        let cardPayload = null;
+
+        // 1. VALIDACIÓN ESTRICTA DEL MÉTODO DE PAGO
+        if (!isBizum) {
+            const rawCard = (tpvCardNumber?.value || '').replace(/\s+/g, '');
+            const rawExpiry = (tpvCardExpiry?.value || '').trim();
+            const rawCvc = (tpvCardCvc?.value || '').trim();
+            const rawName = (tpvCardName?.value || '').trim();
+
+            if (!rawCard || rawCard.length < 16) {
+                showTpvError('Por favor, introduzca los 16 dígitos de su tarjeta bancaria.', tpvCardNumber);
+                return;
+            }
+
+            // REGLA FUNDAMENTAL SOLICITADA: En este entorno solo se aceptan tarjetas de prueba autorizadas de Redsys
+            const isAuthorizedTestCard = /^(454881|519999)\d{10}$/.test(rawCard) ||
+                                         rawCard === '4548810000000003' ||
+                                         rawCard === '4548810000000004' ||
+                                         rawCard === '5199999999999999' ||
+                                         rawCard === '4548810000000000';
+
+            if (!isAuthorizedTestCard) {
+                showTpvError(
+                    '<strong>Operación denegada (Error SIS0054):</strong><br>' +
+                    'En este entorno de pruebas únicamente se autorizan tarjetas de test oficiales de CaixaBank / Redsys (ej. <code>4548 8100 0000 0003</code>). ' +
+                    'Por su propia seguridad, las tarjetas bancarias reales no están permitidas.',
+                    tpvCardNumber
+                );
+                return;
+            }
+
+            // Validar caducidad MM/AA
+            const expiryMatch = rawExpiry.match(/^(\d{2})\/(\d{2})$/);
+            if (!expiryMatch) {
+                showTpvError('Introduzca una fecha de caducidad válida con formato MM/AA.', tpvCardExpiry);
+                return;
+            }
+            const month = parseInt(expiryMatch[1], 10);
+            if (month < 1 || month > 12) {
+                showTpvError('El mes de caducidad debe estar entre 01 y 12.', tpvCardExpiry);
+                return;
+            }
+
+            // Validar CVV
+            if (rawCvc.length < 3) {
+                showTpvError('El código de seguridad CVV/CVC debe contener 3 dígitos.', tpvCardCvc);
+                return;
+            }
+
+            // Validar Titular
+            if (!rawName) {
+                showTpvError('Introduzca el nombre y apellidos del titular de la tarjeta.', tpvCardName);
+                return;
+            }
+
+            cardPayload = {
+                cardNumber: rawCard,
+                cardExpiry: rawExpiry,
+                cardHolder: rawName
+            };
+        } else {
+            // Validación Bizum
+            const rawPhone = (tpvBizumPhone?.value || '').replace(/\s+/g, '');
+            if (!rawPhone || rawPhone.length !== 9 || (!rawPhone.startsWith('6') && !rawPhone.startsWith('7'))) {
+                showTpvError('Por favor, introduzca un número de teléfono móvil válido para Bizum (9 dígitos).', tpvBizumPhone);
+                return;
+            }
+        }
+
+        // 2. ACTIVAR SECUENCIA REALISTA DE VERIFICACIÓN 3D-SECURE CAIXABANK
+        const submitBtn = document.getElementById('tpv-submit-btn');
+        const originalBtnHtml = submitBtn.innerHTML;
+        submitBtn.disabled = true;
+
+        const overlay3ds = document.getElementById('tpv-3ds-overlay');
+        const statusText = document.getElementById('tpv-3ds-status-text');
+        const substatusText = document.getElementById('tpv-3ds-substatus-text');
+
+        if (overlay3ds) overlay3ds.style.display = 'flex';
+        if (statusText) statusText.textContent = 'Conectando con la pasarela CaixaBank...';
+        if (substatusText) substatusText.textContent = isBizum
+            ? 'Enviando solicitud de cobro seguro al servicio Bizum...'
+            : 'Iniciando protocolo de Comercio Electrónico Seguro (3D-Secure 2.2)...';
 
         try {
-            const payMethodRadio = tpvForm.querySelector('input[name="pay_method"]:checked');
-            const selectedPayMethod = payMethodRadio ? payMethodRadio.value : 'card';
+            // Retardo de autenticación bancaria realista
+            await new Promise(r => setTimeout(r, 650));
+            if (statusText) statusText.textContent = isBizum
+                ? 'Esperando autorización en la app de tu entidad bancaria...'
+                : 'Verificando autenticación con el banco emisor...';
+            if (substatusText) substatusText.textContent = 'Verificación criptográfica de clave y SMS en curso...';
 
-            // 1. Solicitar firma y parámetros oficiales a backend Redsys
-            const redsysResponse = await fetch('/api/redsys/create-payment', {
+            await new Promise(r => setTimeout(r, 700));
+
+            // 3. REGISTRAR PAGO Y RESERVA EN BACKEND
+            const response = await fetch('/api/redsys/process-test-payment', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     bookingData: pendingBookingData,
-                    payMethod: selectedPayMethod
+                    payMethod: selectedPayMethod,
+                    cardDetails: cardPayload
                 })
             });
 
-            const redsysData = await redsysResponse.json();
-            if (!redsysResponse.ok) {
-                throw new Error(redsysData.error || 'Error al conectar con la pasarela Redsys.');
+            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(data.error || 'Error al autorizar el pago.');
             }
 
-            // 2. Guardar la reserva en estado pendiente de confirmación de pago
-            const finalBookingData = {
-                ...pendingBookingData,
-                status: 'pending_payment',
-                payment_status: 'unpaid',
-                payment_id: redsysData.orderId,
-                payment_method: selectedPayMethod === 'bizum' ? 'Bizum' : 'Tarjeta'
-            };
+            if (statusText) statusText.textContent = '¡Transacción autorizada con éxito!';
+            if (substatusText) substatusText.innerHTML = '<span style="color: var(--color-neon); font-weight: 700;">Código de autorización: 000000 (Aprobada)</span>';
 
-            const bookRes = await fetch('/api/bookings', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(finalBookingData)
-            });
+            await new Promise(r => setTimeout(r, 500));
 
-            const bookData = await bookRes.json();
-            if (!bookRes.ok) {
-                throw new Error(bookData.error || 'No se pudo registrar la reserva temporal.');
+            // Actualizar disponibilidad del calendario en la web
+            if (typeof window.updateCalendarAvailability === 'function') {
+                window.updateCalendarAvailability();
             }
 
-            tpvSubmitBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Redirigiendo a CaixaBank...';
-
-            // 3. Crear formulario transparente y redirigir a Redsys sis-t
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = redsysData.actionUrl;
-
-            for (const [key, value] of Object.entries(redsysData.params)) {
-                const input = document.createElement('input');
-                input.type = 'hidden';
-                input.name = key;
-                input.value = value;
-                form.appendChild(input);
-            }
-
-            document.body.appendChild(form);
-            form.submit();
+            // Redirigir a la pantalla de éxito con factura y contrato listos
+            window.location.href = data.redirectUrl || `/payment-success.html?order=${encodeURIComponent(data.orderId)}`;
 
         } catch (err) {
-            console.error('Error al iniciar pago en pasarela Redsys:', err);
-            alert('Error al iniciar el pago seguro: ' + err.message);
-            tpvSubmitBtn.disabled = false;
-            tpvSubmitBtn.innerHTML = originalBtnHtml;
+            console.error('Error al procesar pago en pasarela:', err);
+            if (overlay3ds) overlay3ds.style.display = 'none';
+            showTpvError(err.message || 'Error al procesar el pago seguro.');
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalBtnHtml;
         }
     });
 
-    // 2. Simular pago de prueba aprobado instantáneo (1 Clic)
-    const tpvSimulateBtn = document.getElementById('tpv-simulate-btn');
-    if (tpvSimulateBtn) {
-        tpvSimulateBtn.addEventListener('click', async () => {
-            if (!pendingBookingData) {
-                alert('No hay ninguna reserva seleccionada para pagar.');
-                return;
-            }
-
-            const payMethodRadio = tpvForm.querySelector('input[name="pay_method"]:checked');
-            const selectedPayMethod = payMethodRadio ? payMethodRadio.value : 'card';
-
-            const originalHtml = tpvSimulateBtn.innerHTML;
-            tpvSimulateBtn.disabled = true;
-            tpvSimulateBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Autorizando pago de prueba...';
-
-            try {
-                const response = await fetch('/api/redsys/simulate-payment', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        bookingData: pendingBookingData,
-                        payMethod: selectedPayMethod
-                    })
-                });
-
-                const data = await response.json();
-                if (!response.ok) {
-                    throw new Error(data.error || 'Error al procesar el pago de prueba.');
-                }
-
-                if (typeof window.updateCalendarAvailability === 'function') {
-                    window.updateCalendarAvailability();
-                }
-
-                // Redirigir a página de confirmación con los datos reales
-                window.location.href = data.redirectUrl || `/payment-success.html?order=${data.orderId}`;
-            } catch (err) {
-                console.error(err);
-                alert('Error al simular pago: ' + err.message);
-                tpvSimulateBtn.disabled = false;
-                tpvSimulateBtn.innerHTML = originalHtml;
-            }
-        });
-    }
-
-    // 3. Simular pago de prueba denegado / error
-    const tpvSimulateFailBtn = document.getElementById('tpv-simulate-fail-btn');
-    if (tpvSimulateFailBtn) {
-        tpvSimulateFailBtn.addEventListener('click', () => {
-            const fakeOrder = 'DENIED-' + Math.floor(100000 + Math.random() * 900000);
-            window.location.href = `/payment-error.html?order=${fakeOrder}`;
-        });
-    }
-
+    // Cancelar transacción
     window.cancelTpvPayment = () => {
         if (confirm('¿Deseas cancelar la transacción? Los importes no se cobrarán y la reserva no se registrará.')) {
             window.closeAuthModal('tpv-modal');
+            const overlay3ds = document.getElementById('tpv-3ds-overlay');
+            if (overlay3ds) overlay3ds.style.display = 'none';
+            const errorBanner = document.getElementById('tpv-error-banner');
+            if (errorBanner) errorBanner.style.display = 'none';
             pendingBookingData = null;
         }
     };

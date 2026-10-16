@@ -1868,104 +1868,172 @@
     <!-- Modal: Pasarela TPV Virtual CaixaBank -->
     <div class="custom-modal-backdrop" id="tpv-modal" style="display: none;">
         <div class="custom-modal-card tpv-card" style="max-width: 480px; width: 100%;">
+            <!-- Header CaixaBank -->
             <div class="tpv-header">
                 <div class="tpv-logo-box">
                     <span class="tpv-star"><i class="fa-solid fa-star-of-david"></i></span>
-                    <span class="tpv-bank-name">CaixaBank</span>
+                    <div>
+                        <span class="tpv-bank-name">CaixaBank</span>
+                        <span class="tpv-gateway-sub">TPV Virtual · Redsys</span>
+                    </div>
                 </div>
-                <div class="tpv-header-title">Pago Seguro SSL</div>
+                <div class="tpv-header-title">
+                    <i class="fa-solid fa-lock" style="margin-right: 4px; color: #82d105;"></i> Pago Seguro SSL
+                </div>
             </div>
-            <div class="tpv-body">
+
+            <div class="tpv-body" style="position: relative;">
+                <!-- Desglose de Importe -->
                 <div class="tpv-amount-box">
+                    <div class="tpv-amount-row">
+                        <span>Concepto:</span>
+                        <strong style="color: #ffffff;">Alquiler de Furgoneta RentMeUskar</strong>
+                    </div>
                     <div class="tpv-amount-row">
                         <span>Importe Alquiler:</span>
                         <strong id="tpv-rent-amount" style="color: #ffffff;">0,00 €</strong>
                     </div>
-                    <div class="tpv-amount-row" style="font-size: 0.83rem; opacity: 0.85; margin-top: 0.2rem;">
+                    <div class="tpv-amount-row" style="font-size: 0.82rem; opacity: 0.9; margin-top: 0.2rem;">
                         <span>Fianza (500,00 €):</span>
-                        <span style="color: var(--color-neon); font-size: 0.8rem; font-weight: 600;">Se abona en persona al recoger</span>
+                        <span style="color: var(--color-neon); font-size: 0.78rem; font-weight: 600;">Se abona en persona al recoger</span>
                     </div>
-                    <hr style="border-color: rgba(255,255,255,0.12); margin: 0.6rem 0;">
+                    <hr style="border-color: rgba(255,255,255,0.12); margin: 0.5rem 0;">
                     <div class="tpv-amount-row total">
                         <span style="font-weight: 700; color: #ffffff;">Importe Total a Pagar en Web:</span>
-                        <span id="tpv-total-amount" style="color: var(--color-neon); font-size: 1.3rem; font-weight: 800;">0,00 €</span>
+                        <span id="tpv-total-amount" style="color: var(--color-neon); font-size: 1.25rem; font-weight: 800;">0,00 €</span>
                     </div>
                 </div>
 
-                <form id="tpv-form">
-                    <div class="custom-form-group" style="margin-bottom: 1rem;">
-                        <label style="display: block; font-weight: 700; margin-bottom: 0.6rem; color: #ffffff; font-size: 0.9rem;">
-                            Selecciona el Método de Pago:
-                        </label>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem;">
-                            <label class="payment-option-card" id="card-option-label"
-                                style="background: rgba(255,255,255,0.06); border: 2px solid var(--color-neon); border-radius: 10px; padding: 1rem 0.8rem; text-align: center; cursor: pointer; transition: all 0.2s ease;">
-                                <input type="radio" name="pay_method" value="card" checked style="margin-right: 0.4rem;">
-                                <i class="fa-solid fa-credit-card" style="font-size: 1.4rem; color: #ffffff; display: block; margin-bottom: 0.4rem;"></i>
-                                <strong style="font-size: 0.9rem; color: #ffffff;">Tarjeta</strong>
-                            </label>
-                            <label class="payment-option-card" id="bizum-option-label"
-                                style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 1rem 0.8rem; text-align: center; cursor: pointer; transition: all 0.2s ease;">
-                                <input type="radio" name="pay_method" value="bizum" style="margin-right: 0.4rem;">
-                                <i class="fa-solid fa-mobile-screen-button" style="font-size: 1.4rem; color: #00d2ff; display: block; margin-bottom: 0.4rem;"></i>
-                                <strong style="font-size: 0.9rem; color: #ffffff;">Bizum</strong>
-                            </label>
+                <!-- Selector de Método de Pago -->
+                <div class="tpv-method-selector">
+                    <label class="tpv-method-tab active" id="tab-method-card">
+                        <input type="radio" name="pay_method" value="card" checked style="display: none;">
+                        <i class="fa-solid fa-credit-card"></i>
+                        <span>Tarjeta</span>
+                    </label>
+                    <label class="tpv-method-tab" id="tab-method-bizum">
+                        <input type="radio" name="pay_method" value="bizum" style="display: none;">
+                        <i class="fa-solid fa-mobile-screen-button"></i>
+                        <span>Bizum</span>
+                    </label>
+                </div>
+
+                <form id="tpv-form" autocomplete="off">
+                    <!-- Banner de Notificación de Error Bancario (oculto por defecto) -->
+                    <div id="tpv-error-banner" class="tpv-alert-danger" style="display: none;">
+                        <i class="fa-solid fa-triangle-exclamation" style="font-size: 1.1rem; flex-shrink: 0; margin-top: 2px;"></i>
+                        <div id="tpv-error-text"></div>
+                    </div>
+
+                    <!-- Panel de Tarjeta Bancaria -->
+                    <div id="tpv-card-fields">
+                        <div class="tpv-field-group">
+                            <label for="tpv-card-number">Número de Tarjeta</label>
+                            <div class="tpv-input-with-icon">
+                                <input type="text" id="tpv-card-number" class="tpv-input" maxlength="19" inputmode="numeric" placeholder="4548 8100 0000 0003" required>
+                                <span class="tpv-card-icon" id="tpv-brand-icon">
+                                    <i class="fa-solid fa-credit-card"></i>
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="tpv-grid-two">
+                            <div class="tpv-field-group">
+                                <label for="tpv-card-expiry">Caducidad</label>
+                                <input type="text" id="tpv-card-expiry" class="tpv-input" maxlength="5" inputmode="numeric" placeholder="MM/AA" required>
+                            </div>
+                            <div class="tpv-field-group">
+                                <label for="tpv-card-cvc">CVV / CVC <i class="fa-solid fa-circle-question" title="Código de 3 dígitos al dorso de su tarjeta" style="font-size: 0.75rem; color: #94a3b8; cursor: help;"></i></label>
+                                <div class="tpv-input-with-icon">
+                                    <input type="password" id="tpv-card-cvc" class="tpv-input" maxlength="3" inputmode="numeric" placeholder="123" required>
+                                    <span class="tpv-card-icon"><i class="fa-solid fa-shield"></i></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="tpv-field-group">
+                            <label for="tpv-card-name">Titular de la Tarjeta</label>
+                            <input type="text" id="tpv-card-name" class="tpv-input" maxlength="60" placeholder="Nombre y apellidos del titular" required>
+                        </div>
+
+                        <!-- Indicador sutil de entorno de pruebas oficial con autocompletado demo -->
+                        <div class="tpv-test-notice">
+                            <div class="tpv-test-notice-text">
+                                <i class="fa-solid fa-circle-info" style="color: var(--color-neon);"></i>
+                                <span>Entorno de Pruebas · Solo tarjetas autorizadas</span>
+                            </div>
+                            <button type="button" id="tpv-autofill-card-btn" class="tpv-autofill-btn" title="Completar con tarjeta de prueba autorizada">
+                                <i class="fa-solid fa-wand-magic-sparkles"></i> Tarjeta Demo
+                            </button>
                         </div>
                     </div>
 
-                    <!-- Datos para la prueba en entorno de test -->
-                    <div style="background: rgba(15, 28, 63, 0.8); border: 1px solid rgba(130, 209, 5, 0.3); border-radius: 8px; padding: 0.75rem 0.9rem; margin-bottom: 1rem; font-size: 0.8rem;">
-                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.4rem;">
-                            <span style="color: var(--color-neon); font-weight: 700;">
-                                <i class="fa-solid fa-flask"></i> Datos para Prueba:
-                            </span>
-                            <span class="test-env-tag" style="background: rgba(255, 193, 7, 0.2); color: #ffc107; padding: 1px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: 700;">Sandbox Oficial</span>
-                        </div>
-                        <div id="tpv-card-test-info">
-                            <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 4px; margin-bottom: 4px;">
-                                <span>Tarjeta: <code style="color: #ffffff; font-weight: 700; letter-spacing: 1px;">4548 8100 0000 0003</code></span>
-                                <button type="button" onclick="navigator.clipboard.writeText('4548810000000003'); alert('Tarjeta de test copiada al portapapeles');" style="background: var(--color-neon); color: #000; border: none; padding: 2px 8px; font-size: 0.72rem; font-weight: 700; border-radius: 4px; cursor: pointer;">Copiar</button>
-                            </div>
-                            <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #a0aec0; padding: 0 2px;">
-                                <span>Cad: <strong>12/29</strong></span>
-                                <span>CVV: <strong>123</strong></span>
-                                <span>SMS/PIN: <strong>123456</strong></span>
+                    <!-- Panel de Bizum (oculto por defecto) -->
+                    <div id="tpv-bizum-fields" style="display: none;">
+                        <div class="tpv-field-group">
+                            <label for="tpv-bizum-phone">Teléfono Asociado a Bizum</label>
+                            <div class="tpv-input-with-icon">
+                                <span class="tpv-prefix-flag">🇪🇸 +34</span>
+                                <input type="tel" id="tpv-bizum-phone" class="tpv-input" maxlength="11" inputmode="numeric" placeholder="600 000 000" style="padding-left: 70px;">
+                                <span class="tpv-card-icon"><i class="fa-solid fa-mobile-screen"></i></span>
                             </div>
                         </div>
-                        <div id="tpv-bizum-test-info" style="display: none;">
-                            <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 4px; margin-bottom: 4px;">
-                                <span>Teléfono: <code style="color: #ffffff; font-weight: 700;">600000000</code></span>
-                                <button type="button" onclick="navigator.clipboard.writeText('600000000'); alert('Teléfono de test copiado al portapapeles');" style="background: #00d2ff; color: #000; border: none; padding: 2px 8px; font-size: 0.72rem; font-weight: 700; border-radius: 4px; cursor: pointer;">Copiar</button>
+
+                        <div class="tpv-bizum-info-box">
+                            <i class="fa-solid fa-circle-info" style="color: #00d2ff; font-size: 1.1rem; margin-top: 2px;"></i>
+                            <div style="font-size: 0.82rem; color: #cbd5e1; line-height: 1.4;">
+                                Al pulsar <strong>Pagar con Bizum</strong>, recibirás una solicitud de confirmación instantánea en la app de tu entidad bancaria.
                             </div>
-                            <div style="font-size: 0.75rem; color: #a0aec0; padding: 0 2px;">
-                                <span>Clave Bizum / SMS: <strong>123456</strong></span>
+                        </div>
+
+                        <div class="tpv-test-notice" style="margin-top: 0.8rem;">
+                            <div class="tpv-test-notice-text">
+                                <i class="fa-solid fa-circle-info" style="color: #00d2ff;"></i>
+                                <span>Entorno de Pruebas Bizum</span>
                             </div>
+                            <button type="button" id="tpv-autofill-bizum-btn" class="tpv-autofill-btn" title="Completar con número demo">
+                                <i class="fa-solid fa-wand-magic-sparkles"></i> Teléfono Demo
+                            </button>
                         </div>
                     </div>
 
-                    <!-- Botón 1: Pasarela Oficial Redsys CaixaBank -->
-                    <button type="submit" class="btn btn-block" id="tpv-submit-btn" style="background: #007bff; border-color: #007bff; color: #ffffff; padding: 0.85rem; font-weight: 700; font-size: 0.95rem; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem; width: 100%;">
-                        <i class="fa-solid fa-lock"></i> Ir a Pasarela Oficial CaixaBank Redsys
+                    <!-- Botón Principal de Pago -->
+                    <button type="submit" class="btn btn-block tpv-pay-btn" id="tpv-submit-btn">
+                        <i class="fa-solid fa-lock"></i>
+                        <span id="tpv-submit-label">Pagar <strong id="tpv-btn-amount">0,00 €</strong></span>
                     </button>
 
-                    <!-- Botón 2: Simulación Instantánea en 1-Clic -->
-                    <button type="button" class="btn btn-block" id="tpv-simulate-btn" style="margin-top: 0.5rem; background: rgba(130, 209, 5, 0.15); border: 1px solid var(--color-neon); color: var(--color-neon); padding: 0.75rem; font-weight: 700; font-size: 0.9rem; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem; width: 100%;">
-                        <i class="fa-solid fa-bolt"></i> Simular Pago Aprobado Directo (1 Clic)
-                    </button>
-
-                    <!-- Botón 3: Simulación de Rechazo / Error -->
-                    <button type="button" class="btn btn-block" id="tpv-simulate-fail-btn" style="margin-top: 0.4rem; background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; padding: 0.45rem; font-size: 0.78rem; font-weight: 600; border-radius: 8px; cursor: pointer; width: 100%;">
-                        <i class="fa-solid fa-triangle-exclamation"></i> Simular Pago Denegado (Prueba de Error)
-                    </button>
-
-                    <!-- Botón 4: Cancelar -->
-                    <button type="button" class="btn btn-block" onclick="cancelTpvPayment()" style="margin-top: 0.5rem; background: transparent; border: 1px solid rgba(255,255,255,0.15); color: rgba(255,255,255,0.7); padding: 0.5rem; border-radius: 8px; cursor: pointer; font-size: 0.85rem; width: 100%;">
+                    <!-- Cancelar transacción -->
+                    <button type="button" class="tpv-cancel-btn" onclick="cancelTpvPayment()">
                         Cancelar Transacción
                     </button>
                 </form>
+
+                <!-- Pantalla 3D Secure / Procesamiento Bancario (Overlay animado) -->
+                <div id="tpv-3ds-overlay" class="tpv-3ds-overlay" style="display: none;">
+                    <div class="tpv-3ds-card">
+                        <div class="tpv-3ds-header">
+                            <span class="tpv-star"><i class="fa-solid fa-shield-halved" style="color: var(--color-neon);"></i></span>
+                            <span style="font-weight: 700;">CaixaBank 3D-Secure 2.0</span>
+                        </div>
+                        <div class="tpv-3ds-spinner-wrap">
+                            <div class="tpv-bank-spinner"></div>
+                        </div>
+                        <div class="tpv-3ds-status" id="tpv-3ds-status-text">
+                            Conectando con la pasarela CaixaBank...
+                        </div>
+                        <div class="tpv-3ds-substatus" id="tpv-3ds-substatus-text">
+                            Verificando autenticación segura con el banco emisor...
+                        </div>
+                        <div class="tpv-3ds-badges">
+                            <span><i class="fa-brands fa-cc-visa"></i> Verified by Visa</span>
+                            <span><i class="fa-brands fa-cc-mastercard"></i> ID Check</span>
+                        </div>
+                    </div>
+                </div>
             </div>
             <div class="tpv-footer">
-                <i class="fa-solid fa-shield-halved"></i> Conexión Encriptada de 256 bits por Redsys
+                <i class="fa-solid fa-shield-halved"></i> Conexión Encriptada de 256 bits por Redsys y CaixaBank S.A.
             </div>
         </div>
     </div>
@@ -2130,18 +2198,19 @@
         .custom-modal-card.tpv-card {
             background: #0f1c3f;
             color: #ffffff;
-            max-width: 440px;
+            max-width: 460px;
             padding: 0;
             overflow: hidden;
             border-radius: 16px;
             border: 1px solid rgba(255, 255, 255, 0.12);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.75);
+            font-family: 'Inter', sans-serif;
         }
 
         .tpv-header {
             background: linear-gradient(135deg, #0056b3, #007bff);
             color: #ffffff;
-            padding: 1.2rem 1.5rem;
+            padding: 1rem 1.4rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -2150,63 +2219,383 @@
         .tpv-logo-box {
             display: flex;
             align-items: center;
-            gap: 0.5rem;
+            gap: 0.6rem;
         }
 
         .tpv-star {
             color: #f7b32b;
-            font-size: 1.3rem;
+            font-size: 1.35rem;
         }
 
         .tpv-bank-name {
             font-weight: 800;
-            font-size: 1.2rem;
+            font-size: 1.25rem;
             letter-spacing: -0.03em;
             color: #ffffff;
+            display: block;
+            line-height: 1.1;
+        }
+
+        .tpv-gateway-sub {
+            font-size: 0.65rem;
+            color: rgba(255, 255, 255, 0.75);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 600;
         }
 
         .tpv-header-title {
-            font-size: 0.8rem;
-            background: rgba(255, 255, 255, 0.2);
-            padding: 0.25rem 0.6rem;
+            font-size: 0.75rem;
+            background: rgba(255, 255, 255, 0.18);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            padding: 0.25rem 0.65rem;
             border-radius: 6px;
-            font-weight: 600;
+            font-weight: 700;
             color: #ffffff;
+            display: flex;
+            align-items: center;
         }
 
         .tpv-body {
-            padding: 1.5rem;
+            padding: 1.3rem 1.4rem;
             background: #0f1c3f;
         }
 
         .tpv-amount-box {
-            background: rgba(7, 14, 36, 0.6);
+            background: rgba(7, 14, 36, 0.7);
             border-radius: 10px;
-            padding: 1.2rem;
-            margin-bottom: 1.2rem;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 1rem 1.2rem;
+            margin-bottom: 1.1rem;
+            border: 1px solid rgba(255, 255, 255, 0.08);
         }
 
         .tpv-amount-row {
             display: flex;
             justify-content: space-between;
-            font-size: 0.95rem;
+            font-size: 0.88rem;
             color: #cbd5e1;
-            margin-bottom: 0.4rem;
+            margin-bottom: 0.35rem;
         }
 
         .tpv-amount-row.total {
             font-weight: 700;
-            font-size: 1.2rem;
+            font-size: 1.15rem;
             color: #ffffff;
             margin-top: 0.4rem;
+            align-items: center;
+        }
+
+        /* Selector de Métodos de Pago */
+        .tpv-method-selector {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.6rem;
+            margin-bottom: 1rem;
+        }
+
+        .tpv-method-tab {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.7rem 0.5rem;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.88rem;
+            font-weight: 600;
+            color: #cbd5e1;
+            transition: all 0.2s ease;
+        }
+
+        .tpv-method-tab:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.25);
+        }
+
+        .tpv-method-tab.active {
+            background: rgba(130, 209, 5, 0.12);
+            border-color: var(--color-neon);
+            color: #ffffff;
+            box-shadow: 0 0 12px rgba(130, 209, 5, 0.15);
+        }
+
+        .tpv-method-tab.active i {
+            color: var(--color-neon);
+        }
+
+        /* Inputs y Campos */
+        .tpv-field-group {
+            margin-bottom: 0.85rem;
+            text-align: left;
+        }
+
+        .tpv-field-group label {
+            display: block;
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: #94a3b8;
+            margin-bottom: 0.35rem;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        .tpv-input-with-icon {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .tpv-input {
+            width: 100%;
+            background: rgba(3, 7, 18, 0.75);
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            border-radius: 8px;
+            padding: 0.68rem 0.85rem;
+            color: #ffffff;
+            font-size: 0.95rem;
+            font-family: 'Inter', monospace;
+            transition: all 0.2s ease;
+            box-sizing: border-box;
+        }
+
+        .tpv-input:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+            background: rgba(3, 7, 18, 0.95);
+        }
+
+        .tpv-input.input-error {
+            border-color: #ef4444 !important;
+            background: rgba(239, 68, 68, 0.08) !important;
+            box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.25) !important;
+        }
+
+        .tpv-card-icon {
+            position: absolute;
+            right: 12px;
+            font-size: 1.15rem;
+            color: #94a3b8;
+            pointer-events: none;
+        }
+
+        .tpv-prefix-flag {
+            position: absolute;
+            left: 12px;
+            font-size: 0.82rem;
+            font-weight: 700;
+            color: #cbd5e1;
+            pointer-events: none;
+        }
+
+        .tpv-grid-two {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+        }
+
+        /* Banner de error */
+        .tpv-alert-danger {
+            background: rgba(239, 68, 68, 0.12);
+            border: 1px solid rgba(239, 68, 68, 0.45);
+            border-radius: 8px;
+            padding: 0.65rem 0.85rem;
+            margin-bottom: 0.85rem;
+            font-size: 0.8rem;
+            line-height: 1.35;
+            color: #fca5a5;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.5rem;
+            text-align: left;
+            animation: tpvShake 0.4s ease;
+        }
+
+        @keyframes tpvShake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-4px); }
+            40%, 80% { transform: translateX(4px); }
+        }
+
+        /* Indicador sutil de entorno de pruebas */
+        .tpv-test-notice {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(15, 28, 63, 0.7);
+            border: 1px dashed rgba(130, 209, 5, 0.3);
+            border-radius: 8px;
+            padding: 0.45rem 0.75rem;
+            margin-top: 0.75rem;
+            margin-bottom: 0.95rem;
+            font-size: 0.75rem;
+            color: #94a3b8;
+        }
+
+        .tpv-test-notice-text {
+            display: flex;
+            align-items: center;
+            gap: 0.45rem;
+        }
+
+        .tpv-autofill-btn {
+            background: rgba(130, 209, 5, 0.14);
+            border: 1px solid var(--color-neon);
+            color: var(--color-neon);
+            padding: 3px 8px;
+            border-radius: 5px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .tpv-autofill-btn:hover {
+            background: var(--color-neon);
+            color: #000000;
+        }
+
+        .tpv-bizum-info-box {
+            display: flex;
+            gap: 0.6rem;
+            align-items: flex-start;
+            background: rgba(0, 210, 255, 0.07);
+            border: 1px solid rgba(0, 210, 255, 0.25);
+            border-radius: 8px;
+            padding: 0.75rem;
+            text-align: left;
+            margin-top: 0.4rem;
+        }
+
+        /* Botón de pago y cancelar */
+        .tpv-pay-btn {
+            background: #007bff;
+            border: 1px solid #0056b3;
+            color: #ffffff;
+            padding: 0.85rem;
+            font-weight: 700;
+            font-size: 0.98rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            width: 100%;
+            margin-top: 0.2rem;
+            box-shadow: 0 4px 14px rgba(0, 123, 255, 0.35);
+        }
+
+        .tpv-pay-btn:hover {
+            background: #0069d9;
+            transform: translateY(-1px);
+            box-shadow: 0 6px 18px rgba(0, 123, 255, 0.45);
+        }
+
+        .tpv-pay-btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .tpv-cancel-btn {
+            background: transparent;
+            border: none;
+            color: rgba(255, 255, 255, 0.6);
+            padding: 0.55rem;
+            font-size: 0.8rem;
+            cursor: pointer;
+            text-decoration: underline;
+            text-underline-offset: 3px;
+            width: 100%;
+            margin-top: 0.4rem;
+            transition: color 0.2s;
+        }
+
+        .tpv-cancel-btn:hover {
+            color: #ffffff;
+        }
+
+        /* 3D-Secure Overlay */
+        .tpv-3ds-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 28, 63, 0.97);
+            backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 20;
+            padding: 1.5rem;
+            box-sizing: border-box;
+            border-radius: 16px;
+        }
+
+        .tpv-3ds-card {
+            text-align: center;
+            max-width: 320px;
+            width: 100%;
+        }
+
+        .tpv-3ds-header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            font-size: 1.05rem;
+            color: #ffffff;
+            margin-bottom: 1rem;
+        }
+
+        .tpv-bank-spinner {
+            width: 48px;
+            height: 48px;
+            border: 3px solid rgba(0, 123, 255, 0.2);
+            border-top-color: #007bff;
+            border-radius: 50%;
+            animation: tpvSpin 0.85s linear infinite;
+            margin: 1rem auto 1.3rem auto;
+        }
+
+        @keyframes tpvSpin {
+            to { transform: rotate(360deg); }
+        }
+
+        .tpv-3ds-status {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 0.35rem;
+        }
+
+        .tpv-3ds-substatus {
+            font-size: 0.8rem;
+            color: #94a3b8;
+            margin-bottom: 1.4rem;
+            line-height: 1.4;
+        }
+
+        .tpv-3ds-badges {
+            display: flex;
+            justify-content: center;
+            gap: 1.1rem;
+            font-size: 0.82rem;
+            color: #cbd5e1;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding-top: 0.9rem;
         }
 
         .tpv-footer {
             background: #070e24;
             border-top: 1px solid rgba(255, 255, 255, 0.08);
-            padding: 0.9rem 1.5rem;
-            font-size: 0.78rem;
+            padding: 0.85rem 1.4rem;
+            font-size: 0.76rem;
             color: rgba(255, 255, 255, 0.6);
             text-align: center;
         }

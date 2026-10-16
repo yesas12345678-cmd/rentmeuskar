@@ -1831,12 +1831,27 @@ app.post('/api/redsys/create-payment', async (req, res) => {
   }
 });
 
-// 2. Simulación instantánea de pago aprobado para pruebas directas en la web (1-Clic)
-app.post('/api/redsys/simulate-payment', async (req, res) => {
+// 2. Procesamiento de pago seguro CaixaBank en entorno de demostración (solo tarjetas de prueba autorizadas)
+const handleTestPayment = async (req, res) => {
   try {
-    const { bookingData, payMethod } = req.body;
+    const { bookingData, payMethod, cardDetails } = req.body;
     if (!bookingData) {
-      return res.status(400).json({ error: 'Faltan datos de la reserva para simular el pago.' });
+      return res.status(400).json({ error: 'Faltan datos de la reserva para procesar el pago.' });
+    }
+
+    // Doble validación de seguridad: en entorno de pruebas ÚNICAMENTE se autorizan tarjetas de test de Redsys / CaixaBank
+    if (payMethod === 'card' && cardDetails && cardDetails.cardNumber) {
+      const cleanCard = String(cardDetails.cardNumber).replace(/\s+/g, '');
+      const isTestCard = /^(454881|519999)\d{10}$/.test(cleanCard) ||
+                         cleanCard === '4548810000000003' ||
+                         cleanCard === '4548810000000004' ||
+                         cleanCard === '5199999999999999' ||
+                         cleanCard === '4548810000000000';
+      if (!isTestCard) {
+        return res.status(400).json({
+          error: 'Operación denegada (Error SIS0054): En este entorno de demostración únicamente se autorizan tarjetas de prueba oficiales de CaixaBank (ej. 4548 8100 0000 0003). Por seguridad de su cuenta bancaria, las tarjetas reales no están permitidas.'
+        });
+      }
     }
 
     const rentAmount = parseFloat(bookingData.total_price) || 0;
@@ -1844,8 +1859,8 @@ app.post('/api/redsys/simulate-payment', async (req, res) => {
       return res.status(400).json({ error: 'El importe del alquiler no es válido.' });
     }
 
-    const numOrder = 'SIM-' + generateRedsysOrderId();
-    const methodName = payMethod === 'bizum' ? 'Bizum (Test)' : 'Tarjeta CaixaBank (Test)';
+    const numOrder = 'TPV-' + generateRedsysOrderId();
+    const methodName = payMethod === 'bizum' ? 'Bizum CaixaBank (Test)' : 'Tarjeta CaixaBank (Test)';
 
     // Validar colisión de fechas
     if ((bookingData.rental_mode || 'sin') === 'sin') {
@@ -1977,10 +1992,13 @@ app.post('/api/redsys/simulate-payment', async (req, res) => {
       booking: savedBooking
     });
   } catch (err) {
-    console.error('Error al simular pago Redsys:', err);
-    res.status(500).json({ error: 'Error en la simulación de pago: ' + err.message });
+    console.error('Error al procesar pago Redsys test:', err);
+    res.status(500).json({ error: 'Error en el procesamiento de pago: ' + err.message });
   }
-});
+};
+
+app.post('/api/redsys/simulate-payment', handleTestPayment);
+app.post('/api/redsys/process-test-payment', handleTestPayment);
 
 // 3. Confirmación de pago desde el cliente (llamado al cargar payment-success.html)
 app.post('/api/redsys/confirm-payment', async (req, res) => {
