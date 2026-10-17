@@ -616,8 +616,11 @@ const initApp = () => {
             if (response.ok) {
                 const rawVans = await response.json();
                 
-                if (Array.isArray(rawVans)) {
+                if (Array.isArray(rawVans) && rawVans.length > 0) {
                     databaseVans = rawVans;
+                } else {
+                    console.warn('Catálogo recibido vacío del servidor, aplicando furgonetas base.');
+                    useStaticVansFallback();
                 }
                 
                 populateVanDropdown(databaseVans);

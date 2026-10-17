@@ -15,6 +15,9 @@ window.togglePasswordVisibility = (inputId, iconElement) => {
 };
 
 const initAdmin = () => {
+    try {
+        localStorage.removeItem('deleted_van_ids');
+    } catch (e) {}
     
     // VARIABLES DE ESTADO
     let bookings = [];
@@ -1390,8 +1393,7 @@ const initAdmin = () => {
             if (!response.ok) throw new Error('Error al obtener datos de la flota');
             
             const rawFleet = await response.json();
-            const deletedIds = JSON.parse(localStorage.getItem('deleted_van_ids') || '[]');
-            fleet = rawFleet.filter(v => !deletedIds.includes(String(v.id)) && !deletedIds.includes(Number(v.id)) && !deletedIds.includes(v.van_type));
+            fleet = Array.isArray(rawFleet) ? rawFleet : [];
             
             // Actualizar selector de filtrado de reservas dinámicamente
             updateFilterVanSelect();
@@ -1562,11 +1564,6 @@ const initAdmin = () => {
                     fleet.push(vanObj);
                     fleet.sort((a, b) => a.id - b.id);
                 }
-
-                // Quitar de deleted_van_ids en localStorage
-                const currentDeletedIds = JSON.parse(localStorage.getItem('deleted_van_ids') || '[]');
-                const updatedDeletedIds = currentDeletedIds.filter(dId => dId !== String(id) && dId !== vanObj.van_type);
-                localStorage.setItem('deleted_van_ids', JSON.stringify(updatedDeletedIds));
 
                 // Recrear o actualizar en el servidor backend
                 try {
@@ -1994,7 +1991,15 @@ const initAdmin = () => {
 
         let typeVal = vanFormType.value.trim();
         if (!id) {
-            typeVal = slugify(vanFormName.value.trim()) + '-' + slugify(vanFormPlate.value.trim());
+            const slugName = slugify(vanFormName.value.trim()).substring(0, 25);
+            const slugPlate = slugify(vanFormPlate.value.trim()).substring(0, 15);
+            typeVal = (slugName || 'van') + '-' + (slugPlate || Date.now().toString(36));
+            if (typeVal.length > 45) {
+                typeVal = typeVal.substring(0, 45);
+            }
+            if (fleet.some(v => v.van_type === typeVal)) {
+                typeVal += '-' + Math.floor(Math.random() * 1000);
+            }
         }
         
         const formData = new FormData();

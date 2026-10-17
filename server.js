@@ -79,7 +79,62 @@ let fallbackSettings = {
   fianza_amount: '500,00',
   show_reviews_count: 'true'
 };
-let fallbackVans = [];
+let fallbackVans = [
+  {
+    id: 1,
+    van_type: 'medium',
+    name: 'Ford Transit Custom L2H2 (8m³)',
+    plate: '3681 MCC',
+    m3: '8m³',
+    price_sin: 79.00,
+    min_price_con: 50.00,
+    km_price_con: 1.00,
+    status: 'active',
+    extra_gps_price: 5.00,
+    extra_driver_price: 10.00,
+    extra_moving_price: 10.00,
+    images: ['assets/ford_transit_custom.png'],
+    custom_extras: [
+      { name: 'GPS Navegador', price: 5.00, type: 'daily' },
+      { name: 'Segundo Conductor', price: 8.00, type: 'daily' },
+      { name: 'Kit Mudanza', price: 10.00, type: 'once' }
+    ],
+    max_occupants: 3,
+    eco_label: 'C',
+    daily_km_limit: 350,
+    max_mass: 2800,
+    fuel_type: 'GASOIL',
+    waiting_hour_price: 30.00,
+    custom_features: []
+  },
+  {
+    id: 2,
+    van_type: 'large',
+    name: 'MAN TGE L4H3 Gran Volumen (14m³)',
+    plate: '3758 MDW',
+    m3: '14m³',
+    price_sin: 107.44,
+    min_price_con: 60.00,
+    km_price_con: 1.40,
+    status: 'active',
+    extra_gps_price: 5.00,
+    extra_driver_price: 10.00,
+    extra_moving_price: 10.00,
+    images: ['assets/man_tge.png'],
+    custom_extras: [
+      { name: 'GPS Navegador', price: 5.00, type: 'daily' },
+      { name: 'Segundo Conductor', price: 8.00, type: 'daily' },
+      { name: 'Kit Mudanza', price: 10.00, type: 'once' }
+    ],
+    max_occupants: 3,
+    eco_label: 'C',
+    daily_km_limit: 350,
+    max_mass: 2800,
+    fuel_type: 'GASOIL',
+    waiting_hour_price: 30.00,
+    custom_features: []
+  }
+];
 let fallbackReviews = [
   { id: 1, booking_code: 'RMU-MOCK1', client_name: 'Francisco M.', rating: 5, comment: 'Alquilé la furgoneta Ford Transit Custom para una mudanza desde Granada a Huéscar. El trato fue inmejorable y el vehículo impecable.', role_or_city: 'Particular (Huéscar)', van_name: 'Ford Transit Custom L2H2 (8m³)' },
   { id: 2, booking_code: 'RMU-MOCK2', client_name: 'María José S.', rating: 5, comment: 'Necesitábamos una furgoneta MAN TGE Gran Volumen de 14m³ para trasladar mobiliario. El vehículo comodísimo y excelente atención.', role_or_city: 'Particular (Puebla Don Fadrique)', van_name: 'MAN TGE L4H3 Gran Volumen (14m³)' },
@@ -125,7 +180,9 @@ function loadAdminStoreFromFile() {
       if (Array.isArray(store.fallbackBookings)) fallbackBookings = store.fallbackBookings;
       if (Array.isArray(store.fallbackBlockages)) fallbackBlockages = store.fallbackBlockages;
       if (store.fallbackSettings) fallbackSettings = { ...fallbackSettings, ...store.fallbackSettings };
-      if (Array.isArray(store.fallbackVans)) fallbackVans = store.fallbackVans;
+      if (Array.isArray(store.fallbackVans) && store.fallbackVans.length > 0) {
+        fallbackVans = store.fallbackVans;
+      }
       if (Array.isArray(store.fallbackReviews)) fallbackReviews = store.fallbackReviews;
       if (Array.isArray(store.manualReviewCodes)) manualReviewCodes = store.manualReviewCodes;
       if (Array.isArray(store.fallbackFaqs)) fallbackFaqs = store.fallbackFaqs;
@@ -420,11 +477,36 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(uploadsDir, { maxAge: '7d' }));
 app.use('/assets', express.static(path.join(__dirname, 'assets'), { maxAge: '7d' }));
 
-// Conexión a la base de datos PostgreSQL
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+// Conexión a la base de datos PostgreSQL con redundancia inteligente y failover automático
+const defaultDbUrl = 'postgresql://postgres:t5egddrcjwq79p5u@187.127.233.89:5440/postgres';
+const rawConfiguredDbUrl = process.env.DATABASE_URL || defaultDbUrl;
+
+// Lista de URLs candidatas (vital dentro de Docker/Dokploy donde el hairpin NAT a la IP pública se bloquea)
+const candidateDbUrls = [
+  rawConfiguredDbUrl,
+  rawConfiguredDbUrl.replace(/@187\.127\.233\.89:5440/, '@172.17.0.1:5440'),
+  rawConfiguredDbUrl.replace(/@187\.127\.233\.89:5440/, '@host.docker.internal:5440'),
+  rawConfiguredDbUrl.replace(/@187\.127\.233\.89:5440/, '@dokploy-postgres:5432'),
+  defaultDbUrl
+].filter((url, index, self) => url && self.indexOf(url) === index);
+
+let currentCandidateIndex = 0;
+let isDbConnected = false;
+let isInitializingDb = false;
+
+let activePool = new Pool({
+  connectionString: candidateDbUrls[0],
+  connectionTimeoutMillis: 5000,
   ssl: false
 });
+
+// Proxy adapter para que todas las llamadas existentes a pool.query/pool.connect usen siempre la conexión activa
+const pool = {
+  query: (...args) => activePool.query(...args),
+  connect: (...args) => activePool.connect(...args),
+  on: (...args) => activePool.on(...args),
+  end: (...args) => activePool.end(...args)
+};
 
 // Inicialización de la base de datos (crear tablas y actualizar esquema si no existe)
 const initDb = async () => {
@@ -546,7 +628,8 @@ const initDb = async () => {
     "ALTER TABLE vans ADD COLUMN IF NOT EXISTS max_mass INTEGER DEFAULT 2800;",
     "ALTER TABLE vans ADD COLUMN IF NOT EXISTS fuel_type VARCHAR(100) DEFAULT 'GASOIL';",
     "ALTER TABLE vans ADD COLUMN IF NOT EXISTS waiting_hour_price NUMERIC(10, 2) DEFAULT 30.00;",
-    "ALTER TABLE vans ADD COLUMN IF NOT EXISTS custom_features JSONB DEFAULT '[]'::jsonb;"
+    "ALTER TABLE vans ADD COLUMN IF NOT EXISTS custom_features JSONB DEFAULT '[]'::jsonb;",
+    "ALTER TABLE vans ALTER COLUMN van_type TYPE VARCHAR(100);"
   ];
 
   const createSettingsTableQuery = `
@@ -723,14 +806,41 @@ const initDb = async () => {
     console.log('Restricción de comentarios de "reviews" verificada/actualizada.');
     
     await syncDatabaseWithDisk(client);
+    isDbConnected = true;
+    console.log(`[DB CONNECTED] PostgreSQL inicializado y sincronizado con éxito (${candidateDbUrls[currentCandidateIndex]}).`);
 
     client.release();
   } catch (err) {
-    console.error('Error inicializando la base de datos:', err);
+    isDbConnected = false;
+    console.warn(`[DB WARN] Falló conexión con candidato ${currentCandidateIndex + 1}/${candidateDbUrls.length} (${candidateDbUrls[currentCandidateIndex]}): ${err.message}`);
+    
+    // Probar siguiente candidato si hay más disponibles
+    if (candidateDbUrls.length > 1) {
+      currentCandidateIndex = (currentCandidateIndex + 1) % candidateDbUrls.length;
+      try {
+        await activePool.end().catch(() => {});
+      } catch (e) {}
+      activePool = new Pool({
+        connectionString: candidateDbUrls[currentCandidateIndex],
+        connectionTimeoutMillis: 5000,
+        ssl: false
+      });
+      console.log(`[DB FAILOVER] Conmutando al siguiente candidato de conexión: ${candidateDbUrls[currentCandidateIndex]}`);
+    }
+  } finally {
+    isInitializingDb = false;
   }
 };
 
 initDb();
+
+// Intentar reconectar y sincronizar periódicamente si la base de datos está offline
+setInterval(() => {
+  if (!isDbConnected) {
+    console.log('[DB RETRY] Intentando reconectar a la base de datos PostgreSQL...');
+    initDb();
+  }
+}, 15000);
 
 // --- RUTAS DE LA API ---
 

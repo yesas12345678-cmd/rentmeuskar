@@ -1,5 +1,7 @@
 rentmeuskar.zip
 .env
 node_modules
-data/
+data/*.flag
+data/*.tmp
 uploads/
+
