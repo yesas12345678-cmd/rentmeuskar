@@ -642,8 +642,10 @@
                 return;
             }
 
-            // Fetch details from backend
-            fetch(`/api/bookings/${bookingId}`)
+            // Fetch details from backend con token de autenticación
+            const token = localStorage.getItem('auth_token') || localStorage.getItem('admin_token');
+            const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+            fetch(`/api/bookings/${bookingId}`, { headers })
                 .then(res => {
                     if (!res.ok) throw new Error('Error al obtener datos');
                     return res.json();

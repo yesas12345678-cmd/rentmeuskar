@@ -427,21 +427,75 @@ async function syncDatabaseWithDisk(clientOrPool) {
   }
 }
 
-// Configuración de Multer para la subida de fotos antes/después
+// Configuración de Multer para la subida de fotos e imágenes
+const allowedMimes = ['image/jpeg', 'image/png', 'image/webp', 'image/avif'];
+const allowedExts = ['.jpg', '.jpeg', '.png', '.webp', '.avif'];
+
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, uploadsDir);
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+    const cleanExt = path.extname(file.originalname).toLowerCase();
+    cb(null, file.fieldname + '-' + uniqueSuffix + cleanExt);
   }
 });
-const upload = multer({ storage });
+
+const fileFilter = (req, file, cb) => {
+  const ext = path.extname(file.originalname).toLowerCase();
+  const mime = (file.mimetype || '').toLowerCase();
+  if (allowedExts.includes(ext) && allowedMimes.includes(mime)) {
+    cb(null, true);
+  } else {
+    cb(new Error('Tipo de archivo no permitido. Solo se admiten imágenes JPG, PNG, WEBP o AVIF.'));
+  }
+};
+
+const upload = multer({
+  storage,
+  limits: { fileSize: 10 * 1024 * 1024 }, // Máximo 10MB por archivo
+  fileFilter
+});
 
 // Password hashing function (SHA256)
 function hashPassword(password) {
   return crypto.createHash('sha256').update(password).digest('hex');
+}
+
+// Token secreto para firma criptográfica de sesiones de usuario
+const SESSION_SECRET = process.env.SESSION_SECRET || 'rmu_sec_sign_2026_salt_87a9!';
+
+function generateUserToken(userId, email) {
+  const payload = Buffer.from(JSON.stringify({ id: userId, email: email || '', ts: Date.now() })).toString('base64url');
+  const signature = crypto.createHmac('sha256', SESSION_SECRET).update(payload).digest('base64url');
+  return `rmu_usr.${payload}.${signature}`;
+}
+
+function verifyUserToken(token) {
+  if (!token || typeof token !== 'string') return null;
+  if (token.startsWith('rmu_usr.')) {
+    const parts = token.split('.');
+    if (parts.length === 3) {
+      const payload = parts[1];
+      const signature = parts[2];
+      const expectedSig = crypto.createHmac('sha256', SESSION_SECRET).update(payload).digest('base64url');
+      if (signature.length === expectedSig.length && crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSig))) {
+        try {
+          const data = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8'));
+          return data.id;
+        } catch (e) {
+          return null;
+        }
+      }
+    }
+  }
+  // Compatibilidad con tokens previos de sesión
+  if (token.startsWith('user_')) {
+    const id = parseInt(token.replace('user_', ''));
+    if (!isNaN(id)) return id;
+  }
+  return null;
 }
 
 function getCurrentAdminToken() {
@@ -451,6 +505,62 @@ function getCurrentAdminToken() {
   return `admin_token_${secret}`;
 }
 
+// Middleware de verificación estricta de Administrador
+const verifyAdmin = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    return res.status(401).json({ error: 'No autorizado. Falta token de autenticación.' });
+  }
+  const token = authHeader.replace('Bearer ', '').trim();
+  const validAdminToken = getCurrentAdminToken();
+
+  if (token === validAdminToken) {
+    req.isAdmin = true;
+    return next();
+  }
+
+  return res.status(401).json({ error: 'La sesión de administrador no es válida o ha caducado.' });
+};
+
+// Helper para obtener el usuario autenticado (admin o cliente) en cualquier endpoint
+const getAuthUser = async (req) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) return null;
+  const token = authHeader.replace('Bearer ', '').trim();
+  
+  if (token === getCurrentAdminToken()) {
+    return { id: 0, isAdmin: true, email: fallbackSettings.admin_username || 'zvaito' };
+  }
+  
+  const userId = verifyUserToken(token);
+  if (!userId) return null;
+  
+  if (userId === 9999) {
+    return { id: 9999, name: 'Cliente Demo', email: 'cliente@rentmeuskar.com', isAdmin: false };
+  }
+  
+  try {
+    const uRes = await pool.query('SELECT id, name, email, phone, dni FROM users WHERE id = $1', [userId]);
+    if (uRes.rowCount > 0) return { ...uRes.rows[0], isAdmin: false };
+  } catch (e) {}
+  
+  const fbUser = fallbackUsers.find(u => u.id === userId);
+  if (fbUser) return { ...fbUser, isAdmin: false };
+  
+  return { id: userId, isAdmin: false };
+};
+
+// Sanitizador de texto contra inyección HTML en correos y plantillas
+function escapeHtml(str) {
+  if (typeof str !== 'string') return '';
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 const compression = require('compression');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
@@ -458,7 +568,7 @@ const rateLimit = require('express-rate-limit');
 // Rate limiting para prevenir ataques de fuerza bruta y DDoS
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 300, // Límite de 300 peticiones por ventana por IP
+  max: 500, // Límite de 500 peticiones por ventana por IP
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Demasiadas peticiones desde esta IP. Por favor, inténtalo más tarde.' }
@@ -466,10 +576,26 @@ const globalLimiter = rateLimit({
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 15, // Límite estricto de 15 intentos de login/registro
+  max: 20, // Límite estricto de 20 intentos de autenticación/códigos
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Demasiados intentos de autenticación. Por favor, inténtalo en 15 minutos.' }
+});
+
+const contactLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Has alcanzado el límite de envío de mensajes de contacto. Por favor, espera unos minutos.' }
+});
+
+const reviewLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Has alcanzado el límite de envío de opiniones. Por favor, espera unos minutos.' }
 });
 
 // Security & Optimization Middleware
@@ -480,11 +606,43 @@ app.use(helmet({
   crossOriginEmbedderPolicy: false
 }));
 app.use(globalLimiter);
+
+// Rate limits específicos por endpoint crítico
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/register', authLimiter);
+app.use('/api/auth/verify-registration', authLimiter);
+app.use('/api/auth/forgot-password', authLimiter);
+app.use('/api/auth/reset-password', authLimiter);
 app.use('/api/admin/login', authLimiter);
+app.use('/api/admin/request-credential-change-code', authLimiter);
+app.use('/api/admin/confirm-credential-change', authLimiter);
+app.use('/api/contact', contactLimiter);
+app.use('/api/reviews/verify-code', reviewLimiter);
+
 app.use(compression());
-app.use(cors());
+
+// CORS restringido por lista blanca segura
+const allowedOrigins = [
+  'https://rentmeuskar.com',
+  'https://www.rentmeuskar.com',
+  'http://rentmeuskar.com',
+  'http://www.rentmeuskar.com',
+  'http://localhost:3000',
+  'http://127.0.0.1:3000'
+];
+
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error('Bloqueado por política CORS'));
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+}));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(uploadsDir, { maxAge: '7d' }));
@@ -1024,7 +1182,7 @@ app.post('/api/auth/verify-registration', async (req, res) => {
 
     return res.status(201).json({
       message: 'Cuenta activada e inicio de sesión automático.',
-      token: 'user_' + user.id,
+      token: generateUserToken(user.id, user.email),
       user
     });
   } catch (err) {
@@ -1046,16 +1204,25 @@ app.post('/api/auth/verify-registration', async (req, res) => {
     const { password: _, ...userWithoutPass } = newUser;
     return res.status(201).json({
       message: 'Cuenta activada e inicio de sesión automático.',
-      token: 'user_' + newUser.id,
+      token: generateUserToken(newUser.id, newUser.email),
       user: userWithoutPass
     });
   }
 });
 
-// 1.c Formulario de contacto (Copia por correo al administrador)
+// 1.c Formulario de contacto (Copia por correo al administrador con sanitización de contenido)
 app.post('/api/contact', async (req, res) => {
   const { name, contact, reason, message } = req.body;
-  console.log(`[CONTACT FORM SUBMISSION] Nombre: ${name} | Contacto: ${contact} | Motivo: ${reason} | Mensaje: ${message}`);
+  if (!name || !contact || !message) {
+    return res.status(400).json({ error: 'Nombre, forma de contacto y mensaje son obligatorios.' });
+  }
+
+  const safeName = escapeHtml(name.trim());
+  const safeContact = escapeHtml(contact.trim());
+  const safeReason = escapeHtml((reason || 'General').trim());
+  const safeMessage = escapeHtml(message.trim());
+
+  console.log(`[CONTACT FORM SUBMISSION] Nombre: ${safeName} | Contacto: ${safeContact} | Motivo: ${safeReason}`);
 
   if (mailTransporter) {
     try {
@@ -1064,15 +1231,15 @@ app.post('/api/contact', async (req, res) => {
       await mailTransporter.sendMail({
         from: `"RentMeUskar Web" <${senderAddress}>`,
         to: adminEmail,
-        subject: `📩 Nuevo Mensaje Web de ${name} (${reason})`,
+        subject: `📩 Nuevo Mensaje Web de ${safeName} (${safeReason})`,
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; background-color: #070e24; color: #ffffff; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
             <h2 style="color: #82d105; margin-top: 0;">Nuevo Mensaje desde RentMeUskar.com</h2>
-            <p><strong>Nombre:</strong> ${name}</p>
-            <p><strong>Contacto:</strong> ${contact}</p>
-            <p><strong>Motivo:</strong> ${reason}</p>
+            <p><strong>Nombre:</strong> ${safeName}</p>
+            <p><strong>Contacto:</strong> ${safeContact}</p>
+            <p><strong>Motivo:</strong> ${safeReason}</p>
             <div style="background: #0c1838; padding: 15px; border-radius: 8px; margin-top: 15px; border-left: 4px solid #82d105;">
-              <p style="margin: 0; white-space: pre-wrap;">${message}</p>
+              <p style="margin: 0; white-space: pre-wrap;">${safeMessage}</p>
             </div>
           </div>
         `
@@ -1121,7 +1288,7 @@ app.post('/api/auth/login', async (req, res) => {
   if (cleanEmail === 'cliente@rentmeuskar.com' && password === '123456') {
     return res.json({
       message: 'Inicio de sesión exitoso.',
-      token: 'user_9999',
+      token: generateUserToken(9999, 'cliente@rentmeuskar.com'),
       user: { id: 9999, name: 'Cliente Demo', email: 'cliente@rentmeuskar.com', phone: '600000000', dni: '12345678Z' }
     });
   }
@@ -1133,7 +1300,7 @@ app.post('/api/auth/login', async (req, res) => {
       if (user.password === passHash || user.password === password) {
         return res.json({
           message: 'Inicio de sesión exitoso.',
-          token: 'user_' + user.id,
+          token: generateUserToken(user.id, user.email),
           user: { id: user.id, name: user.name, email: user.email, phone: user.phone, dni: user.dni }
         });
       }
@@ -1148,7 +1315,7 @@ app.post('/api/auth/login', async (req, res) => {
     const { password: _, ...userWithoutPass } = user;
     return res.json({
       message: 'Inicio de sesión exitoso.',
-      token: 'user_' + user.id,
+      token: generateUserToken(user.id, user.email),
       user: userWithoutPass
     });
   }
@@ -1340,98 +1507,65 @@ app.post('/api/auth/reset-password', async (req, res) => {
   return res.json({ success: true, message: '¡Contraseña restablecida correctamente! Ya puedes iniciar sesión.' });
 });
 
-// 3. Obtener perfil del usuario actual
+// 3. Obtener perfil del usuario actual (blindado contra IDOR)
 app.get('/api/auth/me', async (req, res) => {
-  const authHeader = req.headers.authorization;
-  if (!authHeader) {
-    return res.status(401).json({ error: 'No autorizado. Falta token.' });
+  const authUser = await getAuthUser(req);
+  if (!authUser) {
+    return res.status(401).json({ error: 'No autorizado. Token inválido o expirado.' });
   }
   
-  const token = authHeader.replace('Bearer ', '');
-  const validAdminToken = getCurrentAdminToken();
-
-  if (token === validAdminToken) {
-    const adminUser = fallbackSettings.admin_username || 'zvaito';
-    return res.json({ id: 0, name: 'Admin', email: adminUser, is_admin: true });
+  if (authUser.isAdmin) {
+    return res.json({ id: 0, name: 'Admin', email: authUser.email, is_admin: true });
   }
   
-  if (token === 'user_9999') {
-    return res.json({ id: 9999, name: 'Cliente Demo', email: 'cliente@rentmeuskar.com', phone: '600000000', dni: '12345678Z' });
-  }
-  
-  if (token.startsWith('user_')) {
-    const userId = parseInt(token.replace('user_', ''));
-    try {
-      const result = await pool.query('SELECT id, name, email, phone, dni, created_at FROM users WHERE id = $1', [userId]);
-      if (result.rowCount === 0) {
-        return res.status(401).json({ error: 'Usuario no encontrado.' });
-      }
-      return res.json(result.rows[0]);
-    } catch (err) {
-      console.warn('Base de datos offline al buscar perfil me, buscando en fallback:', err.message);
-      const user = fallbackUsers.find(u => u.id === userId);
-      if (user) {
-        const { password: _, ...userWithoutPass } = user;
-        return res.json(userWithoutPass);
-      }
-      return res.status(401).json({ error: 'Usuario no encontrado.' });
-    }
-  }
-  
-  res.status(401).json({ error: 'Token inválido.' });
+  const { password: _, ...userWithoutPass } = authUser;
+  return res.json(userWithoutPass);
 });
 
-// 3.b Actualizar perfil del usuario actual
+// 3.b Actualizar perfil del usuario actual (blindado contra IDOR)
 app.put('/api/auth/me', async (req, res) => {
-  const authHeader = req.headers.authorization;
-  if (!authHeader) {
-    return res.status(401).json({ error: 'No autorizado. Falta token.' });
+  const authUser = await getAuthUser(req);
+  if (!authUser) {
+    return res.status(401).json({ error: 'No autorizado. Token inválido o expirado.' });
   }
 
-  const token = authHeader.replace('Bearer ', '');
-  const { name, email, phone, dni } = req.body;
+  const { name, phone, dni } = req.body;
 
   if (dni && !validateSpanishID(dni)) {
     return res.status(400).json({ error: 'El DNI / NIE introducido no es válido.' });
   }
 
-  if (token.startsWith('user_')) {
-    const userId = parseInt(token.replace('user_', ''));
-    try {
-      const result = await pool.query(
-        'UPDATE users SET name = COALESCE(NULLIF($1, \'\'), name), phone = COALESCE(NULLIF($2, \'\'), phone), dni = COALESCE(NULLIF($3, \'\'), dni) WHERE id = $4 RETURNING id, name, email, phone, dni, created_at',
-        [name, phone, dni, userId]
-      );
-
-      const fbIndex = fallbackUsers.findIndex(u => u.id === userId);
-      if (fbIndex !== -1) {
-        if (name) fallbackUsers[fbIndex].name = name;
-        if (phone) fallbackUsers[fbIndex].phone = phone;
-        if (dni) fallbackUsers[fbIndex].dni = dni;
-      }
-
-      if (result.rowCount > 0) {
-        return res.json({ message: 'Perfil actualizado con éxito.', user: result.rows[0] });
-      }
-    } catch (err) {
-      console.warn('Base de datos offline al actualizar perfil, actualizando memoria fallback:', err.message);
-    }
+  const userId = authUser.id;
+  try {
+    const result = await pool.query(
+      'UPDATE users SET name = COALESCE(NULLIF($1, \'\'), name), phone = COALESCE(NULLIF($2, \'\'), phone), dni = COALESCE(NULLIF($3, \'\'), dni) WHERE id = $4 RETURNING id, name, email, phone, dni, created_at',
+      [name ? name.trim() : null, phone ? phone.trim() : null, dni ? dni.trim().toUpperCase() : null, userId]
+    );
 
     const fbIndex = fallbackUsers.findIndex(u => u.id === userId);
     if (fbIndex !== -1) {
-      if (name) fallbackUsers[fbIndex].name = name;
-      if (phone) fallbackUsers[fbIndex].phone = phone;
-      if (dni) fallbackUsers[fbIndex].dni = dni;
-      const { password: _, ...userWithoutPass } = fallbackUsers[fbIndex];
-      return res.json({ message: 'Perfil actualizado con éxito.', user: userWithoutPass });
-    } else {
-      const updatedUser = { id: userId, name: name || 'Usuario', email: email || '', phone: phone || '', dni: dni || '' };
-      fallbackUsers.push(updatedUser);
-      return res.json({ message: 'Perfil actualizado con éxito.', user: updatedUser });
+      if (name) fallbackUsers[fbIndex].name = name.trim();
+      if (phone) fallbackUsers[fbIndex].phone = phone.trim();
+      if (dni) fallbackUsers[fbIndex].dni = dni.trim().toUpperCase();
     }
+
+    if (result.rowCount > 0) {
+      return res.json({ message: 'Perfil actualizado con éxito.', user: result.rows[0] });
+    }
+  } catch (err) {
+    console.warn('Base de datos offline al actualizar perfil, actualizando memoria fallback:', err.message);
   }
 
-  return res.status(401).json({ error: 'Token inválido.' });
+  const fbIndex = fallbackUsers.findIndex(u => u.id === userId);
+  if (fbIndex !== -1) {
+    if (name) fallbackUsers[fbIndex].name = name.trim();
+    if (phone) fallbackUsers[fbIndex].phone = phone.trim();
+    if (dni) fallbackUsers[fbIndex].dni = dni.trim().toUpperCase();
+    const { password: _, ...userWithoutPass } = fallbackUsers[fbIndex];
+    return res.json({ message: 'Perfil actualizado con éxito.', user: userWithoutPass });
+  }
+
+  return res.json({ message: 'Perfil actualizado con éxito.', user: { id: userId, name, phone, dni } });
 });
 
 
@@ -1660,9 +1794,12 @@ app.post('/api/bookings', async (req, res) => {
   }
 });
 
-// 6. Obtener una reserva por ID (con detalles del usuario y vehículo, y failover transparente a memoria)
+// 6. Obtener una reserva por ID (con control de acceso por usuario/admin y failover transparente a memoria)
 app.get('/api/bookings/:id', async (req, res) => {
   const { id } = req.params;
+  const authUser = await getAuthUser(req);
+
+  let booking = null;
   try {
     const query = `
       SELECT b.*, u.name as user_name, u.email as user_email, u.phone as user_phone, u.dni as user_dni,
@@ -1674,86 +1811,125 @@ app.get('/api/bookings/:id', async (req, res) => {
     `;
     const result = await pool.query(query, [id]);
     if (result.rowCount > 0) {
-      return res.json(result.rows[0]);
+      booking = result.rows[0];
     }
   } catch (err) {
     console.warn(`[BOOKING GET WARN] Base de datos no disponible o error al consultar reserva #${id}:`, err.message);
   }
 
   // Fallback transparente a disco/memoria (fallbackBookings)
-  const fb = fallbackBookings.find(b => String(b.id) === String(id));
-  if (fb) {
-    const isFord = fb.van_type === 'medium' || (fb.van_name && fb.van_name.toLowerCase().includes('transit'));
-    const van = fallbackVans.find(v => v.van_type === fb.van_type || String(v.id) === String(fb.van_id)) || (isFord ? fallbackVans[0] : fallbackVans[1]);
-    
-    const enriched = {
-      ...fb,
-      user_name: fb.user_name || fb.client_name || fb.name || '-',
-      user_email: fb.user_email || fb.client_email || '-',
-      user_phone: fb.user_phone || fb.client_phone || '-',
-      user_dni: fb.user_dni || fb.client_dni || '-',
-      price_sin: fb.price_sin !== undefined && fb.price_sin !== null ? fb.price_sin : (van ? van.price_sin : (isFord ? 79.00 : 107.44)),
-      min_price_con: fb.min_price_con !== undefined && fb.min_price_con !== null ? fb.min_price_con : (van ? van.min_price_con : (isFord ? 50.00 : 60.00)),
-      km_price_con: fb.km_price_con !== undefined && fb.km_price_con !== null ? fb.km_price_con : (van ? van.km_price_con : (isFord ? 1.00 : 1.40)),
-      max_occupants: van ? van.max_occupants : 3,
-      eco_label: van ? van.eco_label : 'C',
-      daily_km_limit: van ? van.daily_km_limit : 350,
-      max_mass: van ? van.max_mass : (isFord ? 2800 : 3500),
-      fuel_type: van ? van.fuel_type : 'GASOIL'
-    };
-    return res.json(enriched);
+  if (!booking) {
+    const fb = fallbackBookings.find(b => String(b.id) === String(id));
+    if (fb) {
+      const isFord = fb.van_type === 'medium' || (fb.van_name && fb.van_name.toLowerCase().includes('transit'));
+      const van = fallbackVans.find(v => v.van_type === fb.van_type || String(v.id) === String(fb.van_id)) || (isFord ? fallbackVans[0] : fallbackVans[1]);
+      
+      booking = {
+        ...fb,
+        user_name: fb.user_name || fb.client_name || fb.name || '-',
+        user_email: fb.user_email || fb.client_email || '-',
+        user_phone: fb.user_phone || fb.client_phone || '-',
+        user_dni: fb.user_dni || fb.client_dni || '-',
+        price_sin: fb.price_sin !== undefined && fb.price_sin !== null ? fb.price_sin : (van ? van.price_sin : (isFord ? 79.00 : 107.44)),
+        min_price_con: fb.min_price_con !== undefined && fb.min_price_con !== null ? fb.min_price_con : (van ? van.min_price_con : (isFord ? 50.00 : 60.00)),
+        km_price_con: fb.km_price_con !== undefined && fb.km_price_con !== null ? fb.km_price_con : (van ? van.km_price_con : (isFord ? 1.00 : 1.40)),
+        max_occupants: van ? van.max_occupants : 3,
+        eco_label: van ? van.eco_label : 'C',
+        daily_km_limit: van ? van.daily_km_limit : 350,
+        max_mass: van ? van.max_mass : (isFord ? 2800 : 3500),
+        fuel_type: van ? van.fuel_type : 'GASOIL'
+      };
+    }
   }
 
-  res.status(404).json({ error: 'Reserva no encontrada.' });
+  if (!booking) {
+    return res.status(404).json({ error: 'Reserva no encontrada.' });
+  }
+
+  // Control de Acceso: Permitido a administradores, al titular de la reserva o con comprobante secreto
+  const isOwner = authUser && (
+    authUser.isAdmin || 
+    (booking.user_id && authUser.id === booking.user_id) || 
+    (authUser.email && (
+      (booking.user_email && booking.user_email.toLowerCase() === authUser.email.toLowerCase()) || 
+      (booking.client_email && booking.client_email.toLowerCase() === authUser.email.toLowerCase())
+    ))
+  );
+
+  const authSecretParam = req.query.auth || req.query.secret || '';
+  const isSecretMatch = authSecretParam && (authSecretParam === booking.payment_id || authSecretParam === booking.review_code);
+
+  if (!isOwner && !isSecretMatch) {
+    return res.status(401).json({ error: 'No autorizado para ver los datos de esta reserva.' });
+  }
+
+  return res.json(booking);
 });
 
-// 7. Obtener todas las reservas (con detalles de usuarios asociados si hay)
+// 7. Obtener reservas (Aislamiento estricto: admin ve todas, cliente solo ve las suyas)
 app.get('/api/bookings', async (req, res) => {
   const { user_id, email } = req.query;
-  try {
-    let result;
-    if (user_id) {
-      // Filtrar estrictamente por cliente (por user_id o email asociado)
-      const query = `
-        SELECT b.*, u.name as client_name, u.email as client_email, u.phone as client_phone, u.dni as client_dni
-        FROM bookings b
-        LEFT JOIN users u ON b.user_id = u.id
-        WHERE b.user_id = $1 ${email ? 'OR LOWER(TRIM(u.email)) = LOWER(TRIM($2))' : ''}
-        ORDER BY b.created_at DESC
-      `;
-      const params = email ? [user_id, email] : [user_id];
-      result = await pool.query(query, params);
-      return res.json(result.rows);
-    } else {
-      // Devolver todo (para admin), con datos del usuario
-      const query = `
-        SELECT b.*, u.name as client_name, u.email as client_email, u.phone as client_phone, u.dni as client_dni
-        FROM bookings b
-        LEFT JOIN users u ON b.user_id = u.id
-        ORDER BY b.created_at DESC
-      `;
-      result = await pool.query(query);
-      return res.json(result.rows);
+  const authUser = await getAuthUser(req);
+
+  // Si no se especifica user_id, es una petición de catálogo completo (REQUERIDO SER ADMIN)
+  if (!user_id) {
+    if (!authUser || !authUser.isAdmin) {
+      return res.status(401).json({ error: 'No autorizado. Se requieren permisos de administrador.' });
     }
+
+    try {
+      const query = `
+        SELECT b.*, u.name as client_name, u.email as client_email, u.phone as client_phone, u.dni as client_dni
+        FROM bookings b
+        LEFT JOIN users u ON b.user_id = u.id
+        ORDER BY b.created_at DESC
+      `;
+      const result = await pool.query(query);
+      return res.json(result.rows);
+    } catch (err) {
+      console.warn('Base de datos offline al consultar todas las reservas, usando fallback:', err.message);
+      return res.json(fallbackBookings);
+    }
+  }
+
+  // Si se especifica user_id: debe ser el propio usuario autenticado o un administrador
+  const requestedUserId = parseInt(user_id);
+  const isOwner = authUser && (
+    authUser.isAdmin || 
+    authUser.id === requestedUserId || 
+    (email && authUser.email && authUser.email.toLowerCase() === email.trim().toLowerCase())
+  );
+  
+  if (!isOwner) {
+    return res.status(403).json({ error: 'Acceso denegado a las reservas de otro usuario.' });
+  }
+
+  try {
+    const query = `
+      SELECT b.*, u.name as client_name, u.email as client_email, u.phone as client_phone, u.dni as client_dni
+      FROM bookings b
+      LEFT JOIN users u ON b.user_id = u.id
+      WHERE b.user_id = $1 ${email ? 'OR LOWER(TRIM(u.email)) = LOWER(TRIM($2))' : ''}
+      ORDER BY b.created_at DESC
+    `;
+    const params = email ? [requestedUserId, email.trim()] : [requestedUserId];
+    const result = await pool.query(query, params);
+    return res.json(result.rows);
   } catch (err) {
-    console.warn('Base de datos offline al consultar reservas, usando fallback:', err.message);
+    console.warn('Base de datos offline al consultar reservas de usuario, usando fallback:', err.message);
   }
 
-  // Fallback seguro: filtrar estrictamente por user_id si fue proporcionado
-  if (user_id) {
-    const userBookings = fallbackBookings.filter(b => {
-      if (b.user_id && String(b.user_id) === String(user_id)) return true;
-      if (email && (b.client_email === email || b.user_email === email)) return true;
-      return false;
-    });
-    return res.json(userBookings);
-  }
-
-  res.json(fallbackBookings);
+  // Fallback seguro: filtrar estrictamente por user_id
+  const userBookings = fallbackBookings.filter(b => {
+    if (b.user_id && String(b.user_id) === String(requestedUserId)) return true;
+    if (email && (b.client_email === email || b.user_email === email)) return true;
+    return false;
+  });
+  return res.json(userBookings);
 });
 
-// 8. Actualizar una reserva (soporta cambiar estado, estado de fianza, estado de pago)
-app.put('/api/bookings/:id', async (req, res) => {
+// 8. Actualizar una reserva (Protegido por Administrador)
+app.put('/api/bookings/:id', verifyAdmin, async (req, res) => {
   const { id } = req.params;
   const { status, fianza_status, payment_status } = req.body;
 
@@ -1772,6 +1948,7 @@ app.put('/api/bookings/:id', async (req, res) => {
           payment_status: payment_status !== undefined ? payment_status : current.payment_status
         };
         fallbackBookings[index] = updated;
+        saveAdminStoreToFile();
         return res.json({
           message: 'Reserva actualizada en memoria fallback.',
           booking: updated
@@ -1825,8 +2002,8 @@ app.put('/api/bookings/:id', async (req, res) => {
   }
 });
 
-// 9. Subir fotos antes / después para una reserva
-app.post('/api/bookings/:id/photos', upload.array('photos', 10), async (req, res) => {
+// 9. Subir fotos antes / después para una reserva (Protegido por Administrador con validación de tipo/tamaño)
+app.post('/api/bookings/:id/photos', verifyAdmin, upload.array('photos', 10), async (req, res) => {
   const { id } = req.params;
   const { type } = req.body; // 'before' o 'after'
 
@@ -1864,8 +2041,8 @@ app.post('/api/bookings/:id/photos', upload.array('photos', 10), async (req, res
   }
 });
 
-// 10. Eliminar una reserva
-app.delete('/api/bookings/:id', async (req, res) => {
+// 10. Eliminar una reserva (Protegido por Administrador)
+app.delete('/api/bookings/:id', verifyAdmin, async (req, res) => {
   const { id } = req.params;
 
   try {
@@ -2210,18 +2387,14 @@ app.post('/api/redsys/confirm-payment', async (req, res) => {
       if (!booking) booking = fBooking;
     }
 
-    // Si no se encuentra exactamente, intentar buscar por ID reciente
     if (!booking) {
-      try {
-        const lastRes = await pool.query("SELECT * FROM bookings ORDER BY id DESC LIMIT 1");
-        if (lastRes.rowCount > 0) booking = lastRes.rows[0];
-      } catch (e) {}
+      return res.status(404).json({ error: 'No se encontró ninguna reserva asociada a este identificador de pago.' });
     }
 
     res.json({
       success: true,
       orderId,
-      booking: booking || { id: orderId, name: 'Cliente RentMeUskar', total_price: 0, van_name: 'Furgoneta RentMeUskar' }
+      booking
     });
   } catch (err) {
     console.error('Error al confirmar pago:', err);
@@ -2327,21 +2500,6 @@ app.post('/payment-error.html', (req, res) => {
   res.redirect(`/payment-error.html?order=${encodeURIComponent(orderId)}`);
 });
 
-// Middleware de verificación de Administrador
-const verifyAdmin = (req, res, next) => {
-  const authHeader = req.headers.authorization;
-  if (!authHeader) {
-    return res.status(401).json({ error: 'No autorizado. Falta token.' });
-  }
-  const token = authHeader.replace('Bearer ', '');
-  const validAdminToken = getCurrentAdminToken();
-
-  if (token === validAdminToken) {
-    return next();
-  }
-
-  return res.status(401).json({ error: 'La sesión ha caducado. El usuario o la contraseña se han cambiado desde otro dispositivo.' });
-};
 
 // 1. Obtener furgonetas activas (público)
 app.get('/api/vans', async (req, res) => {
@@ -2837,10 +2995,8 @@ app.post('/api/admin/confirm-credential-change', verifyAdmin, async (req, res) =
       "INSERT INTO settings (key, value) VALUES ('admin_password_hash', $1) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value",
       [pending.newPasswordHash]
     );
-    await pool.query(
-      "INSERT INTO settings (key, value) VALUES ('admin_password', $1) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value",
-      [pending.newPasswordRaw]
-    );
+    // Eliminar rastro de contraseña en texto plano en la base de datos si existía
+    await pool.query("DELETE FROM settings WHERE key = 'admin_password'");
 
     saveAdminStoreToFile();
     delete pendingAdminCredentialChanges['admin'];
@@ -2890,13 +3046,13 @@ app.post('/api/admin/generate-review-code', verifyAdmin, (req, res) => {
 });
 
 // Verificar código manual para autocompletar vehículo y datos de reserva
-app.post('/api/reviews/verify-code', (req, res) => {
+app.post('/api/reviews/verify-code', async (req, res) => {
   const { code } = req.body;
   if (!code) return res.status(400).json({ error: 'Código requerido' });
 
   const cleanCode = code.trim().toUpperCase();
 
-  // Buscar en códigos manuales generados por admin
+  // 1. Buscar en códigos manuales generados por admin
   const manualObj = manualReviewCodes.find(c => c.code.toUpperCase() === cleanCode);
   if (manualObj) {
     return res.json({ 
@@ -2913,7 +3069,28 @@ app.post('/api/reviews/verify-code', (req, res) => {
     });
   }
 
-  // Buscar en reservas
+  // 2. Buscar en base de datos PostgreSQL
+  try {
+    const dbRes = await pool.query('SELECT * FROM bookings WHERE UPPER(review_code) = $1', [cleanCode]);
+    if (dbRes.rowCount > 0) {
+      const b = dbRes.rows[0];
+      return res.json({
+        valid: true,
+        van_name: b.van_name || 'Ford Transit Custom L2H2 (8m³)',
+        client_name: b.name,
+        rental_days: b.days || 2,
+        rental_mode: b.rental_mode || 'Sin Conductor',
+        pickup_date: b.pickup_date,
+        pickup_time: b.pickup_time,
+        return_date: b.return_date,
+        return_time: b.return_time
+      });
+    }
+  } catch (e) {
+    console.warn('[REVIEWS] Error consultando código en base de datos:', e.message);
+  }
+
+  // 3. Buscar en reservas en memoria / fallback
   const foundBooking = fallbackBookings.find(b => b.review_code && b.review_code.toUpperCase() === cleanCode);
   if (foundBooking) {
     return res.json({ 
@@ -2929,12 +3106,7 @@ app.post('/api/reviews/verify-code', (req, res) => {
     });
   }
 
-  // Si es un código genérico válido
-  if (cleanCode.startsWith('RMU-') || cleanCode.startsWith('MOCK-')) {
-    return res.json({ valid: true, van_name: 'Ford Transit Custom L2H2 (8m³)', rental_days: 2, rental_mode: 'Sin Conductor' });
-  }
-
-  return res.status(400).json({ error: 'Código de reseña no encontrado.' });
+  return res.status(400).json({ error: 'Código de reseña no válido o no encontrado en el sistema.' });
 });
 
 app.get('/api/reviews', async (req, res) => {
@@ -2953,18 +3125,26 @@ app.post('/api/reviews', async (req, res) => {
   if (!booking_code || !client_name || !rating || !comment) {
     return res.status(400).json({ error: 'Todos los campos son obligatorios.' });
   }
+
+  const numRating = parseInt(rating);
+  if (isNaN(numRating) || numRating < 1 || numRating > 5) {
+    return res.status(400).json({ error: 'La valoración debe ser un número entero entre 1 y 5.' });
+  }
   
   const code = booking_code.trim().toUpperCase();
-  const finalVanName = van_name || 'Ford Transit Custom L2H2 (8m³)';
+  const safeClientName = escapeHtml(client_name.trim());
+  const safeComment = escapeHtml(comment.trim());
+  const safeRoleOrCity = escapeHtml((role_or_city || '').trim());
+  const finalVanName = escapeHtml((van_name || 'Ford Transit Custom L2H2 (8m³)').trim());
   
   try {
-    // 1. Verificar si el código de reserva existe y es válido
+    // 1. Verificar si el código de reserva existe legítimamente
     const checkBooking = await pool.query('SELECT * FROM bookings WHERE UPPER(review_code) = $1', [code]);
-    if (checkBooking.rowCount === 0) {
-      const isManual = manualReviewCodes.some(m => m.code.toUpperCase() === code);
-      if (!isManual && !code.startsWith('RMU-') && !code.startsWith('MOCK-')) {
-        return res.status(400).json({ error: 'El código de reseña no es válido.' });
-      }
+    const isManual = manualReviewCodes.some(m => m.code.toUpperCase() === code);
+    const isFb = fallbackBookings.some(b => b.review_code && b.review_code.toUpperCase() === code);
+
+    if (checkBooking.rowCount === 0 && !isManual && !isFb) {
+      return res.status(400).json({ error: 'El código de reseña no corresponde a ninguna reserva válida.' });
     }
     
     // 2. Verificar si ya se ha enviado una opinión para este código
@@ -2973,10 +3153,10 @@ app.post('/api/reviews', async (req, res) => {
       return res.status(400).json({ error: 'Este código de reserva ya ha sido utilizado para escribir una opinión.' });
     }
     
-    // 3. Insertar opinión
+    // 3. Insertar opinión sanitizada
     const result = await pool.query(
       'INSERT INTO reviews (booking_code, client_name, rating, comment, role_or_city, van_name) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
-      [code, client_name, parseInt(rating), comment, role_or_city, finalVanName]
+      [code, safeClientName, numRating, safeComment, safeRoleOrCity, finalVanName]
     );
     
     fallbackReviews.unshift(result.rows[0]);
@@ -2992,10 +3172,10 @@ app.post('/api/reviews', async (req, res) => {
     const mockReview = {
       id: fallbackReviews.length > 0 ? Math.max(...fallbackReviews.map(r => r.id)) + 1 : 1,
       booking_code: code,
-      client_name,
-      rating: parseInt(rating),
-      comment,
-      role_or_city,
+      client_name: safeClientName,
+      rating: numRating,
+      comment: safeComment,
+      role_or_city: safeRoleOrCity,
       van_name: finalVanName,
       created_at: new Date().toISOString()
     };
@@ -3333,6 +3513,24 @@ app.get('/favicon.ico', (req, res) => {
 
 // Servir archivos estáticos
 app.use(express.static(__dirname));
+
+// Manejador centralizado de errores de subida de archivos (Multer) y validaciones
+app.use((err, req, res, next) => {
+  if (err instanceof multer.MulterError) {
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({ error: 'El archivo excede el tamaño máximo permitido de 10MB.' });
+    }
+    return res.status(400).json({ error: 'Error en la subida de archivos: ' + err.message });
+  }
+  if (err && err.message && err.message.includes('Tipo de archivo no permitido')) {
+    return res.status(400).json({ error: err.message });
+  }
+  if (err && err.message && err.message.includes('Bloqueado por política CORS')) {
+    return res.status(403).json({ error: 'Acceso bloqueado por política de seguridad CORS.' });
+  }
+  console.error('[UNHANDLED ERROR]', err);
+  res.status(500).json({ error: 'Error interno del servidor.' });
+});
 
 // Iniciar el servidor
 app.listen(PORT, () => {

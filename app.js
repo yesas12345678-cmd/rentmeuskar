@@ -1339,10 +1339,13 @@ const initApp = () => {
                 btnGoAdmin.style.display = (user && user.is_admin) ? 'inline-flex' : 'none';
             }
 
-            // Obtener reservas del cliente (resiliente con aislamiento estricto)
+            // Obtener reservas del cliente (resiliente con aislamiento estricto y token)
             let bookingsList = [];
             try {
-                const bookingsRes = await fetch(`/api/bookings?user_id=${user.id}${user.email ? '&email=' + encodeURIComponent(user.email) : ''}`);
+                const token = localStorage.getItem('auth_token');
+                const bookingsRes = await fetch(`/api/bookings?user_id=${user.id}${user.email ? '&email=' + encodeURIComponent(user.email) : ''}`, {
+                    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                });
                 if (bookingsRes.ok) {
                     const rawList = await bookingsRes.json();
                     if (Array.isArray(rawList)) {
@@ -2424,7 +2427,10 @@ const initApp = () => {
                 let userBookings = [];
                 if (user && user.id) {
                     try {
-                        const res = await fetch(`/api/bookings?user_id=${user.id}${user.email ? '&email=' + encodeURIComponent(user.email) : ''}`);
+                        const token = localStorage.getItem('auth_token');
+                        const res = await fetch(`/api/bookings?user_id=${user.id}${user.email ? '&email=' + encodeURIComponent(user.email) : ''}`, {
+                            headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                        });
                         if (res.ok) {
                             const raw = await res.json();
                             if (Array.isArray(raw)) {
