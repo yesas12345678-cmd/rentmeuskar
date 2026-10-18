@@ -8,3 +8,5 @@ _backup_pre_3d/
 assets/logo_backup_horizontal.png
 *.bak
 data/faqs_clean.json
+*.log
+security_sentinel_10h.log
