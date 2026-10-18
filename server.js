@@ -184,8 +184,15 @@ function loadAdminStoreFromFile() {
         fallbackVans = store.fallbackVans;
       }
       if (Array.isArray(store.fallbackReviews)) fallbackReviews = store.fallbackReviews;
-      if (Array.isArray(store.manualReviewCodes)) manualReviewCodes = store.manualReviewCodes;
-      if (Array.isArray(store.fallbackFaqs)) fallbackFaqs = store.fallbackFaqs;
+      if (Array.isArray(store.fallbackFaqs)) {
+        const seenFaqQ = new Set();
+        fallbackFaqs = store.fallbackFaqs.filter(f => {
+          const q = (f.question || '').trim().toLowerCase();
+          if (!q || seenFaqQ.has(q)) return false;
+          seenFaqQ.add(q);
+          return true;
+        });
+      }
       console.log(`[PERSISTENCE] Carga completa desde disco (admin_store.json): ${fallbackVans.length} vans, ${fallbackBookings.length} reservas, ${fallbackFaqs.length} FAQs, ${fallbackReviews.length} reseñas.`);
     } catch (e) {
       console.error('[PERSISTENCE ERROR] Error al cargar admin_store:', e.message);
@@ -266,27 +273,33 @@ async function syncDatabaseWithDisk(clientOrPool) {
       console.warn('[SYNC WARN] Error al sincronizar bloqueos:', e.message);
     }
 
-    // 3. FAQs (SAFE 2-WAY MERGE)
+    // 3. FAQs (SAFE 2-WAY MERGE CON DEDUPLICACIÓN ESTRICTA)
     try {
       if (Array.isArray(fallbackFaqs) && fallbackFaqs.length > 0) {
         for (const faq of fallbackFaqs) {
+          if (!faq.question) continue;
           await targetPool.query(
             `INSERT INTO faqs (question, answer, display_order)
-             VALUES ($1, $2, $3)`,
+             SELECT $1, $2, $3
+             WHERE NOT EXISTS (
+               SELECT 1 FROM faqs WHERE LOWER(TRIM(question)) = LOWER(TRIM($1))
+             )`,
             [faq.question, faq.answer, faq.display_order || 0]
           ).catch(e => console.warn('Error syncing faq to DB:', e.message));
         }
       }
       const faqsRes = await targetPool.query("SELECT * FROM faqs ORDER BY display_order ASC, id ASC");
       if (faqsRes.rows.length > 0) {
+        const seenFaqSet = new Set();
+        const cleanDbFaqs = [];
         faqsRes.rows.forEach(dbFaq => {
-          const idx = fallbackFaqs.findIndex(f => String(f.id) === String(dbFaq.id));
-          if (idx !== -1) {
-            fallbackFaqs[idx] = { ...fallbackFaqs[idx], ...dbFaq };
-          } else {
-            fallbackFaqs.push(dbFaq);
+          const q = (dbFaq.question || '').trim().toLowerCase();
+          if (!seenFaqSet.has(q)) {
+            seenFaqSet.add(q);
+            cleanDbFaqs.push(dbFaq);
           }
         });
+        fallbackFaqs = cleanDbFaqs;
       }
     } catch (e) {
       console.warn('[SYNC WARN] Error al sincronizar FAQs:', e.message);
@@ -754,6 +767,7 @@ const initDb = async () => {
         ('¿Cómo funciona la política de combustible?', 'Nuestra política es Lleno-Lleno (Full-to-Full). Te entregamos la furgoneta con el depósito de combustible lleno (diésel) y debes devolverla de la misma forma. De lo contrario, se cobrará el coste del combustible faltante más un cargo de gestión de repostaje.', 3),
         ('¿Qué seguro está incluido en el precio base?', 'El precio incluye seguro obligatorio de responsabilidad civil y seguro de colisión básico con franquicia. Esto significa que en caso de accidente o daños, la responsabilidad máxima del cliente está limitada al importe de la franquicia establecida (salvo negligencia).', 4),
         ('¿Puedo viajar fuera de España con la furgoneta?', 'Por defecto, el uso de las furgonetas está autorizada en territorio nacional (Península Ibérica). Si tienes pensado viajar a Portugal, Francia u otros países de Europa, debes comunicarlo con antelación para tramitar la cobertura del seguro correspondiente y asistencia en el extranjero.', 5)
+        ON CONFLICT DO NOTHING
       `);
       console.log('FAQs por defecto insertadas.');
     }
