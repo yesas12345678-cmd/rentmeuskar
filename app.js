@@ -1339,12 +1339,20 @@ const initApp = () => {
                 btnGoAdmin.style.display = (user && user.is_admin) ? 'inline-flex' : 'none';
             }
 
-            // Obtener reservas del cliente (resiliente)
+            // Obtener reservas del cliente (resiliente con aislamiento estricto)
             let bookingsList = [];
             try {
-                const bookingsRes = await fetch(`/api/bookings?user_id=${user.id}`);
+                const bookingsRes = await fetch(`/api/bookings?user_id=${user.id}${user.email ? '&email=' + encodeURIComponent(user.email) : ''}`);
                 if (bookingsRes.ok) {
-                    bookingsList = await bookingsRes.json();
+                    const rawList = await bookingsRes.json();
+                    if (Array.isArray(rawList)) {
+                        // Filtrado estricto por cuenta: solo reservas pertenecientes a este usuario
+                        bookingsList = rawList.filter(b => {
+                            if (b.user_id && String(b.user_id) === String(user.id)) return true;
+                            if (user.email && (b.client_email === user.email || b.user_email === user.email)) return true;
+                            return false;
+                        });
+                    }
                 }
             } catch (bErr) {
                 console.warn('Backend bookings offline:', bErr);
@@ -2416,8 +2424,13 @@ const initApp = () => {
                 let userBookings = [];
                 if (user && user.id) {
                     try {
-                        const res = await fetch(`/api/bookings?user_id=${user.id}`);
-                        if (res.ok) userBookings = await res.json();
+                        const res = await fetch(`/api/bookings?user_id=${user.id}${user.email ? '&email=' + encodeURIComponent(user.email) : ''}`);
+                        if (res.ok) {
+                            const raw = await res.json();
+                            if (Array.isArray(raw)) {
+                                userBookings = raw.filter(b => (b.user_id && String(b.user_id) === String(user.id)) || (user.email && (b.client_email === user.email || b.user_email === user.email)));
+                            }
+                        }
                     } catch (err) {
                         console.warn('Error al obtener reservas del usuario:', err);
                     }

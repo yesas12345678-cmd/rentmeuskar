@@ -344,8 +344,13 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            const pathParts = window.location.pathname.split('/');
-            const bookingId = pathParts[pathParts.length - 1];
+            const urlParams = new URLSearchParams(window.location.search);
+            let bookingId = urlParams.get('id');
+            if (!bookingId) {
+                const cleanPath = window.location.pathname.replace(/\/+$/, '');
+                const pathParts = cleanPath.split('/');
+                bookingId = pathParts[pathParts.length - 1];
+            }
             
             if (!bookingId || isNaN(bookingId)) {
                 alert('ID de factura inválido.');

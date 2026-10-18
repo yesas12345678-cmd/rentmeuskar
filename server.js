@@ -1660,7 +1660,7 @@ app.post('/api/bookings', async (req, res) => {
   }
 });
 
-// 6. Obtener una reserva por ID (con detalles del usuario)
+// 6. Obtener una reserva por ID (con detalles del usuario y vehículo, y failover transparente a memoria)
 app.get('/api/bookings/:id', async (req, res) => {
   const { id } = req.params;
   try {
@@ -1673,27 +1673,57 @@ app.get('/api/bookings/:id', async (req, res) => {
       WHERE b.id = $1
     `;
     const result = await pool.query(query, [id]);
-    if (result.rowCount === 0) {
-      return res.status(404).json({ error: 'Reserva no encontrada.' });
+    if (result.rowCount > 0) {
+      return res.json(result.rows[0]);
     }
-    res.json(result.rows[0]);
   } catch (err) {
-    console.error('Error al obtener reserva por ID:', err);
-    res.status(500).json({ error: 'Error del servidor.' });
+    console.warn(`[BOOKING GET WARN] Base de datos no disponible o error al consultar reserva #${id}:`, err.message);
   }
+
+  // Fallback transparente a disco/memoria (fallbackBookings)
+  const fb = fallbackBookings.find(b => String(b.id) === String(id));
+  if (fb) {
+    const isFord = fb.van_type === 'medium' || (fb.van_name && fb.van_name.toLowerCase().includes('transit'));
+    const van = fallbackVans.find(v => v.van_type === fb.van_type || String(v.id) === String(fb.van_id)) || (isFord ? fallbackVans[0] : fallbackVans[1]);
+    
+    const enriched = {
+      ...fb,
+      user_name: fb.user_name || fb.client_name || fb.name || '-',
+      user_email: fb.user_email || fb.client_email || '-',
+      user_phone: fb.user_phone || fb.client_phone || '-',
+      user_dni: fb.user_dni || fb.client_dni || '-',
+      price_sin: fb.price_sin !== undefined && fb.price_sin !== null ? fb.price_sin : (van ? van.price_sin : (isFord ? 79.00 : 107.44)),
+      min_price_con: fb.min_price_con !== undefined && fb.min_price_con !== null ? fb.min_price_con : (van ? van.min_price_con : (isFord ? 50.00 : 60.00)),
+      km_price_con: fb.km_price_con !== undefined && fb.km_price_con !== null ? fb.km_price_con : (van ? van.km_price_con : (isFord ? 1.00 : 1.40)),
+      max_occupants: van ? van.max_occupants : 3,
+      eco_label: van ? van.eco_label : 'C',
+      daily_km_limit: van ? van.daily_km_limit : 350,
+      max_mass: van ? van.max_mass : (isFord ? 2800 : 3500),
+      fuel_type: van ? van.fuel_type : 'GASOIL'
+    };
+    return res.json(enriched);
+  }
+
+  res.status(404).json({ error: 'Reserva no encontrada.' });
 });
 
 // 7. Obtener todas las reservas (con detalles de usuarios asociados si hay)
 app.get('/api/bookings', async (req, res) => {
-  const { user_id } = req.query;
+  const { user_id, email } = req.query;
   try {
     let result;
     if (user_id) {
-      // Filtrar por cliente
-      result = await pool.query(
-        'SELECT * FROM bookings WHERE user_id = $1 ORDER BY created_at DESC',
-        [user_id]
-      );
+      // Filtrar estrictamente por cliente (por user_id o email asociado)
+      const query = `
+        SELECT b.*, u.name as client_name, u.email as client_email, u.phone as client_phone, u.dni as client_dni
+        FROM bookings b
+        LEFT JOIN users u ON b.user_id = u.id
+        WHERE b.user_id = $1 ${email ? 'OR LOWER(TRIM(u.email)) = LOWER(TRIM($2))' : ''}
+        ORDER BY b.created_at DESC
+      `;
+      const params = email ? [user_id, email] : [user_id];
+      result = await pool.query(query, params);
+      return res.json(result.rows);
     } else {
       // Devolver todo (para admin), con datos del usuario
       const query = `
@@ -1703,12 +1733,23 @@ app.get('/api/bookings', async (req, res) => {
         ORDER BY b.created_at DESC
       `;
       result = await pool.query(query);
+      return res.json(result.rows);
     }
-    res.json(result.rows);
   } catch (err) {
-    console.warn('Base de datos offline, retornando reservas de fallback:', err.message);
-    res.json(fallbackBookings);
+    console.warn('Base de datos offline al consultar reservas, usando fallback:', err.message);
   }
+
+  // Fallback seguro: filtrar estrictamente por user_id si fue proporcionado
+  if (user_id) {
+    const userBookings = fallbackBookings.filter(b => {
+      if (b.user_id && String(b.user_id) === String(user_id)) return true;
+      if (email && (b.client_email === email || b.user_email === email)) return true;
+      return false;
+    });
+    return res.json(userBookings);
+  }
+
+  res.json(fallbackBookings);
 });
 
 // 8. Actualizar una reserva (soporta cambiar estado, estado de fianza, estado de pago)
@@ -3272,11 +3313,11 @@ app.delete('/api/faqs/:id', verifyAdmin, async (req, res) => {
 // --- ENRUTAMIENTO FRONTEND ---
 
 // Enrutamiento de páginas dinámicas del cliente (Contrato y Factura)
-app.get('/contract/:id', (req, res) => {
+app.get(['/contract', '/contract/:id'], (req, res) => {
   res.sendFile(path.join(__dirname, 'contract.html'));
 });
 
-app.get('/invoice/:id', (req, res) => {
+app.get(['/invoice', '/invoice/:id'], (req, res) => {
   res.sendFile(path.join(__dirname, 'invoice.html'));
 });
 
