@@ -3528,6 +3528,9 @@ app.use((err, req, res, next) => {
   if (err && err.message && err.message.includes('Bloqueado por política CORS')) {
     return res.status(403).json({ error: 'Acceso bloqueado por política de seguridad CORS.' });
   }
+  if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+    return res.status(400).json({ error: 'Formato JSON malformado o inválido en la petición.' });
+  }
   console.error('[UNHANDLED ERROR]', err);
   res.status(500).json({ error: 'Error interno del servidor.' });
 });
