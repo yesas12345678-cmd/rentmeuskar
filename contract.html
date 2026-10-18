@@ -642,10 +642,13 @@
                 return;
             }
 
-            // Fetch details from backend con token de autenticación
-            const token = localStorage.getItem('auth_token') || localStorage.getItem('admin_token');
+            // Fetch details from backend con token de autenticación o secreto de acceso
+            const secretParam = urlParams.get('auth') || urlParams.get('secret') || '';
+            const token = localStorage.getItem('user_token') || localStorage.getItem('admin_token') || localStorage.getItem('auth_token') || localStorage.getItem('token');
             const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
-            fetch(`/api/bookings/${bookingId}`, { headers })
+            const fetchUrl = secretParam ? `/api/bookings/${bookingId}?auth=${encodeURIComponent(secretParam)}` : `/api/bookings/${bookingId}`;
+
+            fetch(fetchUrl, { headers })
                 .then(res => {
                     if (!res.ok) throw new Error('Error al obtener datos');
                     return res.json();

@@ -815,8 +815,8 @@ const initAdmin = () => {
         // Mostrar botones de documentación si es confirmed
         if (booking.status === 'confirmed') {
             modalDocsRow.style.display = 'flex';
-            modalBtnContract.onclick = () => window.open(`/contract/${booking.id}`, '_blank');
-            modalBtnInvoice.onclick = () => window.open(`/invoice/${booking.id}`, '_blank');
+            modalBtnContract.onclick = () => window.open(`/contract/${booking.id}?auth=${encodeURIComponent(booking.review_code || booking.payment_id || '')}`, '_blank');
+            modalBtnInvoice.onclick = () => window.open(`/invoice/${booking.id}?auth=${encodeURIComponent(booking.review_code || booking.payment_id || '')}`, '_blank');
         } else {
             modalDocsRow.style.display = 'none';
         }

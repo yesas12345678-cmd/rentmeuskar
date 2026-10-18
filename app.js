@@ -1393,8 +1393,8 @@ const initApp = () => {
                             <td><span style="font-size: 0.8rem; font-weight: 700; color: ${b.status === 'confirmed' ? '#82d105' : b.status === 'paid_pending' ? '#00d2ff' : b.status === 'pending' ? '#ffb703' : '#ff4d6d'};">${statusLabel}</span></td>
                             <td>
                                 ${b.status === 'confirmed' ? `
-                                    <button class="client-doc-btn" onclick="window.open('/contract/${b.id}', '_blank')"><i class="fa-solid fa-file-signature"></i> Contrato</button>
-                                    <button class="client-doc-btn" onclick="window.open('/invoice/${b.id}', '_blank')"><i class="fa-solid fa-file-invoice-dollar"></i> Factura</button>
+                                    <button class="client-doc-btn" onclick="window.open('/contract/${b.id}?auth=${encodeURIComponent(b.review_code || b.payment_id || '')}', '_blank')"><i class="fa-solid fa-file-signature"></i> Contrato</button>
+                                    <button class="client-doc-btn" onclick="window.open('/invoice/${b.id}?auth=${encodeURIComponent(b.review_code || b.payment_id || '')}', '_blank')"><i class="fa-solid fa-file-invoice-dollar"></i> Factura</button>
                                 ` : '<span style="color: var(--text-muted); font-size: 0.75rem;">Pendiente</span>'}
                             </td>
                         `;

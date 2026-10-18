@@ -240,12 +240,13 @@
                             document.getElementById('booking-id-val').innerText = '#' + b.id;
 
                             // Habilitar botones de factura y contrato
+                            const authParam = encodeURIComponent(b.review_code || b.payment_id || '');
                             const btnInvoice = document.getElementById('btn-invoice');
-                            btnInvoice.href = '/invoice/' + b.id;
+                            btnInvoice.href = '/invoice/' + b.id + (authParam ? '?auth=' + authParam : '');
                             btnInvoice.style.display = 'inline-flex';
 
                             const btnContract = document.getElementById('btn-contract');
-                            btnContract.href = '/contract/' + b.id;
+                            btnContract.href = '/contract/' + b.id + (authParam ? '?auth=' + authParam : '');
                             btnContract.style.display = 'inline-flex';
                         }
 
