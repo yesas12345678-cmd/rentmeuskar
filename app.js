@@ -1342,7 +1342,7 @@ const initApp = () => {
             // Obtener reservas del cliente (resiliente con aislamiento estricto y token)
             let bookingsList = [];
             try {
-                const token = localStorage.getItem('auth_token');
+                const token = localStorage.getItem('user_token') || localStorage.getItem('admin_token') || localStorage.getItem('auth_token') || localStorage.getItem('token');
                 const bookingsRes = await fetch(`/api/bookings?user_id=${user.id}${user.email ? '&email=' + encodeURIComponent(user.email) : ''}`, {
                     headers: token ? { 'Authorization': `Bearer ${token}` } : {}
                 });
@@ -1352,7 +1352,9 @@ const initApp = () => {
                         // Filtrado estricto por cuenta: solo reservas pertenecientes a este usuario
                         bookingsList = rawList.filter(b => {
                             if (b.user_id && String(b.user_id) === String(user.id)) return true;
-                            if (user.email && (b.client_email === user.email || b.user_email === user.email)) return true;
+                            const uEmail = (user.email || '').toLowerCase().trim();
+                            if (uEmail && ((b.client_email && b.client_email.toLowerCase().trim() === uEmail) || 
+                                           (b.user_email && b.user_email.toLowerCase().trim() === uEmail))) return true;
                             return false;
                         });
                     }
@@ -1678,6 +1680,10 @@ const initApp = () => {
             extras: selectedExtras,
             total_price: totalPriceNum,
             user_id: user.id,
+            client_name: user.name || nameValue,
+            client_email: user.email || '',
+            client_phone: user.phone || '',
+            client_dni: user.dni || '',
             rental_mode: rentalMode,
             estimated_kms: rentalMode === 'con' ? parseInt(kmsEstimate.value) : 0,
             waiting_hours: rentalMode === 'con' ? parseFloat(waitHours.value) : 0.00
@@ -1724,9 +1730,13 @@ const initApp = () => {
                     fianza_status: rentalMode === 'sin' ? 'pending' : 'refunded'
                 };
 
+                const token = localStorage.getItem('user_token') || localStorage.getItem('admin_token') || localStorage.getItem('auth_token') || localStorage.getItem('token');
                 const response = await fetch('/api/bookings', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                    },
                     body: JSON.stringify(finalBookingData)
                 });
 
@@ -2013,9 +2023,13 @@ const initApp = () => {
             await new Promise(r => setTimeout(r, 700));
 
             // 3. REGISTRAR PAGO Y RESERVA EN BACKEND
+            const token = localStorage.getItem('user_token') || localStorage.getItem('admin_token') || localStorage.getItem('auth_token') || localStorage.getItem('token');
             const response = await fetch('/api/redsys/process-test-payment', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                },
                 body: JSON.stringify({
                     bookingData: pendingBookingData,
                     payMethod: selectedPayMethod,
@@ -2427,14 +2441,20 @@ const initApp = () => {
                 let userBookings = [];
                 if (user && user.id) {
                     try {
-                        const token = localStorage.getItem('auth_token');
+                        const token = localStorage.getItem('user_token') || localStorage.getItem('admin_token') || localStorage.getItem('auth_token') || localStorage.getItem('token');
                         const res = await fetch(`/api/bookings?user_id=${user.id}${user.email ? '&email=' + encodeURIComponent(user.email) : ''}`, {
                             headers: token ? { 'Authorization': `Bearer ${token}` } : {}
                         });
                         if (res.ok) {
                             const raw = await res.json();
                             if (Array.isArray(raw)) {
-                                userBookings = raw.filter(b => (b.user_id && String(b.user_id) === String(user.id)) || (user.email && (b.client_email === user.email || b.user_email === user.email)));
+                                userBookings = raw.filter(b => {
+                                    if (b.user_id && String(b.user_id) === String(user.id)) return true;
+                                    const uEmail = (user.email || '').toLowerCase().trim();
+                                    if (uEmail && ((b.client_email && b.client_email.toLowerCase().trim() === uEmail) || 
+                                                   (b.user_email && b.user_email.toLowerCase().trim() === uEmail))) return true;
+                                    return false;
+                                });
                             }
                         }
                     } catch (err) {

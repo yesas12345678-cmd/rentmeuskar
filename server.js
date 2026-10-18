@@ -491,7 +491,7 @@ function verifyUserToken(token) {
       if (signature.length === expectedSig.length && crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSig))) {
         try {
           const data = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8'));
-          return data.id;
+          return data; // { id, email, ts }
         } catch (e) {
           return null;
         }
@@ -501,7 +501,7 @@ function verifyUserToken(token) {
   // Compatibilidad con tokens previos de sesión
   if (token.startsWith('user_')) {
     const id = parseInt(token.replace('user_', ''));
-    if (!isNaN(id)) return id;
+    if (!isNaN(id)) return { id: id };
   }
   return null;
 }
@@ -540,22 +540,30 @@ const getAuthUser = async (req) => {
     return { id: 0, isAdmin: true, email: fallbackSettings.admin_username || 'zvaito' };
   }
   
-  const userId = verifyUserToken(token);
-  if (!userId) return null;
+  const tokenData = verifyUserToken(token);
+  if (!tokenData) return null;
+  const userId = tokenData.id;
+  const tokenEmail = tokenData.email;
   
   if (userId === 9999) {
     return { id: 9999, name: 'Cliente Demo', email: 'cliente@rentmeuskar.com', isAdmin: false };
   }
   
   try {
-    const uRes = await pool.query('SELECT id, name, email, phone, dni FROM users WHERE id = $1', [userId]);
-    if (uRes.rowCount > 0) return { ...uRes.rows[0], isAdmin: false };
+    if (userId && typeof userId === 'number') {
+      const uRes = await pool.query('SELECT id, name, email, phone, dni FROM users WHERE id = $1', [userId]);
+      if (uRes.rowCount > 0) return { ...uRes.rows[0], isAdmin: false };
+    }
+    if (tokenEmail) {
+      const uEmailRes = await pool.query('SELECT id, name, email, phone, dni FROM users WHERE LOWER(email) = LOWER($1)', [tokenEmail.trim()]);
+      if (uEmailRes.rowCount > 0) return { ...uEmailRes.rows[0], isAdmin: false };
+    }
   } catch (e) {}
   
-  const fbUser = fallbackUsers.find(u => u.id === userId);
+  const fbUser = fallbackUsers.find(u => (userId && u.id === userId) || (tokenEmail && u.email && u.email.toLowerCase() === tokenEmail.toLowerCase()));
   if (fbUser) return { ...fbUser, isAdmin: false };
   
-  return { id: userId, isAdmin: false };
+  return { id: userId, email: tokenEmail, isAdmin: false };
 };
 
 // Sanitizador de texto contra inyección HTML en correos y plantillas
@@ -1705,7 +1713,13 @@ app.post('/api/bookings', async (req, res) => {
       }
     }
 
-    // Validar user_id frente a la tabla users para no violar la Foreign Key constraint si es invitado
+    // Resolver usuario autenticado y detalles de cliente
+    const authUser = await getAuthUser(req);
+    const clientEmail = (req.body.client_email || (authUser && authUser.email) || '').trim().toLowerCase();
+    const clientPhone = (req.body.client_phone || (authUser && authUser.phone) || '').trim();
+    const clientDni = (req.body.client_dni || (authUser && authUser.dni) || '').trim().toUpperCase();
+
+    // Validar user_id frente a la tabla users para no violar la Foreign Key constraint
     let validUserId = null;
     if (user_id && typeof user_id === 'number') {
       try {
@@ -1715,6 +1729,18 @@ app.post('/api/bookings', async (req, res) => {
         validUserId = null;
       }
     }
+    if (!validUserId && authUser && authUser.id && typeof authUser.id === 'number' && authUser.id !== 9999) {
+      try {
+        const uRes = await pool.query('SELECT id FROM users WHERE id = $1', [authUser.id]);
+        if (uRes.rowCount > 0) validUserId = uRes.rows[0].id;
+      } catch (e) {}
+    }
+    if (!validUserId && clientEmail) {
+      try {
+        const uRes = await pool.query('SELECT id FROM users WHERE LOWER(email) = LOWER($1)', [clientEmail]);
+        if (uRes.rowCount > 0) validUserId = uRes.rows[0].id;
+      } catch (e) {}
+    }
 
     const reviewCode = 'RMU-' + Math.random().toString(36).substring(2, 8).toUpperCase();
     const query = `
@@ -1723,8 +1749,8 @@ app.post('/api/bookings', async (req, res) => {
         return_date, return_time, days, extras, total_price,
         user_id, fianza_status, payment_status, payment_id, status,
         rental_mode, estimated_kms, waiting_hours, van_plate, van_m3,
-        review_code, payment_method
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)
+        review_code, payment_method, client_email, client_phone, client_dni
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25)
       RETURNING *;
     `;
 
@@ -1750,7 +1776,10 @@ app.post('/api/bookings', async (req, res) => {
       realPlate,
       realM3,
       reviewCode,
-      payment_method || 'tarjeta'
+      payment_method || 'tarjeta',
+      clientEmail || null,
+      clientPhone || null,
+      clientDni || null
     ];
 
     const result = await pool.query(query, values);
@@ -1791,6 +1820,9 @@ app.post('/api/bookings', async (req, res) => {
       van_plate: realPlate,
       van_m3: realM3,
       review_code: reviewCode,
+      client_email: clientEmail || null,
+      client_phone: clientPhone || null,
+      client_dni: clientDni || null,
       created_at: new Date().toISOString()
     };
     fallbackBookings.push(mockBooking);
@@ -1884,37 +1916,48 @@ app.get('/api/bookings', async (req, res) => {
     }
   }
 
-  // Si se especifica user_id: debe ser el propio usuario autenticado o un administrador
+  // Si se especifica user_id o email: debe ser el propio usuario autenticado o un administrador
   const requestedUserId = parseInt(user_id);
+  const cleanEmail = email ? email.trim().toLowerCase() : '';
   const isOwner = authUser && (
     authUser.isAdmin || 
-    authUser.id === requestedUserId || 
-    (email && authUser.email && authUser.email.toLowerCase() === email.trim().toLowerCase())
+    (requestedUserId && authUser.id === requestedUserId) || 
+    (cleanEmail && authUser.email && authUser.email.toLowerCase() === cleanEmail) ||
+    (!authUser.isAdmin && authUser.id && (!requestedUserId || authUser.id === requestedUserId))
   );
   
   if (!isOwner) {
     return res.status(403).json({ error: 'Acceso denegado a las reservas de otro usuario.' });
   }
 
+  const targetUserId = requestedUserId || (authUser ? authUser.id : 0);
+
   try {
     const query = `
-      SELECT b.*, u.name as client_name, u.email as client_email, u.phone as client_phone, u.dni as client_dni
+      SELECT b.*, 
+             COALESCE(b.client_name, b.name, u.name) as client_name, 
+             COALESCE(b.client_email, u.email) as client_email, 
+             COALESCE(b.client_phone, u.phone) as client_phone, 
+             COALESCE(b.client_dni, u.dni) as client_dni
       FROM bookings b
       LEFT JOIN users u ON b.user_id = u.id
-      WHERE b.user_id = $1 ${email ? 'OR LOWER(TRIM(u.email)) = LOWER(TRIM($2))' : ''}
+      WHERE (b.user_id = $1 ${cleanEmail ? 'OR LOWER(TRIM(COALESCE(b.client_email, u.email))) = LOWER(TRIM($2))' : ''})
       ORDER BY b.created_at DESC
     `;
-    const params = email ? [requestedUserId, email.trim()] : [requestedUserId];
+    const params = cleanEmail ? [targetUserId, cleanEmail] : [targetUserId];
     const result = await pool.query(query, params);
     return res.json(result.rows);
   } catch (err) {
     console.warn('Base de datos offline al consultar reservas de usuario, usando fallback:', err.message);
   }
 
-  // Fallback seguro: filtrar estrictamente por user_id
+  // Fallback seguro: filtrar estrictamente por user_id o email
   const userBookings = fallbackBookings.filter(b => {
-    if (b.user_id && String(b.user_id) === String(requestedUserId)) return true;
-    if (email && (b.client_email === email || b.user_email === email)) return true;
+    if (requestedUserId && b.user_id && String(b.user_id) === String(requestedUserId)) return true;
+    if (authUser && authUser.id && b.user_id && String(b.user_id) === String(authUser.id)) return true;
+    const targetEmail = cleanEmail || (authUser && authUser.email ? authUser.email.toLowerCase() : '');
+    if (targetEmail && ((b.client_email && b.client_email.toLowerCase() === targetEmail) || 
+                       (b.user_email && b.user_email.toLowerCase() === targetEmail))) return true;
     return false;
   });
   return res.json(userBookings);
@@ -2250,11 +2293,29 @@ const handleTestPayment = async (req, res) => {
       realM3 = bookingData.van_type === 'medium' ? '8m³' : '14m³';
     }
 
+    // Resolver usuario autenticado y detalles de contacto
+    const authUser = await getAuthUser(req);
+    const clientEmail = (bookingData.client_email || (authUser && authUser.email) || '').trim().toLowerCase();
+    const clientPhone = (bookingData.client_phone || (authUser && authUser.phone) || '').trim();
+    const clientDni = (bookingData.client_dni || (authUser && authUser.dni) || '').trim().toUpperCase();
+
     // Validar user_id frente a tabla users
     let validUserId = null;
     if (bookingData.user_id && typeof bookingData.user_id === 'number') {
       try {
         const uRes = await pool.query('SELECT id FROM users WHERE id = $1', [bookingData.user_id]);
+        if (uRes.rowCount > 0) validUserId = uRes.rows[0].id;
+      } catch (e) {}
+    }
+    if (!validUserId && authUser && authUser.id && typeof authUser.id === 'number' && authUser.id !== 9999) {
+      try {
+        const uRes = await pool.query('SELECT id FROM users WHERE id = $1', [authUser.id]);
+        if (uRes.rowCount > 0) validUserId = uRes.rows[0].id;
+      } catch (e) {}
+    }
+    if (!validUserId && clientEmail) {
+      try {
+        const uRes = await pool.query('SELECT id FROM users WHERE LOWER(email) = LOWER($1)', [clientEmail]);
         if (uRes.rowCount > 0) validUserId = uRes.rows[0].id;
       } catch (e) {}
     }
@@ -2269,8 +2330,8 @@ const handleTestPayment = async (req, res) => {
           return_date, return_time, days, extras, total_price,
           user_id, fianza_status, payment_status, payment_id, status,
           rental_mode, estimated_kms, waiting_hours, van_plate, van_m3,
-          review_code, payment_method
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)
+          review_code, payment_method, client_email, client_phone, client_dni
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25)
         RETURNING *;
       `;
       const values = [
@@ -2295,7 +2356,10 @@ const handleTestPayment = async (req, res) => {
         realPlate,
         realM3,
         reviewCode,
-        methodName
+        methodName,
+        clientEmail || null,
+        clientPhone || null,
+        clientDni || null
       ];
       const result = await pool.query(query, values);
       savedBooking = result.rows[0];
@@ -2328,6 +2392,9 @@ const handleTestPayment = async (req, res) => {
         van_plate: realPlate,
         van_m3: realM3,
         review_code: reviewCode,
+        client_email: clientEmail || null,
+        client_phone: clientPhone || null,
+        client_dni: clientDni || null,
         created_at: new Date().toISOString()
       };
       fallbackBookings.push(savedBooking);
