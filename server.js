@@ -11,6 +11,14 @@ const nodemailer = require('nodemailer');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Manejadores globales de resiliencia del proceso contra caídas inesperadas
+process.on('uncaughtException', (err) => {
+  console.error('[SERVER RESILIENCE - UNCAUGHT EXCEPTION PREVENTED]', err);
+});
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('[SERVER RESILIENCE - UNHANDLED REJECTION PREVENTED]', reason);
+});
+
 // Configuración de transporte SMTP para envío de emails de confirmación
 let mailTransporter = null;
 const smtpHost = process.env.SMTP_HOST || 'smtp.zoho.eu';
