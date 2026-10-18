@@ -618,7 +618,20 @@ const reviewLimiter = rateLimit({
 app.set('trust proxy', 1);
 app.disable('x-powered-by');
 app.use(helmet({
-  contentSecurityPolicy: false, // Permitir CDN estáticos de FontAwesome y Flatpickr
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://accounts.google.com"],
+      scriptSrcAttr: ["'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://cdnjs.cloudflare.com", "https://cdn.jsdelivr.net"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com", "https://cdnjs.cloudflare.com", "data:"],
+      imgSrc: ["'self'", "data:", "blob:", "https://*.googleusercontent.com", "https://images.unsplash.com"],
+      connectSrc: ["'self'", "https://accounts.google.com", "https://*.redsys.es:25443", "https://sis-t.redsys.es:25443", "https://sis.redsys.es", "https://wa.me", "https://api.whatsapp.com"],
+      frameSrc: ["'self'", "https://accounts.google.com"],
+      objectSrc: ["'none'"],
+      upgradeInsecureRequests: []
+    }
+  },
   crossOriginEmbedderPolicy: false
 }));
 app.use(globalLimiter);
@@ -1935,7 +1948,7 @@ app.get('/api/bookings', async (req, res) => {
   try {
     const query = `
       SELECT b.*, 
-             COALESCE(b.client_name, b.name, u.name) as client_name, 
+             COALESCE(b.name, u.name) as client_name, 
              COALESCE(b.client_email, u.email) as client_email, 
              COALESCE(b.client_phone, u.phone) as client_phone, 
              COALESCE(b.client_dni, u.dni) as client_dni
