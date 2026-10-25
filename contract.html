@@ -763,7 +763,8 @@
                     document.getElementById('price-total-general').textContent = `${totalGeneral.toFixed(2)} € (IVA Incl.)`;
 
                     // Forma Pago
-                    const payMethod = b.payment_method || 'tarjeta';
+                    // Normaliza textos de pagos online ('Tarjeta (Redsys)', 'Bizum (Redsys)') a la casilla correcta
+                    const payMethod = (m => { const s = String(m || 'tarjeta').toLowerCase(); return s.includes('bizum') ? 'bizum' : s.includes('efectivo') ? 'efectivo' : s.includes('transfer') ? 'transferencia' : (s.includes('tarjeta') || s.includes('card') || s.includes('tpv')) ? 'tarjeta' : 'otro'; })(b.payment_method);
                     document.getElementById('pay-efectivo').textContent = payMethod === 'efectivo' ? '[X]' : '[ ]';
                     document.getElementById('pay-tarjeta').textContent = payMethod === 'tarjeta' ? '[X]' : '[ ]';
                     document.getElementById('pay-transferencia').textContent = payMethod === 'transferencia' ? '[X]' : '[ ]';

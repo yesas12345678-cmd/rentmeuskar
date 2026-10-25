@@ -380,7 +380,11 @@
                     
                     // Método de pago
                     if (booking.payment_status === 'paid') {
-                        document.getElementById('payment-method').innerHTML = `Tarjeta TPV CaixaBank<br><small style="color: #64748b;">Ref: ${booking.payment_id || '-'}</small>`;
+                        // Forma de pago real (antes ponía siempre 'Tarjeta TPV CaixaBank', también en Bizum o efectivo)
+                        const methodText = String(booking.payment_method || '').toLowerCase();
+                        const methodLabel = methodText.includes('bizum') ? 'Bizum (Redsys)' : methodText.includes('efectivo') ? 'Efectivo' : methodText.includes('transfer') ? 'Transferencia bancaria' : (methodText.includes('tarjeta') || methodText.includes('tpv') || !methodText) ? 'Tarjeta (TPV Redsys)' : 'Otro';
+                        const paymentRef = String(booking.payment_id || '-').replace(/[&<>'"]/g, '');
+                        document.getElementById('payment-method').innerHTML = `${methodLabel}<br><small style="color: #64748b;">Ref: ${paymentRef}</small>`;
                         const stamp = document.getElementById('payment-status-badge');
                         stamp.className = 'payment-badge';
                         stamp.textContent = 'PAGADA';

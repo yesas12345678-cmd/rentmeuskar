@@ -863,7 +863,9 @@ const initAdmin = () => {
         contractAdblueOut.value = booking.adblue_out || 'Lleno';
         contractAdblueIn.value = booking.adblue_in || 'Lleno';
         
-        contractPaymentMethod.value = booking.payment_method || 'tarjeta';
+        // Los pagos online guardan textos como 'Tarjeta (Redsys)': se llevan a la opción equivalente
+        // del selector (si no, quedaba vacío y al guardar el contrato se borraba la forma de pago)
+        contractPaymentMethod.value = (m => { const s = String(m || 'tarjeta').toLowerCase(); return s.includes('bizum') ? 'bizum' : s.includes('efectivo') ? 'efectivo' : s.includes('transfer') ? 'transferencia' : (s.includes('tarjeta') || s.includes('card') || s.includes('tpv')) ? 'tarjeta' : 'otro'; })(booking.payment_method);
         contractCleaningPrice.value = booking.cleaning_price !== undefined && booking.cleaning_price !== null ? booking.cleaning_price : 0.00;
         contractFianzaReturnedFull.checked = !!booking.fianza_returned_full;
         contractFianzaReturnedPartial.checked = !!booking.fianza_returned_partial;
