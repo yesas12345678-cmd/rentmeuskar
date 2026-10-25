@@ -1372,7 +1372,7 @@ const initApp = () => {
                     bookingsList.forEach(b => {
                         const tr = document.createElement('tr');
 
-                        const statusLabel = b.status === 'confirmed' ? 'Confirmado' : b.status === 'paid_pending' ? 'Pagado (Pendiente Aprobación)' : b.status === 'pending' ? 'Pendiente' : 'Cancelado';
+                        const statusLabel = b.status === 'confirmed' ? 'Confirmado' : b.status === 'paid_pending' ? 'Pagado (Pendiente Aprobación)' : b.status === 'pending' ? 'Pendiente' : b.status === 'pending_payment' ? 'Esperando pago' : 'Cancelado';
                         const paymentLabel = b.payment_status === 'paid' ? 'Pagado' : 'Pendiente';
                         const fianzaLabel = b.fianza_status === 'paid' ? 'Depositada (500€)' : b.fianza_status === 'refunded' ? 'Devuelta' : 'En persona (500€)';
 
@@ -1818,6 +1818,37 @@ const initApp = () => {
     const tpvCardName = document.getElementById('tpv-card-name');
     const tpvBizumPhone = document.getElementById('tpv-bizum-phone');
 
+    // Modo de cobro que indica el servidor: 'redsys' (TPV real), 'test' (simulado) u 'off'
+    let paymentMode = 'off';
+    let redsysNotice = null;
+
+    // Con Redsys real los datos de tarjeta/Bizum se piden en la página del banco, nunca aquí
+    const applyPaymentModeUi = () => {
+        const isRedsys = paymentMode === 'redsys';
+        [tpvCardNumber, tpvCardExpiry, tpvCardCvc, tpvCardName, tpvBizumPhone].forEach(input => {
+            if (input) input.required = !isRedsys && input !== tpvBizumPhone;
+        });
+        if (isRedsys) {
+            if (tpvCardFields) tpvCardFields.style.display = 'none';
+            if (tpvBizumFields) tpvBizumFields.style.display = 'none';
+            if (!redsysNotice && tpvForm) {
+                redsysNotice = document.createElement('p');
+                redsysNotice.className = 'tpv-redsys-notice';
+                redsysNotice.style.cssText = 'color: var(--text-secondary); font-size: 0.9rem; line-height: 1.5; margin: 0 0 1rem;';
+                redsysNotice.innerHTML = '<i class="fa-solid fa-lock"></i> Al pulsar en pagar te llevaremos a la pasarela segura de Redsys para introducir tu tarjeta o confirmar el Bizum. Tu reserva se confirma en cuanto el banco autoriza el pago.';
+                tpvForm.insertBefore(redsysNotice, tpvForm.firstChild);
+            }
+        }
+    };
+
+    fetch('/api/payment-config')
+        .then(res => res.ok ? res.json() : { mode: 'off' })
+        .then(config => {
+            paymentMode = config.mode || 'off';
+            applyPaymentModeUi();
+        })
+        .catch(() => { /* sin configuración: el servidor responderá con el motivo al pagar */ });
+
     // Manejar cambio de pestañas de método de pago (Tarjeta vs Bizum)
     const setTpvMethod = (method) => {
         const isBizum = method === 'bizum';
@@ -1829,8 +1860,8 @@ const initApp = () => {
             if (cardRadio) cardRadio.checked = !isBizum;
             if (bizumRadio) bizumRadio.checked = isBizum;
         }
-        if (tpvCardFields) tpvCardFields.style.display = isBizum ? 'none' : 'block';
-        if (tpvBizumFields) tpvBizumFields.style.display = isBizum ? 'block' : 'none';
+        if (tpvCardFields) tpvCardFields.style.display = isBizum || paymentMode === 'redsys' ? 'none' : 'block';
+        if (tpvBizumFields) tpvBizumFields.style.display = isBizum && paymentMode !== 'redsys' ? 'block' : 'none';
         if (tpvSubmitLabel) {
             const amountText = document.getElementById('tpv-total-amount')?.textContent || '0,00 €';
             tpvSubmitLabel.innerHTML = isBizum
@@ -1914,6 +1945,50 @@ const initApp = () => {
         }
     };
 
+    // Pago real: el servidor crea la reserva pendiente y firma los parámetros; el navegador
+    // envía un formulario POST al TPV de Redsys, que vuelve a payment-success/payment-error
+    const startRedsysPayment = async (payMethod) => {
+        const submitBtn = document.getElementById('tpv-submit-btn');
+        const originalBtnHtml = submitBtn.innerHTML;
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Conectando con Redsys...';
+
+        try {
+            const token = localStorage.getItem('user_token') || localStorage.getItem('admin_token') || localStorage.getItem('auth_token') || localStorage.getItem('token');
+            const response = await fetch('/api/redsys/create-payment', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                },
+                body: JSON.stringify({ bookingData: pendingBookingData, payMethod })
+            });
+            const data = await response.json();
+            if (!response.ok || !data.actionUrl || !data.params) {
+                throw new Error(data.error || 'No se pudo iniciar el pago con Redsys.');
+            }
+
+            const redsysForm = document.createElement('form');
+            redsysForm.method = 'POST';
+            redsysForm.action = data.actionUrl;
+            redsysForm.style.display = 'none';
+            Object.entries(data.params).forEach(([key, value]) => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = key;
+                input.value = value;
+                redsysForm.appendChild(input);
+            });
+            document.body.appendChild(redsysForm);
+            redsysForm.submit();
+        } catch (err) {
+            console.error('Error al iniciar el pago con Redsys:', err);
+            showTpvError(err.message || 'No se pudo iniciar el pago con Redsys.');
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalBtnHtml;
+        }
+    };
+
     // Procesar transacción en la Pasarela TPV Virtual CaixaBank
     tpvForm.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -1925,6 +2000,11 @@ const initApp = () => {
 
         const isBizum = tabMethodBizum && tabMethodBizum.classList.contains('active');
         const selectedPayMethod = isBizum ? 'bizum' : 'card';
+
+        if (paymentMode === 'redsys') {
+            await startRedsysPayment(selectedPayMethod);
+            return;
+        }
 
         let cardPayload = null;
 

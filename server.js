@@ -649,6 +649,8 @@ app.use(helmet({
       fontSrc: ["'self'", "https://fonts.gstatic.com", "https://cdnjs.cloudflare.com", "data:"],
       imgSrc: ["'self'", "data:", "blob:", "https://*.googleusercontent.com", "https://images.unsplash.com"],
       connectSrc: ["'self'", "https://accounts.google.com", "https://*.redsys.es:25443", "https://sis-t.redsys.es:25443", "https://sis.redsys.es", "https://wa.me", "https://api.whatsapp.com"],
+      // El pago real se envía con un formulario POST al TPV de Redsys
+      formAction: ["'self'", "https://sis-t.redsys.es:25443", "https://sis.redsys.es"],
       frameSrc: ["'self'", "https://accounts.google.com"],
       objectSrc: ["'none'"],
       upgradeInsecureRequests: []
@@ -1613,8 +1615,8 @@ app.get('/api/bookings/unavailable-dates', async (req, res) => {
   let ranges = [];
   try {
     let query = `
-      SELECT pickup_date AS from_date, return_date AS to_date FROM bookings 
-      WHERE (status IS NULL OR status != 'cancelled')
+      SELECT pickup_date AS from_date, return_date AS to_date FROM bookings
+      WHERE ${ACTIVE_BOOKING_SQL}
       UNION ALL
       SELECT start_date AS from_date, end_date AS to_date FROM van_blockages
     `;
@@ -1623,7 +1625,7 @@ app.get('/api/bookings/unavailable-dates', async (req, res) => {
     if (van_type) {
       query = `
         SELECT pickup_date AS from_date, return_date AS to_date FROM bookings 
-        WHERE van_type = $1 AND (status IS NULL OR status != 'cancelled')
+        WHERE van_type = $1 AND ${ACTIVE_BOOKING_SQL}
         UNION ALL
         SELECT start_date AS from_date, end_date AS to_date FROM van_blockages 
         WHERE van_type = $1
@@ -1640,7 +1642,7 @@ app.get('/api/bookings/unavailable-dates', async (req, res) => {
   } catch (err) {
     console.warn('Base de datos offline al obtener disponibilidad, usando fallback:', err.message);
     const bookingsRange = fallbackBookings
-      .filter(b => (!van_type || b.van_type === van_type) && (!b.status || b.status !== 'cancelled'))
+      .filter(b => (!van_type || b.van_type === van_type) && isActiveFallbackBooking(b))
       .map(b => ({ from: formatDateISO(b.pickup_date), to: formatDateISO(b.return_date) }));
     const blockagesRange = fallbackBlockages
       .filter(b => (!van_type || b.van_type === van_type))
@@ -1722,8 +1724,8 @@ app.post('/api/bookings', async (req, res) => {
     if ((rental_mode || 'sin') === 'sin') {
       const checkOverlapsQuery = `
         SELECT id FROM bookings 
-        WHERE van_type = $1 
-          AND status != 'cancelled'
+        WHERE van_type = $1
+          AND ${ACTIVE_BOOKING_SQL}
           AND rental_mode = 'sin'
           AND (
             (pickup_date <= $2 AND return_date >= $2) OR
@@ -2252,24 +2254,97 @@ function generateRedsysOrderId() {
   return `${prefix}${suffix}`;
 }
 
-// 1. Crear parámetros para enviar el pago a Redsys (Tarjeta o Bizum en entorno Oficial Test)
+// Modo de cobro online: 'test' (TPV simulado), 'redsys' (pasarela real) u 'off'
+function getPaymentMode() {
+  if (process.env.ENABLE_TEST_PAYMENTS === 'true') return 'test';
+  if (process.env.REDSYS_MERCHANT_CODE && process.env.REDSYS_SECRET_KEY) return 'redsys';
+  return 'off';
+}
+
+// Minutos que una reserva a la espera de pago en Redsys bloquea las fechas
+const PENDING_PAYMENT_HOLD_MINUTES = 30;
+
+// Las reservas canceladas o con el pago abandonado no ocupan la furgoneta
+const ACTIVE_BOOKING_SQL = `(status IS NULL OR (status != 'cancelled' AND NOT (status = 'pending_payment' AND created_at < NOW() - INTERVAL '${PENDING_PAYMENT_HOLD_MINUTES} minutes')))`;
+
+function isActiveFallbackBooking(b) {
+  if (!b.status) return true;
+  if (b.status === 'cancelled') return false;
+  if (b.status === 'pending_payment') {
+    const created = new Date(b.created_at).getTime();
+    return !isNaN(created) && Date.now() - created < PENDING_PAYMENT_HOLD_MINUTES * 60 * 1000;
+  }
+  return true;
+}
+
+async function isVanAvailable(vanType, pickupDate, returnDate) {
+  try {
+    const checkRes = await pool.query(`
+      SELECT id FROM bookings
+      WHERE van_type = $1
+        AND ${ACTIVE_BOOKING_SQL}
+        AND rental_mode = 'sin'
+        AND (
+          (pickup_date <= $2 AND return_date >= $2) OR
+          (pickup_date <= $3 AND return_date >= $3) OR
+          (pickup_date >= $2 AND return_date <= $3)
+        )
+    `, [vanType, pickupDate, returnDate]);
+    return checkRes.rowCount === 0;
+  } catch (e) {
+    const start = parseBookingDate(pickupDate);
+    const end = parseBookingDate(returnDate);
+    return !fallbackBookings.some(b => {
+      if (b.van_type !== vanType || (b.rental_mode || 'sin') !== 'sin' || !isActiveFallbackBooking(b)) return false;
+      const bStart = parseBookingDate(String(b.pickup_date).slice(0, 10));
+      const bEnd = parseBookingDate(String(b.return_date).slice(0, 10));
+      return bStart && bEnd && start <= bEnd && end >= bStart;
+    });
+  }
+}
+
+// Inserta la reserva en PostgreSQL o, sin BD, en el almacén en memoria/disco
+async function saveBookingRecord(record) {
+  const columns = [
+    'name', 'van_type', 'van_name', 'pickup_date', 'pickup_time',
+    'return_date', 'return_time', 'days', 'extras', 'total_price',
+    'user_id', 'fianza_status', 'payment_status', 'payment_id', 'status',
+    'rental_mode', 'estimated_kms', 'waiting_hours', 'van_plate', 'van_m3',
+    'review_code', 'payment_method', 'client_email', 'client_phone', 'client_dni'
+  ];
+  try {
+    const values = columns.map(c => c === 'extras' ? JSON.stringify(record.extras || []) : record[c]);
+    const placeholders = columns.map((_, i) => `$${i + 1}`).join(', ');
+    const result = await pool.query(`INSERT INTO bookings (${columns.join(', ')}) VALUES (${placeholders}) RETURNING *`, values);
+    const saved = result.rows[0];
+    fallbackBookings.push(saved);
+    saveAdminStoreToFile();
+    return saved;
+  } catch (dbErr) {
+    console.warn('Reserva guardada en memoria (BD no disponible):', dbErr.message);
+    const mockId = fallbackBookings.length > 0 ? Math.max(...fallbackBookings.map(b => b.id)) + 1 : 1;
+    const saved = { id: mockId, ...record, created_at: new Date().toISOString() };
+    fallbackBookings.push(saved);
+    saveAdminStoreToFile();
+    return saved;
+  }
+}
+
+function generateReviewCode() {
+  return 'RMU-' + crypto.randomBytes(4).toString('hex').slice(0, 6).toUpperCase();
+}
+
+app.get('/api/payment-config', (req, res) => {
+  res.json({ mode: getPaymentMode() });
+});
+
+// 1. Crear la reserva pendiente y los parámetros firmados para redirigir al TPV de Redsys
 app.post('/api/redsys/create-payment', async (req, res) => {
   try {
     const { bookingData, payMethod } = req.body;
     if (!bookingData) {
       return res.status(400).json({ error: 'Faltan datos de la reserva.' });
     }
-
-    const quote = await computeBookingQuote(bookingData);
-    if (quote.error) {
-      return res.status(400).json({ error: quote.error });
-    }
-
-    const totalEuros = quote.total;
-    const amountCents = Math.round(totalEuros * 100).toString();
-
-    // Generar número de pedido único de 10 dígitos que cumple con la normativa Redsys
-    const numOrder = generateRedsysOrderId();
 
     const merchantCode = process.env.REDSYS_MERCHANT_CODE;
     const terminal = process.env.REDSYS_TERMINAL || '1';
@@ -2278,6 +2353,58 @@ app.post('/api/redsys/create-payment', async (req, res) => {
     if (!merchantCode || !secretKey) {
       return res.status(503).json({ error: 'La pasarela de pago no está configurada.' });
     }
+
+    // Solo alquiler sin conductor de hasta 7 días se paga online (mismo criterio que app.js)
+    if ((bookingData.rental_mode || 'sin') !== 'sin') {
+      return res.status(400).json({ error: 'El alquiler con conductor no se paga online.' });
+    }
+    const quote = await computeBookingQuote(bookingData);
+    if (quote.error) {
+      return res.status(400).json({ error: quote.error });
+    }
+    if (quote.days > 7) {
+      return res.status(400).json({ error: 'Los alquileres de más de 7 días se gestionan por WhatsApp.' });
+    }
+    if (!(await isVanAvailable(bookingData.van_type, bookingData.pickup_date, bookingData.return_date))) {
+      return res.status(400).json({ error: 'La furgoneta seleccionada no está disponible en las fechas elegidas.' });
+    }
+
+    const totalEuros = quote.total;
+    const amountCents = Math.round(totalEuros * 100).toString();
+
+    // Número de pedido Redsys: 12 dígitos, también es la llave de la reserva
+    const numOrder = generateRedsysOrderId();
+
+    const authUser = await getAuthUser(req);
+    const isBizum = payMethod === 'bizum';
+    await saveBookingRecord({
+      name: bookingData.name || (authUser && authUser.name) || 'Cliente',
+      van_type: bookingData.van_type,
+      van_name: quote.van.name || bookingData.van_name,
+      pickup_date: bookingData.pickup_date,
+      pickup_time: bookingData.pickup_time || null,
+      return_date: bookingData.return_date,
+      return_time: bookingData.return_time || null,
+      days: quote.days,
+      extras: Array.isArray(bookingData.extras) ? bookingData.extras : [],
+      total_price: totalEuros,
+      user_id: authUser && !authUser.isAdmin && typeof authUser.id === 'number' ? authUser.id : null,
+      fianza_status: 'pending',
+      payment_status: 'pending',
+      payment_id: numOrder,
+      status: 'pending_payment',
+      rental_mode: 'sin',
+      estimated_kms: 0,
+      waiting_hours: 0,
+      van_plate: quote.van.plate || '',
+      van_m3: quote.van.m3 || '',
+      review_code: generateReviewCode(),
+      payment_method: isBizum ? 'Bizum (Redsys)' : 'Tarjeta (Redsys)',
+      client_email: (bookingData.client_email || (authUser && authUser.email) || '').trim().toLowerCase() || null,
+      client_phone: (bookingData.client_phone || (authUser && authUser.phone) || '').trim() || null,
+      client_dni: (bookingData.client_dni || (authUser && authUser.dni) || '').trim().toUpperCase() || null
+    });
+
     const redsysUrl = process.env.REDSYS_URL || 'https://sis-t.redsys.es:25443/sis/realizarPago';
     const host = req.headers['x-forwarded-host'] || req.headers.host || 'rentmeuskar.com';
     const isLocal = host.includes('localhost') || host.includes('127.0.0.1');
@@ -2297,7 +2424,7 @@ app.post('/api/redsys/create-payment', async (req, res) => {
       DS_MERCHANT_MERCHANTNAME: 'RentMeUskar'
     };
 
-    if (payMethod === 'bizum') {
+    if (isBizum) {
       merchantParamsObj.DS_MERCHANT_PAYMETHODS = 'z';
     }
 
@@ -2382,25 +2509,8 @@ const handleTestPayment = async (req, res) => {
     const methodName = payMethod === 'bizum' ? 'Bizum CaixaBank (Test)' : 'Tarjeta CaixaBank (Test)';
 
     // Validar colisión de fechas
-    if ((bookingData.rental_mode || 'sin') === 'sin') {
-      try {
-        const checkRes = await pool.query(`
-          SELECT id FROM bookings 
-          WHERE van_type = $1 
-            AND status != 'cancelled'
-            AND rental_mode = 'sin'
-            AND (
-              (pickup_date <= $2 AND return_date >= $2) OR
-              (pickup_date <= $3 AND return_date >= $3) OR
-              (pickup_date >= $2 AND return_date <= $3)
-            )
-        `, [bookingData.van_type, bookingData.pickup_date, bookingData.return_date]);
-        if (checkRes.rowCount > 0) {
-          return res.status(400).json({ error: 'La furgoneta seleccionada no está disponible en las fechas elegidas.' });
-        }
-      } catch (chkErr) {
-        console.warn('Verificación de fechas offline/memoria:', chkErr.message);
-      }
+    if (!(await isVanAvailable(bookingData.van_type, bookingData.pickup_date, bookingData.return_date))) {
+      return res.status(400).json({ error: 'La furgoneta seleccionada no está disponible en las fechas elegidas.' });
     }
 
     // Obtener matrícula y volumen m3
@@ -2594,15 +2704,16 @@ app.post('/api/redsys/cancel-payment', async (req, res) => {
     const { orderId } = req.body;
     if (orderId) {
       try {
+        // Solo se cancela lo que aún espera pago: una reserva pagada nunca se toca desde aquí
         await pool.query(
-          "UPDATE bookings SET status = 'cancelled', payment_status = 'failed' WHERE payment_id = $1",
-          [orderId]
+          "UPDATE bookings SET status = 'cancelled', payment_status = 'failed' WHERE payment_id = $1 AND payment_status != 'paid'",
+          [String(orderId)]
         );
       } catch (dbErr) {
         console.warn('Error cancelando pago en PostgreSQL:', dbErr.message);
       }
       const fBooking = fallbackBookings.find(b => b.payment_id == orderId);
-      if (fBooking) {
+      if (fBooking && fBooking.payment_status !== 'paid') {
         fBooking.status = 'cancelled';
         fBooking.payment_status = 'failed';
         saveAdminStoreToFile();
@@ -2640,27 +2751,55 @@ app.post('/api/redsys/notification', async (req, res) => {
       return res.status(400).send('Firma no válida');
     }
 
-    if (responseCode >= 0 && responseCode <= 99) {
-      console.log(`[REDSYS] ¡PAGO AUTORIZADO CORRECTAMENTE! Orden: ${orderId}`);
-      try {
-        await pool.query(
-          "UPDATE bookings SET status = 'paid_pending', payment_status = 'paid' WHERE payment_id = $1",
-          [orderId]
-        );
-      } catch (dbErr) {
-        console.warn('[REDSYS] BD offline, actualizando reserva fallback:', dbErr.message);
-      }
-      const fBooking = fallbackBookings.find(b => b.payment_id == orderId);
-      if (fBooking) {
-        fBooking.status = 'paid_pending';
-        fBooking.payment_status = 'paid';
-        saveAdminStoreToFile();
-      }
-      return res.status(200).send('OK');
-    } else {
-      console.warn(`[REDSYS] Pago denegado o cancelado. Orden: ${orderId}, Código: ${responseCodeStr}`);
+    // El comercio y el importe cobrado deben coincidir con la reserva pendiente
+    const notifiedMerchant = String(decodedParams.Ds_MerchantCode || decodedParams.DS_MERCHANTCODE || '');
+    const notifiedAmount = parseInt(decodedParams.Ds_Amount || decodedParams.DS_AMOUNT, 10);
+    let booking = null;
+    try {
+      const bRes = await pool.query('SELECT * FROM bookings WHERE payment_id = $1', [String(orderId)]);
+      if (bRes.rowCount > 0) booking = bRes.rows[0];
+    } catch (dbErr) {
+      console.warn('[REDSYS] BD offline, buscando reserva fallback:', dbErr.message);
+    }
+    const fBooking = fallbackBookings.find(b => b.payment_id == orderId);
+    if (!booking) booking = fBooking || null;
+    if (!booking) {
+      console.error(`[REDSYS] Notificación para un pedido sin reserva: ${orderId}`);
       return res.status(200).send('OK');
     }
+    if (booking.payment_status === 'paid') {
+      return res.status(200).send('OK');
+    }
+
+    const amountMatches = notifiedAmount === Math.round(parseFloat(booking.total_price) * 100);
+    const merchantMatches = notifiedMerchant === String(process.env.REDSYS_MERCHANT_CODE);
+    const authorized = responseCode >= 0 && responseCode <= 99 && amountMatches && merchantMatches;
+    if (responseCode >= 0 && responseCode <= 99 && !authorized) {
+      console.error(`[REDSYS] Pago autorizado pero no coincide con la reserva (importe: ${amountMatches}, comercio: ${merchantMatches}). Orden: ${orderId}`);
+    }
+
+    const newStatus = authorized ? 'paid_pending' : 'cancelled';
+    const newPaymentStatus = authorized ? 'paid' : 'failed';
+    try {
+      await pool.query(
+        "UPDATE bookings SET status = $1, payment_status = $2 WHERE payment_id = $3 AND payment_status != 'paid'",
+        [newStatus, newPaymentStatus, String(orderId)]
+      );
+    } catch (dbErr) {
+      console.warn('[REDSYS] BD offline, actualizando reserva fallback:', dbErr.message);
+    }
+    if (fBooking) {
+      fBooking.status = newStatus;
+      fBooking.payment_status = newPaymentStatus;
+      saveAdminStoreToFile();
+    }
+
+    if (authorized) {
+      console.log(`[REDSYS] ¡PAGO AUTORIZADO CORRECTAMENTE! Orden: ${orderId}`);
+    } else {
+      console.warn(`[REDSYS] Pago denegado o cancelado. Orden: ${orderId}, Código: ${responseCodeStr}`);
+    }
+    return res.status(200).send('OK');
   } catch (err) {
     console.error('Error en webhook de Redsys:', err);
     res.status(500).send('Error interno');

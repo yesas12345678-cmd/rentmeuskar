@@ -705,7 +705,7 @@ const initAdmin = () => {
                 </td>
                 <td>
                     <span class="status-badge ${booking.status}">
-                        ${booking.status === 'pending' ? 'Pendiente' : booking.status === 'paid_pending' ? 'Pendiente Aprobación (Pagada)' : booking.status === 'confirmed' ? 'Confirmado' : 'Cancelado'}
+                        ${booking.status === 'pending' ? 'Pendiente' : booking.status === 'pending_payment' ? 'Esperando pago (Redsys)' : booking.status === 'paid_pending' ? 'Pendiente Aprobación (Pagada)' : booking.status === 'confirmed' ? 'Confirmado' : 'Cancelado'}
                     </span>
                 </td>
                 <td>
@@ -767,7 +767,7 @@ const initAdmin = () => {
         modalBookingId.textContent = `#${booking.id}`;
         
         modalStatusBadge.className = `status-badge ${booking.status}`;
-        modalStatusBadge.textContent = booking.status === 'pending' ? 'Pendiente' : booking.status === 'paid_pending' ? 'Pendiente Aprobación (Pagada)' : booking.status === 'confirmed' ? 'Confirmado' : 'Cancelado';
+        modalStatusBadge.textContent = booking.status === 'pending' ? 'Pendiente' : booking.status === 'pending_payment' ? 'Esperando pago (Redsys)' : booking.status === 'paid_pending' ? 'Pendiente Aprobación (Pagada)' : booking.status === 'confirmed' ? 'Confirmado' : 'Cancelado';
         
         modalVanName.textContent = booking.van_name;
         modalPickupDate.innerHTML = `${formatDate(booking.pickup_date)} a las <strong>${booking.pickup_time}</strong>`;

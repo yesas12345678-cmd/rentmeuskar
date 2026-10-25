@@ -163,8 +163,8 @@
             <i class="fa-solid fa-circle-check"></i>
         </div>
         <div class="verified-badge"><i class="fa-solid fa-circle-check"></i> Pago Autorizado y Verificado por CaixaBank</div>
-        <h1>¡Pago Confirmado con Éxito!</h1>
-        <p>Tu pago se ha procesado y verificado correctamente a través de la pasarela segura CaixaBank Redsys.</p>
+        <h1 id="success-title">¡Pago Confirmado con Éxito!</h1>
+        <p id="success-text">Tu pago se ha procesado y verificado correctamente a través de la pasarela segura CaixaBank Redsys.</p>
 
         <div class="order-info">
             <div class="order-row">
@@ -197,7 +197,7 @@
             </div>
             <div class="order-row">
                 <span class="order-label">Estado de la Operación:</span>
-                <span class="order-value" style="color: var(--color-neon, #82d105);"><i class="fa-solid fa-circle-check"></i> Aprobado (0000)</span>
+                <span class="order-value" id="op-status" style="color: var(--color-neon, #82d105);"><i class="fa-solid fa-circle-check"></i> Aprobado (0000)</span>
             </div>
         </div>
 
@@ -220,18 +220,48 @@
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
             const urlParams = new URLSearchParams(window.location.search);
-            const orderId = urlParams.get('order') || 'DEMO-' + Math.floor(Math.random() * 1000000);
-            document.getElementById('order-id').innerText = orderId;
+            const orderId = urlParams.get('order') || '';
+            document.getElementById('order-id').innerText = orderId || '-';
+
+            const titleEl = document.getElementById('success-title');
+            const textEl = document.getElementById('success-text');
+            const statusEl = document.getElementById('op-status');
+            const originalTitle = titleEl.innerText;
+            const originalText = textEl.innerText;
+            const originalStatus = statusEl.innerHTML;
+
+            // Redsys avisa al servidor (notificación firmada) en paralelo a esta redirección,
+            // así que se consulta varias veces hasta que el pago figure como cobrado
+            titleEl.innerText = 'Comprobando tu pago...';
+            textEl.innerText = 'Estamos esperando la confirmación del banco. No cierres esta página.';
+            statusEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Pendiente de confirmación';
+
+            const fetchConfirmation = async () => {
+                for (let attempt = 0; attempt < 15 && orderId; attempt++) {
+                    const response = await fetch('/api/redsys/confirm-payment', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ orderId: orderId })
+                    });
+                    if (response.ok) return response;
+                    await new Promise(r => setTimeout(r, 2000));
+                }
+                return null;
+            };
 
             try {
-                // Confirmar pago en backend y recuperar datos actualizados de la reserva
-                const res = await fetch('/api/redsys/confirm-payment', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ orderId: orderId })
-                });
+                const res = await fetchConfirmation();
 
-                if (res.ok) {
+                if (!res) {
+                    titleEl.innerText = 'Pago en verificación';
+                    textEl.innerText = 'Aún no hemos recibido la confirmación del banco. Si el cargo aparece en tu cuenta, tu reserva quedará confirmada en unos minutos; puedes revisarla en tu área de cliente o escribirnos por WhatsApp.';
+                    statusEl.innerHTML = '<span style="color: #ffc107;"><i class="fa-solid fa-hourglass-half"></i> Pendiente de confirmación</span>';
+                }
+
+                if (res && res.ok) {
+                    titleEl.innerText = originalTitle;
+                    textEl.innerText = originalText;
+                    statusEl.innerHTML = originalStatus;
                     const data = await res.json();
                     if (data && data.booking) {
                         const b = data.booking;
@@ -261,7 +291,7 @@
                         }
 
                         // Personalizar mensaje de WhatsApp
-                        const waMsg = `Hola RentMeUskar, he realizado un pago de prueba para mi reserva #${b.id || ''} (${b.van_name || 'furgoneta'}) con N.º Pedido ${orderId}. Quedo a la espera de confirmación. ¡Gracias!`;
+                        const waMsg = `Hola RentMeUskar, he realizado el pago de mi reserva #${b.id || ''} (${b.van_name || 'furgoneta'}) con N.º Pedido ${orderId}. Quedo a la espera de confirmación. ¡Gracias!`;
                         document.getElementById('btn-whatsapp').href = `https://api.whatsapp.com/send?phone=34614767411&text=${encodeURIComponent(waMsg)}`;
                     }
                 }
