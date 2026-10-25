@@ -515,11 +515,13 @@ const initAdmin = () => {
     const updateKPIs = () => {
         kpiTotal.textContent = bookings.length;
         
-        const pendingCount = bookings.filter(b => b.status === 'pending').length;
+        // Pendientes de acción: solicitudes por WhatsApp y reservas ya pagadas que esperan aprobación
+        const pendingCount = bookings.filter(b => b.status === 'pending' || b.status === 'paid_pending').length;
         kpiPending.textContent = pendingCount;
-        
-        const confirmedBookings = bookings.filter(b => b.status === 'confirmed');
-        const revenue = confirmedBookings.reduce((sum, b) => sum + parseFloat(b.total_price || 0), 0);
+
+        // Ingresos: lo confirmado más lo ya cobrado online aunque aún no esté aprobado
+        const revenueBookings = bookings.filter(b => b.status !== 'cancelled' && (b.status === 'confirmed' || b.payment_status === 'paid'));
+        const revenue = revenueBookings.reduce((sum, b) => sum + parseFloat(b.total_price || 0), 0);
         kpiRevenue.textContent = formatCurrency(revenue);
     };
 

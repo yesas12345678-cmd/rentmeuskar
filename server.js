@@ -2118,47 +2118,85 @@ app.get('/api/bookings', async (req, res) => {
   return res.json(userBookings);
 });
 
-// 8. Actualizar una reserva (Protegido por Administrador)
+// Campos que el panel admin puede actualizar en una reserva, con el tipo de su columna.
+// Antes solo se guardaban status/fianza_status/payment_status y los datos del contrato se perdían
+const BOOKING_STATUS_VALUES = ['pending', 'pending_payment', 'paid_pending', 'confirmed', 'cancelled'];
+const FIANZA_STATUS_VALUES = ['pending', 'paid', 'refunded'];
+const PAYMENT_STATUS_VALUES = ['pending', 'paid', 'failed', 'refunded'];
+const ADMIN_BOOKING_FIELDS = {
+  contract_applied_rate: 'text', client_address: 'text', client_postal_code: 'text', client_city: 'text',
+  client_province: 'text', client_license_num: 'text', second_driver_name: 'text', second_driver_dni: 'text',
+  second_driver_phone: 'text', second_driver_license_num: 'text', fuel_out: 'text', fuel_in: 'text',
+  adblue_out: 'text', adblue_in: 'text', payment_method: 'text', fianza_retained_reason: 'text', accessory_others: 'text',
+  client_birthdate: 'date', client_license_exp: 'date', second_driver_license_exp: 'date',
+  km_out: 'int', km_in: 'int', km_included: 'int',
+  km_price_extra: 'number', cleaning_price: 'number', fianza_retained_amount: 'number',
+  km_extra_package: 'bool', fianza_returned_full: 'bool', fianza_returned_partial: 'bool',
+  clean_interior_yes: 'bool', clean_interior_no: 'bool', clean_exterior_yes: 'bool', clean_exterior_no: 'bool',
+  accessory_permiso: 'bool', accessory_ficha: 'bool', accessory_llave: 'bool', accessory_llave_repuesto: 'bool',
+  accessory_v16: 'bool', accessory_adaptador: 'bool', accessory_gancho: 'bool', accessory_chaleco: 'bool',
+  accessory_rueda: 'bool', accessory_gato: 'bool', accessory_manual: 'bool'
+};
+
+// Devuelve { updates } con los valores ya convertidos, o { error } si alguno no es válido
+function parseAdminBookingUpdates(body) {
+  const updates = {};
+  const enums = { status: BOOKING_STATUS_VALUES, fianza_status: FIANZA_STATUS_VALUES, payment_status: PAYMENT_STATUS_VALUES };
+  for (const [field, allowed] of Object.entries(enums)) {
+    if (body[field] === undefined) continue;
+    if (!allowed.includes(body[field])) return { error: `Valor no válido para ${field}.` };
+    updates[field] = body[field];
+  }
+  for (const [field, type] of Object.entries(ADMIN_BOOKING_FIELDS)) {
+    if (body[field] === undefined) continue;
+    const raw = body[field];
+    const empty = raw === null || raw === '';
+    if (type === 'text') {
+      if (!empty && typeof raw !== 'string') return { error: `Valor no válido para ${field}.` };
+      updates[field] = empty ? null : raw.trim().slice(0, 500);
+    } else if (type === 'date') {
+      if (!empty && !/^\d{4}-\d{2}-\d{2}$/.test(String(raw))) return { error: `Fecha no válida en ${field}.` };
+      updates[field] = empty ? null : String(raw);
+    } else if (type === 'int' || type === 'number') {
+      const num = empty ? 0 : Number(raw);
+      if (!Number.isFinite(num) || num < 0) return { error: `Número no válido en ${field}.` };
+      updates[field] = type === 'int' ? Math.round(num) : Math.round(num * 100) / 100;
+    } else if (type === 'bool') {
+      updates[field] = raw === true || raw === 'true' || raw === 1 || raw === '1' || raw === 'on';
+    }
+  }
+  return { updates };
+}
+
+// 8. Actualizar una reserva (Protegido por Administrador): estado, fianza, pago y datos del contrato
 app.put('/api/bookings/:id', verifyAdmin, async (req, res) => {
   const { id } = req.params;
-  const { status, fianza_status, payment_status } = req.body;
+  const { updates, error } = parseAdminBookingUpdates(req.body || {});
+  if (error) {
+    return res.status(400).json({ error });
+  }
+  if (Object.keys(updates).length === 0) {
+    return res.status(400).json({ error: 'No hay cambios que guardar.' });
+  }
+
+  const applyToFallback = (message) => {
+    const index = fallbackBookings.findIndex(b => b.id == id);
+    if (index === -1) return res.status(404).json({ error: 'Reserva no encontrada.' });
+    fallbackBookings[index] = { ...fallbackBookings[index], ...updates };
+    saveAdminStoreToFile();
+    return res.json({ message, booking: fallbackBookings[index] });
+  };
 
   try {
-    // Obtener la reserva actual
-    const checkRes = await pool.query('SELECT * FROM bookings WHERE id = $1', [id]);
-    if (checkRes.rowCount === 0) {
-      // Intentar actualizar en memoria fallbackBookings
-      const index = fallbackBookings.findIndex(b => b.id == id);
-      if (index !== -1) {
-        const current = fallbackBookings[index];
-        const updated = {
-          ...current,
-          status: status !== undefined ? status : current.status,
-          fianza_status: fianza_status !== undefined ? fianza_status : current.fianza_status,
-          payment_status: payment_status !== undefined ? payment_status : current.payment_status
-        };
-        fallbackBookings[index] = updated;
-        saveAdminStoreToFile();
-        return res.json({
-          message: 'Reserva actualizada en memoria fallback.',
-          booking: updated
-        });
-      }
-      return res.status(404).json({ error: 'Reserva no encontrada.' });
+    const columns = Object.keys(updates);
+    const setClause = columns.map((col, i) => `${col} = $${i + 1}`).join(', ');
+    const result = await pool.query(
+      `UPDATE bookings SET ${setClause} WHERE id = $${columns.length + 1} RETURNING *`,
+      [...columns.map(col => updates[col]), id]
+    );
+    if (result.rowCount === 0) {
+      return applyToFallback('Reserva actualizada en memoria fallback.');
     }
-    const current = checkRes.rows[0];
-
-    const newStatus = status !== undefined ? status : current.status;
-    const newFianzaStatus = fianza_status !== undefined ? fianza_status : current.fianza_status;
-    const newPaymentStatus = payment_status !== undefined ? payment_status : current.payment_status;
-
-    const query = `
-      UPDATE bookings 
-      SET status = $1, fianza_status = $2, payment_status = $3
-      WHERE id = $4 
-      RETURNING *
-    `;
-    const result = await pool.query(query, [newStatus, newFianzaStatus, newPaymentStatus, id]);
 
     const fbIndex = fallbackBookings.findIndex(b => b.id == id);
     if (fbIndex !== -1) {
@@ -2171,24 +2209,8 @@ app.put('/api/bookings/:id', verifyAdmin, async (req, res) => {
       booking: result.rows[0]
     });
   } catch (err) {
-    console.error('Error al actualizar reserva, intentando en memoria:', err);
-    const index = fallbackBookings.findIndex(b => b.id == id);
-    if (index !== -1) {
-      const current = fallbackBookings[index];
-      const updated = {
-        ...current,
-        status: status !== undefined ? status : current.status,
-        fianza_status: fianza_status !== undefined ? fianza_status : current.fianza_status,
-        payment_status: payment_status !== undefined ? payment_status : current.payment_status
-      };
-      fallbackBookings[index] = updated;
-      saveAdminStoreToFile();
-      return res.json({
-        message: 'Reserva actualizada en memoria fallback (offline).',
-        booking: updated
-      });
-    }
-    res.status(500).json({ error: 'Error del servidor al actualizar la reserva.' });
+    console.error('Error al actualizar reserva, intentando en memoria:', err.message);
+    return applyToFallback('Reserva actualizada en memoria fallback (offline).');
   }
 });
 
