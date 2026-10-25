@@ -232,6 +232,8 @@ const initAdmin = () => {
     /* ==========================================================================
        1. AUTENTICACIÓN
        ========================================================================== */
+    let dashboardDataLoaded = false;
+
     const checkAuth = async () => {
         const token = localStorage.getItem('admin_token');
         if (!token) {
@@ -249,7 +251,9 @@ const initAdmin = () => {
                 if (user && user.is_admin) {
                     loginLayout.style.display = 'none';
                     dashboardLayout.style.display = 'block';
-                    if (tbody && tbody.children.length === 0) {
+                    // La tabla trae de serie la fila "Cargando reservas...", así que se usa una marca propia
+                    if (!dashboardDataLoaded) {
+                        dashboardDataLoaded = true;
                         fetchBookings();
                         fetchFleet();
                     }
@@ -391,6 +395,7 @@ const initAdmin = () => {
 
     btnAdminLogout.addEventListener('click', () => {
         localStorage.removeItem('admin_token');
+        dashboardDataLoaded = false;
         showToast('Sesión cerrada correctamente.', 'info');
         checkAuth();
     });

@@ -1652,7 +1652,7 @@ app.get('/api/bookings/unavailable-dates', async (req, res) => {
 
 // 5. Crear una nueva reserva
 app.post('/api/bookings', async (req, res) => {
-  const {
+  let {
     name,
     van_type,
     van_name,
@@ -1678,10 +1678,30 @@ app.post('/api/bookings', async (req, res) => {
     return res.status(400).json({ error: 'Faltan campos obligatorios en el formulario.' });
   }
 
+  // Un cliente solo puede crear solicitudes pendientes: el estado de pago lo fija el servidor o el admin
+  const requester = await getAuthUser(req);
+  if (!(requester && requester.isAdmin)) {
+    fianza_status = 'pending';
+    payment_status = 'pending';
+    payment_id = null;
+    status = 'pending';
+    user_id = requester && typeof requester.id === 'number' ? requester.id : null;
+    const quote = await computeBookingQuote(req.body);
+    if (quote.error) {
+      return res.status(400).json({ error: quote.error });
+    }
+    total_price = quote.total;
+    days = quote.days;
+  }
+
+  // Declaradas fuera del try: el catch de modo sin BD también las usa
+  let realPlate = '';
+  let realM3 = '';
+  let clientEmail = '';
+  let clientPhone = '';
+  let clientDni = '';
   try {
     // Obtener matrícula y volumen de la base de datos para la furgoneta
-    let realPlate = '';
-    let realM3 = '';
     try {
       const vanRes = await pool.query('SELECT plate, m3 FROM vans WHERE van_type = $1', [van_type]);
       if (vanRes.rowCount > 0) {
@@ -1718,10 +1738,10 @@ app.post('/api/bookings', async (req, res) => {
     }
 
     // Resolver usuario autenticado y detalles de cliente
-    const authUser = await getAuthUser(req);
-    const clientEmail = (req.body.client_email || (authUser && authUser.email) || '').trim().toLowerCase();
-    const clientPhone = (req.body.client_phone || (authUser && authUser.phone) || '').trim();
-    const clientDni = (req.body.client_dni || (authUser && authUser.dni) || '').trim().toUpperCase();
+    const authUser = requester;
+    clientEmail = (req.body.client_email || (authUser && authUser.email) || '').trim().toLowerCase();
+    clientPhone = (req.body.client_phone || (authUser && authUser.phone) || '').trim();
+    clientDni = (req.body.client_dni || (authUser && authUser.dni) || '').trim().toUpperCase();
 
     // Validar user_id frente a la tabla users para no violar la Foreign Key constraint
     let validUserId = null;
@@ -1887,6 +1907,18 @@ app.get('/api/bookings/:id', async (req, res) => {
   }
 
   if (!booking) {
+    return res.status(404).json({ error: 'Reserva no encontrada.' });
+  }
+
+  // Acceso: admin, titular de la reserva o enlace con su código secreto (?auth=review_code/payment_id)
+  const authParam = typeof req.query.auth === 'string' ? req.query.auth.trim() : '';
+  const hasSecret = !!authParam && [booking.review_code, booking.payment_id]
+    .some(secret => secret && safeEqual(String(secret).toUpperCase(), authParam.toUpperCase()));
+  const isOwner = !!(authUser && !authUser.isAdmin && (
+    (booking.user_id && String(booking.user_id) === String(authUser.id)) ||
+    (authUser.email && [booking.client_email, booking.user_email].some(e => e && e.toLowerCase() === authUser.email.toLowerCase()))
+  ));
+  if (!(authUser && authUser.isAdmin) && !isOwner && !hasSecret) {
     return res.status(404).json({ error: 'Reserva no encontrada.' });
   }
 
@@ -2141,6 +2173,77 @@ function decodeRedsysParameters(merchantParamsBase64) {
   return JSON.parse(jsonStr);
 }
 
+// Fechas 'AAAA-MM-DD' o 'DD/MM/AAAA', igual que parseSpanishDate en app.js
+function parseBookingDate(dateStr) {
+  if (!dateStr || typeof dateStr !== 'string') return null;
+  let parts;
+  if (dateStr.includes('-')) {
+    parts = dateStr.split('-').map(n => parseInt(n, 10));
+    if (parts.length === 3) return new Date(parts[0], parts[1] - 1, parts[2]);
+  }
+  if (dateStr.includes('/')) {
+    parts = dateStr.split('/').map(n => parseInt(n, 10));
+    if (parts.length === 3) return new Date(parts[2], parts[1] - 1, parts[0]);
+  }
+  return null;
+}
+
+// Precio calculado en el servidor con la misma fórmula que la calculadora de app.js:
+// el total enviado por el navegador nunca se usa para cobrar
+async function computeBookingQuote(bookingData) {
+  const vanType = bookingData && bookingData.van_type;
+  if (!vanType) return { error: 'Falta el tipo de furgoneta.' };
+
+  let van = null;
+  try {
+    const vRes = await pool.query('SELECT * FROM vans WHERE van_type = $1', [vanType]);
+    if (vRes.rowCount > 0) van = vRes.rows[0];
+  } catch (e) {
+    // BD no disponible: se usa el catálogo en memoria
+  }
+  if (!van) van = fallbackVans.find(v => v.van_type === vanType) || null;
+  if (!van) return { error: 'La furgoneta seleccionada no existe.' };
+
+  const start = parseBookingDate(bookingData.pickup_date);
+  const end = parseBookingDate(bookingData.return_date);
+  if (!start || !end || isNaN(start) || isNaN(end) || end < start) {
+    return { error: 'Las fechas de la reserva no son válidas.' };
+  }
+  const diffDays = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
+  const days = diffDays > 0 ? diffDays : 1;
+
+  let baseTaxable;
+  if ((bookingData.rental_mode || 'sin') === 'sin') {
+    let totalBase = parseFloat(van.price_sin) * days;
+    if (days >= 3 && days <= 7) totalBase *= 0.95;
+
+    let customExtras = van.custom_extras || [];
+    if (typeof customExtras === 'string') {
+      try { customExtras = JSON.parse(customExtras); } catch (e) { customExtras = []; }
+    }
+    // Los extras llegan como texto ("GPS Navegador (+5.00€/día)"); el precio sale del catálogo
+    let extrasCost = 0;
+    const requested = Array.isArray(bookingData.extras) ? bookingData.extras : [];
+    requested.forEach(label => {
+      const extra = customExtras.find(x => x && x.name && String(label).startsWith(x.name));
+      if (!extra) return;
+      const price = parseFloat(extra.price) || 0;
+      extrasCost += extra.type === 'daily' ? price * days : price;
+    });
+    baseTaxable = totalBase + extrasCost;
+  } else {
+    const kms = parseInt(bookingData.estimated_kms, 10) || 20;
+    const wait = Math.max(0, parseFloat(bookingData.waiting_hours) || 0);
+    const extraKmCost = kms > 20 ? (kms - 20) * parseFloat(van.km_price_con) : 0;
+    const waitingRate = van.waiting_hour_price !== undefined && van.waiting_hour_price !== null ? parseFloat(van.waiting_hour_price) : 30.00;
+    baseTaxable = parseFloat(van.min_price_con) + extraKmCost + (wait * waitingRate);
+  }
+
+  const total = Math.round(baseTaxable * 1.21 * 100) / 100;
+  if (!(total > 0)) return { error: 'No se pudo calcular el importe de la reserva.' };
+  return { total, days, van };
+}
+
 function generateRedsysOrderId() {
   const now = new Date();
   const prefix = String(now.getFullYear()).slice(-2) + String(now.getMonth() + 1).padStart(2, '0');
@@ -2157,13 +2260,12 @@ app.post('/api/redsys/create-payment', async (req, res) => {
       return res.status(400).json({ error: 'Faltan datos de la reserva.' });
     }
 
-    const rentAmount = parseFloat(bookingData.total_price) || 0;
-    
-    if (rentAmount <= 0) {
-      return res.status(400).json({ error: 'El importe del alquiler no es válido.' });
+    const quote = await computeBookingQuote(bookingData);
+    if (quote.error) {
+      return res.status(400).json({ error: quote.error });
     }
 
-    const totalEuros = rentAmount;
+    const totalEuros = quote.total;
     const amountCents = Math.round(totalEuros * 100).toString();
 
     // Generar número de pedido único de 10 dígitos que cumple con la normativa Redsys
@@ -2222,9 +2324,17 @@ app.post('/api/redsys/create-payment', async (req, res) => {
 // 2. Procesamiento de pago seguro CaixaBank en entorno de demostración (solo tarjetas de prueba autorizadas)
 const handleTestPayment = async (req, res) => {
   try {
+    // El TPV simulado marca reservas como pagadas sin cobrar: solo se activa expresamente (local/pruebas)
+    if (process.env.ENABLE_TEST_PAYMENTS !== 'true') {
+      return res.status(503).json({ error: 'El pago online no está disponible en este momento. Contacta con nosotros por WhatsApp o teléfono para completar tu reserva.' });
+    }
+
     const { bookingData, payMethod, cardDetails } = req.body;
     if (!bookingData) {
       return res.status(400).json({ error: 'Faltan datos de la reserva para procesar el pago.' });
+    }
+    if (payMethod !== 'bizum' && !(cardDetails && cardDetails.cardNumber)) {
+      return res.status(400).json({ error: 'Faltan los datos de la tarjeta.' });
     }
 
     // Doble validación de seguridad: en entorno de pruebas ÚNICAMENTE se autorizan tarjetas de test de Redsys / CaixaBank
@@ -2254,10 +2364,19 @@ const handleTestPayment = async (req, res) => {
       }
     }
 
-    const rentAmount = parseFloat(bookingData.total_price) || 0;
-    if (rentAmount <= 0) {
-      return res.status(400).json({ error: 'El importe del alquiler no es válido.' });
+    // Solo alquiler sin conductor de hasta 7 días se paga online (mismo criterio que app.js)
+    if ((bookingData.rental_mode || 'sin') !== 'sin') {
+      return res.status(400).json({ error: 'El alquiler con conductor no se paga online.' });
     }
+    const quote = await computeBookingQuote(bookingData);
+    if (quote.error) {
+      return res.status(400).json({ error: quote.error });
+    }
+    if (quote.days > 7) {
+      return res.status(400).json({ error: 'Los alquileres de más de 7 días se gestionan por WhatsApp.' });
+    }
+    const rentAmount = quote.total;
+    bookingData.days = quote.days;
 
     const numOrder = 'TPV-' + generateRedsysOrderId();
     const methodName = payMethod === 'bizum' ? 'Bizum CaixaBank (Test)' : 'Tarjeta CaixaBank (Test)';
@@ -2307,15 +2426,9 @@ const handleTestPayment = async (req, res) => {
     const clientPhone = (bookingData.client_phone || (authUser && authUser.phone) || '').trim();
     const clientDni = (bookingData.client_dni || (authUser && authUser.dni) || '').trim().toUpperCase();
 
-    // Validar user_id frente a tabla users
+    // Validar user_id frente a tabla users (solo el usuario autenticado, nunca el enviado en el cuerpo)
     let validUserId = null;
-    if (bookingData.user_id && typeof bookingData.user_id === 'number') {
-      try {
-        const uRes = await pool.query('SELECT id FROM users WHERE id = $1', [bookingData.user_id]);
-        if (uRes.rowCount > 0) validUserId = uRes.rows[0].id;
-      } catch (e) {}
-    }
-    if (!validUserId && authUser && authUser.id && typeof authUser.id === 'number' && authUser.id !== 9999) {
+    if (authUser && authUser.id && typeof authUser.id === 'number' && authUser.id !== 9999) {
       try {
         const uRes = await pool.query('SELECT id FROM users WHERE id = $1', [authUser.id]);
         if (uRes.rowCount > 0) validUserId = uRes.rows[0].id;
@@ -3592,8 +3705,22 @@ app.get('/favicon.ico', (req, res) => {
   res.sendFile(path.join(__dirname, 'assets', 'favicon.png'));
 });
 
-// Servir archivos estáticos
-app.use(express.static(__dirname));
+// Servir solo los archivos públicos de la raíz (nunca el código del servidor ni data/)
+const PUBLIC_ROOT_FILES = new Set([
+  'index.html', 'admin.html', 'contract.html', 'invoice.html',
+  'payment-success.html', 'payment-error.html',
+  'styles.css', 'app.js', 'admin.js',
+  'robots.txt', 'sitemap.xml', 'favicon.jpeg'
+]);
+
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+app.get('/:file', (req, res, next) => {
+  if (!PUBLIC_ROOT_FILES.has(req.params.file)) return next();
+  res.sendFile(path.join(__dirname, req.params.file));
+});
 
 // Manejador centralizado de errores de subida de archivos (Multer) y validaciones
 app.use((err, req, res, next) => {
