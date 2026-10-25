@@ -10,3 +10,6 @@ assets/logo_backup_horizontal.png
 data/faqs_clean.json
 *.log
 security_sentinel_10h.log
+
+# Datos de clientes (DNI, reservas): nunca en git
+data/admin_store.json

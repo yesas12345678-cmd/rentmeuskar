@@ -461,9 +461,63 @@ const upload = multer({
 });
 
 // Password hashing function (SHA256)
+// Contraseñas nuevas: scrypt con sal ('scrypt$sal$hash'). Las antiguas (SHA-256 sin sal)
+// se siguen aceptando y se migran a scrypt en el siguiente inicio de sesión correcto.
 function hashPassword(password) {
-  return crypto.createHash('sha256').update(password).digest('hex');
+  const salt = crypto.randomBytes(16).toString('hex');
+  const hash = crypto.scryptSync(String(password), salt, 64).toString('hex');
+  return `scrypt$${salt}$${hash}`;
 }
+
+function legacySha256(password) {
+  return crypto.createHash('sha256').update(String(password)).digest('hex');
+}
+
+function verifyPassword(password, stored) {
+  if (!password || !stored || typeof stored !== 'string') return false;
+  if (stored.startsWith('scrypt$')) {
+    const [, salt, hash] = stored.split('$');
+    if (!salt || !hash) return false;
+    const candidate = crypto.scryptSync(String(password), salt, 64);
+    const expected = Buffer.from(hash, 'hex');
+    return candidate.length === expected.length && crypto.timingSafeEqual(candidate, expected);
+  }
+  if (/^[a-f0-9]{64}$/.test(stored)) {
+    const candidate = Buffer.from(legacySha256(password));
+    const expected = Buffer.from(stored);
+    return candidate.length === expected.length && crypto.timingSafeEqual(candidate, expected);
+  }
+  return false;
+}
+
+function needsPasswordRehash(stored) {
+  return typeof stored === 'string' && !stored.startsWith('scrypt$');
+}
+
+// Códigos de 6 cifras enviados por correo (registro, recuperación, cambio de credenciales)
+const MAX_CODE_ATTEMPTS = 5;
+
+function generateVerificationCode() {
+  return String(crypto.randomInt(100000, 1000000));
+}
+
+// Devuelve 'ok', 'expired', 'locked' o 'invalid'; cada fallo consume un intento
+function checkPendingCode(pending, inputCode) {
+  if (!pending) return 'invalid';
+  if (pending.expires && pending.expires < Date.now()) return 'expired';
+  if ((pending.attempts || 0) >= MAX_CODE_ATTEMPTS) return 'locked';
+  if (!safeEqual(String(pending.code), String(inputCode || '').trim())) {
+    pending.attempts = (pending.attempts || 0) + 1;
+    return pending.attempts >= MAX_CODE_ATTEMPTS ? 'locked' : 'invalid';
+  }
+  return 'ok';
+}
+
+const CODE_ERRORS = {
+  expired: 'El código de verificación ha caducado. Solicita uno nuevo.',
+  locked: 'Demasiados intentos fallidos. Solicita un código nuevo.',
+  invalid: 'El código de verificación introducido no es correcto.'
+};
 
 // Token secreto para firma criptográfica de sesiones de usuario
 // Sin SESSION_SECRET se genera uno aleatorio por arranque (las sesiones se cierran al reiniciar)
@@ -471,6 +525,8 @@ const SESSION_SECRET = process.env.SESSION_SECRET || crypto.randomBytes(32).toSt
 if (!process.env.SESSION_SECRET) {
   console.warn('[AUTH] Falta SESSION_SECRET en el entorno: se usa uno temporal y las sesiones caducarán al reiniciar.');
 }
+
+const USER_TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
 function generateUserToken(userId, email) {
   const payload = Buffer.from(JSON.stringify({ id: userId, email: email || '', ts: Date.now() })).toString('base64url');
@@ -489,6 +545,8 @@ function verifyUserToken(token) {
       if (signature.length === expectedSig.length && crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSig))) {
         try {
           const data = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8'));
+          // Las sesiones de cliente caducan a los 30 días de iniciarse
+          if (!data.ts || Date.now() - data.ts > USER_TOKEN_TTL_MS) return null;
           return data; // { id, email, ts }
         } catch (e) {
           return null;
@@ -506,9 +564,15 @@ function getAdminUsername() {
   return (fallbackSettings.admin_username || process.env.ADMIN_USERNAME || 'zvaito').toLowerCase();
 }
 
+// Valor estable que identifica la contraseña de admin vigente (entra en la firma del token)
 function getAdminPasswordHash() {
   if (fallbackSettings.admin_password_hash) return fallbackSettings.admin_password_hash;
-  return process.env.ADMIN_PASSWORD ? hashPassword(process.env.ADMIN_PASSWORD) : null;
+  return process.env.ADMIN_PASSWORD ? 'env:' + legacySha256(process.env.ADMIN_PASSWORD) : null;
+}
+
+function verifyAdminPassword(password) {
+  if (fallbackSettings.admin_password_hash) return verifyPassword(password, fallbackSettings.admin_password_hash);
+  return !!process.env.ADMIN_PASSWORD && safeEqual(String(password), process.env.ADMIN_PASSWORD);
 }
 
 function signAdminPayload(payload) {
@@ -671,6 +735,7 @@ app.use('/api/admin/request-credential-change-code', authLimiter);
 app.use('/api/admin/confirm-credential-change', authLimiter);
 app.use('/api/contact', contactLimiter);
 app.use('/api/reviews/verify-code', reviewLimiter);
+app.post('/api/reviews', reviewLimiter);
 
 app.use(compression());
 
@@ -1133,11 +1198,10 @@ app.post('/api/auth/register', async (req, res) => {
   }
 
   // Generar código de activación de 6 dígitos
-  const code = Math.floor(100000 + Math.random() * 900000).toString();
+  const code = generateVerificationCode();
   pendingRegistrations[cleanEmail] = {
     name: cleanName,
     email: cleanEmail,
-    password,
     passHash,
     phone: cleanPhone,
     dni: cleanDni,
@@ -1202,9 +1266,10 @@ app.post('/api/auth/verify-registration', async (req, res) => {
     return res.status(400).json({ error: 'No hay ninguna solicitud de registro pendiente para este correo.' });
   }
 
-  const inputCode = code.trim();
-  if (pending.code !== inputCode) {
-    return res.status(400).json({ error: 'El código de verificación introducido no es correcto.' });
+  const codeStatus = checkPendingCode(pending, code);
+  if (codeStatus !== 'ok') {
+    if (codeStatus !== 'invalid') delete pendingRegistrations[cleanEmail];
+    return res.status(400).json({ error: CODE_ERRORS[codeStatus] });
   }
 
   // Código correcto: Crear usuario en la base de datos e iniciar sesión automáticamente
@@ -1298,14 +1363,16 @@ app.post('/api/auth/login', async (req, res) => {
     return res.status(400).json({ error: 'Email y contraseña son obligatorios.' });
   }
 
+  if (typeof email !== 'string' || typeof password !== 'string') {
+    return res.status(400).json({ error: 'Email y contraseña no válidos.' });
+  }
+
   const cleanEmail = email.trim().toLowerCase();
-  const passHash = hashPassword(password);
-  
+
   // Login de Administrador (usuario del panel, info@ o ADMIN_EMAIL del entorno)
   const adminLogins = [getAdminUsername(), 'info@rentmeuskar.com', (process.env.ADMIN_EMAIL || '').toLowerCase()].filter(Boolean);
-  const currentAdminPassHash = getAdminPasswordHash();
 
-  if (currentAdminPassHash && adminLogins.includes(cleanEmail) && safeEqual(passHash, currentAdminPassHash)) {
+  if (adminLogins.includes(cleanEmail) && verifyAdminPassword(password)) {
     return res.json({
       token: getCurrentAdminToken(),
       user: { id: 1, name: 'Administrador', email: cleanEmail, is_admin: true }
@@ -1316,7 +1383,13 @@ app.post('/api/auth/login', async (req, res) => {
     const result = await pool.query('SELECT * FROM users WHERE LOWER(email) = $1', [cleanEmail]);
     if (result.rowCount > 0) {
       const user = result.rows[0];
-      if (user.password === passHash || user.password === password) {
+      if (verifyPassword(password, user.password)) {
+        if (needsPasswordRehash(user.password)) {
+          const upgraded = hashPassword(password);
+          await pool.query('UPDATE users SET password = $1 WHERE id = $2', [upgraded, user.id]).catch(() => {});
+          const fbUser = fallbackUsers.find(u => u.id === user.id);
+          if (fbUser) { fbUser.password = upgraded; saveAdminStoreToFile(); }
+        }
         return res.json({
           message: 'Inicio de sesión exitoso.',
           token: generateUserToken(user.id, user.email),
@@ -1329,8 +1402,12 @@ app.post('/api/auth/login', async (req, res) => {
   }
 
   // Buscar en usuarios registrados en memoria / fallback
-  const user = fallbackUsers.find(u => u.email.toLowerCase() === cleanEmail && (u.password === passHash || u.password === password));
+  const user = fallbackUsers.find(u => u.email.toLowerCase() === cleanEmail && verifyPassword(password, u.password));
   if (user) {
+    if (needsPasswordRehash(user.password)) {
+      user.password = hashPassword(password);
+      saveAdminStoreToFile();
+    }
     const { password: _, ...userWithoutPass } = user;
     return res.json({
       message: 'Inicio de sesión exitoso.',
@@ -1352,7 +1429,7 @@ app.post('/api/auth/forgot-password', async (req, res) => {
   }
 
   const cleanEmail = email ? email.trim().toLowerCase() : 'info@rentmeuskar.com';
-  const code = Math.floor(100000 + Math.random() * 900000).toString();
+  const code = generateVerificationCode();
 
   const currentAdminUser = getAdminUsername();
   const isAdminRequest = !!(isAdmin || cleanEmail === 'info@rentmeuskar.com' || cleanEmail === currentAdminUser || cleanEmail === 'admin');
@@ -1480,14 +1557,12 @@ app.post('/api/auth/reset-password', async (req, res) => {
     return res.status(400).json({ error: 'No hay ninguna solicitud de restablecimiento activa o el código ha caducado.' });
   }
 
-  if (pending.code !== code.trim()) {
-    return res.status(400).json({ error: 'El código de verificación introducido no es válido.' });
-  }
-
-  if (pending.expires < Date.now()) {
-    delete pendingPasswordResets[cleanEmail];
-    delete pendingPasswordResets['info@rentmeuskar.com'];
-    return res.status(400).json({ error: 'El código de verificación ha caducado. Solicita uno nuevo.' });
+  const codeStatus = checkPendingCode(pending, code);
+  if (codeStatus !== 'ok') {
+    if (codeStatus !== 'invalid') {
+      Object.keys(pendingPasswordResets).forEach(k => { if (pendingPasswordResets[k] === pending) delete pendingPasswordResets[k]; });
+    }
+    return res.status(400).json({ error: CODE_ERRORS[codeStatus] });
   }
 
   const passHash = hashPassword(targetPassword);
@@ -1680,9 +1755,12 @@ app.post('/api/bookings', async (req, res) => {
     return res.status(400).json({ error: 'Faltan campos obligatorios en el formulario.' });
   }
 
-  // Un cliente solo puede crear solicitudes pendientes: el estado de pago lo fija el servidor o el admin
+  // Reservar exige sesión (como en la web) y un cliente solo crea solicitudes pendientes
   const requester = await getAuthUser(req);
-  if (!(requester && requester.isAdmin)) {
+  if (!requester) {
+    return res.status(401).json({ error: 'Inicia sesión para solicitar una reserva.' });
+  }
+  if (!requester.isAdmin) {
     fianza_status = 'pending';
     payment_status = 'pending';
     payment_id = null;
@@ -1699,9 +1777,10 @@ app.post('/api/bookings', async (req, res) => {
   // Declaradas fuera del try: el catch de modo sin BD también las usa
   let realPlate = '';
   let realM3 = '';
-  let clientEmail = '';
-  let clientPhone = '';
-  let clientDni = '';
+  // Datos de contacto calculados antes de tocar la BD para que el modo sin BD también los guarde
+  const clientEmail = String(req.body.client_email || requester.email || '').trim().toLowerCase();
+  const clientPhone = String(req.body.client_phone || requester.phone || '').trim();
+  const clientDni = String(req.body.client_dni || requester.dni || '').trim().toUpperCase();
   try {
     // Obtener matrícula y volumen de la base de datos para la furgoneta
     try {
@@ -1741,9 +1820,6 @@ app.post('/api/bookings', async (req, res) => {
 
     // Resolver usuario autenticado y detalles de cliente
     const authUser = requester;
-    clientEmail = (req.body.client_email || (authUser && authUser.email) || '').trim().toLowerCase();
-    clientPhone = (req.body.client_phone || (authUser && authUser.phone) || '').trim();
-    clientDni = (req.body.client_dni || (authUser && authUser.dni) || '').trim().toUpperCase();
 
     // Validar user_id frente a la tabla users para no violar la Foreign Key constraint
     let validUserId = null;
@@ -1954,21 +2030,19 @@ app.get('/api/bookings', async (req, res) => {
     }
   }
 
-  // Si se especifica user_id o email: debe ser el propio usuario autenticado o un administrador
-  const requestedUserId = parseInt(user_id);
-  const cleanEmail = email ? email.trim().toLowerCase() : '';
-  const isOwner = authUser && (
-    authUser.isAdmin || 
-    (requestedUserId && authUser.id === requestedUserId) || 
-    (cleanEmail && authUser.email && authUser.email.toLowerCase() === cleanEmail) ||
-    (!authUser.isAdmin && authUser.id && (!requestedUserId || authUser.id === requestedUserId))
-  );
-  
-  if (!isOwner) {
+  // Un cliente solo ve sus reservas: id y email salen siempre de su sesión, nunca de la URL
+  if (!authUser) {
+    return res.status(401).json({ error: 'No autorizado. Inicia sesión para ver tus reservas.' });
+  }
+  const requestedUserId = authUser.isAdmin ? parseInt(user_id) : authUser.id;
+  if (!authUser.isAdmin && parseInt(user_id) !== authUser.id) {
     return res.status(403).json({ error: 'Acceso denegado a las reservas de otro usuario.' });
   }
+  const cleanEmail = authUser.isAdmin
+    ? (typeof email === 'string' ? email.trim().toLowerCase() : '')
+    : (authUser.email || '').toLowerCase();
 
-  const targetUserId = requestedUserId || (authUser ? authUser.id : 0);
+  const targetUserId = requestedUserId || 0;
 
   try {
     const query = `
@@ -3234,7 +3308,7 @@ app.post('/api/admin/request-credential-change-code', verifyAdmin, async (req, r
     return res.status(400).json({ error: 'La nueva contraseña debe tener al menos 6 caracteres.' });
   }
 
-  const code = Math.floor(100000 + Math.random() * 900000).toString();
+  const code = generateVerificationCode();
   pendingAdminCredentialChanges['admin'] = {
     newUsername: cleanUsername,
     newPasswordHash: hashPassword(cleanPassword),
@@ -3305,13 +3379,10 @@ app.post('/api/admin/confirm-credential-change', verifyAdmin, async (req, res) =
     return res.status(400).json({ error: 'No hay ninguna solicitud de cambio de credenciales pendiente o ha expirado.' });
   }
 
-  if (Date.now() > pending.expires) {
-    delete pendingAdminCredentialChanges['admin'];
-    return res.status(400).json({ error: 'El código de verificación ha expirado. Por favor, solicita uno nuevo.' });
-  }
-
-  if (pending.code !== code.trim()) {
-    return res.status(400).json({ error: 'El código de verificación introducido no es correcto.' });
+  const codeStatus = checkPendingCode(pending, code);
+  if (codeStatus !== 'ok') {
+    if (codeStatus !== 'invalid') delete pendingAdminCredentialChanges['admin'];
+    return res.status(400).json({ error: CODE_ERRORS[codeStatus] });
   }
 
   // Código correcto: Aplicar actualización de credenciales de admin
@@ -3405,7 +3476,7 @@ app.post('/api/reviews/verify-code', async (req, res) => {
   // 2. Buscar en base de datos PostgreSQL
   try {
     const dbRes = await pool.query('SELECT * FROM bookings WHERE UPPER(review_code) = $1', [cleanCode]);
-    if (dbRes.rowCount > 0) {
+    if (dbRes.rowCount > 0 && isReviewableBooking(dbRes.rows[0])) {
       const b = dbRes.rows[0];
       return res.json({
         valid: true,
@@ -3424,7 +3495,7 @@ app.post('/api/reviews/verify-code', async (req, res) => {
   }
 
   // 3. Buscar en reservas en memoria / fallback
-  const foundBooking = fallbackBookings.find(b => b.review_code && b.review_code.toUpperCase() === cleanCode);
+  const foundBooking = fallbackBookings.find(b => b.review_code && b.review_code.toUpperCase() === cleanCode && isReviewableBooking(b));
   if (foundBooking) {
     return res.json({ 
       valid: true, 
@@ -3443,14 +3514,38 @@ app.post('/api/reviews/verify-code', async (req, res) => {
 });
 
 app.get('/api/reviews', async (req, res) => {
+  // El código de reserva abre la factura y el contrato: solo el admin lo recibe
+  const authUser = await getAuthUser(req);
+  const isAdmin = !!(authUser && authUser.isAdmin);
+  const hideCode = r => {
+    if (isAdmin) return r;
+    const { booking_code, ...publicReview } = r;
+    return publicReview;
+  };
   try {
     const result = await pool.query('SELECT * FROM reviews ORDER BY created_at DESC');
-    res.json(result.rows);
+    res.json(result.rows.map(hideCode));
   } catch (err) {
     console.warn('Base de datos offline, retornando opiniones de fallback:', err.message);
-    res.json(fallbackReviews);
+    res.json(fallbackReviews.map(hideCode));
   }
 });
+
+// Una opinión solo vale con un código de admin o de una reserva pagada/confirmada
+function isReviewableBooking(b) {
+  return !!b && (b.payment_status === 'paid' || b.status === 'confirmed' || b.status === 'paid_pending');
+}
+
+async function findReviewableCode(code) {
+  if (manualReviewCodes.some(m => m.code.toUpperCase() === code)) return true;
+  try {
+    const dbRes = await pool.query('SELECT status, payment_status FROM bookings WHERE UPPER(review_code) = $1', [code]);
+    if (dbRes.rows.some(isReviewableBooking)) return true;
+  } catch (e) {
+    // BD no disponible: se comprueba en las reservas en memoria
+  }
+  return fallbackBookings.some(b => b.review_code && b.review_code.toUpperCase() === code && isReviewableBooking(b));
+}
 
 app.post('/api/reviews', async (req, res) => {
   const { booking_code, client_name, rating, comment, role_or_city, van_name } = req.body;
@@ -3469,17 +3564,13 @@ app.post('/api/reviews', async (req, res) => {
   const safeComment = escapeHtml(comment.trim());
   const safeRoleOrCity = escapeHtml((role_or_city || '').trim());
   const finalVanName = escapeHtml((van_name || 'Ford Transit Custom L2H2 (8m³)').trim());
-  
-  try {
-    // 1. Verificar si el código de reserva existe legítimamente
-    const checkBooking = await pool.query('SELECT * FROM bookings WHERE UPPER(review_code) = $1', [code]);
-    const isManual = manualReviewCodes.some(m => m.code.toUpperCase() === code);
-    const isFb = fallbackBookings.some(b => b.review_code && b.review_code.toUpperCase() === code);
 
-    if (checkBooking.rowCount === 0 && !isManual && !isFb) {
-      return res.status(400).json({ error: 'El código de reseña no corresponde a ninguna reserva válida.' });
-    }
-    
+  // 1. Verificar que el código es de una reserva pagada/confirmada (también sin BD)
+  if (!(await findReviewableCode(code))) {
+    return res.status(400).json({ error: 'El código de reseña no corresponde a ninguna reserva pagada o confirmada.' });
+  }
+
+  try {
     // 2. Verificar si ya se ha enviado una opinión para este código
     const checkReview = await pool.query('SELECT * FROM reviews WHERE UPPER(booking_code) = $1', [code]);
     if (checkReview.rowCount > 0) {

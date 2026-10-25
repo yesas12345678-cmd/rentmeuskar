@@ -1217,7 +1217,10 @@ const initAdmin = () => {
     // Obtener opiniones de compras verificadas para moderación
     const fetchReviews = async () => {
         try {
-            const res = await fetch('/api/reviews');
+            // Con la sesión de admin el servidor incluye el código de reserva de cada opinión
+            const res = await fetch('/api/reviews', {
+                headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}` }
+            });
             if (res.ok) {
                 const reviews = await res.json();
                 renderReviewsList(reviews);

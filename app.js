@@ -1457,31 +1457,36 @@ const initApp = () => {
                 return;
             }
 
-            const updatedProfile = { name, email, phone, dni };
-
+            // El email es el identificador de la cuenta: el servidor no lo cambia desde aquí
+            const token = localStorage.getItem('user_token');
+            let savedUser = null;
             try {
-                const res = await fetch('/api/auth/profile', {
+                const res = await fetch('/api/auth/me', {
                     method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(updatedProfile)
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                    },
+                    body: JSON.stringify({ name, phone, dni })
                 });
                 const data = await res.json();
-                if (res.ok && data.user) {
-                    localStorage.setItem('user_profile', JSON.stringify(data.user));
-                } else {
-                    localStorage.setItem('user_profile', JSON.stringify(updatedProfile));
+                if (!res.ok || !data.user) {
+                    throw new Error(data.error || 'No se pudo guardar el perfil.');
                 }
+                savedUser = data.user;
             } catch (err) {
-                console.warn('Backend no disponible, guardando perfil localmente:', err);
-                localStorage.setItem('user_profile', JSON.stringify(updatedProfile));
+                console.warn('Error al guardar el perfil:', err);
+                showAppToast(err.message || 'No se pudo guardar el perfil. Inténtalo de nuevo.', 'error');
+                return;
             }
 
+            localStorage.setItem('user_profile', JSON.stringify(savedUser));
             window.closeAuthModal('edit-profile-modal');
             updateAuthUI();
 
             const userInfoEl = document.getElementById('client-user-info');
             if (userInfoEl) {
-                userInfoEl.textContent = `Conectado como: ${name} (${email}) | DNI: ${dni}`;
+                userInfoEl.textContent = `Conectado como: ${savedUser.name} (${savedUser.email}) | DNI: ${savedUser.dni || ''}`;
             }
 
             showAppToast('¡Perfil actualizado con éxito!', 'success');
