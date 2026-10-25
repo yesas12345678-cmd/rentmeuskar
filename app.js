@@ -1385,16 +1385,21 @@ const initApp = () => {
                             return dateStr;
                         };
 
+                        // Textos guardados en la reserva: se escapan antes de pintarlos con innerHTML
+                        const esc = (value) => String(value === undefined || value === null ? '' : value)
+                            .replace(/[&<>'"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[c]));
+                        const canDownloadDocs = b.status === 'confirmed' || b.status === 'paid_pending';
+
                         tr.innerHTML = `
-                            <td>#${b.id}</td>
-                            <td><strong>${b.van_name ? b.van_name.split(' ')[0] : 'Furgoneta'} ${b.van_name ? (b.van_name.split(' ')[1] || '') : ''}</strong></td>
-                            <td>${formatDate(b.pickup_date)} ${b.pickup_time || ''}</td>
-                            <td>${formatDate(b.return_date)} ${b.return_time || ''}</td>
+                            <td>#${esc(b.id)}</td>
+                            <td><strong>${b.van_name ? esc(b.van_name.split(' ')[0]) : 'Furgoneta'} ${b.van_name ? esc(b.van_name.split(' ')[1] || '') : ''}</strong></td>
+                            <td>${esc(formatDate(b.pickup_date))} ${esc(b.pickup_time)}</td>
+                            <td>${esc(formatDate(b.return_date))} ${esc(b.return_time)}</td>
                             <td><strong>${parseFloat(b.total_price || 0).toFixed(2)} €</strong></td>
                             <td><span style="font-size: 0.8rem; padding: 2px 6px; border-radius: 4px; background: rgba(255,255,255,0.05);">${fianzaLabel}</span></td>
                             <td><span style="font-size: 0.8rem; font-weight: 700; color: ${b.status === 'confirmed' ? '#82d105' : b.status === 'paid_pending' ? '#00d2ff' : b.status === 'pending' ? '#ffb703' : '#ff4d6d'};">${statusLabel}</span></td>
                             <td>
-                                ${b.status === 'confirmed' ? `
+                                ${canDownloadDocs ? `
                                     <button class="client-doc-btn" onclick="window.open('/contract/${b.id}?auth=${encodeURIComponent(b.review_code || b.payment_id || '')}', '_blank')"><i class="fa-solid fa-file-signature"></i> Contrato</button>
                                     <button class="client-doc-btn" onclick="window.open('/invoice/${b.id}?auth=${encodeURIComponent(b.review_code || b.payment_id || '')}', '_blank')"><i class="fa-solid fa-file-invoice-dollar"></i> Factura</button>
                                 ` : '<span style="color: var(--text-muted); font-size: 0.75rem;">Pendiente</span>'}

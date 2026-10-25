@@ -687,17 +687,17 @@ const initAdmin = () => {
                 </td>
                 <td>
                     <span class="van-badge ${vanClass}">
-                        <i class="fa-solid ${vanIcon}"></i> ${vanSimpleName}
+                        <i class="fa-solid ${vanIcon}"></i> ${escapeHTML(vanSimpleName)}
                     </span>
                     ${modeBadge}
                 </td>
                 <td class="date-cell">
                     ${formatDate(booking.pickup_date)}
-                    <span class="time"><i class="fa-regular fa-clock"></i> ${booking.pickup_time}</span>
+                    <span class="time"><i class="fa-regular fa-clock"></i> ${escapeHTML(booking.pickup_time)}</span>
                 </td>
                 <td class="date-cell">
                     ${formatDate(booking.return_date)}
-                    <span class="time"><i class="fa-regular fa-clock"></i> ${booking.return_time}</span>
+                    <span class="time"><i class="fa-regular fa-clock"></i> ${escapeHTML(booking.return_time)}</span>
                 </td>
                 <td style="text-align: center;">${booking.days} ${booking.days === 1 ? 'día' : 'días'}</td>
                 <td>
@@ -744,8 +744,8 @@ const initAdmin = () => {
     };
 
     const escapeHTML = (str) => {
-        if (!str) return '';
-        return str.replace(/[&<>'"]/g, 
+        if (str === undefined || str === null) return '';
+        return String(str).replace(/[&<>'"]/g,
             tag => ({
                 '&': '&amp;',
                 '<': '&lt;',
@@ -770,8 +770,8 @@ const initAdmin = () => {
         modalStatusBadge.textContent = booking.status === 'pending' ? 'Pendiente' : booking.status === 'pending_payment' ? 'Esperando pago (Redsys)' : booking.status === 'paid_pending' ? 'Pendiente Aprobación (Pagada)' : booking.status === 'confirmed' ? 'Confirmado' : 'Cancelado';
         
         modalVanName.textContent = booking.van_name;
-        modalPickupDate.innerHTML = `${formatDate(booking.pickup_date)} a las <strong>${booking.pickup_time}</strong>`;
-        modalReturnDate.innerHTML = `${formatDate(booking.return_date)} a las <strong>${booking.return_time}</strong>`;
+        modalPickupDate.innerHTML = `${formatDate(booking.pickup_date)} a las <strong>${escapeHTML(booking.pickup_time)}</strong>`;
+        modalReturnDate.innerHTML = `${formatDate(booking.return_date)} a las <strong>${escapeHTML(booking.return_time)}</strong>`;
         modalDuration.textContent = booking.rental_mode === 'con' ? '-' : `${booking.days} ${booking.days === 1 ? 'día' : 'días'}`;
         
         // Modalidad con/sin conductor
@@ -796,7 +796,7 @@ const initAdmin = () => {
         if (booking.extras && booking.extras.length > 0) {
             booking.extras.forEach(extra => {
                 const li = document.createElement('li');
-                li.innerHTML = `<i class="fa-solid fa-square-plus" style="color: var(--color-neon);"></i> ${extra}`;
+                li.innerHTML = `<i class="fa-solid fa-square-plus" style="color: var(--color-neon);"></i> ${escapeHTML(String(extra))}`;
                 modalExtrasList.appendChild(li);
             });
         } else {

@@ -1149,6 +1149,9 @@ const validateSpanishID = (idString) => {
 const pendingRegistrations = {};
 
 // 1. Registro de usuarios con verificación previa de correo electrónico
+// Mismo mensaje para email, teléfono o DNI repetidos: no revela cuál de los tres existe
+const DUPLICATE_ACCOUNT_ERROR = 'Ya existe una cuenta con alguno de estos datos (correo, teléfono o DNI). Si es tuya, inicia sesión o recupera la contraseña.';
+
 app.post('/api/auth/register', async (req, res) => {
   const { name, email, password, phone, dni } = req.body;
   if (!name || !email || !password) {
@@ -1169,31 +1172,31 @@ app.post('/api/auth/register', async (req, res) => {
   try {
     const checkEmail = await pool.query('SELECT id FROM users WHERE LOWER(email) = $1', [cleanEmail]);
     if (checkEmail.rowCount > 0 || fallbackUsers.some(u => u.email.toLowerCase() === cleanEmail)) {
-      return res.status(400).json({ error: 'Ya existe una cuenta registrada con este correo electrónico.' });
+      return res.status(400).json({ error: DUPLICATE_ACCOUNT_ERROR });
     }
 
     if (cleanPhone) {
       const checkPhone = await pool.query('SELECT id FROM users WHERE phone = $1', [cleanPhone]);
       if (checkPhone.rowCount > 0 || fallbackUsers.some(u => u.phone === cleanPhone)) {
-        return res.status(400).json({ error: 'Ya existe una cuenta registrada con este número de teléfono.' });
+        return res.status(400).json({ error: DUPLICATE_ACCOUNT_ERROR });
       }
     }
 
     if (cleanDni) {
       const checkDni = await pool.query('SELECT id FROM users WHERE UPPER(dni) = $1', [cleanDni]);
       if (checkDni.rowCount > 0 || fallbackUsers.some(u => u.dni && u.dni.toUpperCase() === cleanDni)) {
-        return res.status(400).json({ error: 'Ya existe una cuenta registrada con este DNI / NIE.' });
+        return res.status(400).json({ error: DUPLICATE_ACCOUNT_ERROR });
       }
     }
   } catch (e) {
     if (fallbackUsers.some(u => u.email.toLowerCase() === cleanEmail)) {
-      return res.status(400).json({ error: 'Ya existe una cuenta registrada con este correo electrónico.' });
+      return res.status(400).json({ error: DUPLICATE_ACCOUNT_ERROR });
     }
     if (cleanPhone && fallbackUsers.some(u => u.phone === cleanPhone)) {
-      return res.status(400).json({ error: 'Ya existe una cuenta registrada con este número de teléfono.' });
+      return res.status(400).json({ error: DUPLICATE_ACCOUNT_ERROR });
     }
     if (cleanDni && fallbackUsers.some(u => u.dni && u.dni.toUpperCase() === cleanDni)) {
-      return res.status(400).json({ error: 'Ya existe una cuenta registrada con este DNI / NIE.' });
+      return res.status(400).json({ error: DUPLICATE_ACCOUNT_ERROR });
     }
   }
 
@@ -1434,10 +1437,18 @@ app.post('/api/auth/forgot-password', async (req, res) => {
   const currentAdminUser = getAdminUsername();
   const isAdminRequest = !!(isAdmin || cleanEmail === 'info@rentmeuskar.com' || cleanEmail === currentAdminUser || cleanEmail === 'admin');
 
+  // Un código por destinatario cada 2 minutos: evita bombardear el buzón y que cualquiera
+  // invalide sin parar el código vigente del administrador
+  const previous = pendingPasswordResets[isAdminRequest ? 'info@rentmeuskar.com' : cleanEmail];
+  if (previous && previous.createdAt && Date.now() - previous.createdAt < 2 * 60 * 1000) {
+    return res.json({ success: true, message: 'Ya te hemos enviado un código hace poco. Revisa tu correo (también la carpeta de spam) o inténtalo de nuevo en unos minutos.' });
+  }
+
   // isAdmin marca los códigos enviados a info@: solo esos pueden restablecer el administrador
   const pendingEntry = {
     code,
     isAdmin: isAdminRequest,
+    createdAt: Date.now(),
     expires: Date.now() + 15 * 60 * 1000
   };
 
@@ -1772,6 +1783,9 @@ app.post('/api/bookings', async (req, res) => {
     }
     total_price = quote.total;
     days = quote.days;
+    extras = quote.extras;
+    van_name = quote.van.name || van_name;
+    name = String(name).trim().slice(0, 100);
   }
 
   // Declaradas fuera del try: el catch de modo sin BD también las usa
@@ -1844,7 +1858,7 @@ app.post('/api/bookings', async (req, res) => {
       } catch (e) {}
     }
 
-    const reviewCode = 'RMU-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+    const reviewCode = generateReviewCode();
     const query = `
       INSERT INTO bookings (
         name, van_type, van_name, pickup_date, pickup_time, 
@@ -1896,7 +1910,7 @@ app.post('/api/bookings', async (req, res) => {
     });
   } catch (err) {
     console.error('Error al insertar reserva, simulando en memoria:', err);
-    const reviewCode = 'RMU-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+    const reviewCode = generateReviewCode();
     const mockId = fallbackBookings.length > 0 ? Math.max(...fallbackBookings.map(b => b.id)) + 1 : 1;
     const mockBooking = {
       id: mockId,
@@ -2285,9 +2299,21 @@ async function computeBookingQuote(bookingData) {
   if (!start || !end || isNaN(start) || isNaN(end) || end < start) {
     return { error: 'Las fechas de la reserva no son válidas.' };
   }
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  if (start < today) {
+    return { error: 'La fecha de recogida no puede ser anterior a hoy.' };
+  }
   const diffDays = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
   const days = diffDays > 0 ? diffDays : 1;
 
+  // Horas en formato HH:MM: se pintan en el panel admin y en el área de cliente
+  const timePattern = /^([01]\d|2[0-3]):[0-5]\d$/;
+  if ([bookingData.pickup_time, bookingData.return_time].some(t => t !== undefined && t !== null && t !== '' && !timePattern.test(String(t)))) {
+    return { error: 'Las horas de recogida y devolución no son válidas.' };
+  }
+
+  const extras = [];
   let baseTaxable;
   if ((bookingData.rental_mode || 'sin') === 'sin') {
     let totalBase = parseFloat(van.price_sin) * days;
@@ -2297,14 +2323,16 @@ async function computeBookingQuote(bookingData) {
     if (typeof customExtras === 'string') {
       try { customExtras = JSON.parse(customExtras); } catch (e) { customExtras = []; }
     }
-    // Los extras llegan como texto ("GPS Navegador (+5.00€/día)"); el precio sale del catálogo
+    // Los extras llegan como texto ("GPS Navegador (+5.00€/día)"); el precio y la etiqueta
+    // guardada salen del catálogo, así nunca se almacena texto arbitrario del cliente
     let extrasCost = 0;
     const requested = Array.isArray(bookingData.extras) ? bookingData.extras : [];
     requested.forEach(label => {
       const extra = customExtras.find(x => x && x.name && String(label).startsWith(x.name));
-      if (!extra) return;
+      if (!extra || extras.some(e => e.startsWith(extra.name))) return;
       const price = parseFloat(extra.price) || 0;
       extrasCost += extra.type === 'daily' ? price * days : price;
+      extras.push(`${extra.name} ${extra.type === 'daily' ? `(+${price.toFixed(2)}€/día)` : `(+${price.toFixed(2)}€ pago único)`}`);
     });
     baseTaxable = totalBase + extrasCost;
   } else {
@@ -2317,7 +2345,7 @@ async function computeBookingQuote(bookingData) {
 
   const total = Math.round(baseTaxable * 1.21 * 100) / 100;
   if (!(total > 0)) return { error: 'No se pudo calcular el importe de la reserva.' };
-  return { total, days, van };
+  return { total, days, van, extras };
 }
 
 function generateRedsysOrderId() {
@@ -2452,7 +2480,7 @@ app.post('/api/redsys/create-payment', async (req, res) => {
     const authUser = await getAuthUser(req);
     const isBizum = payMethod === 'bizum';
     await saveBookingRecord({
-      name: bookingData.name || (authUser && authUser.name) || 'Cliente',
+      name: String(bookingData.name || (authUser && authUser.name) || 'Cliente').trim().slice(0, 100),
       van_type: bookingData.van_type,
       van_name: quote.van.name || bookingData.van_name,
       pickup_date: bookingData.pickup_date,
@@ -2460,7 +2488,7 @@ app.post('/api/redsys/create-payment', async (req, res) => {
       return_date: bookingData.return_date,
       return_time: bookingData.return_time || null,
       days: quote.days,
-      extras: Array.isArray(bookingData.extras) ? bookingData.extras : [],
+      extras: quote.extras,
       total_price: totalEuros,
       user_id: authUser && !authUser.isAdmin && typeof authUser.id === 'number' ? authUser.id : null,
       fianza_status: 'pending',
@@ -2578,6 +2606,9 @@ const handleTestPayment = async (req, res) => {
     }
     const rentAmount = quote.total;
     bookingData.days = quote.days;
+    bookingData.extras = quote.extras;
+    bookingData.van_name = quote.van.name || bookingData.van_name;
+    bookingData.name = String(bookingData.name || 'Cliente').trim().slice(0, 100);
 
     const numOrder = 'TPV-' + generateRedsysOrderId();
     const methodName = payMethod === 'bizum' ? 'Bizum CaixaBank (Test)' : 'Tarjeta CaixaBank (Test)';
@@ -2625,7 +2656,7 @@ const handleTestPayment = async (req, res) => {
       } catch (e) {}
     }
 
-    const reviewCode = 'RMU-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+    const reviewCode = generateReviewCode();
     let savedBooking = null;
 
     try {
@@ -3428,8 +3459,7 @@ app.post('/api/admin/confirm-credential-change', verifyAdmin, async (req, res) =
 // Generar código de reseña manual desde admin con especificaciones completas de la reserva
 app.post('/api/admin/generate-review-code', verifyAdmin, (req, res) => {
   const { van_name, client_name, city, rental_days, rental_mode, pickup_date, pickup_time, return_date, return_time } = req.body;
-  const randomNum = Math.floor(1000 + Math.random() * 9000);
-  const code = 'RMU-' + randomNum;
+  const code = generateReviewCode();
 
   const codeObj = {
     code,
@@ -3638,38 +3668,6 @@ app.delete('/api/admin/reviews/:id', verifyAdmin, async (req, res) => {
     }
     fallbackReviews.splice(index, 1);
     res.json({ message: 'Opinión eliminada de memoria local (Modo offline).' });
-  }
-});
-
-// 12. Generar un código de opinión verificado manualmente (admin)
-app.post('/api/admin/generate-review-code', verifyAdmin, async (req, res) => {
-  const code = 'RMU-CODE-' + Math.random().toString(36).substring(2, 6).toUpperCase();
-  try {
-    const query = `
-      INSERT INTO bookings (name, van_type, van_name, pickup_date, pickup_time, return_date, return_time, total_price, review_code, status)
-      VALUES ($1, $2, $3, CURRENT_DATE, '09:00', CURRENT_DATE, '19:00', 0.00, $4, 'confirmed')
-      RETURNING *;
-    `;
-    const result = await pool.query(query, ['Código Manual (Admin)', 'medium', 'Generador Manual', code]);
-    fallbackBookings.push(result.rows[0]);
-    res.json({ message: 'Código generado con éxito.', code });
-  } catch (err) {
-    console.warn('Base de datos offline, simulando código manual en memoria:', err.message);
-    const mockBooking = {
-      id: fallbackBookings.length + 1000,
-      name: 'Código Manual (Admin)',
-      van_type: 'medium',
-      van_name: 'Generador Manual',
-      pickup_date: new Date().toISOString().split('T')[0],
-      pickup_time: '09:00',
-      return_date: new Date().toISOString().split('T')[0],
-      return_time: '19:00',
-      total_price: 0.00,
-      review_code: code,
-      status: 'confirmed'
-    };
-    fallbackBookings.push(mockBooking);
-    res.json({ message: 'Código generado con éxito (Modo offline sin BD).', code });
   }
 });
 

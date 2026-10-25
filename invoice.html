@@ -476,7 +476,8 @@
                         // Extras rows
                         if (booking.extras && booking.extras.length > 0) {
                             booking.extras.forEach(extra => {
-                                let extraName = extra;
+                                // Texto guardado en la reserva: escapado antes de pintarlo con innerHTML
+                                let extraName = String(extra).replace(/[&<>'"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[c]));
                                 let extraPrice = 0;
                                 let quantityText = '1';
                                 

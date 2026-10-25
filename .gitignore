@@ -13,3 +13,4 @@ security_sentinel_10h.log
 
 # Datos de clientes (DNI, reservas): nunca en git
 data/admin_store.json
+security_sentinel_10h.js
