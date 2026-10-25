@@ -1,6 +1,10 @@
 require('dotenv').config();
 const express = require('express');
-const { Pool } = require('pg');
+const { Pool, types } = require('pg');
+
+// Las columnas DATE se leen como texto 'AAAA-MM-DD': convertirlas a Date (medianoche local)
+// y luego a UTC desplazaba las fechas un día en servidores con zona horaria española
+types.setTypeParser(1082, value => value);
 const cors = require('cors');
 const path = require('path');
 const crypto = require('crypto');
@@ -66,11 +70,8 @@ const vansInitFlagPath = path.join(dataDir, 'vans_initialized.flag');
 
 // Datasets globales en memoria
 let fallbackUsers = [];
-let fallbackBookings = [
-  { id: 1, name: 'Francisco M.', van_type: 'medium', van_name: 'Ford Transit Custom L2H2 (8m³)', pickup_date: '2026-08-15', pickup_time: '09:00', return_date: '2026-08-18', return_time: '19:00', days: 3, total_price: 237.00, status: 'confirmed', payment_status: 'paid', fianza_status: 'paid', review_code: 'RMU-MOCK1' },
-  { id: 2, name: 'María José S.', van_type: 'large', van_name: 'MAN TGE L4H3 Gran Volumen (14m³)', pickup_date: '2026-08-20', pickup_time: '10:00', return_date: '2026-08-22', return_time: '12:00', days: 2, total_price: 214.88, status: 'confirmed', payment_status: 'paid', fianza_status: 'paid', review_code: 'RMU-MOCK2' },
-  { id: 3, name: 'Antonio G.', van_type: 'large', van_name: 'MAN TGE L4H3 Gran Volumen (14m³)', pickup_date: '2026-08-25', pickup_time: '16:00', return_date: '2026-08-26', return_time: '19:00', days: 1, total_price: 107.44, status: 'confirmed', payment_status: 'paid', fianza_status: 'paid', review_code: 'RMU-MOCK3' }
-];
+// Sin reservas ni opiniones de ejemplo: publicar testimonios inventados no está permitido
+let fallbackBookings = [];
 let fallbackBlockages = [];
 let fallbackSettings = {
   hours_weekdays: '08:00 - 14:00, 16:00 - 20:00',
@@ -137,11 +138,7 @@ let fallbackVans = [
     custom_features: []
   }
 ];
-let fallbackReviews = [
-  { id: 1, booking_code: 'RMU-MOCK1', client_name: 'Francisco M.', rating: 5, comment: 'Alquilé la furgoneta Ford Transit Custom para una mudanza desde Granada a Huéscar. El trato fue inmejorable y el vehículo impecable.', role_or_city: 'Particular (Huéscar)', van_name: 'Ford Transit Custom L2H2 (8m³)' },
-  { id: 2, booking_code: 'RMU-MOCK2', client_name: 'María José S.', rating: 5, comment: 'Necesitábamos una furgoneta MAN TGE Gran Volumen de 14m³ para trasladar mobiliario. El vehículo comodísimo y excelente atención.', role_or_city: 'Particular (Puebla Don Fadrique)', van_name: 'MAN TGE L4H3 Gran Volumen (14m³)' },
-  { id: 3, booking_code: 'RMU-MOCK3', client_name: 'Antonio G.', rating: 5, comment: 'Como autónomo, a veces necesito un vehículo de gran volumen para repartos extra. RentMeUskar me soluciona la papeleta rápidamente.', role_or_city: 'Autónomo (Castril)', van_name: 'MAN TGE L4H3 Gran Volumen (14m³)' }
-];
+let fallbackReviews = [];
 let manualReviewCodes = [];
 let fallbackFaqs = [
   { id: 1, question: '¿Qué requisitos necesito cumplir para alquilar sin conductor?', answer: 'Necesitas tener al menos 23 años (21 para furgonetas compactas) y estar en posesión del permiso de conducir tipo B vigente con una antigüedad mínima de 2 años. Deberás presentar el DNI/NIE y el carnet de conducir originales al retirar el vehículo.', display_order: 1 },
@@ -248,9 +245,13 @@ async function syncDatabaseWithDisk(clientOrPool) {
     try {
       if (Array.isArray(fallbackBlockages) && fallbackBlockages.length > 0) {
         for (const block of fallbackBlockages) {
+          // Solo si no existe ya el mismo bloqueo: antes se duplicaban en cada reconexión
           await targetPool.query(
             `INSERT INTO van_blockages (van_type, start_date, end_date, reason)
-             VALUES ($1, $2, $3, $4)`,
+             SELECT $1, $2, $3, $4
+             WHERE NOT EXISTS (
+               SELECT 1 FROM van_blockages WHERE van_type = $1 AND start_date = $2::date AND end_date = $3::date
+             )`,
             [block.van_type, block.start_date, block.end_date, block.reason || 'Bloqueo Manual']
           ).catch(e => console.warn('Error syncing blockage to DB:', e.message));
         }
@@ -329,16 +330,25 @@ async function syncDatabaseWithDisk(clientOrPool) {
     try {
       if (Array.isArray(fallbackBookings) && fallbackBookings.length > 0) {
         for (const b of fallbackBookings) {
+          // Solo reservas identificables (código o pedido) que aún no estén en la BD, con todos sus datos;
+          // antes las que no tenían código se duplicaban en cada reconexión y perdían pago y contacto
+          if (!b.review_code && !b.payment_id) continue;
           await targetPool.query(
-            `INSERT INTO bookings (name, van_type, van_name, pickup_date, pickup_time, return_date, return_time, days, extras, total_price, status, rental_mode, estimated_kms, waiting_hours, van_plate, van_m3, review_code)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+            `INSERT INTO bookings (name, van_type, van_name, pickup_date, pickup_time, return_date, return_time, days, extras, total_price, status, rental_mode, estimated_kms, waiting_hours, van_plate, van_m3, review_code,
+                                   payment_id, payment_status, payment_method, fianza_status, client_email, client_phone, client_dni)
+             SELECT $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24
+             WHERE NOT EXISTS (
+               SELECT 1 FROM bookings WHERE ($17::text IS NOT NULL AND review_code = $17) OR ($18::text IS NOT NULL AND payment_id = $18)
+             )
              ON CONFLICT DO NOTHING`,
             [
               b.client_name || b.name || 'Cliente', b.van_type || 'medium', b.van_name || 'Ford Transit',
               b.pickup_date || '2026-01-01', b.pickup_time || '09:00', b.return_date || '2026-01-02', b.return_time || '19:00',
               parseInt(b.days) || 1, JSON.stringify(b.extras || []), parseFloat(b.total_price) || 0,
               b.status || 'pending', b.rental_mode || 'sin', parseInt(b.estimated_kms) || 0,
-              parseFloat(b.waiting_hours) || 0, b.van_plate || '', b.van_m3 || '', b.review_code || null
+              parseFloat(b.waiting_hours) || 0, b.van_plate || '', b.van_m3 || '', b.review_code || null,
+              b.payment_id || null, b.payment_status || 'pending', b.payment_method || null, b.fianza_status || 'pending',
+              b.client_email || null, b.client_phone || null, b.client_dni || null
             ]
           ).catch(e => console.warn('Error syncing booking to DB:', e.message));
         }
@@ -653,6 +663,18 @@ const getAuthUser = async (req) => {
 };
 
 // Sanitizador de texto contra inyección HTML en correos y plantillas
+// Validación de entradas de formularios públicos (evita 500 con números/listas y datos basura)
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const MIN_PASSWORD_LENGTH = 8;
+
+function areStrings(...values) {
+  return values.every(v => typeof v === 'string');
+}
+
+function areOptionalStrings(...values) {
+  return values.every(v => v === undefined || v === null || typeof v === 'string');
+}
+
 function escapeHtml(str) {
   if (typeof str !== 'string') return '';
   return str
@@ -735,6 +757,16 @@ app.use('/api/admin/request-credential-change-code', authLimiter);
 app.use('/api/admin/confirm-credential-change', authLimiter);
 app.use('/api/contact', contactLimiter);
 app.use('/api/reviews/verify-code', reviewLimiter);
+// Iniciar pagos o solicitudes de reserva: 15 intentos cada 15 minutos por IP
+const bookingLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 15,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Demasiadas solicitudes de reserva. Espera unos minutos.' }
+});
+app.post('/api/redsys/create-payment', bookingLimiter);
+app.post('/api/bookings', bookingLimiter);
 app.post('/api/reviews', reviewLimiter);
 
 app.use(compression());
@@ -885,6 +917,10 @@ const initDb = async () => {
     "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS adblue_out VARCHAR(50) DEFAULT 'Lleno';",
     "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS adblue_in VARCHAR(50) DEFAULT 'Lleno';",
     "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS payment_method VARCHAR(100) DEFAULT 'tarjeta';",
+    // Datos de contacto que guardan todos los INSERT de reservas (no se creaban en ninguna migración)
+    "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS client_email VARCHAR(255);",
+    "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS client_phone VARCHAR(50);",
+    "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS client_dni VARCHAR(50);",
     "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS fianza_returned_full BOOLEAN DEFAULT FALSE;",
     "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS fianza_returned_partial BOOLEAN DEFAULT FALSE;",
     "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS fianza_retained_amount NUMERIC(10, 2) DEFAULT 0.00;",
@@ -1034,17 +1070,6 @@ const initDb = async () => {
       console.log('FAQs por defecto insertadas.');
     }
 
-    // Pre-poblar opiniones por defecto si está vacía
-    const countReviews = await client.query('SELECT COUNT(*) FROM reviews');
-    if (parseInt(countReviews.rows[0].count) === 0) {
-      await client.query(`
-        INSERT INTO reviews (booking_code, client_name, rating, comment, role_or_city) VALUES
-        ('MOCK-1', 'Francisco M.', 5, 'Alquilé la furgoneta mediana para trasladar unos muebles desde Granada a Huéscar. El trato fue inmejorable y el vehículo estaba limpísimo. Repetiré seguro.', 'Particular (Huéscar)'),
-        ('MOCK-2', 'María José S.', 5, 'Necesitábamos una furgoneta de 9 plazas para un viaje de fin de semana con amigos de la Puebla de Don Fadrique. El viaje fue comodísimo y el precio muy razonable.', 'Viaje Familiar'),
-        ('MOCK-3', 'Antonio G.', 5, 'Como autónomo, a veces necesito un vehículo de gran volumen para repartos extra. RentMeUskar me soluciona la papeleta rápidamente y sin burocracia pesada.', 'Autónomo (Castril)')
-      `);
-      console.log('Opiniones por defecto insertadas.');
-    }
 
     // Pre-poblar configuraciones de horarios SOLO la primera vez
     const setInitCheck = await client.query("SELECT value FROM settings WHERE key = 'settings_initialized'");
@@ -1157,6 +1182,15 @@ app.post('/api/auth/register', async (req, res) => {
   if (!name || !email || !password) {
     return res.status(400).json({ error: 'Nombre, email y contraseña son obligatorios.' });
   }
+  if (!areStrings(name, email, password) || !areOptionalStrings(phone, dni)) {
+    return res.status(400).json({ error: 'Los datos del formulario no son válidos.' });
+  }
+  if (!EMAIL_PATTERN.test(email.trim())) {
+    return res.status(400).json({ error: 'El correo electrónico no tiene un formato válido.' });
+  }
+  if (password.length < MIN_PASSWORD_LENGTH) {
+    return res.status(400).json({ error: `La contraseña debe tener al menos ${MIN_PASSWORD_LENGTH} caracteres.` });
+  }
 
   if (dni && !validateSpanishID(dni)) {
     return res.status(400).json({ error: 'El DNI / NIE introducido no es válido (comprueba los 8 números y la letra).' });
@@ -1258,7 +1292,7 @@ app.post('/api/auth/register', async (req, res) => {
 // 1.b Confirmar código de registro y activar inicio de sesión automático
 app.post('/api/auth/verify-registration', async (req, res) => {
   const { email, code } = req.body;
-  if (!email || !code) {
+  if (!email || !code || !areStrings(email, code)) {
     return res.status(400).json({ error: 'El email y el código de verificación son obligatorios.' });
   }
 
@@ -1320,7 +1354,7 @@ app.post('/api/auth/verify-registration', async (req, res) => {
 // 1.c Formulario de contacto (Copia por correo al administrador con sanitización de contenido)
 app.post('/api/contact', async (req, res) => {
   const { name, contact, reason, message } = req.body;
-  if (!name || !contact || !message) {
+  if (!name || !contact || !message || !areStrings(name, contact, message) || !areOptionalStrings(reason)) {
     return res.status(400).json({ error: 'Nombre, forma de contacto y mensaje son obligatorios.' });
   }
 
@@ -1427,7 +1461,7 @@ const pendingPasswordResets = {};
 
 app.post('/api/auth/forgot-password', async (req, res) => {
   const { email, isAdmin } = req.body;
-  if (!email && !isAdmin) {
+  if ((!email && !isAdmin) || !areOptionalStrings(email)) {
     return res.status(400).json({ error: 'El correo electrónico es obligatorio.' });
   }
 
@@ -1559,6 +1593,12 @@ app.post('/api/auth/reset-password', async (req, res) => {
 
   if (!code || !targetPassword) {
     return res.status(400).json({ error: 'El código de verificación y la nueva contraseña son obligatorios.' });
+  }
+  if (!areStrings(code, targetPassword) || !areOptionalStrings(email, new_username)) {
+    return res.status(400).json({ error: 'Los datos del formulario no son válidos.' });
+  }
+  if (targetPassword.length < MIN_PASSWORD_LENGTH) {
+    return res.status(400).json({ error: `La contraseña debe tener al menos ${MIN_PASSWORD_LENGTH} caracteres.` });
   }
 
   const cleanEmail = email ? email.trim().toLowerCase() : 'info@rentmeuskar.com';
@@ -1772,6 +1812,9 @@ app.post('/api/bookings', async (req, res) => {
     return res.status(401).json({ error: 'Inicia sesión para solicitar una reserva.' });
   }
   if (!requester.isAdmin) {
+    if ((await countOpenBookings(requester.id, 'pending')) >= MAX_OPEN_REQUESTS_PER_USER) {
+      return res.status(429).json({ error: 'Ya tienes solicitudes de reserva pendientes de confirmar. Espera a que te respondamos antes de enviar otra.' });
+    }
     fianza_status = 'pending';
     payment_status = 'pending';
     payment_id = null;
@@ -1814,22 +1857,8 @@ app.post('/api/bookings', async (req, res) => {
     }
 
     // Verificar colisión de fechas (solo para alquiler SIN conductor, con conductor no bloquea)
-    if ((rental_mode || 'sin') === 'sin') {
-      const checkOverlapsQuery = `
-        SELECT id FROM bookings 
-        WHERE van_type = $1
-          AND ${ACTIVE_BOOKING_SQL}
-          AND rental_mode = 'sin'
-          AND (
-            (pickup_date <= $2 AND return_date >= $2) OR
-            (pickup_date <= $3 AND return_date >= $3) OR
-            (pickup_date >= $2 AND return_date <= $3)
-          )
-      `;
-      const checkRes = await pool.query(checkOverlapsQuery, [van_type, pickup_date, return_date]);
-      if (checkRes.rowCount > 0) {
-        return res.status(400).json({ error: 'La furgoneta seleccionada no está disponible en las fechas elegidas.' });
-      }
+    if ((rental_mode || 'sin') === 'sin' && !(await isVanAvailable(van_type, pickup_date, return_date))) {
+      return res.status(400).json({ error: 'La furgoneta seleccionada no está disponible en las fechas elegidas.' });
     }
 
     // Resolver usuario autenticado y detalles de cliente
@@ -2356,6 +2385,47 @@ function generateRedsysOrderId() {
   return `${prefix}${suffix}`;
 }
 
+// Avisos de reserva pagada: confirmación al cliente y alta a la empresa. Nunca bloquea la respuesta
+async function sendBookingPaidEmails(booking) {
+  if (!mailTransporter || !booking) return;
+  const senderAddress = process.env.SMTP_USER || 'confirmacion@rentmeuskar.com';
+  const companyAddress = process.env.CONTACT_EMAIL || 'info@rentmeuskar.com';
+  const field = value => escapeHtml(String(value === undefined || value === null ? '' : value));
+  const dates = `${field(String(booking.pickup_date).slice(0, 10))} ${field(booking.pickup_time)} → ${field(String(booking.return_date).slice(0, 10))} ${field(booking.return_time)}`;
+  const total = `${(parseFloat(booking.total_price) || 0).toFixed(2)} €`;
+  const summary = `
+    <p><strong>Reserva:</strong> #${field(booking.id)} · Pedido ${field(booking.payment_id)}</p>
+    <p><strong>Vehículo:</strong> ${field(booking.van_name)}</p>
+    <p><strong>Fechas:</strong> ${dates}</p>
+    <p><strong>Importe pagado:</strong> ${total} (la fianza de 500 € se deposita al recoger)</p>`;
+
+  const messages = [{
+    from: `"RentMeUskar Reservas" <${senderAddress}>`,
+    to: companyAddress,
+    subject: `Nueva reserva pagada #${booking.id} (${total})`,
+    html: `<div style="font-family: Arial, sans-serif;"><h2>Nueva reserva pagada</h2>${summary}
+      <p><strong>Cliente:</strong> ${field(booking.name)} · ${field(booking.client_email)} · ${field(booking.client_phone)}</p>
+      <p>Revísala y confírmala en el panel de administración.</p></div>`
+  }];
+  if (booking.client_email) {
+    messages.push({
+      from: `"RentMeUskar" <${senderAddress}>`,
+      to: booking.client_email,
+      subject: `Pago recibido · Reserva #${booking.id} RentMeUskar`,
+      html: `<div style="font-family: Arial, sans-serif;"><h2>¡Gracias, ${field(booking.name)}!</h2>
+        <p>Hemos recibido el pago de tu reserva. Te confirmaremos la recogida en breve.</p>${summary}
+        <p>Puedes ver tu factura y contrato en tu área de cliente de rentmeuskar.com.</p></div>`
+    });
+  }
+  for (const message of messages) {
+    try {
+      await mailTransporter.sendMail(message);
+    } catch (e) {
+      console.error('[SMTP RESERVA] No se pudo enviar el aviso de reserva pagada:', e.message);
+    }
+  }
+}
+
 // Modo de cobro online: 'test' (TPV simulado), 'redsys' (pasarela real) u 'off'
 function getPaymentMode() {
   if (process.env.ENABLE_TEST_PAYMENTS === 'true') return 'test';
@@ -2379,6 +2449,7 @@ function isActiveFallbackBooking(b) {
   return true;
 }
 
+// Libre = sin reservas activas que se solapen y sin bloqueos del admin (mantenimiento, etc.)
 async function isVanAvailable(vanType, pickupDate, returnDate) {
   try {
     const checkRes = await pool.query(`
@@ -2386,24 +2457,43 @@ async function isVanAvailable(vanType, pickupDate, returnDate) {
       WHERE van_type = $1
         AND ${ACTIVE_BOOKING_SQL}
         AND rental_mode = 'sin'
-        AND (
-          (pickup_date <= $2 AND return_date >= $2) OR
-          (pickup_date <= $3 AND return_date >= $3) OR
-          (pickup_date >= $2 AND return_date <= $3)
-        )
+        AND pickup_date <= $3 AND return_date >= $2
+      UNION ALL
+      SELECT id FROM van_blockages
+      WHERE van_type = $1 AND start_date <= $3 AND end_date >= $2
     `, [vanType, pickupDate, returnDate]);
     return checkRes.rowCount === 0;
   } catch (e) {
     const start = parseBookingDate(pickupDate);
     const end = parseBookingDate(returnDate);
-    return !fallbackBookings.some(b => {
-      if (b.van_type !== vanType || (b.rental_mode || 'sin') !== 'sin' || !isActiveFallbackBooking(b)) return false;
-      const bStart = parseBookingDate(String(b.pickup_date).slice(0, 10));
-      const bEnd = parseBookingDate(String(b.return_date).slice(0, 10));
+    const overlaps = (from, to) => {
+      const bStart = parseBookingDate(String(from).slice(0, 10));
+      const bEnd = parseBookingDate(String(to).slice(0, 10));
       return bStart && bEnd && start <= bEnd && end >= bStart;
-    });
+    };
+    const bookingClash = fallbackBookings.some(b =>
+      b.van_type === vanType && (b.rental_mode || 'sin') === 'sin' && isActiveFallbackBooking(b) && overlaps(b.pickup_date, b.return_date));
+    const blockageClash = fallbackBlockages.some(b => b.van_type === vanType && overlaps(b.start_date, b.end_date));
+    return !bookingClash && !blockageClash;
   }
 }
+
+// Solicitudes abiertas de un cliente en un estado ('pending' o 'pending_payment' aún vigente):
+// limita que una cuenta bloquee el calendario con reservas que nunca paga
+async function countOpenBookings(userId, status) {
+  try {
+    const r = await pool.query(
+      `SELECT COUNT(*) FROM bookings WHERE user_id = $1 AND status = $2 AND ${ACTIVE_BOOKING_SQL}`,
+      [userId, status]
+    );
+    return parseInt(r.rows[0].count, 10) || 0;
+  } catch (e) {
+    return fallbackBookings.filter(b => String(b.user_id) === String(userId) && b.status === status && isActiveFallbackBooking(b)).length;
+  }
+}
+
+const MAX_OPEN_PAYMENTS_PER_USER = 1;
+const MAX_OPEN_REQUESTS_PER_USER = 2;
 
 // Inserta la reserva en PostgreSQL o, sin BD, en el almacén en memoria/disco
 async function saveBookingRecord(record) {
@@ -2467,6 +2557,15 @@ app.post('/api/redsys/create-payment', async (req, res) => {
     if (quote.days > 7) {
       return res.status(400).json({ error: 'Los alquileres de más de 7 días se gestionan por WhatsApp.' });
     }
+    // Reservar exige sesión y como mucho un pago pendiente a la vez por cliente
+    const payer = await getAuthUser(req);
+    if (!payer || payer.isAdmin) {
+      return res.status(401).json({ error: 'Inicia sesión con tu cuenta de cliente para pagar la reserva.' });
+    }
+    if ((await countOpenBookings(payer.id, 'pending_payment')) >= MAX_OPEN_PAYMENTS_PER_USER) {
+      return res.status(429).json({ error: 'Ya tienes un pago en curso. Complétalo o espera unos minutos antes de iniciar otro.' });
+    }
+
     if (!(await isVanAvailable(bookingData.van_type, bookingData.pickup_date, bookingData.return_date))) {
       return res.status(400).json({ error: 'La furgoneta seleccionada no está disponible en las fechas elegidas.' });
     }
@@ -2477,7 +2576,7 @@ app.post('/api/redsys/create-payment', async (req, res) => {
     // Número de pedido Redsys: 12 dígitos, también es la llave de la reserva
     const numOrder = generateRedsysOrderId();
 
-    const authUser = await getAuthUser(req);
+    const authUser = payer;
     const isBizum = payMethod === 'bizum';
     await saveBookingRecord({
       name: String(bookingData.name || (authUser && authUser.name) || 'Cliente').trim().slice(0, 100),
@@ -2737,6 +2836,8 @@ const handleTestPayment = async (req, res) => {
       saveAdminStoreToFile();
     }
 
+    sendBookingPaidEmails(savedBooking);
+
     res.status(201).json({
       success: true,
       orderId: numOrder,
@@ -2835,11 +2936,16 @@ app.post('/api/redsys/cancel-payment', async (req, res) => {
 app.post('/api/redsys/notification', async (req, res) => {
   try {
     const { Ds_SignatureVersion, Ds_MerchantParameters, Ds_Signature } = req.body;
-    if (!Ds_MerchantParameters || !Ds_Signature) {
+    if (typeof Ds_MerchantParameters !== 'string' || typeof Ds_Signature !== 'string') {
       return res.status(400).send('Parámetros no encontrados');
     }
 
-    const decodedParams = decodeRedsysParameters(Ds_MerchantParameters);
+    let decodedParams;
+    try {
+      decodedParams = decodeRedsysParameters(Ds_MerchantParameters);
+    } catch (parseErr) {
+      return res.status(400).send('Parámetros no válidos');
+    }
     const orderId = decodedParams.DS_ORDER || decodedParams.Ds_Order;
     const responseCodeStr = decodedParams.DS_RESPONSE || decodedParams.Ds_Response;
     const responseCode = parseInt(responseCodeStr, 10);
@@ -2901,6 +3007,7 @@ app.post('/api/redsys/notification', async (req, res) => {
 
     if (authorized) {
       console.log(`[REDSYS] ¡PAGO AUTORIZADO CORRECTAMENTE! Orden: ${orderId}`);
+      sendBookingPaidEmails({ ...booking, status: newStatus, payment_status: newPaymentStatus });
     } else {
       console.warn(`[REDSYS] Pago denegado o cancelado. Orden: ${orderId}, Código: ${responseCodeStr}`);
     }
@@ -3335,8 +3442,8 @@ app.post('/api/admin/request-credential-change-code', verifyAdmin, async (req, r
   if (cleanUsername.length < 3) {
     return res.status(400).json({ error: 'El nombre de usuario debe tener al menos 3 caracteres.' });
   }
-  if (cleanPassword.length < 6) {
-    return res.status(400).json({ error: 'La nueva contraseña debe tener al menos 6 caracteres.' });
+  if (cleanPassword.length < MIN_PASSWORD_LENGTH) {
+    return res.status(400).json({ error: 'La nueva contraseña debe tener al menos 8 caracteres.' });
   }
 
   const code = generateVerificationCode();
@@ -3482,7 +3589,7 @@ app.post('/api/admin/generate-review-code', verifyAdmin, (req, res) => {
 // Verificar código manual para autocompletar vehículo y datos de reserva
 app.post('/api/reviews/verify-code', async (req, res) => {
   const { code } = req.body;
-  if (!code) return res.status(400).json({ error: 'Código requerido' });
+  if (!code || typeof code !== 'string') return res.status(400).json({ error: 'Código requerido' });
 
   const cleanCode = code.trim().toUpperCase();
 
@@ -3582,6 +3689,9 @@ app.post('/api/reviews', async (req, res) => {
   
   if (!booking_code || !client_name || !rating || !comment) {
     return res.status(400).json({ error: 'Todos los campos son obligatorios.' });
+  }
+  if (!areStrings(booking_code, client_name, comment) || !areOptionalStrings(role_or_city, van_name)) {
+    return res.status(400).json({ error: 'Los datos de la opinión no son válidos.' });
   }
 
   const numRating = parseInt(rating);

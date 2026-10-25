@@ -89,7 +89,7 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
 
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="styles.css?v=4.0">
+    <link rel="stylesheet" href="styles.css?v=4.1">
 
     <!-- Google Identity Services -->
     <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -570,31 +570,28 @@
                 });
 
                 var data = await res.json();
+                // Solo hay sesión si el servidor ha creado la cuenta; si no, se muestra el motivo
+                // y el modal sigue abierto para reintentar (antes se fingía una sesión local)
                 if (res.ok && data.token) {
                     localStorage.setItem('user_token', data.token);
                     if (data.user) {
                         localStorage.setItem('user_profile', JSON.stringify(data.user));
                     }
+                    window.closeAuthModal('verify-email-modal');
+                    if (typeof window.updateAuthUI === 'function') window.updateAuthUI();
+                    if (typeof showAppToast === 'function') showAppToast('¡Cuenta activada e inicio de sesión automático!', 'success');
                 } else {
-                    var regName = document.getElementById('reg-name') ? document.getElementById('reg-name').value.trim() : email.split('@')[0];
-                    var userProfile = { id: Date.now(), name: regName, email: email, phone: '', dni: '' };
-                    localStorage.setItem('user_token', 'user_' + userProfile.id);
-                    localStorage.setItem('user_profile', JSON.stringify(userProfile));
+                    var verifyError = (data && data.error) ? data.error : 'No se pudo verificar el código.';
+                    if (typeof showAppToast === 'function') showAppToast(verifyError, 'error'); else alert(verifyError);
                 }
             } catch (err) {
-                console.warn('Error al verificar registro, completando sesión local:', err);
-                var regName = document.getElementById('reg-name') ? document.getElementById('reg-name').value.trim() : email.split('@')[0];
-                var userProfile = { id: Date.now(), name: regName, email: email, phone: '', dni: '' };
-                localStorage.setItem('user_token', 'user_' + userProfile.id);
-                localStorage.setItem('user_profile', JSON.stringify(userProfile));
+                console.warn('Error al verificar registro:', err);
+                if (typeof showAppToast === 'function') showAppToast('Error de conexión con el servidor. Inténtalo de nuevo.', 'error'); else alert('Error de conexión con el servidor.');
             } finally {
                 if (submitBtn) {
                     submitBtn.disabled = false;
                     submitBtn.innerHTML = '<i class="fa-solid fa-circle-check"></i> Activar Cuenta e Iniciar Sesión';
                 }
-                window.closeAuthModal('verify-email-modal');
-                if (typeof window.updateAuthUI === 'function') window.updateAuthUI();
-                if (typeof showAppToast === 'function') showAppToast('¡Cuenta activada e inicio de sesión automático!', 'success');
             }
             return false;
         };
@@ -1157,60 +1154,19 @@
                     <div style="overflow: hidden; width: 100%;">
                         <div class="testimonials-track" id="testimonials-grid"
                             style="display: flex; transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1); width: 100%;">
-                            <div class="testimonial-card reveal"
-                                style="flex: 0 0 100%; box-sizing: border-box; margin: 0;">
-                                <div class="stars"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i
-                                        class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i
-                                        class="fa-solid fa-star"></i></div>
-                                <p class="testimonial-text">"Alquilé la furgoneta mediana para trasladar unos muebles
-                                    desde Granada a Huéscar. El trato fue inmejorable y el vehículo estaba limpísimo.
-                                    Repetiré seguro."</p>
-                                <div class="testimonial-author">
-                                    <div class="author-info">
-                                        <h4 class="author-name">Francisco M.</h4>
-                                        <p class="author-role">Particular (Huéscar)</p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="testimonial-card reveal delay-1"
-                                style="flex: 0 0 100%; box-sizing: border-box; margin: 0;">
-                                <div class="stars"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i
-                                        class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i
-                                        class="fa-solid fa-star"></i></div>
-                                <p class="testimonial-text">"Necesitábamos una furgoneta de 9 plazas para un viaje de
-                                    fin de semana con amigos de la Puebla de Don Fadrique. El viaje fue comodísimo y el
-                                    precio muy razonable."</p>
-                                <div class="testimonial-author">
-                                    <div class="author-info">
-                                        <h4 class="author-name">María José S.</h4>
-                                        <p class="author-role">Viaje Familiar</p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="testimonial-card reveal delay-2"
-                                style="flex: 0 0 100%; box-sizing: border-box; margin: 0;">
-                                <div class="stars"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i
-                                        class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i
-                                        class="fa-solid fa-star"></i></div>
-                                <p class="testimonial-text">"Como autónomo, a veces necesito un vehículo de gran volumen
-                                    para repartos extra. RentMeUskar me soluciona la papeleta rápidamente y sin
-                                    burocracia pesada."</p>
-                                <div class="testimonial-author">
-                                    <div class="author-info">
-                                        <h4 class="author-name">Antonio G.</h4>
-                                        <p class="author-role">Autónomo (Castril)</p>
-                                    </div>
-                                </div>
+                            <!-- Sin testimonios fijos: app.js pinta aquí solo opiniones reales de clientes -->
+                            <div class="testimonial-card" style="flex: 0 0 100%; box-sizing: border-box; margin: 0;">
+                                <p class="testimonial-text">Cargando opiniones de nuestros clientes...</p>
                             </div>
                         </div>
                     </div>
 
                     <!-- Flechas de navegación -->
-                    <button class="carousel-control prev" id="reviews-carousel-prev"
+                    <button class="carousel-control prev" id="reviews-carousel-prev" aria-label="Opinión anterior"
                         style="position: absolute; top: 50%; left: -2.5rem; transform: translateY(-50%); background: rgba(255,255,255,0.03); border: 1.5px solid var(--color-neon); color: #fff; width: 44px; height: 44px; border-radius: 50%; cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center; z-index: 5; transition: all 0.3s ease; box-shadow: 0 0 10px rgba(130, 209, 5, 0.2);">
                         <i class="fa-solid fa-chevron-left" style="color: var(--color-neon);"></i>
                     </button>
-                    <button class="carousel-control next" id="reviews-carousel-next"
+                    <button class="carousel-control next" id="reviews-carousel-next" aria-label="Opinión siguiente"
                         style="position: absolute; top: 50%; right: -2.5rem; transform: translateY(-50%); background: rgba(255,255,255,0.03); border: 1.5px solid var(--color-neon); color: #fff; width: 44px; height: 44px; border-radius: 50%; cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center; z-index: 5; transition: all 0.3s ease; box-shadow: 0 0 10px rgba(130, 209, 5, 0.2);">
                         <i class="fa-solid fa-chevron-right" style="color: var(--color-neon);"></i>
                     </button>
@@ -1677,7 +1633,7 @@
                 <div class="custom-form-group">
                     <label for="reset-new-password">Nueva Contraseña</label>
                     <div style="position: relative; display: flex; align-items: center;">
-                        <input type="password" id="reset-new-password" class="custom-form-control" required placeholder="" style="padding-right: 2.5rem; width: 100%;">
+                        <input type="password" id="reset-new-password" class="custom-form-control" required minlength="8" placeholder="Mínimo 8 caracteres" style="padding-right: 2.5rem; width: 100%;">
                         <i class="fa-solid fa-eye toggle-password-btn" onclick="togglePasswordVisibility('reset-new-password', this)" title="Mostrar/Ocultar contraseña" style="position: absolute; right: 0.8rem; color: var(--text-secondary, #718096); cursor: pointer; font-size: 1rem; transition: color 0.2s; user-select: none;"></i>
                     </div>
                 </div>
@@ -1719,7 +1675,7 @@
                 <div class="custom-form-group">
                     <label for="reg-password">Contraseña</label>
                     <div style="position: relative; display: flex; align-items: center;">
-                        <input type="password" id="reg-password" class="custom-form-control" required placeholder="" style="padding-right: 2.5rem; width: 100%;">
+                        <input type="password" id="reg-password" class="custom-form-control" required minlength="8" placeholder="Mínimo 8 caracteres" style="padding-right: 2.5rem; width: 100%;">
                         <i class="fa-solid fa-eye toggle-password-btn" onclick="togglePasswordVisibility('reg-password', this)" title="Mostrar/Ocultar contraseña" style="position: absolute; right: 0.8rem; color: var(--text-secondary, #718096); cursor: pointer; font-size: 1rem; transition: color 0.2s; user-select: none;"></i>
                     </div>
                 </div>
@@ -2617,7 +2573,7 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
 
     <!-- Custom Script -->
-    <script src="app.js?v=21.3"></script>
+    <script src="app.js?v=21.4"></script>
 </body>
 
 </html>

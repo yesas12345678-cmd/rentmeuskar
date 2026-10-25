@@ -2336,6 +2336,13 @@ const initApp = () => {
                     reviewsCountPlaceholder.textContent = reviews.length;
                 }
 
+                if (reviews.length === 0) {
+                    testimonialsGrid.innerHTML = `
+                        <div class="testimonial-card" style="flex: 0 0 100%; box-sizing: border-box; margin: 0;">
+                            <p class="testimonial-text">Aún no hay opiniones publicadas. Cuando alquiles con nosotros podrás dejar la tuya con el código de tu reserva.</p>
+                        </div>`;
+                }
+
                 if (reviews.length > 0) {
                     testimonialsGrid.innerHTML = '';
 

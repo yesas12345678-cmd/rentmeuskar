@@ -1638,7 +1638,8 @@ a.contact-method-card:hover {
 
 .copyright {
     font-size: 0.85rem;
-    color: var(--text-muted);
+    /* Más claro que --text-muted: sobre el fondo oscuro no llegaba al contraste mínimo (WCAG AA) */
+    color: #9ca3af;
 }
 
 .developer-credit {

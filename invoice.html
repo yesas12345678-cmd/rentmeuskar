@@ -406,58 +406,71 @@
                     
                     let calculatedBaseTaxable = 0;
 
+                    // Texto guardado en la reserva: escapado antes de pintarlo con innerHTML
+                    const esc = (value) => String(value === undefined || value === null ? '' : value)
+                        .replace(/[&<>'"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[c]));
+                    const vanModel = esc(booking.van_name);
+                    const vanPlate = esc(booking.van_plate || (isFord ? '3681 MCC' : '3758 MDW'));
+
+                    // La factura refleja lo COBRADO: base = total / 1,21 y el precio de cada extra sale de su
+                    // etiqueta guardada ("(+5.00€/día)"), nunca del catálogo actual, que puede haber cambiado
+                    const totalPaid = parseFloat(booking.total_price) || 0;
+                    const paidBase = Math.round((totalPaid / 1.21) * 100) / 100;
+                    const legacyExtras = [
+                        { match: 'GPS', name: 'GPS Navegador', price: 5.00, daily: true },
+                        { match: 'Conductor', name: 'Segundo Conductor Autorizado', price: 8.00, daily: true },
+                        { match: 'Mudanza', name: 'Kit Mudanza (Cinchas y Mantas)', price: 10.00, daily: false }
+                    ];
+                    const paidExtras = (Array.isArray(booking.extras) ? booking.extras : []).map(extra => {
+                        const label = String(extra);
+                        const priced = label.match(/^(.*?)\s*\(\+([\d.,]+)€(\/día| pago único)\)/);
+                        if (priced) {
+                            return { name: priced[1], price: parseFloat(priced[2].replace(',', '.')) || 0, daily: priced[3] === '/día' };
+                        }
+                        const legacy = legacyExtras.find(l => label.includes(l.match));
+                        return legacy ? { name: legacy.name, price: legacy.price, daily: legacy.daily } : { name: label, price: 0, daily: false };
+                    }).map(extra => ({ ...extra, total: extra.daily ? extra.price * booking.days : extra.price }));
+                    const extrasTotal = paidExtras.reduce((sum, extra) => sum + extra.total, 0);
+
                     if (!isCon) {
                         // MODALIDAD: SIN CONDUCTOR
-                        const baseDailyPrice = booking.price_sin !== undefined && booking.price_sin !== null 
-                            ? parseFloat(booking.price_sin) 
-                            : (isFord ? 79.00 : 107.44);
-                        
+                        const rentalNet = Math.max(0, paidBase - extrasTotal);
+
                         if (booking.days > 7) {
                             // Larga duración (Tarifa personalizada)
-                            let extrasTotal = 0;
-                            if (booking.extras && booking.extras.length > 0) {
-                                booking.extras.forEach(extra => {
-                                    if (extra.includes('GPS')) extrasTotal += 5.00 * booking.days;
-                                    else if (extra.includes('Conductor')) extrasTotal += 8.00 * booking.days;
-                                    else if (extra.includes('Mudanza')) extrasTotal += 10.00;
-                                });
-                            }
-                            
-                            const totalPrice = parseFloat(booking.total_price);
-                            const baseRentalTotal = totalPrice > 0 ? (totalPrice / 1.21) - extrasTotal : 0;
-                            
                             const trBase = document.createElement('tr');
                             trBase.innerHTML = `
                                 <td>
                                     <strong>Alquiler de Vehículo sin Conductor (Larga Duración)</strong><br>
-                                    <small style="color: #64748b;">Modelo: ${booking.van_name} | Matrícula: ${booking.van_plate || (isFord ? '3681 MCC' : '3758 MDW')}</small>
+                                    <small style="color: #64748b;">Modelo: ${vanModel} | Matrícula: ${vanPlate}</small>
                                 </td>
                                 <td class="number-col">${booking.days} d</td>
-                                <td class="number-col">${totalPrice > 0 ? (baseRentalTotal / booking.days).toFixed(2) : 'A consultar'} €</td>
-                                <td class="number-col"><strong>${totalPrice > 0 ? baseRentalTotal.toFixed(2) : 'A consultar'} €</strong></td>
+                                <td class="number-col">${totalPaid > 0 ? (rentalNet / booking.days).toFixed(2) : 'A consultar'} €</td>
+                                <td class="number-col"><strong>${totalPaid > 0 ? rentalNet.toFixed(2) : 'A consultar'} €</strong></td>
                             `;
                             tbody.appendChild(trBase);
-                            calculatedBaseTaxable += baseRentalTotal;
                         } else {
-                            let baseRentalTotal = baseDailyPrice * booking.days;
-                            
+                            // Entre 3 y 7 días se cobró con un 5 % de descuento sobre el alquiler
+                            const hasDiscount = booking.days >= 3 && booking.days <= 7;
+                            const rentalGross = hasDiscount ? rentalNet / 0.95 : rentalNet;
+                            const baseDailyPrice = booking.days > 0 ? rentalGross / booking.days : rentalGross;
+
                             // Furgoneta Base row
                             const trBase = document.createElement('tr');
                             trBase.innerHTML = `
                                 <td>
                                     <strong>Alquiler de Vehículo sin Conductor</strong><br>
-                                    <small style="color: #64748b;">Modelo: ${booking.van_name} | Matrícula: ${booking.van_plate || (isFord ? '3681 MCC' : '3758 MDW')}</small>
+                                    <small style="color: #64748b;">Modelo: ${vanModel} | Matrícula: ${vanPlate}</small>
                                 </td>
                                 <td class="number-col">${booking.days} d</td>
                                 <td class="number-col">${baseDailyPrice.toFixed(2)} €</td>
-                                <td class="number-col"><strong>${baseRentalTotal.toFixed(2)} €</strong></td>
+                                <td class="number-col"><strong>${rentalGross.toFixed(2)} €</strong></td>
                             `;
                             tbody.appendChild(trBase);
-                            calculatedBaseTaxable += baseRentalTotal;
 
                             // Descuento del 5% row (if >= 3 days y <= 7)
-                            if (booking.days >= 3 && booking.days <= 7) {
-                                const discountVal = baseRentalTotal * 0.05;
+                            if (hasDiscount) {
+                                const discountVal = rentalGross - rentalNet;
                                 const trDisc = document.createElement('tr');
                                 trDisc.innerHTML = `
                                     <td>
@@ -469,46 +482,24 @@
                                     <td class="number-col" style="color: #ff4d6d;"><strong>-${discountVal.toFixed(2)} €</strong></td>
                                 `;
                                 tbody.appendChild(trDisc);
-                                calculatedBaseTaxable -= discountVal;
                             }
                         }
 
                         // Extras rows
-                        if (booking.extras && booking.extras.length > 0) {
-                            booking.extras.forEach(extra => {
-                                // Texto guardado en la reserva: escapado antes de pintarlo con innerHTML
-                                let extraName = String(extra).replace(/[&<>'"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[c]));
-                                let extraPrice = 0;
-                                let quantityText = '1';
-                                
-                                if (extra.includes('GPS')) {
-                                    extraName = 'GPS Navegador';
-                                    extraPrice = 5.00 * booking.days;
-                                    quantityText = `${booking.days} d`;
-                                } else if (extra.includes('Conductor')) {
-                                    extraName = 'Segundo Conductor Autorizado';
-                                    extraPrice = 8.00 * booking.days;
-                                    quantityText = `${booking.days} d`;
-                                } else if (extra.includes('Mudanza')) {
-                                    extraName = 'Kit Mudanza (Cinchas y Mantas)';
-                                    extraPrice = 10.00;
-                                    quantityText = '1 ud';
-                                }
-
-                                const trExtra = document.createElement('tr');
-                                trExtra.innerHTML = `
-                                    <td>
-                                        <strong>Extra: ${extraName}</strong><br>
-                                        <small style="color: #64748b;">Añadido a la reserva</small>
-                                    </td>
-                                    <td class="number-col">${quantityText}</td>
-                                    <td class="number-col">${(extraPrice / (quantityText.includes('d') ? booking.days : 1)).toFixed(2)} €</td>
-                                    <td class="number-col"><strong>${extraPrice.toFixed(2)} €</strong></td>
-                                `;
-                                tbody.appendChild(trExtra);
-                                calculatedBaseTaxable += extraPrice;
-                            });
-                        }
+                        paidExtras.forEach(extra => {
+                            const trExtra = document.createElement('tr');
+                            trExtra.innerHTML = `
+                                <td>
+                                    <strong>Extra: ${esc(extra.name)}</strong><br>
+                                    <small style="color: #64748b;">Añadido a la reserva</small>
+                                </td>
+                                <td class="number-col">${extra.daily ? `${booking.days} d` : '1 ud'}</td>
+                                <td class="number-col">${extra.price.toFixed(2)} €</td>
+                                <td class="number-col"><strong>${extra.total.toFixed(2)} €</strong></td>
+                            `;
+                            tbody.appendChild(trExtra);
+                        });
+                        calculatedBaseTaxable = paidBase;
                     } else {
                         // MODALIDAD: CON CONDUCTOR
                         const baseMinRate = booking.min_price_con !== undefined && booking.min_price_con !== null 
@@ -572,8 +563,10 @@
                     }
 
                     // Calculo de IVA
-                    const totalPrice = parseFloat(booking.total_price);
-                    const iva = totalPrice - calculatedBaseTaxable;
+                    // Con conductor las líneas son orientativas; la base y el IVA salen siempre de lo cobrado
+                    calculatedBaseTaxable = paidBase;
+                    const totalPrice = totalPaid;
+                    const iva = Math.round((totalPrice - calculatedBaseTaxable) * 100) / 100;
 
                     document.getElementById('total-base-tax').textContent = `${calculatedBaseTaxable.toFixed(2)} €`;
                     document.getElementById('total-iva').textContent = `${iva.toFixed(2)} €`;
