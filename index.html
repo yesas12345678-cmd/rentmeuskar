@@ -328,12 +328,16 @@
                     body: JSON.stringify({ email: email })
                 });
 
-                var msg = `📧 Te hemos enviado un correo de confirmación a ${email}. Por favor, revisa tu bandeja de entrada o carpeta de spam para obtener tu código.`;
-                if (typeof showAppToast === 'function') {
-                    showAppToast(msg, 'success', 8000);
-                } else {
-                    alert(msg);
+                // Solo se pasa al paso del código si el servidor lo ha aceptado; se muestra su mensaje
+                var data = await res.json().catch(function () { return {}; });
+                var msg;
+                if (!res.ok) {
+                    msg = data.error || 'No se pudo enviar el código. Inténtalo de nuevo.';
+                    if (typeof showAppToast === 'function') { showAppToast(msg, 'error', 8000); } else { alert(msg); }
+                    return false;
                 }
+                msg = data.message || `📧 Te hemos enviado un correo de confirmación a ${email}. Revisa tu bandeja de entrada o la carpeta de spam.`;
+                if (typeof showAppToast === 'function') { showAppToast(msg, 'success', 8000); } else { alert(msg); }
 
                 var resetCodeInput = document.getElementById('reset-code');
                 if (resetCodeInput) resetCodeInput.value = '';
@@ -341,17 +345,8 @@
                 window.switchAuthModal('forgot-password-modal', 'reset-password-modal');
             } catch (err) {
                 console.warn('Error al enviar código de recuperación:', err);
-                var msg = `📧 Te hemos enviado un correo de confirmación a ${email}. Por favor, revisa tu bandeja de entrada o carpeta de spam para obtener tu código.`;
-                if (typeof showAppToast === 'function') {
-                    showAppToast(msg, 'success', 8000);
-                } else {
-                    alert(msg);
-                }
-
-                var resetCodeInput = document.getElementById('reset-code');
-                if (resetCodeInput) resetCodeInput.value = '';
-
-                window.switchAuthModal('forgot-password-modal', 'reset-password-modal');
+                var msg = 'Error de conexión con el servidor. No se ha enviado ningún código; inténtalo de nuevo.';
+                if (typeof showAppToast === 'function') { showAppToast(msg, 'error', 8000); } else { alert(msg); }
             } finally {
                 if (submitBtn) {
                     submitBtn.disabled = false;
@@ -395,13 +390,10 @@
                     alert(data.error || 'Error al restablecer contraseña.');
                 }
             } catch (err) {
-                console.warn('Error al restablecer contraseña, completando localmente:', err);
-                if (typeof showAppToast === 'function') {
-                    showAppToast('¡Contraseña restablecida con éxito! Ya puedes iniciar sesión.', 'success');
-                } else {
-                    alert('¡Contraseña restablecida con éxito! Ya puedes iniciar sesión.');
-                }
-                window.switchAuthModal('reset-password-modal', 'login-modal');
+                // Sin respuesta del servidor la contraseña NO ha cambiado
+                console.warn('Error al restablecer contraseña:', err);
+                var msg = 'Error de conexión con el servidor. Tu contraseña no se ha cambiado; inténtalo de nuevo.';
+                if (typeof showAppToast === 'function') { showAppToast(msg, 'error', 8000); } else { alert(msg); }
             }
             return false;
         };
