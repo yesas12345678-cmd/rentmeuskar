@@ -25,7 +25,10 @@ const smtpHost = process.env.SMTP_HOST || 'smtp.zoho.eu';
 const smtpPort = parseInt(process.env.SMTP_PORT || '465');
 const smtpSecure = process.env.SMTP_SECURE ? (process.env.SMTP_SECURE === 'true') : true;
 const smtpUser = process.env.SMTP_USER || 'confirmacion@rentmeuskar.com';
-const smtpPass = process.env.SMTP_PASS || 'Follete_87';
+const smtpPass = process.env.SMTP_PASS || '';
+if (!smtpPass) {
+  console.warn('[SMTP] Falta SMTP_PASS en el entorno: el envío de correos fallará hasta configurarlo.');
+}
 
 mailTransporter = nodemailer.createTransport({
   host: smtpHost,
@@ -62,16 +65,7 @@ const adminInitFlagPath = path.join(dataDir, 'admin_initialized.flag');
 const vansInitFlagPath = path.join(dataDir, 'vans_initialized.flag');
 
 // Datasets globales en memoria
-let fallbackUsers = [
-  {
-    id: 1,
-    name: 'Jose Manuel',
-    email: 'yesas12345678@gmail.com',
-    password: hashPassword('Manuel1214$'),
-    phone: '600000000',
-    dni: '12345678Z'
-  }
-];
+let fallbackUsers = [];
 let fallbackBookings = [
   { id: 1, name: 'Francisco M.', van_type: 'medium', van_name: 'Ford Transit Custom L2H2 (8m³)', pickup_date: '2026-08-15', pickup_time: '09:00', return_date: '2026-08-18', return_time: '19:00', days: 3, total_price: 237.00, status: 'confirmed', payment_status: 'paid', fianza_status: 'paid', review_code: 'RMU-MOCK1' },
   { id: 2, name: 'María José S.', van_type: 'large', van_name: 'MAN TGE L4H3 Gran Volumen (14m³)', pickup_date: '2026-08-20', pickup_time: '10:00', return_date: '2026-08-22', return_time: '12:00', days: 2, total_price: 214.88, status: 'confirmed', payment_status: 'paid', fianza_status: 'paid', review_code: 'RMU-MOCK2' },
@@ -472,7 +466,11 @@ function hashPassword(password) {
 }
 
 // Token secreto para firma criptográfica de sesiones de usuario
-const SESSION_SECRET = process.env.SESSION_SECRET || 'rmu_sec_sign_2026_salt_87a9!';
+// Sin SESSION_SECRET se genera uno aleatorio por arranque (las sesiones se cierran al reiniciar)
+const SESSION_SECRET = process.env.SESSION_SECRET || crypto.randomBytes(32).toString('hex');
+if (!process.env.SESSION_SECRET) {
+  console.warn('[AUTH] Falta SESSION_SECRET en el entorno: se usa uno temporal y las sesiones caducarán al reiniciar.');
+}
 
 function generateUserToken(userId, email) {
   const payload = Buffer.from(JSON.stringify({ id: userId, email: email || '', ts: Date.now() })).toString('base64url');
@@ -498,19 +496,48 @@ function verifyUserToken(token) {
       }
     }
   }
-  // Compatibilidad con tokens previos de sesión
-  if (token.startsWith('user_')) {
-    const id = parseInt(token.replace('user_', ''));
-    if (!isNaN(id)) return { id: id };
-  }
   return null;
 }
 
+// Credenciales de administrador: las guardadas desde el panel tienen prioridad; si no, las del entorno
+const ADMIN_TOKEN_TTL_MS = 12 * 60 * 60 * 1000;
+
+function getAdminUsername() {
+  return (fallbackSettings.admin_username || process.env.ADMIN_USERNAME || 'zvaito').toLowerCase();
+}
+
+function getAdminPasswordHash() {
+  if (fallbackSettings.admin_password_hash) return fallbackSettings.admin_password_hash;
+  return process.env.ADMIN_PASSWORD ? hashPassword(process.env.ADMIN_PASSWORD) : null;
+}
+
+function signAdminPayload(payload) {
+  // El hash de la contraseña entra en la firma: al cambiarla se invalidan los tokens anteriores
+  return crypto.createHmac('sha256', SESSION_SECRET)
+    .update(`${payload}:${getAdminUsername()}:${getAdminPasswordHash() || ''}`)
+    .digest('base64url');
+}
+
 function getCurrentAdminToken() {
-  const currentPassHash = fallbackSettings.admin_password_hash || hashPassword('Manuel1214$');
-  const currentAdminUser = (fallbackSettings.admin_username || 'zvaito').toLowerCase();
-  const secret = crypto.createHash('sha256').update(`${currentAdminUser}:${currentPassHash}`).digest('hex').substring(0, 16);
-  return `admin_token_${secret}`;
+  const payload = String(Date.now());
+  return `admin_token_${payload}.${signAdminPayload(payload)}`;
+}
+
+function isValidAdminToken(token) {
+  if (!token || typeof token !== 'string' || !token.startsWith('admin_token_')) return false;
+  if (!getAdminPasswordHash()) return false;
+  const [payload, signature] = token.slice('admin_token_'.length).split('.');
+  if (!payload || !signature) return false;
+  const issuedAt = parseInt(payload, 10);
+  if (isNaN(issuedAt) || Date.now() - issuedAt > ADMIN_TOKEN_TTL_MS) return false;
+  const expected = signAdminPayload(payload);
+  return signature.length === expected.length && crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected));
+}
+
+function safeEqual(a, b) {
+  const bufA = Buffer.from(String(a));
+  const bufB = Buffer.from(String(b));
+  return bufA.length === bufB.length && crypto.timingSafeEqual(bufA, bufB);
 }
 
 // Middleware de verificación estricta de Administrador
@@ -520,9 +547,8 @@ const verifyAdmin = (req, res, next) => {
     return res.status(401).json({ error: 'No autorizado. Falta token de autenticación.' });
   }
   const token = authHeader.replace('Bearer ', '').trim();
-  const validAdminToken = getCurrentAdminToken();
 
-  if (token === validAdminToken) {
+  if (isValidAdminToken(token)) {
     req.isAdmin = true;
     return next();
   }
@@ -536,19 +562,15 @@ const getAuthUser = async (req) => {
   if (!authHeader) return null;
   const token = authHeader.replace('Bearer ', '').trim();
   
-  if (token === getCurrentAdminToken() || (token.startsWith('admin_token_') && token.length >= 16)) {
-    return { id: 0, isAdmin: true, email: fallbackSettings.admin_username || 'zvaito' };
+  if (isValidAdminToken(token)) {
+    return { id: 0, isAdmin: true, email: getAdminUsername() };
   }
-  
+
   const tokenData = verifyUserToken(token);
   if (!tokenData) return null;
   const userId = tokenData.id;
   const tokenEmail = tokenData.email;
-  
-  if (userId === 9999) {
-    return { id: 9999, name: 'Cliente Demo', email: 'cliente@rentmeuskar.com', isAdmin: false };
-  }
-  
+
   try {
     if (userId && typeof userId === 'number') {
       const uRes = await pool.query('SELECT id, name, email, phone, dni FROM users WHERE id = $1', [userId]);
@@ -886,20 +908,6 @@ const initDb = async () => {
     await client.query(createUsersTableQuery);
     console.log('Tabla "users" verificada/creada.');
     
-    // Pre-poblar cuenta de usuario principal si no existe
-    try {
-      const mainUserCheck = await client.query("SELECT id FROM users WHERE LOWER(email) = $1", ['yesas12345678@gmail.com']);
-      if (mainUserCheck.rowCount === 0) {
-        await client.query(
-          "INSERT INTO users (name, email, password, phone, dni) VALUES ($1, $2, $3, $4, $5)",
-          ['Jose Manuel', 'yesas12345678@gmail.com', hashPassword('Manuel1214$'), '600000000', '12345678Z']
-        );
-        console.log('Usuario principal yesas12345678@gmail.com insertado en PostgreSQL.');
-      }
-    } catch (uErr) {
-      console.warn('Error al verificar/insertar usuario principal en PostgreSQL:', uErr.message);
-    }
-    
     // Crear tabla de reservas
     await client.query(createBookingsTableQuery);
     console.log('Tabla "bookings" verificada/creada.');
@@ -1135,7 +1143,7 @@ app.post('/api/auth/register', async (req, res) => {
     expires: Date.now() + 15 * 60 * 1000
   };
 
-  console.log(`[SECURITY - REGISTRATION CODE] Código de verificación para ${cleanEmail}: ${code}`);
+  console.log(`[SECURITY - REGISTRATION CODE] Código de verificación generado para ${cleanEmail}`);
 
   try {
     const senderAddress = process.env.SMTP_USER || 'confirmacion@rentmeuskar.com';
@@ -1291,34 +1299,14 @@ app.post('/api/auth/login', async (req, res) => {
   const cleanEmail = email.trim().toLowerCase();
   const passHash = hashPassword(password);
   
-  // Login de Administrador Dinámico (Soporta credenciales modificadas)
-  const currentAdminUser = (fallbackSettings.admin_username || 'zvaito').toLowerCase();
-  const currentAdminPassHash = fallbackSettings.admin_password_hash || hashPassword('Manuel1214$');
-  const currentAdminRawPass = fallbackSettings.admin_password || 'Manuel1214$';
+  // Login de Administrador (usuario del panel, info@ o ADMIN_EMAIL del entorno)
+  const adminLogins = [getAdminUsername(), 'info@rentmeuskar.com', (process.env.ADMIN_EMAIL || '').toLowerCase()].filter(Boolean);
+  const currentAdminPassHash = getAdminPasswordHash();
 
-  const isCustomized = !!(fallbackSettings.admin_username || fallbackSettings.admin_password_hash);
-  
-  const isMatchingUser = isCustomized 
-    ? (cleanEmail === currentAdminUser || cleanEmail === 'info@rentmeuskar.com' || cleanEmail === 'yesas12345678@gmail.com')
-    : (cleanEmail === currentAdminUser || cleanEmail === 'zvaito' || cleanEmail === 'info@rentmeuskar.com' || cleanEmail === 'yesas12345678@gmail.com');
-
-  const isMatchingPass = isCustomized
-    ? (passHash === currentAdminPassHash || password === currentAdminRawPass)
-    : (passHash === currentAdminPassHash || password === currentAdminRawPass || password === 'Manuel1214$');
-
-  if (isMatchingUser && isMatchingPass) {
+  if (currentAdminPassHash && adminLogins.includes(cleanEmail) && safeEqual(passHash, currentAdminPassHash)) {
     return res.json({
       token: getCurrentAdminToken(),
-      user: { id: 1, name: 'Jose Manuel', email: cleanEmail, is_admin: true }
-    });
-  }
-
-  // Login de Cliente Demo (100% fiable para pruebas rápidas sin registro)
-  if (cleanEmail === 'cliente@rentmeuskar.com' && password === '123456') {
-    return res.json({
-      message: 'Inicio de sesión exitoso.',
-      token: generateUserToken(9999, 'cliente@rentmeuskar.com'),
-      user: { id: 9999, name: 'Cliente Demo', email: 'cliente@rentmeuskar.com', phone: '600000000', dni: '12345678Z' }
+      user: { id: 1, name: 'Administrador', email: cleanEmail, is_admin: true }
     });
   }
 
@@ -1364,20 +1352,24 @@ app.post('/api/auth/forgot-password', async (req, res) => {
   const cleanEmail = email ? email.trim().toLowerCase() : 'info@rentmeuskar.com';
   const code = Math.floor(100000 + Math.random() * 900000).toString();
 
-  const currentAdminUser = (fallbackSettings.admin_username || 'zvaito').toLowerCase();
-  const isAdminRequest = !!(isAdmin || cleanEmail === 'info@rentmeuskar.com' || cleanEmail === currentAdminUser || cleanEmail === 'zvaito' || cleanEmail === 'admin');
+  const currentAdminUser = getAdminUsername();
+  const isAdminRequest = !!(isAdmin || cleanEmail === 'info@rentmeuskar.com' || cleanEmail === currentAdminUser || cleanEmail === 'admin');
 
-  pendingPasswordResets[cleanEmail] = {
+  // isAdmin marca los códigos enviados a info@: solo esos pueden restablecer el administrador
+  const pendingEntry = {
     code,
+    isAdmin: isAdminRequest,
     expires: Date.now() + 15 * 60 * 1000
   };
 
   if (isAdminRequest) {
-    pendingPasswordResets['info@rentmeuskar.com'] = pendingPasswordResets[cleanEmail];
-    pendingPasswordResets[currentAdminUser] = pendingPasswordResets[cleanEmail];
+    pendingPasswordResets['info@rentmeuskar.com'] = pendingEntry;
+    pendingPasswordResets[currentAdminUser] = pendingEntry;
+  } else {
+    pendingPasswordResets[cleanEmail] = pendingEntry;
   }
 
-  console.log(`[SECURITY - FORGOT PASSWORD CODE] Código generado para ${cleanEmail} (isAdmin: ${isAdminRequest}): ${code}`);
+  console.log(`[SECURITY - FORGOT PASSWORD] Código generado para ${cleanEmail} (isAdmin: ${isAdminRequest})`);
 
   const senderAddress = process.env.SMTP_USER || 'confirmacion@rentmeuskar.com';
 
@@ -1497,20 +1489,19 @@ app.post('/api/auth/reset-password', async (req, res) => {
   }
 
   const passHash = hashPassword(targetPassword);
-  const currentAdminUser = (fallbackSettings.admin_username || 'zvaito').toLowerCase();
 
-  // Restablecer admin si el correo es admin o la petición viene de la consola de admin
-  if (cleanEmail === currentAdminUser || cleanEmail === 'info@rentmeuskar.com' || cleanEmail === 'zvaito' || cleanEmail === 'admin' || new_username) {
-    const finalAdminUser = new_username ? new_username.trim() : (fallbackSettings.admin_username || 'zvaito');
+  // Restablecer admin solo con un código emitido para la cuenta de administración (enviado a info@)
+  if (pending.isAdmin) {
+    const finalAdminUser = new_username ? new_username.trim() : getAdminUsername();
     try {
       await pool.query("INSERT INTO settings (key, value) VALUES ('admin_username', $1) ON CONFLICT (key) DO UPDATE SET value = $1", [finalAdminUser]);
-      await pool.query("INSERT INTO settings (key, value) VALUES ('admin_password', $1) ON CONFLICT (key) DO UPDATE SET value = $1", [targetPassword]);
       await pool.query("INSERT INTO settings (key, value) VALUES ('admin_password_hash', $1) ON CONFLICT (key) DO UPDATE SET value = $1", [passHash]);
+      await pool.query("DELETE FROM settings WHERE key = 'admin_password'");
     } catch (e) {
       console.warn('Base de datos offline al guardar credenciales admin:', e.message);
     }
     fallbackSettings.admin_username = finalAdminUser;
-    fallbackSettings.admin_password = targetPassword;
+    delete fallbackSettings.admin_password;
     fallbackSettings.admin_password_hash = passHash;
     saveAdminStoreToFile();
     delete pendingPasswordResets[cleanEmail];
@@ -2153,7 +2144,8 @@ function decodeRedsysParameters(merchantParamsBase64) {
 function generateRedsysOrderId() {
   const now = new Date();
   const prefix = String(now.getFullYear()).slice(-2) + String(now.getMonth() + 1).padStart(2, '0');
-  const suffix = Math.floor(100000 + Math.random() * 900000);
+  // 8 dígitos aleatorios criptográficos: el número de pedido sirve de llave para ver la reserva
+  const suffix = String(crypto.randomInt(0, 100000000)).padStart(8, '0');
   return `${prefix}${suffix}`;
 }
 
@@ -2177,10 +2169,13 @@ app.post('/api/redsys/create-payment', async (req, res) => {
     // Generar número de pedido único de 10 dígitos que cumple con la normativa Redsys
     const numOrder = generateRedsysOrderId();
 
-    const merchantCode = process.env.REDSYS_MERCHANT_CODE || '369636824';
+    const merchantCode = process.env.REDSYS_MERCHANT_CODE;
     const terminal = process.env.REDSYS_TERMINAL || '1';
     const currency = process.env.REDSYS_CURRENCY || '978';
-    const secretKey = process.env.REDSYS_SECRET_KEY || 'sq7HjrUOBfKmC576ILgskD5srU870gJ7';
+    const secretKey = process.env.REDSYS_SECRET_KEY;
+    if (!merchantCode || !secretKey) {
+      return res.status(503).json({ error: 'La pasarela de pago no está configurada.' });
+    }
     const redsysUrl = process.env.REDSYS_URL || 'https://sis-t.redsys.es:25443/sis/realizarPago';
     const host = req.headers['x-forwarded-host'] || req.headers.host || 'rentmeuskar.com';
     const isLocal = host.includes('localhost') || host.includes('127.0.0.1');
@@ -2437,36 +2432,42 @@ app.post('/api/redsys/confirm-payment', async (req, res) => {
       return res.status(400).json({ error: 'Se requiere orderId' });
     }
 
+    // Solo lectura: el pago lo marcan la notificación firmada de Redsys o el TPV de pruebas,
+    // nunca esta llamada pública desde la página de éxito
     let booking = null;
     try {
       const bRes = await pool.query(
-        "UPDATE bookings SET status = 'paid_pending', payment_status = 'paid' WHERE payment_id = $1 RETURNING *",
-        [orderId]
+        "SELECT * FROM bookings WHERE payment_id = $1 AND payment_status = 'paid'",
+        [String(orderId)]
       );
       if (bRes.rowCount > 0) {
         booking = bRes.rows[0];
       }
     } catch (dbErr) {
-      console.warn('Error confirmando pago en PostgreSQL:', dbErr.message);
-    }
-
-    // Actualizar también en fallbackBookings si existe
-    const fBooking = fallbackBookings.find(b => b.payment_id == orderId);
-    if (fBooking) {
-      fBooking.status = 'paid_pending';
-      fBooking.payment_status = 'paid';
-      saveAdminStoreToFile();
-      if (!booking) booking = fBooking;
+      console.warn('Error consultando pago en PostgreSQL:', dbErr.message);
     }
 
     if (!booking) {
-      return res.status(404).json({ error: 'No se encontró ninguna reserva asociada a este identificador de pago.' });
+      booking = fallbackBookings.find(b => b.payment_id == orderId && b.payment_status === 'paid') || null;
+    }
+
+    if (!booking) {
+      return res.status(404).json({ error: 'No se encontró ningún pago confirmado con este identificador.' });
     }
 
     res.json({
       success: true,
       orderId,
-      booking
+      booking: {
+        id: booking.id,
+        name: booking.name,
+        van_name: booking.van_name,
+        pickup_date: booking.pickup_date,
+        return_date: booking.return_date,
+        total_price: booking.total_price,
+        review_code: booking.review_code,
+        payment_id: booking.payment_id
+      }
     });
   } catch (err) {
     console.error('Error al confirmar pago:', err);
@@ -2514,7 +2515,11 @@ app.post('/api/redsys/notification', async (req, res) => {
     const responseCodeStr = decodedParams.DS_RESPONSE || decodedParams.Ds_Response;
     const responseCode = parseInt(responseCodeStr, 10);
 
-    const secretKey = process.env.REDSYS_SECRET_KEY || 'sq7HjrUOBfKmC576ILgskD5srU870gJ7';
+    const secretKey = process.env.REDSYS_SECRET_KEY;
+    if (!secretKey) {
+      console.error('[REDSYS] Notificación recibida pero falta REDSYS_SECRET_KEY en el entorno');
+      return res.status(503).send('Pasarela no configurada');
+    }
     const expectedSignature = createRedsysSignature(secretKey, orderId, Ds_MerchantParameters);
 
     if (expectedSignature !== Ds_Signature && expectedSignature.replace(/_/g, '/') !== Ds_Signature.replace(/_/g, '/')) {
@@ -2905,12 +2910,17 @@ app.get('/api/settings', async (req, res) => {
     result.rows.forEach(row => {
       settingsObj[row.key] = row.value;
     });
-    res.json(settingsObj);
+    res.json(publicSettings(settingsObj));
   } catch (err) {
     console.warn('Base de datos offline, retornando settings de fallback:', err.message);
-    res.json(fallbackSettings);
+    res.json(publicSettings(fallbackSettings));
   }
 });
+
+// Las credenciales de administración nunca salen en el endpoint público
+function publicSettings(settings) {
+  return Object.fromEntries(Object.entries(settings).filter(([key]) => !key.startsWith('admin_')));
+}
 
 app.put('/api/settings', verifyAdmin, async (req, res) => {
   const { hours_weekdays, hours_saturdays, hours_sundays, show_reviews_count, contact_phone, contact_email, fianza_amount } = req.body;
@@ -2976,12 +2986,11 @@ app.post('/api/admin/request-credential-change-code', verifyAdmin, async (req, r
   pendingAdminCredentialChanges['admin'] = {
     newUsername: cleanUsername,
     newPasswordHash: hashPassword(cleanPassword),
-    newPasswordRaw: cleanPassword,
     code: code,
     expires: Date.now() + 15 * 60 * 1000
   };
 
-  console.log(`[SECURITY ADMIN] Código de verificación para cambio de credenciales de admin: ${code}`);
+  console.log('[SECURITY ADMIN] Código de verificación para cambio de credenciales de admin generado y enviado por correo');
 
   try {
     const senderAddress = process.env.SMTP_USER || 'confirmacion@rentmeuskar.com';
@@ -3057,7 +3066,7 @@ app.post('/api/admin/confirm-credential-change', verifyAdmin, async (req, res) =
   try {
     fallbackSettings.admin_username = pending.newUsername;
     fallbackSettings.admin_password_hash = pending.newPasswordHash;
-    fallbackSettings.admin_password = pending.newPasswordRaw;
+    delete fallbackSettings.admin_password;
 
     await pool.query(
       "INSERT INTO settings (key, value) VALUES ('admin_username', $1) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value",
