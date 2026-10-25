@@ -1562,10 +1562,28 @@ const initAdmin = () => {
         renderFleet();
 
         // 2. Notificar al servidor
-        fetch(`/api/vans/${id}`, {
-            method: 'DELETE',
-            headers: { 'Authorization': `Bearer ${token}` }
-        }).catch(err => console.warn('Error al eliminar furgoneta en backend:', err));
+        // Si el servidor rechaza el borrado (p. ej. reservas futuras), se restaura y se explica el motivo
+        try {
+            const delRes = await fetch(`/api/vans/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!delRes.ok) {
+                const delData = await delRes.json().catch(() => ({}));
+                fleet.push(vanObj);
+                fleet.sort((a, b) => a.id - b.id);
+                renderFleet();
+                showToast(delData.error || 'No se pudo eliminar la furgoneta.', 'error');
+                return;
+            }
+        } catch (err) {
+            console.warn('Error al eliminar furgoneta en backend:', err);
+            fleet.push(vanObj);
+            fleet.sort((a, b) => a.id - b.id);
+            renderFleet();
+            showToast('Error de conexión: la furgoneta no se ha eliminado.', 'error');
+            return;
+        }
 
         // 4. Mostrar toast con botón Deshacer durante 5 segundos
         showToast(`Furgoneta "${vanObj.name}" eliminada correctamente.`, 'success', {

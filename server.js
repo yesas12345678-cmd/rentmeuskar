@@ -3361,6 +3361,22 @@ app.put('/api/vans/:id', verifyAdmin, upload.array('images', 20), async (req, re
 app.delete('/api/vans/:id', verifyAdmin, async (req, res) => {
   const { id } = req.params;
 
+  // No se borra una furgoneta con reservas futuras activas: quedarían sin vehículo ni precio
+  const van = fallbackVans.find(v => String(v.id) === String(id));
+  if (van) {
+    const today = new Date().toISOString().slice(0, 10);
+    let pendingRentals = 0;
+    try {
+      const r = await pool.query(`SELECT COUNT(*) FROM bookings WHERE van_type = $1 AND return_date >= $2 AND ${ACTIVE_BOOKING_SQL}`, [van.van_type, today]);
+      pendingRentals = parseInt(r.rows[0].count, 10) || 0;
+    } catch (e) {
+      pendingRentals = fallbackBookings.filter(b => b.van_type === van.van_type && String(b.return_date).slice(0, 10) >= today && isActiveFallbackBooking(b)).length;
+    }
+    if (pendingRentals > 0) {
+      return res.status(409).json({ error: `No se puede eliminar: tiene ${pendingRentals} reserva(s) futura(s) activa(s). Cancélalas o espera a que terminen.` });
+    }
+  }
+
   try {
     const result = await pool.query('DELETE FROM vans WHERE id = $1 RETURNING *', [id]);
     if (result.rowCount === 0) {
