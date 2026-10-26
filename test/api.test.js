@@ -356,6 +356,12 @@ test('no se reactiva una reserva cancelada si sus fechas ya están ocupadas', as
   assert.equal((await call('PUT', '/api/bookings/52', { client_city: 'Huéscar' }, admin)).status, 200);
 });
 
+test('si el correo no sale, registro y recuperación lo dicen en vez de dar el envío por hecho', async () => {
+  const reg = await call('POST', '/api/auth/register', { name: 'Sin Correo', email: 'sincorreo@example.com', phone: '611999888', dni: '12345678Z', password: 'ClaveLarga!2030' });
+  assert.equal(reg.status, 503);
+  assert.equal((await call('POST', '/api/auth/forgot-password', { email: 'sincorreo@example.com' })).status, 503);
+});
+
 test('no se pueden probar códigos de reserva sin límite', async () => {
   let last;
   for (let i = 0; i < 65; i++) last = await call('GET', `/api/bookings/50?auth=RMU-${String(i).padStart(6, '0')}`);

@@ -1375,7 +1375,10 @@ app.post('/api/auth/register', async (req, res) => {
     });
     console.log(`[SMTP REGISTRATION SUCCESS] Correo de activación enviado a ${cleanEmail} desde ${senderAddress}`);
   } catch (mailErr) {
+    // Sin correo el cliente no puede activar la cuenta: se le dice en vez de dar el envío por hecho
     console.error('[SMTP REGISTRATION ERROR] Error al enviar correo de verificación:', mailErr.message);
+    delete pendingRegistrations[cleanEmail];
+    return res.status(503).json({ error: 'No hemos podido enviarte el correo de confirmación. Inténtalo de nuevo en unos minutos o escríbenos por WhatsApp.' });
   }
 
   return res.json({
@@ -1630,6 +1633,7 @@ app.post('/api/auth/forgot-password', async (req, res) => {
   console.log(`[SECURITY - FORGOT PASSWORD] Código generado para ${cleanEmail} (isAdmin: ${isAdminRequest})`);
 
   const senderAddress = process.env.SMTP_USER || 'confirmacion@rentmeuskar.com';
+  let mailFailed = false;
 
   if (isAdminRequest) {
     // Si la solicitud viene de /admin o es para la cuenta de administración, se envía a info@rentmeuskar.com
@@ -1667,7 +1671,13 @@ app.post('/api/auth/forgot-password', async (req, res) => {
         console.log(`[SMTP ADMIN FORGOT PASS SUCCESS] Correo de verificación enviado desde ${senderAddress} a ${destinationAddress}`);
       } catch (mailErr) {
         console.error('[SMTP ADMIN FORGOT PASS ERROR] Error enviando email admin:', mailErr.message);
+        mailFailed = true;
       }
+    }
+    if (!mailTransporter || mailFailed) {
+      delete pendingPasswordResets['info@rentmeuskar.com'];
+      delete pendingPasswordResets[currentAdminUser];
+      return res.status(503).json({ error: 'No hemos podido enviar el código por correo. Inténtalo de nuevo en unos minutos.' });
     }
 
     return res.json({
@@ -1711,7 +1721,12 @@ app.post('/api/auth/forgot-password', async (req, res) => {
         console.log(`[SMTP CLIENT FORGOT PASS SUCCESS] Correo de confirmación enviado a ${destinationAddress}`);
       } catch (mailErr) {
         console.error('[SMTP CLIENT FORGOT PASS ERROR] Error enviando email cliente:', mailErr.message);
+        mailFailed = true;
       }
+    }
+    if (!mailTransporter || mailFailed) {
+      delete pendingPasswordResets[cleanEmail];
+      return res.status(503).json({ error: 'No hemos podido enviar el código por correo. Inténtalo de nuevo en unos minutos o escríbenos por WhatsApp.' });
     }
 
     return res.json({

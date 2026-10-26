@@ -527,8 +527,9 @@
                     window.switchAuthModal('register-modal', 'verify-email-modal');
                 }
             } catch (err) {
-                console.warn('Error de red al registrar, abriendo verificación:', err);
-                window.switchAuthModal('register-modal', 'verify-email-modal');
+                // Sin respuesta del servidor no hay código enviado: se avisa en vez de pedirlo
+                console.warn('Error de red al registrar:', err);
+                alert('No hemos podido conectar con el servidor. Comprueba tu conexión e inténtalo de nuevo.');
             } finally {
                 if (submitBtn) {
                     submitBtn.disabled = false;
