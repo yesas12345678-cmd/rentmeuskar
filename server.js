@@ -800,6 +800,14 @@ const bookingLimiter = rateLimit({
 });
 app.post('/api/redsys/create-payment', bookingLimiter);
 app.post('/api/bookings', bookingLimiter);
+// Sin límite, alguien podría probar números de pedido hasta dar con un pago en curso y cancelarlo
+app.post('/api/redsys/cancel-payment', rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Demasiadas solicitudes. Espera unos minutos.' }
+}));
 
 // Una reserva por furgoneta a la vez: comprobar disponibilidad y guardar no es atómico, así que
 // dos clientes pagando las mismas fechas a la vez podían colarse los dos (el servidor es un solo proceso)
@@ -2574,7 +2582,7 @@ async function sendBookingStatusEmail(booking, status) {
   }
 }
 
-async function sendBookingPaidEmails(booking) {
+async function sendBookingPaidEmails(booking, { dateConflict = false } = {}) {
   if (!mailTransporter || !booking) return;
   const senderAddress = process.env.SMTP_USER || 'confirmacion@rentmeuskar.com';
   const companyAddress = process.env.CONTACT_EMAIL || 'info@rentmeuskar.com';
@@ -2590,8 +2598,9 @@ async function sendBookingPaidEmails(booking) {
   const messages = [{
     from: `"RentMeUskar Reservas" <${senderAddress}>`,
     to: companyAddress,
-    subject: `Nueva reserva pagada #${booking.id} (${total})`,
-    html: `<div style="font-family: Arial, sans-serif;"><h2>Nueva reserva pagada</h2>${summary}
+    subject: `${dateConflict ? '⚠ CONFLICTO DE FECHAS · ' : ''}Nueva reserva pagada #${booking.id} (${total})`,
+    html: `<div style="font-family: Arial, sans-serif;"><h2>Nueva reserva pagada</h2>${dateConflict
+      ? '<p style="color:#b91c1c;"><strong>Atención:</strong> el pago llegó cuando la reserva ya había caducado y sus fechas están ocupadas por otra reserva o un bloqueo. Revisa el calendario y contacta con el cliente.</p>' : ''}${summary}
       <p><strong>Cliente:</strong> ${field(booking.name)} · ${field(booking.client_email)} · ${field(booking.client_phone)}</p>
       <p>Revísala y confírmala en el panel de administración.</p></div>`
   }];
@@ -3177,6 +3186,16 @@ app.post('/api/redsys/notification', async (req, res) => {
       console.error(`[REDSYS] Pago autorizado pero no coincide con la reserva (importe: ${amountMatches}, comercio: ${merchantMatches}). Orden: ${orderId}`);
     }
 
+    // Pago llegado tarde: la reserva ya había soltado sus fechas (cancelada o reserva caducada) y
+    // otra puede haberlas ocupado. El cobro se registra igual, pero se avisa a la empresa.
+    let dateConflict = false;
+    if (authorized && (booking.rental_mode || 'sin') === 'sin' && !isActiveFallbackBooking(booking)) {
+      dateConflict = !(await isVanAvailable(booking.van_type, String(booking.pickup_date).slice(0, 10), String(booking.return_date).slice(0, 10)));
+      if (dateConflict) {
+        console.error(`[REDSYS] Pago recibido para la orden ${orderId} pero sus fechas ya están ocupadas por otra reserva o un bloqueo. Revisar a mano.`);
+      }
+    }
+
     const newStatus = authorized ? 'paid_pending' : 'cancelled';
     const newPaymentStatus = authorized ? 'paid' : 'failed';
     try {
@@ -3195,7 +3214,7 @@ app.post('/api/redsys/notification', async (req, res) => {
 
     if (authorized) {
       console.log(`[REDSYS] ¡PAGO AUTORIZADO CORRECTAMENTE! Orden: ${orderId}`);
-      sendBookingPaidEmails({ ...booking, status: newStatus, payment_status: newPaymentStatus });
+      sendBookingPaidEmails({ ...booking, status: newStatus, payment_status: newPaymentStatus }, { dateConflict });
     } else {
       console.warn(`[REDSYS] Pago denegado o cancelado. Orden: ${orderId}, Código: ${responseCodeStr}`);
     }

@@ -12,6 +12,8 @@ const PORT = 3900 + Math.floor(Math.random() * 90);
 const BASE = `http://127.0.0.1:${PORT}`;
 const ADMIN_PASSWORD = 'ClaveDePruebaAdmin1';
 const SESSION_SECRET = 'secreto-de-pruebas';
+const REDSYS_TEST_KEY = 'sq7HjrUOBfKmC576ILgskD5srU870gJ7'; // clave pública del entorno de pruebas de Redsys
+const REDSYS_MERCHANT = '999008881';
 const CLIENT = { email: 'cliente@example.com', password: 'ClaveCliente!2030' };
 let serverProcess;
 let tmpDir;
@@ -50,7 +52,10 @@ before(async () => {
       { id: 1, name: 'Cliente Test', email: CLIENT.email, password: scryptHash(CLIENT.password), phone: '600000001', dni: '00000000T' },
       { id: 2, name: 'Otro Cliente', email: 'otro@example.com', password: scryptHash('OtraClave!2030'), phone: '600000002', dni: '00000001R' }
     ],
-    fallbackBookings: [], fallbackBlockages: [], fallbackSettings: {}, fallbackReviews: [], manualReviewCodes: [], fallbackFaqs: [],
+    fallbackBookings: [
+      { id: 50, name: 'Pago Tardío', van_type: 'medium', van_name: 'Furgoneta Test', pickup_date: futureDate(120), pickup_time: '09:00', return_date: futureDate(121), return_time: '09:00', days: 1, extras: [], total_price: 100, user_id: 1, status: 'cancelled', payment_status: 'failed', payment_id: '261099999999', rental_mode: 'sin', created_at: '2020-01-01T00:00:00Z' },
+      { id: 51, name: 'Otro', van_type: 'medium', van_name: 'Furgoneta Test', pickup_date: futureDate(120), pickup_time: '09:00', return_date: futureDate(121), return_time: '09:00', days: 1, extras: [], total_price: 100, user_id: 2, status: 'confirmed', payment_status: 'paid', payment_id: '261088888888', rental_mode: 'sin', created_at: '2020-01-01T00:00:00Z' }
+    ], fallbackBlockages: [], fallbackSettings: {}, fallbackReviews: [], manualReviewCodes: [], fallbackFaqs: [],
     fallbackVans: [{ id: 1, van_type: 'medium', name: 'Furgoneta Test', plate: '0000 TST', m3: '8m³', price_sin: 100, min_price_con: 50, km_price_con: 1, status: 'active', images: [], custom_extras: [{ name: 'GPS Navegador', price: 5, type: 'daily' }] },
       { id: 2, van_type: 'borrador', name: 'Furgoneta Borrador', plate: '0001 TST', m3: '8m³', price_sin: 50, min_price_con: 40, km_price_con: 1, status: 'draft', images: [], custom_extras: [] }]
   };
@@ -60,7 +65,7 @@ before(async () => {
     env: {
       ...process.env, PORT: String(PORT), DATABASE_URL: '', DATA_DIR: tmpDir, UPLOADS_DIR: path.join(tmpDir, 'uploads'),
       SMTP_HOST: '127.0.0.1', SMTP_PORT: '1', SMTP_PASS: '', ADMIN_PASSWORD, SESSION_SECRET,
-      ENABLE_TEST_PAYMENTS: 'true', REDSYS_MERCHANT_CODE: '', REDSYS_SECRET_KEY: '', ALLOWED_ORIGINS: '', BASE_URL: ''
+      ENABLE_TEST_PAYMENTS: 'true', REDSYS_MERCHANT_CODE: REDSYS_MERCHANT, REDSYS_SECRET_KEY: REDSYS_TEST_KEY, ALLOWED_ORIGINS: '', BASE_URL: ''
     },
     stdio: 'ignore'
   });
@@ -206,4 +211,32 @@ test('ajustes: se normalizan teléfono y fianza y se rechazan valores no válido
   assert.equal((await call('PUT', '/api/settings', { contact_email: 'no-es-correo' }, admin)).status, 400);
   assert.equal((await call('PUT', '/api/settings', { hours_weekdays: 5 }, admin)).status, 400);
   await call('PUT', '/api/settings', { fianza_amount: '500,00' }, admin);
+});
+
+function redsysSign(order, params) {
+  const cipher = crypto.createCipheriv('des-ede3-cbc', Buffer.from(REDSYS_TEST_KEY, 'base64'), Buffer.alloc(8, 0));
+  cipher.setAutoPadding(false);
+  const buf = Buffer.from(order); const padded = Buffer.alloc(Math.ceil(buf.length / 8) * 8, 0); buf.copy(padded);
+  const key = Buffer.concat([cipher.update(padded), cipher.final()]);
+  return crypto.createHmac('sha256', key).update(params).digest('base64').replace(/\+/g, '-').replace(/\//g, '_');
+}
+
+test('un pago que llega tarde se registra aunque las fechas ya estén ocupadas, y no se puede cancelar después', async () => {
+  const order = '261099999999';
+  const params = Buffer.from(JSON.stringify({ Ds_Order: order, Ds_Response: '0000', Ds_Amount: '10000', Ds_MerchantCode: REDSYS_MERCHANT })).toString('base64');
+  const res = await fetch(BASE + '/api/redsys/notification', {
+    method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ Ds_SignatureVersion: 'HMAC_SHA256_V1', Ds_MerchantParameters: params, Ds_Signature: redsysSign(order, params) })
+  });
+  assert.equal(res.status, 200);
+  await call('POST', '/api/redsys/cancel-payment', { orderId: order });
+  const admin = (await call('POST', '/api/auth/login', { email: 'zvaito', password: ADMIN_PASSWORD })).data.token;
+  const booking = await call('GET', '/api/bookings/50', null, admin);
+  assert.equal(booking.data.payment_status, 'paid');
+  // Firma incorrecta: se rechaza
+  const bad = await fetch(BASE + '/api/redsys/notification', {
+    method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ Ds_SignatureVersion: 'HMAC_SHA256_V1', Ds_MerchantParameters: params, Ds_Signature: 'x' + redsysSign(order, params) })
+  });
+  assert.equal(bad.status, 400);
 });
