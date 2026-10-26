@@ -637,7 +637,8 @@
 
             var text = 'Hola RentMeUskar, me llamo *' + name + '*.\n\n*Motivo:* ' + reason + '\n\n*Mensaje:*\n' + message;
             var encodedText = encodeURIComponent(text);
-            var whatsappUrl = 'https://wa.me/34614767411?text=' + encodedText;
+            // Número de Ajustes del panel (lo carga app.js); el fijo solo si aún no ha cargado
+            var whatsappUrl = 'https://wa.me/' + (window.RMU_WHATSAPP_NUMBER || '34614767411') + '?text=' + encodedText;
 
             window.open(whatsappUrl, '_blank');
 
@@ -2505,7 +2506,7 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
 
     <!-- Custom Script -->
-    <script src="app.js?v=21.7"></script>
+    <script src="app.js?v=21.8"></script>
 </body>
 
 </html>

@@ -2796,6 +2796,8 @@ const initApp = () => {
                 // Actualizar teléfono y whatsapp
                 if (data.contact_phone) {
                     CONFIG.whatsappNumber = data.contact_phone.replace(/\D/g, '');
+                    // Lo usa también el formulario de contacto de index.html
+                    window.RMU_WHATSAPP_NUMBER = CONFIG.whatsappNumber;
                     const cleanPhone = CONFIG.whatsappNumber;
                     const formattedPhone = cleanPhone.length >= 11 
                         ? '+' + cleanPhone.slice(0, 2) + ' ' + cleanPhone.slice(2, 5) + ' ' + cleanPhone.slice(5, 8) + ' ' + cleanPhone.slice(8)
