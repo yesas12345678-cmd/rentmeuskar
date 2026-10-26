@@ -1071,6 +1071,9 @@ const initApp = () => {
                 submitBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Solicitar por WhatsApp (Sin pago online)';
             } else if (days > 7) {
                 submitBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Reservar por WhatsApp (Larga Duración)';
+            } else if (window.RMU_PAYMENT_MODE === 'off') {
+                // Sin pasarela configurada en el servidor: la reserva se solicita por WhatsApp
+                submitBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Solicitar por WhatsApp (pago al recoger)';
             } else {
                 submitBtn.innerHTML = '<i class="fa-solid fa-credit-card"></i> Pagar y Reservar Online';
             }
@@ -1702,7 +1705,7 @@ const initApp = () => {
         };
 
         // DETERMINACIÓN DE FLUJO SEGÚN DURACIÓN Y MODALIDAD (Con Conductor nunca paga online)
-        if (days <= 7 && rentalMode === 'sin') {
+        if (days <= 7 && rentalMode === 'sin' && window.RMU_PAYMENT_MODE !== 'off') {
             // FLUJO A: Pago online del alquiler (la fianza de 500€ se abona en persona al recoger)
             const rentAmountEl = document.getElementById('tpv-rent-amount');
             const totalAmountEl = document.getElementById('tpv-total-amount');
@@ -1784,7 +1787,8 @@ const initApp = () => {
                         `*Fianza:* No aplica (Alquiler con chofer)\n\n` +
                         `¿Tenéis disponibilidad para este servicio? Quedo a la espera de confirmación.`;
                 } else {
-                    messageText = `Hola *RentMeUskar*, me gustaría solicitar una reserva de furgoneta para larga duración (> 1 semana):\n\n` +
+                    // Larga duración, o reserva corta cuando el pago online no está disponible
+                    messageText = `Hola *RentMeUskar*, me gustaría solicitar una reserva de furgoneta${days > 7 ? ' para larga duración (> 1 semana)' : ''}:\n\n` +
                         `*Solicitud de Reserva #${data.booking.id}*\n` +
                         `- *Cliente:* ${nameValue} (DNI: ${user.dni})\n` +
                         `- *Modalidad:* ${modeLabelText}\n` +
@@ -1857,7 +1861,9 @@ const initApp = () => {
         .then(res => res.ok ? res.json() : { mode: 'off' })
         .then(config => {
             paymentMode = config.mode || 'off';
+            window.RMU_PAYMENT_MODE = paymentMode;
             applyPaymentModeUi();
+            if (typeof updateCalculatorUI === 'function') updateCalculatorUI();
         })
         .catch(() => { /* sin configuración: el servidor responderá con el motivo al pagar */ });
 
