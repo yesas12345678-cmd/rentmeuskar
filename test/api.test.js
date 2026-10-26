@@ -46,7 +46,10 @@ const booking = (from, to, extra = {}) => ({
 before(async () => {
   tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rentmeuskar-test-'));
   const store = {
-    fallbackUsers: [{ id: 1, name: 'Cliente Test', email: CLIENT.email, password: scryptHash(CLIENT.password), phone: '600000001', dni: '00000000T' }],
+    fallbackUsers: [
+      { id: 1, name: 'Cliente Test', email: CLIENT.email, password: scryptHash(CLIENT.password), phone: '600000001', dni: '00000000T' },
+      { id: 2, name: 'Otro Cliente', email: 'otro@example.com', password: scryptHash('OtraClave!2030'), phone: '600000002', dni: '00000001R' }
+    ],
     fallbackBookings: [], fallbackBlockages: [], fallbackSettings: {}, fallbackReviews: [], manualReviewCodes: [], fallbackFaqs: [],
     fallbackVans: [{ id: 1, van_type: 'medium', name: 'Furgoneta Test', plate: '0000 TST', m3: '8m³', price_sin: 100, min_price_con: 50, km_price_con: 1, status: 'active', images: [], custom_extras: [{ name: 'GPS Navegador', price: 5, type: 'daily' }] },
       { id: 2, van_type: 'borrador', name: 'Furgoneta Borrador', plate: '0001 TST', m3: '8m³', price_sin: 50, min_price_con: 40, km_price_con: 1, status: 'draft', images: [], custom_extras: [] }]
@@ -141,6 +144,14 @@ test('no se reserva una furgoneta en borrador', async () => {
   const token = (await call('POST', '/api/auth/login', CLIENT)).data.token;
   const res = await call('POST', '/api/bookings', booking(futureDate(100), futureDate(101), { van_type: 'borrador' }), token);
   assert.equal(res.status, 400);
+});
+
+test('el perfil no puede quedarse con el DNI o teléfono de otra cuenta', async () => {
+  const token = (await call('POST', '/api/auth/login', { email: 'otro@example.com', password: 'OtraClave!2030' })).data.token;
+  assert.equal((await call('PUT', '/api/auth/me', { dni: '00000000T' }, token)).status, 400);
+  assert.equal((await call('PUT', '/api/auth/me', { phone: '600000001' }, token)).status, 400);
+  assert.equal((await call('PUT', '/api/auth/me', { name: 'Nombre Nuevo' }, token)).status, 200);
+  assert.equal((await call('PUT', '/api/auth/me', { name: 123 }, token)).status, 400);
 });
 
 test('no se aceptan fechas pasadas ni horas manipuladas', async () => {

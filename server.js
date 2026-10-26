@@ -1787,11 +1787,30 @@ app.put('/api/auth/me', async (req, res) => {
 
   const { name, phone, dni } = req.body;
 
+  if (!areOptionalStrings(name, phone, dni) || (name && name.trim().length > 100) || (phone && phone.trim().length > 20)) {
+    return res.status(400).json({ error: 'Los datos del perfil no son válidos.' });
+  }
   if (dni && !validateSpanishID(dni)) {
     return res.status(400).json({ error: 'El DNI / NIE introducido no es válido.' });
   }
 
   const userId = authUser.id;
+
+  // Teléfono y DNI son únicos por cuenta, igual que en el registro
+  const cleanPhone = phone ? phone.trim() : '';
+  const cleanDni = dni ? dni.trim().toUpperCase() : '';
+  if (cleanPhone || cleanDni) {
+    let taken = false;
+    try {
+      const dup = await pool.query('SELECT id FROM users WHERE id <> $1 AND (($2 <> \'\' AND phone = $2) OR ($3 <> \'\' AND UPPER(dni) = $3)) LIMIT 1', [userId, cleanPhone, cleanDni]);
+      taken = dup.rowCount > 0;
+    } catch (e) {
+      taken = fallbackUsers.some(u => u.id !== userId && ((cleanPhone && u.phone === cleanPhone) || (cleanDni && String(u.dni || '').toUpperCase() === cleanDni)));
+    }
+    if (taken) {
+      return res.status(400).json({ error: 'Ese teléfono o DNI ya pertenece a otra cuenta.' });
+    }
+  }
   try {
     const result = await pool.query(
       'UPDATE users SET name = COALESCE(NULLIF($1, \'\'), name), phone = COALESCE(NULLIF($2, \'\'), phone), dni = COALESCE(NULLIF($3, \'\'), dni) WHERE id = $4 RETURNING id, name, email, phone, dni, created_at',
