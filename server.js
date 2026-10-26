@@ -657,21 +657,41 @@ const getAuthUser = async (req) => {
   const userId = tokenData.id;
   const tokenEmail = tokenData.email;
 
+  // Un token emitido antes del último cambio de contraseña ya no vale
+  const issuedBeforePasswordChange = (changedAt) => {
+    const changed = changedAt ? new Date(changedAt).getTime() : 0;
+    return changed > 0 && tokenData.ts < changed;
+  };
+
+  let dbAnswered = false;
   try {
     if (userId && typeof userId === 'number') {
-      const uRes = await pool.query('SELECT id, name, email, phone, dni FROM users WHERE id = $1', [userId]);
-      if (uRes.rowCount > 0) return { ...uRes.rows[0], isAdmin: false };
+      const uRes = await pool.query('SELECT id, name, email, phone, dni, password_changed_at FROM users WHERE id = $1', [userId]);
+      dbAnswered = true;
+      if (uRes.rowCount > 0) {
+        const { password_changed_at, ...user } = uRes.rows[0];
+        return issuedBeforePasswordChange(password_changed_at) ? null : { ...user, isAdmin: false };
+      }
     }
     if (tokenEmail) {
-      const uEmailRes = await pool.query('SELECT id, name, email, phone, dni FROM users WHERE LOWER(email) = LOWER($1)', [tokenEmail.trim()]);
-      if (uEmailRes.rowCount > 0) return { ...uEmailRes.rows[0], isAdmin: false };
+      const uEmailRes = await pool.query('SELECT id, name, email, phone, dni, password_changed_at FROM users WHERE LOWER(email) = LOWER($1)', [tokenEmail.trim()]);
+      dbAnswered = true;
+      if (uEmailRes.rowCount > 0) {
+        const { password_changed_at, ...user } = uEmailRes.rows[0];
+        return issuedBeforePasswordChange(password_changed_at) ? null : { ...user, isAdmin: false };
+      }
     }
   } catch (e) {}
-  
+
   const fbUser = fallbackUsers.find(u => (userId && u.id === userId) || (tokenEmail && u.email && u.email.toLowerCase() === tokenEmail.toLowerCase()));
-  if (fbUser) return { ...fbUser, isAdmin: false };
-  
-  return { id: userId, email: tokenEmail, isAdmin: false };
+  if (fbUser) {
+    if (issuedBeforePasswordChange(fbUser.password_changed_at)) return null;
+    const { password: _password, ...user } = fbUser;
+    return { ...user, isAdmin: false };
+  }
+
+  // Usuario que no existe: solo se acepta la identidad del token si la BD no ha podido responder
+  return dbAnswered ? null : { id: userId, email: tokenEmail, isAdmin: false };
 };
 
 // Sanitizador de texto contra inyección HTML en correos y plantillas
@@ -1021,6 +1041,8 @@ const initDb = async () => {
     
     // Crear tabla de usuarios
     await client.query(createUsersTableQuery);
+    // Fecha del último cambio de contraseña: las sesiones emitidas antes dejan de valer
+    await client.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS password_changed_at TIMESTAMP WITH TIME ZONE;');
     console.log('Tabla "users" verificada/creada.');
     
     // Crear tabla de reservas
@@ -1685,7 +1707,7 @@ app.post('/api/auth/reset-password', async (req, res) => {
 
   // Restablecer cliente normal
   try {
-    await pool.query("UPDATE users SET password = $1 WHERE LOWER(email) = $2", [passHash, cleanEmail]);
+    await pool.query("UPDATE users SET password = $1, password_changed_at = $3 WHERE LOWER(email) = $2", [passHash, cleanEmail, new Date()]);
   } catch (e) {
     console.warn('Base de datos offline al actualizar contraseña de usuario:', e.message);
   }
@@ -1693,6 +1715,7 @@ app.post('/api/auth/reset-password', async (req, res) => {
   const userInFallback = fallbackUsers.find(u => u.email.toLowerCase() === cleanEmail);
   if (userInFallback) {
     userInFallback.password = passHash;
+    userInFallback.password_changed_at = new Date().toISOString();
     saveAdminStoreToFile();
   }
 
