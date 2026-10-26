@@ -803,6 +803,12 @@ const bookingLimiter = rateLimit({
 });
 app.post('/api/redsys/create-payment', bookingLimiter);
 app.post('/api/bookings', bookingLimiter);
+// Los :id de la API son enteros de la BD: con otra cosa PostgreSQL fallaba y se respondía 500
+app.param('id', (req, res, next, id) => {
+  if (/^\d{1,9}$/.test(String(id))) return next();
+  return res.status(404).json({ error: 'No encontrado.' });
+});
+
 // Sin límite, alguien podría probar números de pedido hasta dar con un pago en curso (para cancelarlo)
 // o uno ya pagado (su código abre contrato y factura). La página de éxito consulta hasta 15 veces.
 const bookingCodeLimiter = rateLimit({

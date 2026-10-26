@@ -371,6 +371,13 @@ test('editar solo el precio de una furgoneta no borra sus extras ni imágenes', 
   await call('PUT', '/api/vans/1', { price_sin: 100 }, admin);
 });
 
+test('ids no numéricos o enormes devuelven 404, no 500', async () => {
+  const admin = await login('zvaito', ADMIN_PASSWORD);
+  for (const url of ['/api/bookings/abc', '/api/faqs/99999999999', '/api/blockages/1e5']) {
+    assert.equal((await call('DELETE', url, null, admin)).status, 404, url);
+  }
+});
+
 test('no se pueden probar códigos de reserva sin límite', async () => {
   let last;
   for (let i = 0; i < 65; i++) last = await call('GET', `/api/bookings/50?auth=RMU-${String(i).padStart(6, '0')}`);
