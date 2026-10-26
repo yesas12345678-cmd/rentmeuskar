@@ -8,8 +8,17 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 
-const PORT = 3900 + Math.floor(Math.random() * 90);
-const BASE = `http://127.0.0.1:${PORT}`;
+// Puerto libre elegido al arrancar (con uno fijo o aleatorio, un servidor de otra ejecución que
+// siguiera vivo en ese puerto respondía en lugar del de la prueba)
+let PORT;
+let BASE;
+const net = require('node:net');
+const freePort = () => new Promise((resolve, reject) => {
+  const probe = net.createServer().once('error', reject).listen(0, '127.0.0.1', () => {
+    const { port } = probe.address();
+    probe.close(() => resolve(port));
+  });
+});
 const ADMIN_PASSWORD = 'ClaveDePruebaAdmin1';
 const SESSION_SECRET = 'secreto-de-pruebas';
 const REDSYS_TEST_KEY = 'sq7HjrUOBfKmC576ILgskD5srU870gJ7'; // clave pública del entorno de pruebas de Redsys
@@ -69,6 +78,8 @@ before(async () => {
   };
   fs.writeFileSync(path.join(tmpDir, 'admin_store.json'), JSON.stringify(store));
 
+  PORT = await freePort();
+  BASE = `http://127.0.0.1:${PORT}`;
   serverProcess = spawn(process.execPath, [path.join(__dirname, '..', 'server.js')], {
     env: {
       ...process.env, PORT: String(PORT), DATABASE_URL: '', DATA_DIR: tmpDir, UPLOADS_DIR: path.join(tmpDir, 'uploads'),
@@ -77,6 +88,8 @@ before(async () => {
     },
     stdio: 'ignore'
   });
+  // Si la ejecución se corta, el servidor de pruebas no se queda vivo ocupando el puerto
+  process.once('exit', () => { if (serverProcess) serverProcess.kill(); });
   for (let i = 0; i < 50; i++) {
     try { await fetch(BASE + '/api/vans'); return; } catch (e) { await new Promise(r => setTimeout(r, 200)); }
   }
