@@ -2212,7 +2212,10 @@ app.get('/api/bookings', async (req, res) => {
 
     try {
       const query = `
-        SELECT b.*, u.name as client_name, u.email as client_email, u.phone as client_phone, u.dni as client_dni
+        SELECT b.*, COALESCE(b.name, u.name) as client_name,
+               COALESCE(b.client_email, u.email) as client_email,
+               COALESCE(b.client_phone, u.phone) as client_phone,
+               COALESCE(b.client_dni, u.dni) as client_dni
         FROM bookings b
         LEFT JOIN users u ON b.user_id = u.id
         ORDER BY b.created_at DESC
