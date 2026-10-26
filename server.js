@@ -1886,8 +1886,9 @@ const formatDateISO = (d) => {
 
 // 4. Obtener fechas no disponibles (ocupadas o bloqueadas por el administrador)
 app.get('/api/bookings/unavailable-dates', async (req, res) => {
-  const { van_type } = req.query;
-  
+  // Un parámetro repetido llega como array y hacía fallar la consulta (respondía con la copia en memoria)
+  const van_type = typeof req.query.van_type === 'string' ? req.query.van_type : '';
+
   let ranges = [];
   try {
     let query = `
@@ -4123,7 +4124,7 @@ app.delete('/api/admin/reviews/:id', verifyAdmin, async (req, res) => {
 
 // 1. Obtener todos los bloqueos
 app.get('/api/blockages', async (req, res) => {
-  const { van_type } = req.query;
+  const van_type = typeof req.query.van_type === 'string' ? req.query.van_type : '';
   // El motivo es una nota interna del admin: al público solo se le dan las fechas
   const requester = await getAuthUser(req);
   const isAdminRequest = !!(requester && requester.isAdmin);
