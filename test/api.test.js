@@ -140,6 +140,8 @@ test('no se aceptan fechas pasadas ni horas manipuladas', async () => {
   const token = (await call('POST', '/api/auth/login', CLIENT)).data.token;
   assert.equal((await call('POST', '/api/bookings', booking('2020-01-01', '2020-01-02'), token)).status, 400);
   assert.equal((await call('POST', '/api/bookings', booking(futureDate(80), futureDate(81), { pickup_time: '<img src=x>' }), token)).status, 400);
+  // Mismo día con la devolución antes de la recogida
+  assert.equal((await call('POST', '/api/bookings', booking(futureDate(82), futureDate(82), { pickup_time: '19:00', return_time: '09:00' }), token)).status, 400);
 });
 
 test('confirm-payment es solo de lectura y no expone pagos inexistentes', async () => {

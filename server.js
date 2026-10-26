@@ -2473,6 +2473,10 @@ async function computeBookingQuote(bookingData) {
   if ([bookingData.pickup_time, bookingData.return_time].some(t => t !== undefined && t !== null && t !== '' && !timePattern.test(String(t)))) {
     return { error: 'Las horas de recogida y devolución no son válidas.' };
   }
+  // Mismo día: la devolución tiene que ser después de la recogida
+  if (end.getTime() === start.getTime() && bookingData.pickup_time && bookingData.return_time && String(bookingData.return_time) <= String(bookingData.pickup_time)) {
+    return { error: 'La hora de devolución debe ser posterior a la de recogida.' };
+  }
 
   const extras = [];
   let baseTaxable;
