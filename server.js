@@ -812,6 +812,18 @@ const allowedOrigins = [
   'http://localhost:3000',
   'http://127.0.0.1:3000'
 ];
+// Otros dominios donde se publique la web (p. ej. el de Dokploy): ALLOWED_ORIGINS separados por comas
+// y el origen de BASE_URL. Sin esto, los formularios fallaban con 403 desde cualquier otro dominio
+(process.env.ALLOWED_ORIGINS || '').split(',').map(o => o.trim().replace(/\/$/, '')).filter(Boolean)
+  .forEach(origin => { if (!allowedOrigins.includes(origin)) allowedOrigins.push(origin); });
+try {
+  if (process.env.BASE_URL) {
+    const baseOrigin = new URL(process.env.BASE_URL).origin;
+    if (!allowedOrigins.includes(baseOrigin)) allowedOrigins.push(baseOrigin);
+  }
+} catch (e) {
+  console.warn('[CORS] BASE_URL no es una URL válida:', e.message);
+}
 
 app.use(cors({
   origin: (origin, callback) => {
