@@ -1,4 +1,7 @@
 require('dotenv').config();
+// "Hoy" (fechas pasadas, mismo día) se calcula con la hora de España aunque el contenedor esté en UTC;
+// si no, entre las 00:00 y las 02:00 se aceptaba como válida la fecha de ayer
+process.env.TZ = process.env.TZ || 'Europe/Madrid';
 const express = require('express');
 const { Pool, types } = require('pg');
 
