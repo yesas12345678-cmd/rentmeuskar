@@ -1264,6 +1264,11 @@ app.post('/api/auth/register', async (req, res) => {
   if (name.trim().length > 100 || (phone && phone.trim().length > 20) || password.length > 200) {
     return res.status(400).json({ error: 'Alguno de los datos es demasiado largo.' });
   }
+  // Los identificadores del administrador no pueden ser cuentas de cliente (se mezclarían login y recuperación)
+  const reservedLogins = [getAdminUsername(), 'info@rentmeuskar.com', (process.env.ADMIN_EMAIL || '').toLowerCase()].filter(Boolean);
+  if (reservedLogins.includes(email.trim().toLowerCase())) {
+    return res.status(400).json({ error: 'Ese correo no se puede usar para una cuenta de cliente. Usa otro.' });
+  }
   if (password.length < MIN_PASSWORD_LENGTH) {
     return res.status(400).json({ error: `La contraseña debe tener al menos ${MIN_PASSWORD_LENGTH} caracteres.` });
   }

@@ -172,6 +172,11 @@ test('las opiniones públicas no muestran el código de reserva y no se aceptan 
   assert.equal((await call('POST', '/api/reviews', { booking_code: 'RMU-INVENTADO', client_name: 'x', rating: 5, comment: 'x' })).status, 400);
 });
 
+test('no se puede registrar un cliente con el correo del administrador', async () => {
+  const res = await call('POST', '/api/auth/register', { name: 'X', email: 'info@rentmeuskar.com', phone: '611222333', dni: '00000002W', password: 'ClaveLarga!2030' });
+  assert.equal(res.status, 400);
+});
+
 test('datos con tipos incorrectos devuelven 400, no 500', async () => {
   for (const url of ['/api/auth/register', '/api/contact', '/api/reviews/verify-code', '/api/auth/verify-registration']) {
     const res = await call('POST', url, { email: ['x'], name: 1, code: 2, contact: 3, message: 4, password: 5 });
