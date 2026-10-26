@@ -240,3 +240,9 @@ test('un pago que llega tarde se registra aunque las fechas ya estén ocupadas, 
   });
   assert.equal(bad.status, 400);
 });
+
+test('no se pueden probar códigos de reserva sin límite', async () => {
+  let last;
+  for (let i = 0; i < 65; i++) last = await call('GET', `/api/bookings/50?auth=RMU-${String(i).padStart(6, '0')}`);
+  assert.equal(last.status, 429);
+});

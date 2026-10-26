@@ -800,14 +800,18 @@ const bookingLimiter = rateLimit({
 });
 app.post('/api/redsys/create-payment', bookingLimiter);
 app.post('/api/bookings', bookingLimiter);
-// Sin límite, alguien podría probar números de pedido hasta dar con un pago en curso y cancelarlo
-app.post('/api/redsys/cancel-payment', rateLimit({
+// Sin límite, alguien podría probar números de pedido hasta dar con un pago en curso (para cancelarlo)
+// o uno ya pagado (su código abre contrato y factura). La página de éxito consulta hasta 15 veces.
+const bookingCodeLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 30,
+  max: 60,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Demasiadas solicitudes. Espera unos minutos.' }
-}));
+});
+// Contrato y factura con ?auth=código: mismo límite para no poder probar códigos a ciegas
+app.get('/api/bookings/:id', (req, res, next) => (req.query.auth ? bookingCodeLimiter(req, res, next) : next()));
+app.post(['/api/redsys/cancel-payment', '/api/redsys/confirm-payment'], bookingCodeLimiter);
 
 // Una reserva por furgoneta a la vez: comprobar disponibilidad y guardar no es atómico, así que
 // dos clientes pagando las mismas fechas a la vez podían colarse los dos (el servidor es un solo proceso)
@@ -2720,7 +2724,8 @@ async function saveBookingRecord(record) {
 }
 
 function generateReviewCode() {
-  return 'RMU-' + crypto.randomBytes(4).toString('hex').slice(0, 6).toUpperCase();
+  // El código abre contrato y factura: 10 hex (~1 billón de combinaciones). Los antiguos de 6 siguen valiendo.
+  return 'RMU-' + crypto.randomBytes(5).toString('hex').toUpperCase();
 }
 
 app.get('/api/payment-config', (req, res) => {
