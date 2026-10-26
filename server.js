@@ -2196,6 +2196,7 @@ app.put('/api/bookings/:id', verifyAdmin, async (req, res) => {
     if (index === -1) return res.status(404).json({ error: 'Reserva no encontrada.' });
     fallbackBookings[index] = { ...fallbackBookings[index], ...updates };
     saveAdminStoreToFile();
+    if (updates.status) sendBookingStatusEmail(fallbackBookings[index], updates.status);
     return res.json({ message, booking: fallbackBookings[index] });
   };
 
@@ -2215,6 +2216,7 @@ app.put('/api/bookings/:id', verifyAdmin, async (req, res) => {
       fallbackBookings[fbIndex] = result.rows[0];
     }
     saveAdminStoreToFile();
+    if (updates.status) sendBookingStatusEmail(result.rows[0], updates.status);
 
     res.json({
       message: 'Reserva actualizada con éxito.',
@@ -2420,6 +2422,29 @@ function generateRedsysOrderId() {
 }
 
 // Avisos de reserva pagada: confirmación al cliente y alta a la empresa. Nunca bloquea la respuesta
+// Aviso al cliente cuando el admin confirma o cancela su reserva (antes no se enteraba)
+async function sendBookingStatusEmail(booking, status) {
+  if (!mailTransporter || !booking || !booking.client_email) return;
+  if (status !== 'confirmed' && status !== 'cancelled') return;
+  const senderAddress = process.env.SMTP_USER || 'confirmacion@rentmeuskar.com';
+  const field = value => escapeHtml(String(value === undefined || value === null ? '' : value));
+  const dates = `${field(String(booking.pickup_date).slice(0, 10))} ${field(booking.pickup_time)} → ${field(String(booking.return_date).slice(0, 10))} ${field(booking.return_time)}`;
+  const confirmed = status === 'confirmed';
+  try {
+    await mailTransporter.sendMail({
+      from: `"RentMeUskar" <${senderAddress}>`,
+      to: booking.client_email,
+      subject: confirmed ? `Reserva #${booking.id} confirmada · RentMeUskar` : `Reserva #${booking.id} cancelada · RentMeUskar`,
+      html: `<div style="font-family: Arial, sans-serif;"><h2>${confirmed ? '¡Tu reserva está confirmada!' : 'Tu reserva ha sido cancelada'}</h2>
+        <p>Hola ${field(booking.name)},</p>
+        <p><strong>Vehículo:</strong> ${field(booking.van_name)}<br><strong>Fechas:</strong> ${dates}</p>
+        <p>${confirmed ? 'Te esperamos en la recogida. Recuerda traer DNI, carnet de conducir y la fianza de 500 €.' : 'Si tienes cualquier duda o habías pagado online, contacta con nosotros y te ayudamos.'}</p></div>`
+    });
+  } catch (e) {
+    console.error('[SMTP RESERVA] No se pudo enviar el aviso de cambio de estado:', e.message);
+  }
+}
+
 async function sendBookingPaidEmails(booking) {
   if (!mailTransporter || !booking) return;
   const senderAddress = process.env.SMTP_USER || 'confirmacion@rentmeuskar.com';
