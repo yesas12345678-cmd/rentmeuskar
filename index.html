@@ -1509,7 +1509,7 @@
             <form id="login-form" onsubmit="return window.handleLoginSubmit(event);">
                 <div class="custom-form-group">
                     <label for="login-email">Correo Electrónico</label>
-                    <input type="email" id="login-email" class="custom-form-control" required placeholder="">
+                    <input type="email" id="login-email" autocomplete="username" class="custom-form-control" required placeholder="">
                 </div>
                 <div class="custom-form-group">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.3rem;">
@@ -1517,7 +1517,7 @@
                         <a href="#" onclick="switchAuthModal('login-modal', 'forgot-password-modal')" style="font-size: 0.75rem; color: var(--color-neon, #82d105); text-decoration: none; font-weight: 600;">¿Olvidaste tu contraseña?</a>
                     </div>
                     <div style="position: relative; display: flex; align-items: center;">
-                        <input type="password" id="login-password" class="custom-form-control" required placeholder="" style="padding-right: 2.5rem; width: 100%;">
+                        <input type="password" id="login-password" autocomplete="current-password" class="custom-form-control" required placeholder="" style="padding-right: 2.5rem; width: 100%;">
                         <i class="fa-solid fa-eye toggle-password-btn" onclick="togglePasswordVisibility('login-password', this)" title="Mostrar/Ocultar contraseña" style="position: absolute; right: 0.8rem; color: var(--text-secondary, #718096); cursor: pointer; font-size: 1rem; transition: color 0.2s; user-select: none;"></i>
                     </div>
                 </div>
@@ -1541,7 +1541,7 @@
             <form id="forgot-password-form" onsubmit="return window.handleForgotPasswordSubmit(event);">
                 <div class="custom-form-group">
                     <label for="forgot-email">Correo Electrónico</label>
-                    <input type="email" id="forgot-email" class="custom-form-control" required placeholder="">
+                    <input type="email" id="forgot-email" autocomplete="email" class="custom-form-control" required placeholder="">
                 </div>
                 <button type="submit" class="btn btn-primary btn-block" id="btn-forgot-submit" style="margin-top: 1rem;">
                     <i class="fa-solid fa-paper-plane"></i> Enviar Correo de Confirmación
@@ -1569,7 +1569,7 @@
                 <div class="custom-form-group">
                     <label for="reset-new-password">Nueva Contraseña</label>
                     <div style="position: relative; display: flex; align-items: center;">
-                        <input type="password" id="reset-new-password" class="custom-form-control" required minlength="8" placeholder="Mínimo 8 caracteres" style="padding-right: 2.5rem; width: 100%;">
+                        <input type="password" id="reset-new-password" autocomplete="new-password" class="custom-form-control" required minlength="8" placeholder="Mínimo 8 caracteres" style="padding-right: 2.5rem; width: 100%;">
                         <i class="fa-solid fa-eye toggle-password-btn" onclick="togglePasswordVisibility('reset-new-password', this)" title="Mostrar/Ocultar contraseña" style="position: absolute; right: 0.8rem; color: var(--text-secondary, #718096); cursor: pointer; font-size: 1rem; transition: color 0.2s; user-select: none;"></i>
                     </div>
                 </div>
@@ -1594,15 +1594,15 @@
             <form id="register-form" onsubmit="return window.handleRegisterSubmit(event);">
                 <div class="custom-form-group">
                     <label for="reg-name">Nombre Completo</label>
-                    <input type="text" id="reg-name" class="custom-form-control" required placeholder="">
+                    <input type="text" id="reg-name" autocomplete="name" class="custom-form-control" required placeholder="">
                 </div>
                 <div class="custom-form-group">
                     <label for="reg-email">Correo Electrónico</label>
-                    <input type="email" id="reg-email" class="custom-form-control" required placeholder="">
+                    <input type="email" id="reg-email" autocomplete="email" class="custom-form-control" required placeholder="">
                 </div>
                 <div class="custom-form-group">
                     <label for="reg-phone">Teléfono de Contacto</label>
-                    <input type="tel" id="reg-phone" class="custom-form-control" required placeholder="">
+                    <input type="tel" id="reg-phone" autocomplete="tel" class="custom-form-control" required placeholder="">
                 </div>
                 <div class="custom-form-group">
                     <label for="reg-dni">DNI / NIE</label>
@@ -1611,7 +1611,7 @@
                 <div class="custom-form-group">
                     <label for="reg-password">Contraseña</label>
                     <div style="position: relative; display: flex; align-items: center;">
-                        <input type="password" id="reg-password" class="custom-form-control" required minlength="8" placeholder="Mínimo 8 caracteres" style="padding-right: 2.5rem; width: 100%;">
+                        <input type="password" id="reg-password" autocomplete="new-password" class="custom-form-control" required minlength="8" placeholder="Mínimo 8 caracteres" style="padding-right: 2.5rem; width: 100%;">
                         <i class="fa-solid fa-eye toggle-password-btn" onclick="togglePasswordVisibility('reg-password', this)" title="Mostrar/Ocultar contraseña" style="position: absolute; right: 0.8rem; color: var(--text-secondary, #718096); cursor: pointer; font-size: 1rem; transition: color 0.2s; user-select: none;"></i>
                     </div>
                 </div>
