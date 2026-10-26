@@ -1520,6 +1520,7 @@ app.post('/api/contact', async (req, res) => {
 // 2. Inicio de sesión
 // Bloqueo por cuenta: el límite por IP no frena un ataque repartido entre muchas IPs
 const LOGIN_FAILURE_LIMIT = 10;
+const LOGIN_TIMING_DUMMY_HASH = hashPassword(crypto.randomBytes(16).toString('hex'));
 const LOGIN_FAILURE_WINDOW_MS = 15 * 60 * 1000;
 const loginFailures = new Map();
 
@@ -1573,10 +1574,15 @@ app.post('/api/auth/login', async (req, res) => {
     });
   }
 
+  // Si la BD responde, manda ella: la copia local solo se usa sin BD (podía guardar una contraseña antigua)
+  let dbAnswered = false;
+  let passwordChecked = false;
   try {
     const result = await pool.query('SELECT * FROM users WHERE LOWER(email) = $1', [cleanEmail]);
+    dbAnswered = true;
     if (result.rowCount > 0) {
       const user = result.rows[0];
+      passwordChecked = true;
       if (verifyPassword(password, user.password)) {
         if (needsPasswordRehash(user.password)) {
           const upgraded = hashPassword(password);
@@ -1596,7 +1602,9 @@ app.post('/api/auth/login', async (req, res) => {
   }
 
   // Buscar en usuarios registrados en memoria / fallback
-  const user = fallbackUsers.find(u => u.email.toLowerCase() === cleanEmail && verifyPassword(password, u.password));
+  const fallbackCandidate = dbAnswered ? null : fallbackUsers.find(u => u.email.toLowerCase() === cleanEmail);
+  if (fallbackCandidate) passwordChecked = true;
+  const user = fallbackCandidate && verifyPassword(password, fallbackCandidate.password) ? fallbackCandidate : null;
   if (user) {
     if (needsPasswordRehash(user.password)) {
       user.password = hashPassword(password);
@@ -1610,6 +1618,8 @@ app.post('/api/auth/login', async (req, res) => {
     });
   }
 
+  // Correo sin cuenta: se calcula igualmente un hash para que el tiempo de respuesta no delate si existe
+  if (!passwordChecked) verifyPassword(password, LOGIN_TIMING_DUMMY_HASH);
   recordLoginFailure(cleanEmail);
   return res.status(401).json({ error: 'Correo electrónico o contraseña incorrectos.' });
 });
