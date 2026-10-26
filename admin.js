@@ -1504,10 +1504,10 @@ const initAdmin = () => {
                 : `<i class="fa-solid fa-truck" style="color: var(--text-muted); margin-right: 8px; font-size: 1rem; vertical-align: middle;"></i>`;
 
             tr.innerHTML = `
-                <td><strong style="color: var(--color-info);">${van.van_type}</strong></td>
-                <td><strong>${imgHtml}${van.name}</strong></td>
-                <td>${van.plate}</td>
-                <td>${van.m3}</td>
+                <td><strong style="color: var(--color-info);">${escapeHTML(van.van_type)}</strong></td>
+                <td><strong>${imgHtml}${escapeHTML(van.name)}</strong></td>
+                <td>${escapeHTML(van.plate)}</td>
+                <td>${escapeHTML(van.m3)}</td>
                 <td class="price-value">${formatCurrency(van.price_sin)}</td>
                 <td>${formatCurrency(van.min_price_con)}</td>
                 <td>${formatCurrency(van.km_price_con)}/km</td>
@@ -1800,7 +1800,7 @@ const initAdmin = () => {
         currentVanExtras.forEach((extra, idx) => {
             const tr = document.createElement('tr');
             tr.innerHTML = `
-                <td style="padding: 8px 10px; border-bottom: 1px solid rgba(255,255,255,0.05); color:#fff;"><strong>${extra.name}</strong></td>
+                <td style="padding: 8px 10px; border-bottom: 1px solid rgba(255,255,255,0.05); color:#fff;"><strong>${escapeHTML(extra.name)}</strong></td>
                 <td style="padding: 8px 10px; border-bottom: 1px solid rgba(255,255,255,0.05); color:var(--color-neon);"><strong>${parseFloat(extra.price).toFixed(2)} €</strong></td>
                 <td style="padding: 8px 10px; border-bottom: 1px solid rgba(255,255,255,0.05); color:var(--text-secondary);">${extra.type === 'daily' ? 'Por día' : 'Pago único'}</td>
                 <td style="padding: 8px 10px; border-bottom: 1px solid rgba(255,255,255,0.05); text-align: center;">
@@ -1897,7 +1897,7 @@ const initAdmin = () => {
             const chip = document.createElement('div');
             chip.style.cssText = 'background: rgba(130, 209, 5, 0.12); border: 1px solid rgba(130, 209, 5, 0.3); color: #fff; font-size: 0.82rem; padding: 4px 10px; border-radius: 20px; display: inline-flex; align-items: center; gap: 6px;';
             chip.innerHTML = `
-                <span><i class="fa-solid fa-check text-neon" style="font-size: 0.75rem;"></i> ${feat}</span>
+                <span><i class="fa-solid fa-check text-neon" style="font-size: 0.75rem;"></i> ${escapeHTML(feat)}</span>
                 <i class="fa-solid fa-xmark remove-feat-btn" data-idx="${idx}" style="cursor: pointer; color: var(--color-danger); margin-left: 4px;"></i>
             `;
             chip.querySelector('.remove-feat-btn').addEventListener('click', () => {
@@ -2295,8 +2295,8 @@ const initAdmin = () => {
                         const tr = document.createElement('tr');
                         tr.innerHTML = `
                             <td style="text-align: center; font-weight: 700; color: var(--color-neon);">${faq.display_order}</td>
-                            <td><strong>${faq.question}</strong></td>
-                            <td style="color: var(--text-secondary); max-width: 400px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${faq.answer}</td>
+                            <td><strong>${escapeHTML(faq.question)}</strong></td>
+                            <td style="color: var(--text-secondary); max-width: 400px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHTML(faq.answer)}</td>
                             <td style="text-align: center; display: flex; gap: 0.5rem; justify-content: center; align-items: center;">
                                 <button class="btn btn-secondary btn-sm btn-edit-faq" data-id="${faq.id}" style="padding: 4px 8px; border-color: rgba(255,255,255,0.1);">
                                     <i class="fa-solid fa-pen-to-square"></i> Editar
