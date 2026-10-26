@@ -806,9 +806,11 @@ const bookingLimiter = rateLimit({
 app.post('/api/redsys/create-payment', bookingLimiter);
 app.post('/api/bookings', bookingLimiter);
 // Los :id de la API son enteros de la BD: con otra cosa PostgreSQL fallaba y se respondía 500
+// Con otra cosa se salta la ruta (no se responde aquí: '/api/bookings/unavailable-dates' también encaja
+// en '/api/bookings/:id') y, si nada más coincide, contesta el 404 en JSON de la API
 app.param('id', (req, res, next, id) => {
   if (/^\d{1,9}$/.test(String(id))) return next();
-  return res.status(404).json({ error: 'No encontrado.' });
+  return next('route');
 });
 
 // Sin límite, alguien podría probar números de pedido hasta dar con un pago en curso (para cancelarlo)

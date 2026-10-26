@@ -402,6 +402,12 @@ test('un token con id de otra cuenta no da acceso a esa cuenta', async () => {
   assert.equal(me.data.id, 2);
 });
 
+test('el calendario de disponibilidad responde (no lo tapa la ruta /api/bookings/:id)', async () => {
+  const res = await call('GET', '/api/bookings/unavailable-dates?van_type=medium');
+  assert.equal(res.status, 200);
+  assert.ok(Array.isArray(res.data));
+});
+
 test('no se pueden probar códigos de reserva sin límite', async () => {
   let last;
   for (let i = 0; i < 65; i++) last = await call('GET', `/api/bookings/50?auth=RMU-${String(i).padStart(6, '0')}`);
