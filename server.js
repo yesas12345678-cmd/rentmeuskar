@@ -3614,8 +3614,35 @@ function publicSettings(settings) {
 }
 
 app.put('/api/settings', verifyAdmin, async (req, res) => {
-  const { hours_weekdays, hours_saturdays, hours_sundays, show_reviews_count, contact_phone, contact_email, fianza_amount } = req.body;
-  
+  let { hours_weekdays, hours_saturdays, hours_sundays, show_reviews_count, contact_phone, contact_email, fianza_amount } = req.body;
+  const fields = { hours_weekdays, hours_saturdays, hours_sundays, show_reviews_count, contact_phone, contact_email, fianza_amount };
+  if (Object.values(fields).some(v => v !== undefined && (typeof v !== 'string' || v.length > 200))) {
+    return res.status(400).json({ error: 'Valores de configuración no válidos.' });
+  }
+  if (show_reviews_count !== undefined && !['true', 'false'].includes(show_reviews_count)) {
+    return res.status(400).json({ error: 'Valores de configuración no válidos.' });
+  }
+  if (contact_phone) {
+    // Se usa en enlaces tel: y de WhatsApp: solo dígitos y con prefijo de país (34 si se omite)
+    contact_phone = contact_phone.replace(/\D/g, '');
+    if (contact_phone.length === 9) contact_phone = '34' + contact_phone;
+    if (contact_phone.length < 11 || contact_phone.length > 15) {
+      return res.status(400).json({ error: 'El teléfono de contacto no es válido (ej. 614767411 o 34614767411).' });
+    }
+  }
+  if (contact_email && !EMAIL_PATTERN.test(contact_email)) {
+    return res.status(400).json({ error: 'El correo de contacto no es válido.' });
+  }
+  if (fianza_amount) {
+    // "1.000,50" o "500,00" (coma decimal) y también "500.50"
+    const raw = fianza_amount.trim().replace(/\s|€/g, '');
+    const amount = Number(raw.includes(',') ? raw.replace(/\./g, '').replace(',', '.') : raw);
+    if (!Number.isFinite(amount) || amount < 0 || amount > 100000) {
+      return res.status(400).json({ error: 'El importe de la fianza no es válido (ej. 500,00).' });
+    }
+    fianza_amount = amount.toFixed(2).replace('.', ',');
+  }
+
   try {
     const queries = [
       { key: 'hours_weekdays', value: hours_weekdays },

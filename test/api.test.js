@@ -194,3 +194,16 @@ test('una petición demasiado grande devuelve 413, no 500', async () => {
   const res = await call('POST', '/api/contact', { name: 'x', contact: 'x', message: 'a'.repeat(200 * 1024) });
   assert.equal(res.status, 413);
 });
+
+test('ajustes: se normalizan teléfono y fianza y se rechazan valores no válidos', async () => {
+  const admin = (await call('POST', '/api/auth/login', { email: 'zvaito', password: ADMIN_PASSWORD })).data.token;
+  const ok = await call('PUT', '/api/settings', { contact_phone: '614 767 411', fianza_amount: '450' }, admin);
+  assert.equal(ok.status, 200);
+  assert.equal(ok.data.settings.contact_phone, '34614767411');
+  assert.equal(ok.data.settings.fianza_amount, '450,00');
+  assert.equal((await call('PUT', '/api/settings', { fianza_amount: 'abc' }, admin)).status, 400);
+  assert.equal((await call('PUT', '/api/settings', { contact_phone: '123' }, admin)).status, 400);
+  assert.equal((await call('PUT', '/api/settings', { contact_email: 'no-es-correo' }, admin)).status, 400);
+  assert.equal((await call('PUT', '/api/settings', { hours_weekdays: 5 }, admin)).status, 400);
+  await call('PUT', '/api/settings', { fianza_amount: '500,00' }, admin);
+});
