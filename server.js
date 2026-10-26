@@ -4068,6 +4068,12 @@ app.post('/api/admin/confirm-credential-change', verifyAdmin, async (req, res) =
 // Generar código de reseña manual desde admin con especificaciones completas de la reserva
 app.post('/api/admin/generate-review-code', verifyAdmin, (req, res) => {
   const { van_name, client_name, city, rental_days, rental_mode, pickup_date, pickup_time, return_date, return_time } = req.body;
+  // Estos datos acaban en la opinión pública: textos cortos y días numéricos
+  const texts = [van_name, client_name, city, rental_mode, pickup_date, pickup_time, return_date, return_time];
+  if (texts.some(v => v !== undefined && v !== null && (typeof v !== 'string' || v.length > 100)) ||
+      (rental_days !== undefined && rental_days !== '' && !(Number(rental_days) >= 1 && Number(rental_days) <= 365))) {
+    return res.status(400).json({ error: 'Los datos del código no son válidos.' });
+  }
   const code = generateReviewCode();
 
   const codeObj = {
