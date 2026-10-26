@@ -311,7 +311,7 @@
                 <div class="brand-subtitle">Alquiler de Vehículos • Con y Sin Conductor</div>
             </div>
             <div class="header-contact-box">
-                <div><i class="fa-solid fa-phone"></i> <span>614 676 411</span></div>
+                <div><i class="fa-solid fa-phone"></i> <span id="contract-contact-phone">614 767 411</span></div>
                 <div><i class="fa-solid fa-envelope"></i> <span>info@rentmeuskar.com</span></div>
                 <div><i class="fa-brands fa-facebook"></i> <span>RentMeUskar</span></div>
                 <div><i class="fa-brands fa-instagram"></i> <span>@rentmeuskar</span></div>
@@ -406,9 +406,9 @@
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 6px;">
                     <div class="checkbox-container">
                         <span class="checkbox-box" id="chk-van-man">[ ]</span>
-                        <span><strong>MAN TGE L4H3 Gran Volumen (14m³)</strong> (Matrícula: 3758 MDW | MMA: 3500 kg | Ocupantes: 3)</span>
+                        <span id="contract-van-line"><strong>MAN TGE L4H3 Gran Volumen (14m³)</strong> (Matrícula: 3758 MDW | MMA: 3500 kg | Ocupantes: 3)</span>
                     </div>
-                    <div class="checkbox-container">
+                    <div class="checkbox-container" id="contract-van-alt">
                         <span class="checkbox-box" id="chk-van-ford">[ ]</span>
                         <span><strong>FORD TRANSIT CUSTOM L2H2 (8m³)</strong> (Matrícula: 3681 MCC | MMA: 2800 kg | Ocupantes: 3)</span>
                     </div>
@@ -705,6 +705,17 @@
                     document.getElementById('chk-van-ford').textContent = isFord ? '[X]' : '[ ]';
                     
                     document.getElementById('van-plate').textContent = b.van_plate || (isFord ? '3681 MCC' : '3758 MDW');
+                    // Furgoneta que no es ninguna de las dos de la plantilla: se muestra la reservada
+                    // (antes cualquier otra salía marcada como MAN TGE)
+                    if (b.van_type !== 'medium' && b.van_type !== 'large') {
+                        const line = document.getElementById('contract-van-line');
+                        line.textContent = '';
+                        const strong = document.createElement('strong');
+                        strong.textContent = b.van_name || 'Furgoneta';
+                        line.appendChild(strong);
+                        line.appendChild(document.createTextNode(` (Matrícula: ${b.van_plate || '-'} | MMA: ${b.max_mass ? b.max_mass + ' kg' : '-'} | Ocupantes: ${b.max_occupants || '-'})`));
+                        document.getElementById('contract-van-alt').style.display = 'none';
+                    }
                     document.getElementById('van-occupants').textContent = b.max_occupants || '3';
                     document.getElementById('van-mma').textContent = b.max_mass ? `${b.max_mass} kg` : (isFord ? '2800 kg' : '3500 kg');
                     document.getElementById('van-fuel').textContent = b.fuel_type || 'GASOIL';
@@ -775,12 +786,14 @@
 
                     // Fianza
                     document.getElementById('fianza-deposit-val').textContent = b.rental_mode === 'con' ? '0,00 € (Exento)' : '500,00 €';
-                    // Importe configurado en Ajustes (si no carga, se queda el de 500,00 €)
-                    if (b.rental_mode !== 'con') {
-                        fetch('/api/settings').then(r => r.ok ? r.json() : {}).then(cfg => {
-                            if (cfg && cfg.fianza_amount) document.getElementById('fianza-deposit-val').textContent = `${cfg.fianza_amount} €`;
-                        }).catch(() => {});
-                    }
+                    // Importe de la fianza y teléfono de Ajustes (si no cargan, se quedan los valores por defecto)
+                    fetch('/api/settings').then(r => r.ok ? r.json() : {}).then(cfg => {
+                        if (cfg && cfg.fianza_amount && b.rental_mode !== 'con') document.getElementById('fianza-deposit-val').textContent = `${cfg.fianza_amount} €`;
+                        const digits = cfg && cfg.contact_phone ? String(cfg.contact_phone).replace(/\D/g, '') : '';
+                        // 34614767411 -> 614 767 411
+                        const national = digits.length === 11 && digits.startsWith('34') ? digits.slice(2) : digits;
+                        if (national.length === 9) document.getElementById('contract-contact-phone').textContent = national.replace(/(\d{3})(\d{3})(\d{3})/, '$1 $2 $3');
+                    }).catch(() => {});
                     document.getElementById('fianza-dev-integra').textContent = b.fianza_returned_full ? '[X]' : '[ ]';
                     document.getElementById('fianza-dev-parcial').textContent = b.fianza_returned_partial ? '[X]' : '[ ]';
                     document.getElementById('fianza-retained-val').textContent = `${parseFloat(b.fianza_retained_amount || 0).toFixed(2)} €`;
