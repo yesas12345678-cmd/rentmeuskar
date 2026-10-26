@@ -240,6 +240,8 @@
             }
 
             var userNameText = (user && user.name) ? user.name : (user && user.email ? user.email.split('@')[0] : 'Mi Perfil');
+            // El nombre lo escribe el cliente: se escapa antes de meterlo en innerHTML
+            userNameText = String(userNameText).replace(/[&<>'"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[c]; });
             if (authSection) {
                 authSection.innerHTML = '<button class="btn btn-secondary btn-sm" id="btn-login-modal" onclick="window.handleLoginButtonClick()" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; border-color: var(--color-neon); color: var(--color-neon); cursor: pointer;"><i class="fa-solid fa-user-circle"></i> ' + userNameText + '</button>';
             }
