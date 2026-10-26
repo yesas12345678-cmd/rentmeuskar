@@ -570,11 +570,11 @@ const initApp = () => {
                 </h4>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; font-size: 0.82rem; line-height: 1.4;">
                     <div>
-                        <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-box text-neon" style="width: 16px;"></i> <strong>Volumen:</strong> ${m3}</p>
+                        <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-box text-neon" style="width: 16px;"></i> <strong>Volumen:</strong> ${rmuEsc(m3)}</p>
                         <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-weight-hanging text-neon" style="width: 16px;"></i> <strong>M.M.A:</strong> ${maxMass} kg</p>
                         <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-user text-neon" style="width: 16px;"></i> <strong>Plazas:</strong> ${maxOccupants} plazas</p>
-                        <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-gas-pump text-neon" style="width: 16px;"></i> <strong>Combustible:</strong> ${fuelType}</p>
-                        <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-leaf text-neon" style="width: 16px;"></i> <strong>Distintivo Eco:</strong> Etiqueta ${ecoLabel}</p>
+                        <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-gas-pump text-neon" style="width: 16px;"></i> <strong>Combustible:</strong> ${rmuEsc(fuelType)}</p>
+                        <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-leaf text-neon" style="width: 16px;"></i> <strong>Distintivo Eco:</strong> Etiqueta ${rmuEsc(ecoLabel)}</p>
                         <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-circle-check text-neon" style="width: 16px;"></i> <strong>Fianza y Combustible:</strong> Incluidos</p>
                     </div>
                     <div>
@@ -588,7 +588,7 @@ const initApp = () => {
         }
 
         if (Array.isArray(van.custom_features) && van.custom_features.length > 0) {
-            const featHtml = van.custom_features.map(f => `<span style="background: rgba(130, 209, 5, 0.1); border: 1px solid rgba(130, 209, 5, 0.3); color: #fff; font-size: 0.78rem; padding: 3px 8px; border-radius: 12px; display: inline-flex; align-items: center; gap: 4px;"><i class="fa-solid fa-check text-neon"></i> ${f}</span>`).join(' ');
+            const featHtml = van.custom_features.map(f => `<span style="background: rgba(130, 209, 5, 0.1); border: 1px solid rgba(130, 209, 5, 0.3); color: #fff; font-size: 0.78rem; padding: 3px 8px; border-radius: 12px; display: inline-flex; align-items: center; gap: 4px;"><i class="fa-solid fa-check text-neon"></i> ${rmuEsc(f)}</span>`).join(' ');
             vanSpecsContainer.innerHTML += `
                 <div style="margin-top: 0.8rem; padding-top: 0.8rem; border-top: 1px solid rgba(255,255,255,0.08);">
                     <strong style="font-size: 0.8rem; color: var(--color-neon); display: block; margin-bottom: 0.4rem;"><i class="fa-solid fa-star"></i> Equipamiento Destacado:</strong>
@@ -2299,7 +2299,7 @@ const initApp = () => {
             if (Array.isArray(van.custom_features) && van.custom_features.length > 0) {
                 featList.innerHTML = van.custom_features.map(f => `
                     <span style="background: rgba(130, 209, 5, 0.12); border: 1px solid rgba(130, 209, 5, 0.3); color: #fff; font-size: 0.85rem; padding: 5px 12px; border-radius: 20px; display: inline-flex; align-items: center; gap: 6px;">
-                        <i class="fa-solid fa-check text-neon" style="font-size: 0.8rem;"></i> ${f}
+                        <i class="fa-solid fa-check text-neon" style="font-size: 0.8rem;"></i> ${rmuEsc(f)}
                     </span>
                 `).join('');
                 featContainer.style.display = 'block';
