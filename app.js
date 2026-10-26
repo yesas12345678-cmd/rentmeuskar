@@ -2289,7 +2289,7 @@ const initApp = () => {
 
         let images = van.images;
         if (!Array.isArray(images) || images.length === 0) {
-            images = [vanType === 'medium' ? 'assets/ford_transit.png' : 'assets/man_tge.png'];
+            images = [vanType === 'large' ? 'assets/man_tge.png' : 'assets/ford_transit_custom.png'];
         }
 
         detailCarouselImages = images;
@@ -2302,7 +2302,7 @@ const initApp = () => {
             slide.style.display = 'flex';
             slide.style.alignItems = 'center';
             slide.style.justifyContent = 'center';
-            slide.innerHTML = `<img src="${img}" style="width: 100%; height: 100%; object-fit: cover;" alt="${rmuEsc(van.name)} foto ${idx + 1}">`;
+            slide.innerHTML = `<img src="${rmuEsc(img)}" style="width: 100%; height: 100%; object-fit: cover;" alt="${rmuEsc(van.name)} foto ${idx + 1}">`;
             slidesContainer.appendChild(slide);
 
             const dot = document.createElement('span');
