@@ -348,6 +348,10 @@ test('FAQ con tipos u orden no válidos se rechazan', async () => {
 test('no se reactiva una reserva cancelada si sus fechas ya están ocupadas', async () => {
   const admin = await login('zvaito', ADMIN_PASSWORD);
   assert.equal((await call('POST', '/api/blockages', { van_type: 'medium', start_date: futureDate(160), end_date: futureDate(160), reason: 'ITV' }, admin)).status, 201);
+  // Bloqueo encima de una reserva activa: se guarda, pero avisa de cuál
+  const overlap = await call('POST', '/api/blockages', { van_type: 'medium', start_date: futureDate(30), end_date: futureDate(31), reason: 'Avería' }, admin);
+  assert.equal(overlap.status, 201);
+  assert.match(overlap.data.warning || '', /#\d+/);
   assert.equal((await call('PUT', '/api/bookings/52', { status: 'confirmed' }, admin)).status, 409);
   assert.equal((await call('PUT', '/api/bookings/52', { client_city: 'Huéscar' }, admin)).status, 200);
 });

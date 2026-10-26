@@ -4242,7 +4242,25 @@ app.post('/api/blockages', verifyAdmin, async (req, res) => {
   if (end_date < start_date) {
     return res.status(400).json({ error: 'La fecha de fin de bloqueo no puede ser anterior a la fecha de inicio.' });
   }
-  
+
+  // El bloqueo se guarda igualmente (p. ej. una avería), pero se avisa de las reservas afectadas
+  let affected = [];
+  try {
+    const r = await pool.query(
+      `SELECT id FROM bookings WHERE van_type = $1 AND ${ACTIVE_BOOKING_SQL} AND pickup_date <= $3 AND return_date >= $2 ORDER BY id`,
+      [van_type, start_date, end_date]
+    );
+    affected = r.rows.map(b => b.id);
+  } catch (e) {
+    affected = fallbackBookings
+      .filter(b => b.van_type === van_type && isActiveFallbackBooking(b) &&
+        String(b.pickup_date).slice(0, 10) <= end_date && String(b.return_date).slice(0, 10) >= start_date)
+      .map(b => b.id);
+  }
+  const warning = affected.length
+    ? `Ojo: ya hay reservas en esas fechas (${affected.map(id => '#' + id).join(', ')}). Avisa al cliente o cámbialas.`
+    : undefined;
+
   try {
     const query = `
       INSERT INTO van_blockages (van_type, start_date, end_date, reason)
@@ -4260,7 +4278,7 @@ app.post('/api/blockages', verifyAdmin, async (req, res) => {
     fallbackBlockages.push(created);
     saveAdminStoreToFile();
     
-    res.status(201).json({ message: 'Bloqueo registrado correctamente.', blockage: created });
+    res.status(201).json({ message: 'Bloqueo registrado correctamente.', blockage: created, warning });
   } catch (err) {
     console.warn('Base de datos offline al crear bloqueo, usando fallback:', err.message);
     const mockId = fallbackBlockages.length > 0 ? Math.max(...fallbackBlockages.map(b => b.id)) + 1 : 1;
@@ -4274,7 +4292,7 @@ app.post('/api/blockages', verifyAdmin, async (req, res) => {
     };
     fallbackBlockages.push(mockBlock);
     saveAdminStoreToFile();
-    res.status(201).json({ message: 'Bloqueo registrado correctamente en memoria fallback.', blockage: mockBlock });
+    res.status(201).json({ message: 'Bloqueo registrado correctamente en memoria fallback.', blockage: mockBlock, warning });
   }
 });
 

@@ -2224,6 +2224,7 @@ const initAdmin = () => {
             const data = await res.json();
             if (res.ok) {
                 showToast('Bloqueo de disponibilidad registrado con éxito.', 'success');
+                if (data.warning) showToast(escapeHTML(data.warning), 'error');
                 blockageForm.reset();
                 fetchBlockages();
             } else {
