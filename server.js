@@ -3958,6 +3958,10 @@ app.delete('/api/admin/reviews/:id', verifyAdmin, async (req, res) => {
 // 1. Obtener todos los bloqueos
 app.get('/api/blockages', async (req, res) => {
   const { van_type } = req.query;
+  // El motivo es una nota interna del admin: al público solo se le dan las fechas
+  const requester = await getAuthUser(req);
+  const isAdminRequest = !!(requester && requester.isAdmin);
+  const visible = b => isAdminRequest ? b : { id: b.id, van_type: b.van_type, start_date: b.start_date, end_date: b.end_date };
   try {
     let query = 'SELECT * FROM van_blockages ORDER BY start_date ASC';
     let params = [];
@@ -3974,14 +3978,14 @@ app.get('/api/blockages', async (req, res) => {
       end_date: formatDateISO(row.end_date)
     }));
     
-    res.json(mapped);
+    res.json(mapped.map(visible));
   } catch (err) {
     console.warn('Base de datos offline al obtener bloqueos, usando fallback:', err.message);
     let filtered = fallbackBlockages;
     if (van_type) {
       filtered = fallbackBlockages.filter(b => b.van_type === van_type);
     }
-    res.json(filtered);
+    res.json(filtered.map(visible));
   }
 });
 

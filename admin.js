@@ -2119,7 +2119,10 @@ const initAdmin = () => {
         `;
 
         try {
-            const res = await fetch('/api/blockages');
+            // Con el token de admin el servidor incluye el motivo de cada bloqueo
+            const res = await fetch('/api/blockages', {
+                headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}` }
+            });
             if (res.ok) {
                 const blockages = await res.json();
                 if (blockages.length === 0) {
@@ -2142,7 +2145,7 @@ const initAdmin = () => {
                             <td><strong>${vanName}</strong></td>
                             <td>${block.start_date}</td>
                             <td>${block.end_date}</td>
-                            <td><span class="status-badge" style="background: rgba(255,193,7,0.1); color: #ffc107; border: 1px solid rgba(255,193,7,0.2); font-size: 0.75rem; padding: 2px 8px; border-radius: 4px;">${block.reason}</span></td>
+                            <td><span class="status-badge" style="background: rgba(255,193,7,0.1); color: #ffc107; border: 1px solid rgba(255,193,7,0.2); font-size: 0.75rem; padding: 2px 8px; border-radius: 4px;">${escapeHTML(block.reason)}</span></td>
                             <td style="text-align: center;">
                                 <button class="btn btn-secondary btn-sm btn-delete-blockage" data-id="${block.id}" style="color: var(--color-neon); border-color: rgba(130, 209, 5, 0.2); background: rgba(130, 209, 5, 0.05); padding: 4px 8px;">
                                     <i class="fa-solid fa-trash-can"></i> Eliminar
