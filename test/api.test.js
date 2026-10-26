@@ -419,6 +419,14 @@ test('un segundo intento de pago suelta el anterior sin pagar en vez de bloquear
   assert.equal(mine.length, 1);
 });
 
+test('el vehículo de la opinión sale del código, no del navegador', async () => {
+  const admin = await login('zvaito', ADMIN_PASSWORD);
+  const gen = await call('POST', '/api/admin/generate-review-code', { van_name: 'Furgoneta Test', rental_days: 1, rental_mode: 'sin' }, admin);
+  const res = await call('POST', '/api/reviews', { booking_code: gen.data.codeObj.code, client_name: 'Ana', rating: 5, comment: 'Bien', van_name: 'Texto inventado' });
+  assert.equal(res.status, 201);
+  assert.equal(res.data.review.van_name, 'Furgoneta Test • 1 día (Sin Conductor)');
+});
+
 test('no se pueden probar códigos de reserva sin límite', async () => {
   let last;
   for (let i = 0; i < 65; i++) last = await call('GET', `/api/bookings/50?auth=RMU-${String(i).padStart(6, '0')}`);

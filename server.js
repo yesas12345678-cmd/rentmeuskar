@@ -4089,68 +4089,41 @@ app.post('/api/admin/generate-review-code', verifyAdmin, (req, res) => {
   res.json({ message: 'Código de reseña verificado creado.', codeObj });
 });
 
+// Datos de la reserva (o del código manual del admin) a la que pertenece un código de opinión
+const modeLabel = mode => (mode === 'con' || /con conductor/i.test(String(mode || ''))) ? 'Con Conductor' : 'Sin Conductor';
+async function lookupReviewCode(cleanCode) {
+  const manualObj = manualReviewCodes.find(c => c.code.toUpperCase() === cleanCode);
+  if (manualObj) {
+    return {
+      van_name: manualObj.van_name, client_name: manualObj.client_name, city: manualObj.city,
+      rental_days: manualObj.rental_days, rental_mode: modeLabel(manualObj.rental_mode),
+      pickup_date: manualObj.pickup_date, pickup_time: manualObj.pickup_time,
+      return_date: manualObj.return_date, return_time: manualObj.return_time
+    };
+  }
+  const fromBooking = b => ({
+    van_name: b.van_name || 'Ford Transit Custom L2H2 (8m³)', client_name: b.name,
+    rental_days: b.days || 2, rental_mode: modeLabel(b.rental_mode),
+    pickup_date: b.pickup_date, pickup_time: b.pickup_time, return_date: b.return_date, return_time: b.return_time
+  });
+  try {
+    const dbRes = await pool.query('SELECT * FROM bookings WHERE UPPER(review_code) = $1', [cleanCode]);
+    if (dbRes.rowCount > 0 && isReviewableBooking(dbRes.rows[0])) return fromBooking(dbRes.rows[0]);
+  } catch (e) {
+    console.warn('[REVIEWS] Error consultando código en base de datos:', e.message);
+  }
+  const foundBooking = fallbackBookings.find(b => b.review_code && b.review_code.toUpperCase() === cleanCode && isReviewableBooking(b));
+  return foundBooking ? fromBooking(foundBooking) : null;
+}
+
 // Verificar código manual para autocompletar vehículo y datos de reserva
 app.post('/api/reviews/verify-code', async (req, res) => {
   const { code } = req.body;
   if (!code || typeof code !== 'string') return res.status(400).json({ error: 'Código requerido' });
 
-  const cleanCode = code.trim().toUpperCase();
-
-  // 1. Buscar en códigos manuales generados por admin
-  const manualObj = manualReviewCodes.find(c => c.code.toUpperCase() === cleanCode);
-  if (manualObj) {
-    return res.json({ 
-      valid: true, 
-      van_name: manualObj.van_name, 
-      client_name: manualObj.client_name, 
-      city: manualObj.city,
-      rental_days: manualObj.rental_days,
-      rental_mode: manualObj.rental_mode,
-      pickup_date: manualObj.pickup_date,
-      pickup_time: manualObj.pickup_time,
-      return_date: manualObj.return_date,
-      return_time: manualObj.return_time
-    });
-  }
-
-  // 2. Buscar en base de datos PostgreSQL
-  try {
-    const dbRes = await pool.query('SELECT * FROM bookings WHERE UPPER(review_code) = $1', [cleanCode]);
-    if (dbRes.rowCount > 0 && isReviewableBooking(dbRes.rows[0])) {
-      const b = dbRes.rows[0];
-      return res.json({
-        valid: true,
-        van_name: b.van_name || 'Ford Transit Custom L2H2 (8m³)',
-        client_name: b.name,
-        rental_days: b.days || 2,
-        rental_mode: b.rental_mode || 'Sin Conductor',
-        pickup_date: b.pickup_date,
-        pickup_time: b.pickup_time,
-        return_date: b.return_date,
-        return_time: b.return_time
-      });
-    }
-  } catch (e) {
-    console.warn('[REVIEWS] Error consultando código en base de datos:', e.message);
-  }
-
-  // 3. Buscar en reservas en memoria / fallback
-  const foundBooking = fallbackBookings.find(b => b.review_code && b.review_code.toUpperCase() === cleanCode && isReviewableBooking(b));
-  if (foundBooking) {
-    return res.json({ 
-      valid: true, 
-      van_name: foundBooking.van_name, 
-      client_name: foundBooking.name,
-      rental_days: foundBooking.days || 2,
-      rental_mode: foundBooking.rental_mode || 'Sin Conductor',
-      pickup_date: foundBooking.pickup_date,
-      pickup_time: foundBooking.pickup_time,
-      return_date: foundBooking.return_date,
-      return_time: foundBooking.return_time
-    });
-  }
-
-  return res.status(400).json({ error: 'Código de reseña no válido o no encontrado en el sistema.' });
+  const data = await lookupReviewCode(code.trim().toUpperCase());
+  if (!data) return res.status(400).json({ error: 'Código de reseña no válido o no encontrado en el sistema.' });
+  return res.json({ valid: true, ...data });
 });
 
 app.get('/api/reviews', async (req, res) => {
@@ -4206,7 +4179,12 @@ app.post('/api/reviews', async (req, res) => {
   const safeClientName = escapeHtml(client_name.trim());
   const safeComment = escapeHtml(comment.trim());
   const safeRoleOrCity = escapeHtml((role_or_city || '').trim());
-  const finalVanName = escapeHtml((van_name || 'Ford Transit Custom L2H2 (8m³)').trim());
+  // El vehículo de la opinión sale de la reserva (antes lo mandaba el navegador y podía ser cualquier texto)
+  const codeData = await lookupReviewCode(booking_code.trim().toUpperCase());
+  const days = parseInt(codeData && codeData.rental_days, 10) || 0;
+  const finalVanName = escapeHtml(codeData
+    ? `${codeData.van_name}${days ? ` • ${days} ${days === 1 ? 'día' : 'días'}` : ''} (${codeData.rental_mode})`
+    : (van_name || 'Ford Transit Custom L2H2 (8m³)').trim());
   // Columnas VARCHAR(255): un texto más largo (ya escapado) hacía fallar el INSERT
   if (client_name.length > 100 || (role_or_city || '').length > 100 || comment.length > 2000 ||
       [safeClientName, safeRoleOrCity, finalVanName].some(v => v.length > 255)) {
