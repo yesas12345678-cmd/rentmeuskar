@@ -2537,6 +2537,15 @@ function bookingContact(user, body) {
   };
 }
 
+async function computeVanExists(vanType) {
+  try {
+    const r = await pool.query('SELECT 1 FROM vans WHERE van_type = $1', [vanType]);
+    return r.rowCount > 0;
+  } catch (e) {
+    return fallbackVans.some(v => v.van_type === vanType);
+  }
+}
+
 async function computeBookingQuote(bookingData) {
   const vanType = bookingData && bookingData.van_type;
   if (!vanType) return { error: 'Falta el tipo de furgoneta.' };
@@ -4182,6 +4191,18 @@ app.post('/api/blockages', verifyAdmin, async (req, res) => {
   const { van_type, start_date, end_date, reason } = req.body;
   if (!van_type || !start_date || !end_date || !reason) {
     return res.status(400).json({ error: 'Todos los campos son obligatorios (van_type, start_date, end_date, reason).' });
+  }
+  // Con un dato que la BD no acepta, el bloqueo acababa solo en el almacén local y la
+  // disponibilidad (que consulta la BD) seguía dejando reservar esas fechas
+  const isIsoDate = v => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) && !isNaN(Date.parse(v)) && new Date(v).toISOString().slice(0, 10) === v;
+  if (!isIsoDate(start_date) || !isIsoDate(end_date)) {
+    return res.status(400).json({ error: 'Las fechas del bloqueo no son válidas.' });
+  }
+  if (!areStrings(van_type, reason) || reason.trim().length > 255) {
+    return res.status(400).json({ error: 'El motivo del bloqueo admite hasta 255 caracteres.' });
+  }
+  if (!(await computeVanExists(van_type))) {
+    return res.status(400).json({ error: 'La furgoneta del bloqueo no existe.' });
   }
 
   if (end_date < start_date) {

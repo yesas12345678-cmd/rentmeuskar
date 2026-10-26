@@ -317,6 +317,15 @@ test('datos del contrato que no caben en la columna se rechazan con un mensaje c
   assert.equal((await call('PUT', '/api/bookings/50', { client_postal_code: '18830' }, admin)).status, 200);
 });
 
+test('bloqueos con datos que la BD no acepta se rechazan', async () => {
+  const admin = await login('zvaito', ADMIN_PASSWORD);
+  const base = { van_type: 'medium', start_date: futureDate(150), end_date: futureDate(151), reason: 'Taller' };
+  assert.equal((await call('POST', '/api/blockages', { ...base, start_date: '2026-13-45' }, admin)).status, 400);
+  assert.equal((await call('POST', '/api/blockages', { ...base, reason: 'x'.repeat(300) }, admin)).status, 400);
+  assert.equal((await call('POST', '/api/blockages', { ...base, van_type: 'no-existe' }, admin)).status, 400);
+  assert.equal((await call('POST', '/api/blockages', base, admin)).status, 201);
+});
+
 test('no se pueden probar códigos de reserva sin límite', async () => {
   let last;
   for (let i = 0; i < 65; i++) last = await call('GET', `/api/bookings/50?auth=RMU-${String(i).padStart(6, '0')}`);
