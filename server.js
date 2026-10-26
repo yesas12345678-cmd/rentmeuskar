@@ -163,7 +163,10 @@ function saveAdminStoreToFile() {
       manualReviewCodes,
       fallbackFaqs
     };
-    fs.writeFileSync(adminStorePath, JSON.stringify(store, null, 2), 'utf8');
+    // Escritura atómica: se escribe un temporal y se renombra, así un corte a mitad no deja el JSON roto
+    const tmpPath = adminStorePath + '.tmp';
+    fs.writeFileSync(tmpPath, JSON.stringify(store, null, 2), 'utf8');
+    fs.renameSync(tmpPath, adminStorePath);
     console.log('[PERSISTENCE] Todos los datos del panel de administración guardados en disco (admin_store.json)');
   } catch (e) {
     console.error('[PERSISTENCE ERROR] Error al guardar admin_store:', e.message);
@@ -183,6 +186,7 @@ function loadAdminStoreFromFile() {
         fallbackVans = store.fallbackVans;
       }
       if (Array.isArray(store.fallbackReviews)) fallbackReviews = store.fallbackReviews;
+      if (Array.isArray(store.manualReviewCodes)) manualReviewCodes = store.manualReviewCodes;
       if (Array.isArray(store.fallbackFaqs)) {
         const seenFaqQ = new Set();
         fallbackFaqs = store.fallbackFaqs.filter(f => {
@@ -195,6 +199,14 @@ function loadAdminStoreFromFile() {
       console.log(`[PERSISTENCE] Carga completa desde disco (admin_store.json): ${fallbackVans.length} vans, ${fallbackBookings.length} reservas, ${fallbackFaqs.length} FAQs, ${fallbackReviews.length} reseñas.`);
     } catch (e) {
       console.error('[PERSISTENCE ERROR] Error al cargar admin_store:', e.message);
+      // Se aparta el archivo dañado para que el siguiente guardado no lo sobrescriba con datos vacíos
+      try {
+        const corruptPath = adminStorePath + '.corrupt-' + Date.now();
+        fs.renameSync(adminStorePath, corruptPath);
+        console.error('[PERSISTENCE ERROR] Copia del archivo dañado guardada en ' + corruptPath);
+      } catch (renameErr) {
+        console.error('[PERSISTENCE ERROR] No se pudo apartar el archivo dañado:', renameErr.message);
+      }
     }
   }
 }
@@ -3621,6 +3633,7 @@ app.post('/api/admin/generate-review-code', verifyAdmin, (req, res) => {
   };
 
   manualReviewCodes.push(codeObj);
+  saveAdminStoreToFile();
   res.json({ message: 'Código de reseña verificado creado.', codeObj });
 });
 
