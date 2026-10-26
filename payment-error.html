@@ -136,6 +136,13 @@
     <script>
         const urlParams = new URLSearchParams(window.location.search);
         const orderId = urlParams.get('order') || '-';
+        fetch('/api/settings').then(r => r.ok ? r.json() : {}).then(cfg => {
+        if (cfg && cfg.contact_phone) {
+            // Número de WhatsApp de Ajustes del panel en lugar del fijo
+            window.RMU_WA = String(cfg.contact_phone).replace(/\D/g, '');
+            document.querySelectorAll('a[href*="api.whatsapp.com/send"]').forEach(a => { a.href = a.href.replace(/phone=\d+/, 'phone=' + window.RMU_WA); });
+        }
+        }).catch(() => {});
         document.getElementById('order-id').innerText = orderId;
 
         if (orderId && orderId !== '-') {

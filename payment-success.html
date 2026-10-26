@@ -227,6 +227,11 @@
             // Importe de la fianza configurado en Ajustes del panel
             fetch('/api/settings').then(r => r.ok ? r.json() : {}).then(cfg => {
                 if (cfg && cfg.fianza_amount) document.querySelectorAll('.rmu-fianza').forEach(el => { el.textContent = cfg.fianza_amount; });
+                if (cfg && cfg.contact_phone) {
+                    // Número de WhatsApp de Ajustes del panel en lugar del fijo
+                    window.RMU_WA = String(cfg.contact_phone).replace(/\D/g, '');
+                    document.querySelectorAll('a[href*="api.whatsapp.com/send"]').forEach(a => { a.href = a.href.replace(/phone=\d+/, 'phone=' + window.RMU_WA); });
+                }
             }).catch(() => {});
             document.getElementById('order-id').innerText = orderId || '-';
 
@@ -299,7 +304,7 @@
 
                         // Personalizar mensaje de WhatsApp
                         const waMsg = `Hola RentMeUskar, he realizado el pago de mi reserva #${b.id || ''} (${b.van_name || 'furgoneta'}) con N.º Pedido ${orderId}. Quedo a la espera de confirmación. ¡Gracias!`;
-                        document.getElementById('btn-whatsapp').href = `https://api.whatsapp.com/send?phone=34614767411&text=${encodeURIComponent(waMsg)}`;
+                        document.getElementById('btn-whatsapp').href = `https://api.whatsapp.com/send?phone=${window.RMU_WA || '34614767411'}&text=${encodeURIComponent(waMsg)}`;
                     }
                 }
             } catch (err) {
