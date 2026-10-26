@@ -1610,6 +1610,12 @@ const initApp = () => {
             return;
         }
 
+        // Mismo día: la devolución debe ser posterior a la recogida (el servidor también lo comprueba)
+        if (end.getTime() === start.getTime() && pickupTimeStr && returnTimeStr && returnTimeStr <= pickupTimeStr) {
+            alert('Si recoges y devuelves el mismo día, la hora de devolución debe ser posterior a la de recogida.');
+            return;
+        }
+
         const diffTime = end - start;
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
         const days = diffDays > 0 ? diffDays : 1;
