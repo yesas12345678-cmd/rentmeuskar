@@ -40,6 +40,13 @@ async function call(method, url, body, token) {
   return { status: res.status, data };
 }
 
+// Un inicio de sesión por cuenta: el servidor limita los logins por IP y las pruebas comparten IP
+const tokens = {};
+async function login(email, password) {
+  if (!tokens[email]) tokens[email] = (await call('POST', '/api/auth/login', { email, password })).data.token;
+  return tokens[email];
+}
+
 const booking = (from, to, extra = {}) => ({
   name: 'Cliente Test', van_type: 'medium', van_name: 'x', pickup_date: from, pickup_time: '09:00',
   return_date: to, return_time: '09:00', days: 1, total_price: 1, rental_mode: 'sin', ...extra
@@ -127,8 +134,8 @@ test('reservas: precio del servidor, sin sesión no se reserva y nadie ve las de
 });
 
 test('no se reserva en fechas ocupadas ni en bloqueos del admin', async () => {
-  const token = (await call('POST', '/api/auth/login', CLIENT)).data.token;
-  const admin = (await call('POST', '/api/auth/login', { email: 'zvaito', password: ADMIN_PASSWORD })).data.token;
+  const token = await login(CLIENT.email, CLIENT.password);
+  const admin = await login('zvaito', ADMIN_PASSWORD);
   await call('POST', '/api/blockages', { van_type: 'medium', start_date: futureDate(60), end_date: futureDate(65), reason: 'Mantenimiento' }, admin);
   const blocked = await call('POST', '/api/redsys/process-test-payment', {
     payMethod: 'card', cardDetails: { cardNumber: '4548810000000003' }, bookingData: booking(futureDate(61), futureDate(62))
@@ -137,7 +144,7 @@ test('no se reserva en fechas ocupadas ni en bloqueos del admin', async () => {
 });
 
 test('cinco pagos simultáneos para las mismas fechas: solo se acepta uno', async () => {
-  const token = (await call('POST', '/api/auth/login', CLIENT)).data.token;
+  const token = await login(CLIENT.email, CLIENT.password);
   const attempt = () => call('POST', '/api/redsys/process-test-payment', {
     payMethod: 'card', cardDetails: { cardNumber: '4548810000000003' }, bookingData: booking(futureDate(90), futureDate(92))
   }, token);
@@ -146,13 +153,13 @@ test('cinco pagos simultáneos para las mismas fechas: solo se acepta uno', asyn
 });
 
 test('no se reserva una furgoneta en borrador', async () => {
-  const token = (await call('POST', '/api/auth/login', CLIENT)).data.token;
+  const token = await login(CLIENT.email, CLIENT.password);
   const res = await call('POST', '/api/bookings', booking(futureDate(100), futureDate(101), { van_type: 'borrador' }), token);
   assert.equal(res.status, 400);
 });
 
 test('el perfil no puede quedarse con el DNI o teléfono de otra cuenta', async () => {
-  const token = (await call('POST', '/api/auth/login', { email: 'otro@example.com', password: 'OtraClave!2030' })).data.token;
+  const token = await login('otro@example.com', 'OtraClave!2030');
   assert.equal((await call('PUT', '/api/auth/me', { dni: '00000000T' }, token)).status, 400);
   assert.equal((await call('PUT', '/api/auth/me', { phone: '600000001' }, token)).status, 400);
   assert.equal((await call('PUT', '/api/auth/me', { name: 'Nombre Nuevo' }, token)).status, 200);
@@ -160,7 +167,7 @@ test('el perfil no puede quedarse con el DNI o teléfono de otra cuenta', async 
 });
 
 test('no se aceptan fechas pasadas ni horas manipuladas', async () => {
-  const token = (await call('POST', '/api/auth/login', CLIENT)).data.token;
+  const token = await login(CLIENT.email, CLIENT.password);
   assert.equal((await call('POST', '/api/bookings', booking('2020-01-01', '2020-01-02'), token)).status, 400);
   assert.equal((await call('POST', '/api/bookings', booking(futureDate(80), futureDate(81), { pickup_time: '<img src=x>' }), token)).status, 400);
   // Mismo día con la devolución antes de la recogida
@@ -201,7 +208,7 @@ test('una petición demasiado grande devuelve 413, no 500', async () => {
 });
 
 test('ajustes: se normalizan teléfono y fianza y se rechazan valores no válidos', async () => {
-  const admin = (await call('POST', '/api/auth/login', { email: 'zvaito', password: ADMIN_PASSWORD })).data.token;
+  const admin = await login('zvaito', ADMIN_PASSWORD);
   const ok = await call('PUT', '/api/settings', { contact_phone: '614 767 411', fianza_amount: '450' }, admin);
   assert.equal(ok.status, 200);
   assert.equal(ok.data.settings.contact_phone, '34614767411');
@@ -230,7 +237,7 @@ test('un pago que llega tarde se registra aunque las fechas ya estén ocupadas, 
   });
   assert.equal(res.status, 200);
   await call('POST', '/api/redsys/cancel-payment', { orderId: order });
-  const admin = (await call('POST', '/api/auth/login', { email: 'zvaito', password: ADMIN_PASSWORD })).data.token;
+  const admin = await login('zvaito', ADMIN_PASSWORD);
   const booking = await call('GET', '/api/bookings/50', null, admin);
   assert.equal(booking.data.payment_status, 'paid');
   // Firma incorrecta: se rechaza
@@ -242,12 +249,12 @@ test('un pago que llega tarde se registra aunque las fechas ya estén ocupadas, 
 });
 
 test('cambio de credenciales de admin con tipos incorrectos devuelve 400', async () => {
-  const admin = (await call('POST', '/api/auth/login', { email: 'zvaito', password: ADMIN_PASSWORD })).data.token;
+  const admin = await login('zvaito', ADMIN_PASSWORD);
   assert.equal((await call('POST', '/api/admin/request-credential-change-code', { new_username: 123, new_password: ['x'] }, admin)).status, 400);
 });
 
 test('fotos de inspección: se guardan sin BD y no quedan archivos huérfanos si la reserva no existe', async () => {
-  const admin = (await call('POST', '/api/auth/login', { email: 'zvaito', password: ADMIN_PASSWORD })).data.token;
+  const admin = await login('zvaito', ADMIN_PASSWORD);
   const upload = (id) => {
     const form = new FormData();
     form.append('type', 'before');
@@ -273,13 +280,26 @@ test('fotos de inspección: se guardan sin BD y no quedan archivos huérfanos si
 });
 
 test('con conductor: km y horas de espera se validan y se guardan como números', async () => {
-  const token = (await call('POST', '/api/auth/login', { email: 'otro@example.com', password: 'OtraClave!2030' })).data.token;
+  const token = await login('otro@example.com', 'OtraClave!2030');
   assert.equal((await call('POST', '/api/bookings', booking(futureDate(130), futureDate(130), { pickup_time: '09:00', return_time: '12:00', rental_mode: 'con', estimated_kms: 'abc', waiting_hours: 1e9 }), token)).status, 400);
   assert.equal((await call('POST', '/api/bookings', booking(futureDate(130), futureDate(130), { rental_mode: 'otro' }), token)).status, 400);
   const ok = await call('POST', '/api/bookings', booking(futureDate(131), futureDate(131), { pickup_time: '09:00', return_time: '12:00', rental_mode: 'con', estimated_kms: '50', waiting_hours: '1.5' }), token);
   assert.equal(ok.status, 201);
   assert.equal(ok.data.booking.estimated_kms, 50);
   assert.equal(ok.data.booking.waiting_hours, 1.5);
+});
+
+test('la reserva guarda el contacto de la cuenta, no uno enviado en la petición', async () => {
+  const token = await login(CLIENT.email, CLIENT.password);
+  const res = await call('POST', '/api/redsys/process-test-payment', {
+    payMethod: 'card', cardDetails: { cardNumber: '4548810000000003' },
+    bookingData: booking(futureDate(140), futureDate(141), { client_email: 'tercero@example.com', client_phone: 12345, client_dni: 'x'.repeat(500) })
+  }, token);
+  assert.equal(res.status, 201);
+  const admin = await login('zvaito', ADMIN_PASSWORD);
+  const saved = (await call('GET', `/api/bookings/${res.data.booking.id}`, null, admin)).data;
+assert.equal(saved.client_email, CLIENT.email);
+  assert.equal(saved.client_dni, '00000000T');
 });
 
 test('no se pueden probar códigos de reserva sin límite', async () => {

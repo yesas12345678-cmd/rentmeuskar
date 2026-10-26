@@ -1988,9 +1988,7 @@ app.post('/api/bookings', async (req, res) => {
   let realPlate = '';
   let realM3 = '';
   // Datos de contacto calculados antes de tocar la BD para que el modo sin BD también los guarde
-  const clientEmail = String(req.body.client_email || requester.email || '').trim().toLowerCase();
-  const clientPhone = String(req.body.client_phone || requester.phone || '').trim();
-  const clientDni = String(req.body.client_dni || requester.dni || '').trim().toUpperCase();
+  const { email: clientEmail, phone: clientPhone, dni: clientDni } = bookingContact(requester, req.body);
   try {
     // Obtener matrícula y volumen de la base de datos para la furgoneta
     try {
@@ -2507,6 +2505,21 @@ function parseBookingDate(dateStr) {
 
 // Precio calculado en el servidor con la misma fórmula que la calculadora de app.js:
 // el total enviado por el navegador nunca se usa para cobrar
+// Contacto que se guarda en la reserva: el de la cuenta del cliente (el cuerpo de la petición solo
+// cubre huecos o lo usa el admin). Así nadie dirige los correos de la reserva a un tercero, y las
+// longitudes caben en las columnas (un valor largo hacía fallar el INSERT).
+function bookingContact(user, body) {
+  const pick = (own, given) => {
+    const value = user && !user.isAdmin && own ? own : given;
+    return typeof value === 'string' || typeof value === 'number' ? String(value).trim() : '';
+  };
+  return {
+    email: pick(user && user.email, body && body.client_email).toLowerCase().slice(0, 255),
+    phone: pick(user && user.phone, body && body.client_phone).slice(0, 50),
+    dni: pick(user && user.dni, body && body.client_dni).toUpperCase().slice(0, 50)
+  };
+}
+
 async function computeBookingQuote(bookingData) {
   const vanType = bookingData && bookingData.van_type;
   if (!vanType) return { error: 'Falta el tipo de furgoneta.' };
@@ -2845,9 +2858,9 @@ app.post('/api/redsys/create-payment', async (req, res) => {
       van_m3: quote.van.m3 || '',
       review_code: generateReviewCode(),
       payment_method: isBizum ? 'Bizum (Redsys)' : 'Tarjeta (Redsys)',
-      client_email: (bookingData.client_email || (authUser && authUser.email) || '').trim().toLowerCase() || null,
-      client_phone: (bookingData.client_phone || (authUser && authUser.phone) || '').trim() || null,
-      client_dni: (bookingData.client_dni || (authUser && authUser.dni) || '').trim().toUpperCase() || null
+      client_email: bookingContact(authUser, bookingData).email || null,
+      client_phone: bookingContact(authUser, bookingData).phone || null,
+      client_dni: bookingContact(authUser, bookingData).dni || null
     });
 
     const redsysUrl = process.env.REDSYS_URL || 'https://sis-t.redsys.es:25443/sis/realizarPago';
@@ -2983,9 +2996,7 @@ const handleTestPayment = async (req, res) => {
 
     // Resolver usuario autenticado y detalles de contacto
     const authUser = await getAuthUser(req);
-    const clientEmail = (bookingData.client_email || (authUser && authUser.email) || '').trim().toLowerCase();
-    const clientPhone = (bookingData.client_phone || (authUser && authUser.phone) || '').trim();
-    const clientDni = (bookingData.client_dni || (authUser && authUser.dni) || '').trim().toUpperCase();
+    const { email: clientEmail, phone: clientPhone, dni: clientDni } = bookingContact(authUser, bookingData);
 
     // Validar user_id frente a tabla users (solo el usuario autenticado, nunca el enviado en el cuerpo)
     let validUserId = null;
