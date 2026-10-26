@@ -1800,6 +1800,8 @@ const initApp = () => {
                     : (finalBookingData.extras.length > 0 ? '\n- *Extras:* ' + finalBookingData.extras.join(', ') : '');
 
                 let messageText = '';
+                // Importe calculado por el servidor (el que queda guardado en la solicitud)
+                const requestTotalText = data.booking && data.booking.total_price ? `${parseFloat(data.booking.total_price).toFixed(2)} €` : totalPriceText;
                 if (isCon) {
                     messageText = `Hola *RentMeUskar*, me gustaría solicitar una reserva de furgoneta *CON CONDUCTOR*:\n\n` +
                         `*Solicitud de Reserva #${data.booking.id}*\n` +
@@ -1809,7 +1811,7 @@ const initApp = () => {
                         `- *Devolución:* ${returnDateStr} a las ${returnTimeStr}\n` +
                         `- *Trayecto:* ${finalBookingData.estimated_kms} km estimados\n` +
                         `- *Espera:* ${finalBookingData.waiting_hours} h de espera\n\n` +
-                        `*Precio estimado total:* ${totalPriceText}\n` +
+                        `*Precio estimado total:* ${requestTotalText}\n` +
                         `*Fianza:* No aplica (Alquiler con chofer)\n\n` +
                         `¿Tenéis disponibilidad para este servicio? Quedo a la espera de confirmación.`;
                 } else {
@@ -1822,14 +1824,21 @@ const initApp = () => {
                         `- *Recogida:* ${pickupDateStr} a las ${pickupTimeStr}\n` +
                         `- *Devolución:* ${returnDateStr} a las ${returnTimeStr}${extraDetailsText}\n` +
                         `- *Duración:* ${days} días\n\n` +
-                        `*Precio estimado total:* ${totalPriceText}\n` +
+                        `*Precio estimado total:* ${requestTotalText}\n` +
                         `*Fianza:* ${window.RMU_FIANZA || '500,00'} € (A depositar/abonar en persona al recoger el vehículo)\n\n` +
                         `(Solicitud pendiente de confirmación de disponibilidad del propietario).`;
                 }
 
                 const encodedText = encodeURIComponent(messageText);
                 const whatsappUrl = `https://api.whatsapp.com/send?phone=${CONFIG.whatsappNumber}&text=${encodedText}`;
-                window.open(whatsappUrl, '_blank');
+                // Tras esperar al servidor, Safari/iOS y algunos bloqueadores impiden abrir otra ventana:
+                // si no se abre, se va a WhatsApp desde esta misma (si no, el propietario no recibía la solicitud)
+                const waWindow = window.open(whatsappUrl, '_blank');
+                if (!waWindow) {
+                    alert(`Solicitud #${data.booking.id} registrada. Ahora te llevamos a WhatsApp para confirmarla con el propietario.`);
+                    window.location.href = whatsappUrl;
+                    return;
+                }
 
                 alert('Solicitud registrada. Se ha abierto WhatsApp para que contactes con el propietario y confirmes la reserva.');
             } catch (err) {
