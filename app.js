@@ -284,7 +284,9 @@ const initApp = () => {
 
         if (firstFutureDisabledFromStr) {
             // La fecha máxima de devolución no puede sobrepasar el día anterior al primer bloqueo
-            const firstDisabledDate = new Date(firstFutureDisabledFromStr);
+            // Fecha local (new Date('AAAA-MM-DD') sería medianoche UTC y en algunas zonas restaría un día)
+            const [fy, fm, fd] = firstFutureDisabledFromStr.split('T')[0].split('-').map(Number);
+            const firstDisabledDate = new Date(fy, fm - 1, fd);
             const maxAllowedDate = new Date(firstDisabledDate);
             maxAllowedDate.setDate(maxAllowedDate.getDate() - 1);
             const maxAllowedStr = formatDateToISO(maxAllowedDate);
