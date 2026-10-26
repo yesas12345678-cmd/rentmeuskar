@@ -2292,6 +2292,13 @@ const ADMIN_BOOKING_TEXT_LIMITS = {
   client_license_num: 100, second_driver_name: 255, second_driver_dni: 100, second_driver_phone: 100,
   second_driver_license_num: 100, fuel_out: 50, fuel_in: 50, adblue_out: 50, adblue_in: 50, payment_method: 100
 };
+const ADMIN_BOOKING_FIELD_LABELS = {
+  contract_applied_rate: 'Tarifa aplicada', client_postal_code: 'Código postal', client_city: 'Población',
+  client_province: 'Provincia', client_license_num: 'Nº de permiso', second_driver_name: 'Nombre del 2º conductor',
+  second_driver_dni: 'DNI del 2º conductor', second_driver_phone: 'Teléfono del 2º conductor',
+  second_driver_license_num: 'Permiso del 2º conductor', fuel_out: 'Combustible (entrega)', fuel_in: 'Combustible (devolución)',
+  adblue_out: 'AdBlue (entrega)', adblue_in: 'AdBlue (devolución)', payment_method: 'Forma de pago'
+};
 
 // Devuelve { updates } con los valores ya convertidos, o { error } si alguno no es válido
 function parseAdminBookingUpdates(body) {
@@ -2309,7 +2316,7 @@ function parseAdminBookingUpdates(body) {
     if (type === 'text') {
       if (!empty && typeof raw !== 'string') return { error: `Valor no válido para ${field}.` };
       const maxLength = ADMIN_BOOKING_TEXT_LIMITS[field] || 500;
-      if (!empty && raw.trim().length > maxLength) return { error: `El campo ${field} admite hasta ${maxLength} caracteres.` };
+      if (!empty && raw.trim().length > maxLength) return { error: `El campo «${ADMIN_BOOKING_FIELD_LABELS[field] || field}» admite hasta ${maxLength} caracteres.` };
       updates[field] = empty ? null : raw.trim();
     } else if (type === 'date') {
       if (!empty && !/^\d{4}-\d{2}-\d{2}$/.test(String(raw))) return { error: `Fecha no válida en ${field}.` };

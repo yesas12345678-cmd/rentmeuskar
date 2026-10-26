@@ -313,7 +313,7 @@ test('datos del contrato que no caben en la columna se rechazan con un mensaje c
   const admin = await login('zvaito', ADMIN_PASSWORD);
   const long = await call('PUT', '/api/bookings/50', { client_postal_code: '1'.repeat(60) }, admin);
   assert.equal(long.status, 400);
-  assert.match(long.data.error, /client_postal_code/);
+  assert.match(long.data.error, /Código postal/);
   assert.equal((await call('PUT', '/api/bookings/50', { km_out: 1e12 }, admin)).status, 400);
   assert.equal((await call('PUT', '/api/bookings/50', { client_postal_code: '18830' }, admin)).status, 200);
 });

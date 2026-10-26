@@ -774,6 +774,9 @@ const initAdmin = () => {
         
         modalClientName.textContent = booking.client_name || booking.name;
         modalBookingId.textContent = `#${booking.id}`;
+        // Código que el cliente usa para opinar y para abrir contrato y factura (no se mostraba nunca)
+        const modalReviewCode = document.getElementById('modal-review-code');
+        if (modalReviewCode) modalReviewCode.textContent = booking.review_code || '-';
         
         modalStatusBadge.className = `status-badge ${booking.status}`;
         modalStatusBadge.textContent = booking.status === 'pending' ? 'Pendiente' : booking.status === 'pending_payment' ? (Date.now() - new Date(booking.created_at).getTime() > 30 * 60 * 1000 ? 'Pago no completado' : 'Esperando pago (Redsys)') : booking.status === 'paid_pending' ? 'Pendiente Aprobación (Pagada)' : booking.status === 'confirmed' ? 'Confirmado' : 'Cancelado';
