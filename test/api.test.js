@@ -372,7 +372,9 @@ test('no se reactiva una reserva cancelada si sus fechas ya están ocupadas', as
 test('si el correo no sale, registro y recuperación lo dicen en vez de dar el envío por hecho', async () => {
   const reg = await call('POST', '/api/auth/register', { name: 'Sin Correo', email: 'sincorreo@example.com', phone: '611999888', dni: '12345678Z', password: 'ClaveLarga!2030' });
   assert.equal(reg.status, 503);
-  assert.equal((await call('POST', '/api/auth/forgot-password', { email: 'sincorreo@example.com' })).status, 503);
+  assert.equal((await call('POST', '/api/auth/forgot-password', { email: 'otro@example.com' })).status, 503);
+  // Correo sin cuenta: misma respuesta de éxito, pero no se envía nada
+  assert.equal((await call('POST', '/api/auth/forgot-password', { email: 'sincorreo@example.com' })).status, 200);
 });
 
 test('editar solo el precio de una furgoneta no borra sus extras ni imágenes', async () => {

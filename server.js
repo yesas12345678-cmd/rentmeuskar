@@ -1697,6 +1697,23 @@ app.post('/api/auth/forgot-password', async (req, res) => {
     // Si la solicitud es de un usuario cliente normal (desde el formulario web), se envía al correo introducido
     const destinationAddress = cleanEmail;
 
+    // Solo se envía a cuentas que existen (si no, cualquiera podía mandar correos nuestros a cualquier
+    // dirección); la respuesta es la misma para no revelar qué correos están registrados
+    let accountExists = false;
+    try {
+      const r = await pool.query('SELECT 1 FROM users WHERE LOWER(email) = $1', [cleanEmail]);
+      accountExists = r.rowCount > 0;
+    } catch (e) {
+      accountExists = fallbackUsers.some(u => (u.email || '').toLowerCase() === cleanEmail);
+    }
+    if (!accountExists) {
+      delete pendingPasswordResets[cleanEmail];
+      return res.json({
+        success: true,
+        message: `Hemos enviado un código de verificación a ${destinationAddress} para restablecer tu contraseña.`
+      });
+    }
+
     if (mailTransporter) {
       try {
         await mailTransporter.sendMail({
