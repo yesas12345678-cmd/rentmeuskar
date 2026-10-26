@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <!-- Página privada (panel, documentos de cliente o resultado de pago): fuera de buscadores -->
     <meta name="robots" content="noindex, nofollow">
+    <title>Factura | RentMeUskar</title>
     <link rel="icon" type="image/png" href="/assets/favicon.png">
     <link rel="shortcut icon" type="image/png" href="/assets/favicon.png">
     <link rel="apple-touch-icon" href="/assets/favicon.png">
@@ -372,6 +373,8 @@
                 })
                 .then(booking => {
                     document.getElementById('invoice-id').textContent = `#RMU-FAC-${booking.id}`;
+                    // Nombre propuesto al guardar en PDF
+                    document.title = `Factura RMU-FAC-${booking.id} | RentMeUskar`;
                     
                     const formatTimestamp = (timestampStr) => {
                         const date = new Date(timestampStr);

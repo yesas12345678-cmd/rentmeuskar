@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <!-- Página privada (panel, documentos de cliente o resultado de pago): fuera de buscadores -->
     <meta name="robots" content="noindex, nofollow">
+    <title>Panel de administración | RentMeUskar</title>
     <link rel="icon" type="image/png" href="/assets/favicon.png">
     <link rel="shortcut icon" type="image/png" href="/assets/favicon.png">
     <link rel="apple-touch-icon" href="/assets/favicon.png">
@@ -756,12 +757,12 @@
             <form id="admin-login-form">
                 <div class="custom-form-group" style="margin-bottom: 1rem; text-align: left;">
                     <label style="display: block; font-size: 0.8rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 0.3rem; font-weight: 600; letter-spacing: 0.05em;">Usuario</label>
-                    <input type="text" id="admin-username" class="search-input" style="padding-left: 1rem;" required placeholder="">
+                    <input type="text" id="admin-username" aria-label="Usuario" autocomplete="username" class="search-input" style="padding-left: 1rem;" required placeholder="">
                 </div>
                 <div class="custom-form-group" style="margin-bottom: 1.5rem; text-align: left;">
                     <label style="display: block; font-size: 0.8rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 0.3rem; font-weight: 600; letter-spacing: 0.05em;">Contraseña</label>
                     <div style="position: relative; display: flex; align-items: center; width: 100%;">
-                        <input type="password" id="admin-password" class="search-input" style="padding-left: 1rem; padding-right: 2.5rem; width: 100%;" required placeholder="">
+                        <input type="password" id="admin-password" aria-label="Contraseña" autocomplete="current-password" class="search-input" style="padding-left: 1rem; padding-right: 2.5rem; width: 100%;" required placeholder="">
                         <i class="fa-solid fa-eye toggle-password-btn" onclick="togglePasswordVisibility('admin-password', this)" title="Mostrar/Ocultar contraseña" style="position: absolute; right: 0.8rem; color: var(--text-secondary, #718096); cursor: pointer; font-size: 1rem; transition: color 0.2s; user-select: none;"></i>
                     </div>
                 </div>
@@ -1697,7 +1698,7 @@
                     </div>
                     <div>
                         <label style="display: block; font-size: 0.8rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 0.3rem; font-weight: 600; letter-spacing: 0.05em;">Combustible</label>
-                        <select id="van-form-fuel-type" class="search-input" style="padding-left: 1rem; background: #0f172a; border: 1px solid rgba(255,255,255,0.1); height: 42px;">
+                        <select id="van-form-fuel-type" aria-label="Combustible" class="search-input" style="padding-left: 1rem; background: #0f172a; border: 1px solid rgba(255,255,255,0.1); height: 42px;">
                             <option value="GASOIL">Gasoil</option>
                             <option value="GASOLINA">Gasolina</option>
                             <option value="ELÉCTRICO">Eléctrico</option>
@@ -1747,12 +1748,12 @@
                         </div>
                         <div>
                             <label style="font-size: 0.75rem; color: var(--text-secondary); display: block; margin-bottom: 0.2rem;">Tipo de Cálculo</label>
-                            <select id="van-form-extra-type" class="select-filter" style="width: 100%; height: 42px; background: rgba(7, 14, 36, 0.5); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: var(--border-radius-sm); color: #fff;">
+                            <select id="van-form-extra-type" aria-label="Tipo de cálculo del extra" class="select-filter" style="width: 100%; height: 42px; background: rgba(7, 14, 36, 0.5); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: var(--border-radius-sm); color: #fff;">
                                 <option value="daily">Por día</option>
                                 <option value="once">Pago único</option>
                             </select>
                         </div>
-                        <button type="button" class="btn btn-primary" id="btn-add-van-extra" style="height: 42px; padding: 0 1rem; font-weight: 700;">
+                        <button type="button" class="btn btn-primary" id="btn-add-van-extra" aria-label="Añadir extra" style="height: 42px; padding: 0 1rem; font-weight: 700;">
                             <i class="fa-solid fa-plus"></i>
                         </button>
                     </div>
@@ -1796,14 +1797,14 @@
 
                 <div class="custom-form-group" style="margin-bottom: 1.5rem; text-align: left;">
                     <label style="display: block; font-size: 0.8rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 0.3rem; font-weight: 600; letter-spacing: 0.05em;">Estado del Vehículo</label>
-                    <select id="van-form-status" class="select-filter" style="width: 100%; height: 42px; background: rgba(7, 14, 36, 0.5); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: var(--border-radius-sm); color: #fff;">
+                    <select id="van-form-status" aria-label="Estado del vehículo" class="select-filter" style="width: 100%; height: 42px; background: rgba(7, 14, 36, 0.5); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: var(--border-radius-sm); color: #fff;">
                         <option value="active">Activo</option>
                         <option value="inactive">Borrador</option>
                     </select>
                 </div>
                 <div class="custom-form-group" style="margin-bottom: 1.5rem; text-align: left;">
                     <label style="display: block; font-size: 0.8rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 0.3rem; font-weight: 600; letter-spacing: 0.05em;">Imágenes del Vehículo</label>
-                    <input type="file" id="van-form-images-input" multiple accept="image/*" style="opacity: 0; width: 1px; height: 1px; position: absolute; overflow: hidden; z-index: -1;">
+                    <input type="file" id="van-form-images-input" aria-label="Imágenes del vehículo" multiple accept="image/*" style="opacity: 0; width: 1px; height: 1px; position: absolute; overflow: hidden; z-index: -1;">
                     <button type="button" class="btn btn-secondary" id="van-btn-upload-trigger" style="width: 100%; margin-bottom: 0.75rem; background: rgba(255,255,255,0.05);">
                         <i class="fa-solid fa-cloud-arrow-up"></i> Seleccionar Imágenes
                     </button>
