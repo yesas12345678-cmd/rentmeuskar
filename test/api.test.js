@@ -48,7 +48,8 @@ before(async () => {
   const store = {
     fallbackUsers: [{ id: 1, name: 'Cliente Test', email: CLIENT.email, password: scryptHash(CLIENT.password), phone: '600000001', dni: '00000000T' }],
     fallbackBookings: [], fallbackBlockages: [], fallbackSettings: {}, fallbackReviews: [], manualReviewCodes: [], fallbackFaqs: [],
-    fallbackVans: [{ id: 1, van_type: 'medium', name: 'Furgoneta Test', plate: '0000 TST', m3: '8m³', price_sin: 100, min_price_con: 50, km_price_con: 1, status: 'active', images: [], custom_extras: [{ name: 'GPS Navegador', price: 5, type: 'daily' }] }]
+    fallbackVans: [{ id: 1, van_type: 'medium', name: 'Furgoneta Test', plate: '0000 TST', m3: '8m³', price_sin: 100, min_price_con: 50, km_price_con: 1, status: 'active', images: [], custom_extras: [{ name: 'GPS Navegador', price: 5, type: 'daily' }] },
+      { id: 2, van_type: 'borrador', name: 'Furgoneta Borrador', plate: '0001 TST', m3: '8m³', price_sin: 50, min_price_con: 40, km_price_con: 1, status: 'draft', images: [], custom_extras: [] }]
   };
   fs.writeFileSync(path.join(tmpDir, 'admin_store.json'), JSON.stringify(store));
 
@@ -134,6 +135,12 @@ test('cinco pagos simultáneos para las mismas fechas: solo se acepta uno', asyn
   }, token);
   const results = await Promise.all([attempt(), attempt(), attempt(), attempt(), attempt()]);
   assert.equal(results.filter(r => r.status === 201).length, 1);
+});
+
+test('no se reserva una furgoneta en borrador', async () => {
+  const token = (await call('POST', '/api/auth/login', CLIENT)).data.token;
+  const res = await call('POST', '/api/bookings', booking(futureDate(100), futureDate(101), { van_type: 'borrador' }), token);
+  assert.equal(res.status, 400);
 });
 
 test('no se aceptan fechas pasadas ni horas manipuladas', async () => {

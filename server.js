@@ -2454,6 +2454,8 @@ async function computeBookingQuote(bookingData) {
   }
   if (!van) van = fallbackVans.find(v => v.van_type === vanType) || null;
   if (!van) return { error: 'La furgoneta seleccionada no existe.' };
+  // Solo se reservan furgonetas activas (un borrador no aparece en la web, pero se podía pedir por la API)
+  if (van.status && van.status !== 'active') return { error: 'La furgoneta seleccionada no está disponible.' };
 
   const start = parseBookingDate(bookingData.pickup_date);
   const end = parseBookingDate(bookingData.return_date);
