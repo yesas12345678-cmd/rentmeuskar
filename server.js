@@ -1258,8 +1258,11 @@ app.post('/api/auth/register', async (req, res) => {
   if (!areStrings(name, email, password) || !areOptionalStrings(phone, dni)) {
     return res.status(400).json({ error: 'Los datos del formulario no son válidos.' });
   }
-  if (!EMAIL_PATTERN.test(email.trim())) {
+  if (!EMAIL_PATTERN.test(email.trim()) || email.trim().length > 254) {
     return res.status(400).json({ error: 'El correo electrónico no tiene un formato válido.' });
+  }
+  if (name.trim().length > 100 || (phone && phone.trim().length > 20) || password.length > 200) {
+    return res.status(400).json({ error: 'Alguno de los datos es demasiado largo.' });
   }
   if (password.length < MIN_PASSWORD_LENGTH) {
     return res.status(400).json({ error: `La contraseña debe tener al menos ${MIN_PASSWORD_LENGTH} caracteres.` });
