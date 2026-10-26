@@ -2760,17 +2760,20 @@ const initApp = () => {
                 const faqs = await res.json();
                 if (faqs.length > 0) {
                     faqListContainer.innerHTML = '';
+                    // Textos de la FAQ (escritos en el panel) escapados antes de usar innerHTML
+                    const esc = (value) => String(value === undefined || value === null ? '' : value)
+                        .replace(/[&<>'"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[c]));
                     faqs.forEach((faq) => {
                         const item = document.createElement('div');
                         item.className = 'faq-item reveal';
                         item.id = `faq-${faq.id}`;
                         item.innerHTML = `
                             <button class="faq-question" id="faq-q-${faq.id}">
-                                <span>${faq.question}</span>
+                                <span>${esc(faq.question)}</span>
                                 <i class="fa-solid fa-chevron-down faq-toggle-icon"></i>
                             </button>
                             <div class="faq-answer" id="faq-a-${faq.id}">
-                                <p>${faq.answer}</p>
+                                <p>${esc(faq.answer)}</p>
                             </div>
                         `;
                         faqListContainer.appendChild(item);
