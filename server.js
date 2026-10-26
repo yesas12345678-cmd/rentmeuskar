@@ -2367,41 +2367,58 @@ app.put('/api/bookings/:id', verifyAdmin, async (req, res) => {
 });
 
 // 9. Subir fotos antes / después para una reserva (Protegido por Administrador con validación de tipo/tamaño)
+// Borra del disco las fotos subidas en una petición que no llega a guardarse
+function discardUploadedFiles(files) {
+  (files || []).forEach(file => fs.unlink(file.path, () => {}));
+}
+
 app.post('/api/bookings/:id/photos', verifyAdmin, upload.array('photos', 10), async (req, res) => {
   const { id } = req.params;
   const { type } = req.body; // 'before' o 'after'
 
   if (!type || (type !== 'before' && type !== 'after')) {
+    discardUploadedFiles(req.files);
     return res.status(400).json({ error: "El campo 'type' debe ser 'before' o 'after'." });
   }
 
   if (!req.files || req.files.length === 0) {
     return res.status(400).json({ error: 'No se han subido fotos.' });
   }
+  if (!/^\d+$/.test(id)) {
+    discardUploadedFiles(req.files);
+    return res.status(404).json({ error: 'Reserva no encontrada.' });
+  }
 
   const paths = req.files.map(file => '/uploads/' + file.filename);
+  const column = type === 'before' ? 'photos_before' : 'photos_after';
 
   try {
-    let query;
-    if (type === 'before') {
-      query = 'UPDATE bookings SET photos_before = array_cat(photos_before, $1) WHERE id = $2 RETURNING *';
-    } else {
-      query = 'UPDATE bookings SET photos_after = array_cat(photos_after, $1) WHERE id = $2 RETURNING *';
-    }
-
-    const result = await pool.query(query, [paths, id]);
+    const result = await pool.query(
+      `UPDATE bookings SET ${column} = array_cat(${column}, $1) WHERE id = $2 RETURNING *`,
+      [paths, id]
+    );
 
     if (result.rowCount === 0) {
+      discardUploadedFiles(req.files);
       return res.status(404).json({ error: 'Reserva no encontrada.' });
     }
 
+    const fBooking = fallbackBookings.find(b => b.id == id);
+    if (fBooking) fBooking[column] = result.rows[0][column];
     res.json({
       message: 'Fotos subidas correctamente.',
       booking: result.rows[0]
     });
   } catch (err) {
-    console.error('Error al guardar fotos de reserva:', err);
-    res.status(500).json({ error: 'Error del servidor al guardar las fotos.' });
+    console.warn('Base de datos offline al guardar fotos, usando fallback:', err.message);
+    const fBooking = fallbackBookings.find(b => b.id == id);
+    if (!fBooking) {
+      discardUploadedFiles(req.files);
+      return res.status(404).json({ error: 'Reserva no encontrada.' });
+    }
+    fBooking[column] = [...(fBooking[column] || []), ...paths];
+    saveAdminStoreToFile();
+    res.json({ message: 'Fotos subidas correctamente (modo offline).', booking: fBooking });
   }
 });
 

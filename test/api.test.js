@@ -246,6 +246,24 @@ test('cambio de credenciales de admin con tipos incorrectos devuelve 400', async
   assert.equal((await call('POST', '/api/admin/request-credential-change-code', { new_username: 123, new_password: ['x'] }, admin)).status, 400);
 });
 
+test('fotos de inspección: se guardan sin BD y no quedan archivos huérfanos si la reserva no existe', async () => {
+  const admin = (await call('POST', '/api/auth/login', { email: 'zvaito', password: ADMIN_PASSWORD })).data.token;
+  const upload = (id) => {
+    const form = new FormData();
+    form.append('type', 'before');
+    form.append('photos', new Blob([Buffer.from('89504e47', 'hex')], { type: 'image/png' }), 'foto.png');
+    return fetch(`${BASE}/api/bookings/${id}/photos`, { method: 'POST', headers: { Authorization: `Bearer ${admin}` }, body: form });
+  };
+  const uploadsDir = path.join(tmpDir, 'uploads');
+  const ok = await upload(50);
+  assert.equal(ok.status, 200);
+  assert.equal((await ok.json()).booking.photos_before.length, 1);
+  const before = fs.readdirSync(uploadsDir).length;
+  assert.equal((await upload(9999)).status, 404);
+  await new Promise(r => setTimeout(r, 200));
+  assert.equal(fs.readdirSync(uploadsDir).length, before);
+});
+
 test('no se pueden probar códigos de reserva sin límite', async () => {
   let last;
   for (let i = 0; i < 65; i++) last = await call('GET', `/api/bookings/50?auth=RMU-${String(i).padStart(6, '0')}`);

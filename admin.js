@@ -1029,7 +1029,7 @@ const initAdmin = () => {
             showToast('Fotos subidas e inspección registrada.', 'success');
         } catch (err) {
             console.error(err);
-            showToast('Error al subir las imágenes.', 'error');
+            showToast(err.message || 'Error al subir las imágenes.', 'error');
         } finally {
             triggerBtn.disabled = false;
             triggerBtn.innerHTML = originalBtnHtml;
