@@ -2763,9 +2763,20 @@ async function sendBookingPaidEmails(booking, { dateConflict = false } = {}) {
   }
 }
 
+// El TPV simulado da reservas por pagadas sin cobrar: nunca en el dominio real, aunque se active por error
+function testPaymentsEnabled() {
+  if (process.env.ENABLE_TEST_PAYMENTS !== 'true') return false;
+  return !/^https?:\/\/(www\.)?rentmeuskar\.com\/?$/i.test(String(process.env.BASE_URL || '').trim());
+}
+if (process.env.ENABLE_TEST_PAYMENTS === 'true') {
+  console.warn(testPaymentsEnabled()
+    ? '[PAGOS] ENABLE_TEST_PAYMENTS=true: TPV SIMULADO ACTIVO. Las reservas se marcan como pagadas sin cobrar. Solo para pruebas.'
+    : '[PAGOS] ENABLE_TEST_PAYMENTS=true ignorado: BASE_URL es el dominio real.');
+}
+
 // Modo de cobro online: 'test' (TPV simulado), 'redsys' (pasarela real) u 'off'
 function getPaymentMode() {
-  if (process.env.ENABLE_TEST_PAYMENTS === 'true') return 'test';
+  if (testPaymentsEnabled()) return 'test';
   if (process.env.REDSYS_MERCHANT_CODE && process.env.REDSYS_SECRET_KEY) return 'redsys';
   return 'off';
 }
@@ -2991,7 +3002,7 @@ app.post('/api/redsys/create-payment', async (req, res) => {
 const handleTestPayment = async (req, res) => {
   try {
     // El TPV simulado marca reservas como pagadas sin cobrar: solo se activa expresamente (local/pruebas)
-    if (process.env.ENABLE_TEST_PAYMENTS !== 'true') {
+    if (!testPaymentsEnabled()) {
       return res.status(503).json({ error: 'El pago online no está disponible en este momento. Contacta con nosotros por WhatsApp o teléfono para completar tu reserva.' });
     }
 
