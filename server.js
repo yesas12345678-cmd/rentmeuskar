@@ -4319,6 +4319,10 @@ app.post('/api/faqs', verifyAdmin, async (req, res) => {
   if (!question || !answer) {
     return res.status(400).json({ error: 'La pregunta y respuesta son obligatorias.' });
   }
+  if (!areStrings(question, answer) || question.length > 500 || answer.length > 5000 ||
+      (display_order !== undefined && display_order !== '' && !(Math.abs(Number(display_order)) <= 100000))) {
+    return res.status(400).json({ error: 'La pregunta (hasta 500 caracteres), la respuesta (hasta 5000) o el orden no son válidos.' });
+  }
   
   try {
     const query = `
@@ -4351,6 +4355,10 @@ app.put('/api/faqs/:id', verifyAdmin, async (req, res) => {
   const { question, answer, display_order } = req.body;
   if (!question || !answer) {
     return res.status(400).json({ error: 'La pregunta y respuesta son obligatorias.' });
+  }
+  if (!areStrings(question, answer) || question.length > 500 || answer.length > 5000 ||
+      (display_order !== undefined && display_order !== '' && !(Math.abs(Number(display_order)) <= 100000))) {
+    return res.status(400).json({ error: 'La pregunta (hasta 500 caracteres), la respuesta (hasta 5000) o el orden no son válidos.' });
   }
   
   try {

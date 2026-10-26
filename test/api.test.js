@@ -336,6 +336,13 @@ test('furgonetas con identificador o textos no válidos se rechazan', async () =
   assert.equal((await call('POST', '/api/vans', van, admin)).status, 201);
 });
 
+test('FAQ con tipos u orden no válidos se rechazan', async () => {
+  const admin = await login('zvaito', ADMIN_PASSWORD);
+  assert.equal((await call('POST', '/api/faqs', { question: ['x'], answer: 'y' }, admin)).status, 400);
+  assert.equal((await call('POST', '/api/faqs', { question: 'x', answer: 'y', display_order: 1e12 }, admin)).status, 400);
+  assert.equal((await call('POST', '/api/faqs', { question: '¿Prueba?', answer: 'Sí', display_order: 9 }, admin)).status, 201);
+});
+
 test('no se pueden probar códigos de reserva sin límite', async () => {
   let last;
   for (let i = 0; i < 65; i++) last = await call('GET', `/api/bookings/50?auth=RMU-${String(i).padStart(6, '0')}`);
