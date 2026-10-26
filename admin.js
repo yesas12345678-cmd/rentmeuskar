@@ -289,7 +289,7 @@ const initAdmin = () => {
             const data = await response.json();
             if (response.ok && data.user && data.user.is_admin) {
                 localStorage.setItem('admin_token', data.token);
-                showToast('Bienvenido, Manuel.', 'success');
+                showToast('Sesión iniciada. ¡Bienvenido!', 'success');
                 checkAuth();
             } else {
                 showToast(data.error || 'Credenciales inválidas.', 'error');
