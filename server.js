@@ -3220,7 +3220,26 @@ app.get('/api/admin/vans', verifyAdmin, async (req, res) => {
 });
 
 // 3. Crear una nueva furgoneta
+// Precios de una furgoneta: números válidos, no negativos y tarifa diaria mayor que cero
+function vanPriceError(body) {
+  const fields = { price_sin: 'Tarifa diaria', min_price_con: 'Tarifa mínima con conductor', km_price_con: 'Precio por km', waiting_hour_price: 'Hora de espera' };
+  for (const [field, label] of Object.entries(fields)) {
+    if (body[field] === undefined || body[field] === '') continue;
+    const value = Number(String(body[field]).replace(',', '.'));
+    if (!Number.isFinite(value) || value < 0) return `${label}: introduce un número válido (0 o mayor).`;
+    if (field === 'price_sin' && value === 0) return 'La tarifa diaria debe ser mayor que 0.';
+    // "89,50" se guarda como 89.50 (parseFloat lo habría dejado en 89)
+    body[field] = String(value);
+  }
+  return null;
+}
+
 app.post('/api/vans', verifyAdmin, upload.array('images', 20), async (req, res) => {
+  // Primero: valida y normaliza los precios (la desestructuración de abajo ya lee los valores limpios)
+  const postPriceError = vanPriceError(req.body || {});
+  if (postPriceError) {
+    return res.status(400).json({ error: postPriceError });
+  }
   const { van_type, name, plate, m3, price_sin, min_price_con, km_price_con, status, max_occupants, eco_label, daily_km_limit, max_mass, fuel_type, waiting_hour_price } = req.body;
   if (!van_type || !name || !plate || !m3 || price_sin === undefined || min_price_con === undefined || km_price_con === undefined) {
     return res.status(400).json({ error: 'Faltan campos obligatorios para registrar la furgoneta.' });
@@ -3347,6 +3366,10 @@ app.post('/api/vans', verifyAdmin, upload.array('images', 20), async (req, res) 
 
 // 4. Modificar una furgoneta
 app.put('/api/vans/:id', verifyAdmin, upload.array('images', 20), async (req, res) => {
+  const putPriceError = vanPriceError(req.body || {});
+  if (putPriceError) {
+    return res.status(400).json({ error: putPriceError });
+  }
   const { id } = req.params;
   const { van_type, name, plate, m3, price_sin, min_price_con, km_price_con, status, max_occupants, eco_label, daily_km_limit, max_mass, fuel_type, waiting_hour_price } = req.body;
 
