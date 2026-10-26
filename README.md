@@ -25,6 +25,14 @@ npm start              # http://localhost:3000
 
 Sin `DATABASE_URL` el servidor arranca en modo sin base de datos (todo se guarda en `data/admin_store.json`).
 
+## Tests
+
+```bash
+npm test
+```
+
+Arranca el servidor real en una carpeta temporal (sin base de datos ni correo) y comprueba lo esencial de seguridad y reservas: archivos privados, login de admin, precio calculado en el servidor, acceso a reservas ajenas, fechas bloqueadas, validaciones y opiniones. No toca `data/`.
+
 ## Configuración (`.env`)
 
 Todas las variables están explicadas en `.env.example`. Las importantes:

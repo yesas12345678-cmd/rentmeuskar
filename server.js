@@ -54,14 +54,15 @@ mailTransporter.verify((error, success) => {
 });
 
 // Asegurar que existe la carpeta de subidas (uploads) y datos (data)
-const uploadsDir = path.join(__dirname, 'uploads');
+// UPLOADS_DIR / DATA_DIR permiten usar otras carpetas (p. ej. en los tests); por defecto, las del proyecto
+const uploadsDir = process.env.UPLOADS_DIR || path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir);
+  fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
-const dataDir = path.join(__dirname, 'data');
+const dataDir = process.env.DATA_DIR || path.join(__dirname, 'data');
 if (!fs.existsSync(dataDir)) {
-  fs.mkdirSync(dataDir);
+  fs.mkdirSync(dataDir, { recursive: true });
 }
 
 const adminStorePath = path.join(dataDir, 'admin_store.json');

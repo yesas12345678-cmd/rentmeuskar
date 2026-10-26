@@ -1,0 +1,151 @@
+// Pruebas de la API con el servidor real en una carpeta temporal (sin base de datos ni correo).
+// Ejecutar: npm test
+const { test, before, after } = require('node:test');
+const assert = require('node:assert/strict');
+const { spawn } = require('node:child_process');
+const crypto = require('node:crypto');
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
+
+const PORT = 3900 + Math.floor(Math.random() * 90);
+const BASE = `http://127.0.0.1:${PORT}`;
+const ADMIN_PASSWORD = 'ClaveDePruebaAdmin1';
+const SESSION_SECRET = 'secreto-de-pruebas';
+const CLIENT = { email: 'cliente@example.com', password: 'ClaveCliente!2030' };
+let serverProcess;
+let tmpDir;
+
+function scryptHash(password) {
+  const salt = crypto.randomBytes(16).toString('hex');
+  return `scrypt$${salt}$${crypto.scryptSync(password, salt, 64).toString('hex')}`;
+}
+
+function futureDate(daysAhead) {
+  const d = new Date();
+  d.setDate(d.getDate() + daysAhead);
+  return d.toISOString().slice(0, 10);
+}
+
+async function call(method, url, body, token) {
+  const res = await fetch(BASE + url, {
+    method,
+    headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+    body: body ? JSON.stringify(body) : undefined
+  });
+  let data = null;
+  try { data = await res.json(); } catch (e) { /* respuesta sin JSON */ }
+  return { status: res.status, data };
+}
+
+const booking = (from, to, extra = {}) => ({
+  name: 'Cliente Test', van_type: 'medium', van_name: 'x', pickup_date: from, pickup_time: '09:00',
+  return_date: to, return_time: '09:00', days: 1, total_price: 1, rental_mode: 'sin', ...extra
+});
+
+before(async () => {
+  tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rentmeuskar-test-'));
+  const store = {
+    fallbackUsers: [{ id: 1, name: 'Cliente Test', email: CLIENT.email, password: scryptHash(CLIENT.password), phone: '600000001', dni: '00000000T' }],
+    fallbackBookings: [], fallbackBlockages: [], fallbackSettings: {}, fallbackReviews: [], manualReviewCodes: [], fallbackFaqs: [],
+    fallbackVans: [{ id: 1, van_type: 'medium', name: 'Furgoneta Test', plate: '0000 TST', m3: '8m³', price_sin: 100, min_price_con: 50, km_price_con: 1, status: 'active', images: [], custom_extras: [{ name: 'GPS Navegador', price: 5, type: 'daily' }] }]
+  };
+  fs.writeFileSync(path.join(tmpDir, 'admin_store.json'), JSON.stringify(store));
+
+  serverProcess = spawn(process.execPath, [path.join(__dirname, '..', 'server.js')], {
+    env: {
+      ...process.env, PORT: String(PORT), DATABASE_URL: '', DATA_DIR: tmpDir, UPLOADS_DIR: path.join(tmpDir, 'uploads'),
+      SMTP_HOST: '127.0.0.1', SMTP_PORT: '1', SMTP_PASS: '', ADMIN_PASSWORD, SESSION_SECRET,
+      ENABLE_TEST_PAYMENTS: 'true', REDSYS_MERCHANT_CODE: '', REDSYS_SECRET_KEY: '', ALLOWED_ORIGINS: '', BASE_URL: ''
+    },
+    stdio: 'ignore'
+  });
+  for (let i = 0; i < 50; i++) {
+    try { await fetch(BASE + '/api/vans'); return; } catch (e) { await new Promise(r => setTimeout(r, 200)); }
+  }
+  throw new Error('El servidor de pruebas no arrancó');
+});
+
+after(() => {
+  if (serverProcess) serverProcess.kill();
+  fs.rmSync(tmpDir, { recursive: true, force: true });
+});
+
+test('no se sirve el código ni los datos del servidor', async () => {
+  for (const file of ['/server.js', '/data/admin_store.json', '/package.json', '/.env']) {
+    assert.equal((await fetch(BASE + file)).status, 404, file);
+  }
+  assert.equal((await fetch(BASE + '/')).status, 200);
+});
+
+test('los ajustes públicos no exponen credenciales de admin', async () => {
+  const { data } = await call('GET', '/api/settings');
+  assert.equal(Object.keys(data).filter(k => k.startsWith('admin')).length, 0);
+});
+
+test('login de admin: solo con la contraseña correcta y token firmado', async () => {
+  assert.equal((await call('POST', '/api/auth/login', { email: 'zvaito', password: 'mala' })).status, 401);
+  const ok = await call('POST', '/api/auth/login', { email: 'zvaito', password: ADMIN_PASSWORD });
+  assert.equal(ok.status, 200);
+  assert.equal((await call('GET', '/api/admin/vans', null, ok.data.token)).status, 200);
+  assert.equal((await call('GET', '/api/admin/vans', null, 'admin_token_aaaaaaaaaaaaaaaaaaaa')).status, 401);
+});
+
+test('el hash de la contraseña no sirve como contraseña', async () => {
+  const store = JSON.parse(fs.readFileSync(path.join(tmpDir, 'admin_store.json'), 'utf8'));
+  const res = await call('POST', '/api/auth/login', { email: CLIENT.email, password: store.fallbackUsers[0].password });
+  assert.equal(res.status, 401);
+});
+
+test('reservas: precio del servidor, sin sesión no se reserva y nadie ve las de otro', async () => {
+  const login = await call('POST', '/api/auth/login', CLIENT);
+  const token = login.data.token;
+
+  assert.equal((await call('POST', '/api/bookings', booking(futureDate(40), futureDate(41)))).status, 401);
+
+  const paid = await call('POST', '/api/redsys/process-test-payment', {
+    payMethod: 'card', cardDetails: { cardNumber: '4548810000000003' },
+    bookingData: booking(futureDate(30), futureDate(32), { extras: ['GPS Navegador (+5.00€/día)'] })
+  }, token);
+  assert.equal(paid.status, 201);
+  // 2 días x 100 € + GPS 2 x 5 € = 210 € + 21 % IVA; el total enviado (1 €) se ignora
+  assert.equal(paid.data.booking.total_price, 254.1);
+
+  const id = paid.data.booking.id;
+  assert.equal((await call('GET', `/api/bookings/${id}`)).status, 404, 'sin sesión ni código');
+  assert.equal((await call('GET', `/api/bookings/${id}?auth=${paid.data.booking.review_code}`)).status, 200);
+  assert.equal((await call('GET', `/api/bookings?user_id=999`, null, token)).status, 403);
+});
+
+test('no se reserva en fechas ocupadas ni en bloqueos del admin', async () => {
+  const token = (await call('POST', '/api/auth/login', CLIENT)).data.token;
+  const admin = (await call('POST', '/api/auth/login', { email: 'zvaito', password: ADMIN_PASSWORD })).data.token;
+  await call('POST', '/api/blockages', { van_type: 'medium', start_date: futureDate(60), end_date: futureDate(65), reason: 'Mantenimiento' }, admin);
+  const blocked = await call('POST', '/api/redsys/process-test-payment', {
+    payMethod: 'card', cardDetails: { cardNumber: '4548810000000003' }, bookingData: booking(futureDate(61), futureDate(62))
+  }, token);
+  assert.equal(blocked.status, 400);
+});
+
+test('no se aceptan fechas pasadas ni horas manipuladas', async () => {
+  const token = (await call('POST', '/api/auth/login', CLIENT)).data.token;
+  assert.equal((await call('POST', '/api/bookings', booking('2020-01-01', '2020-01-02'), token)).status, 400);
+  assert.equal((await call('POST', '/api/bookings', booking(futureDate(80), futureDate(81), { pickup_time: '<img src=x>' }), token)).status, 400);
+});
+
+test('confirm-payment es solo de lectura y no expone pagos inexistentes', async () => {
+  assert.equal((await call('POST', '/api/redsys/confirm-payment', { orderId: '000000000000' })).status, 404);
+});
+
+test('las opiniones públicas no muestran el código de reserva y no se aceptan códigos inventados', async () => {
+  const { data } = await call('GET', '/api/reviews');
+  assert.ok(data.every(r => !('booking_code' in r)));
+  assert.equal((await call('POST', '/api/reviews', { booking_code: 'RMU-INVENTADO', client_name: 'x', rating: 5, comment: 'x' })).status, 400);
+});
+
+test('datos con tipos incorrectos devuelven 400, no 500', async () => {
+  for (const url of ['/api/auth/register', '/api/contact', '/api/reviews/verify-code', '/api/auth/verify-registration']) {
+    const res = await call('POST', url, { email: ['x'], name: 1, code: 2, contact: 3, message: 4, password: 5 });
+    assert.ok(res.status < 500, `${url} devolvió ${res.status}`);
+  }
+});
