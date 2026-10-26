@@ -1339,6 +1339,18 @@ app.post('/api/auth/register', async (req, res) => {
     }
   }
 
+  // Un correo de activación por dirección cada 2 minutos (el código anterior sigue valiendo 15)
+  const previousRegistration = pendingRegistrations[cleanEmail];
+  if (previousRegistration && previousRegistration.expires - Date.now() > 13 * 60 * 1000) {
+    // Se guardan los datos nuevos (p. ej. si ha corregido la contraseña) con el mismo código
+    Object.assign(previousRegistration, { name: cleanName, passHash, phone: cleanPhone, dni: cleanDni });
+    return res.json({
+      success: true,
+      requiresVerification: true,
+      message: `Ya te hemos enviado un código a ${cleanEmail} hace poco. Revisa tu correo (también la carpeta de spam).`
+    });
+  }
+
   // Generar código de activación de 6 dígitos
   const code = generateVerificationCode();
   pendingRegistrations[cleanEmail] = {
