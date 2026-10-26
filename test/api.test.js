@@ -393,6 +393,15 @@ test('ids no numéricos o enormes devuelven 404, no 500', async () => {
   }
 });
 
+test('un token con id de otra cuenta no da acceso a esa cuenta', async () => {
+  const payload = Buffer.from(JSON.stringify({ id: 1, email: 'otro@example.com', ts: Date.now() })).toString('base64url');
+  const sig = crypto.createHmac('sha256', SESSION_SECRET).update(payload).digest('base64url');
+  const me = await call('GET', '/api/auth/me', null, `rmu_usr.${payload}.${sig}`);
+  assert.equal(me.status, 200);
+  assert.equal(me.data.email, 'otro@example.com');
+  assert.equal(me.data.id, 2);
+});
+
 test('no se pueden probar códigos de reserva sin límite', async () => {
   let last;
   for (let i = 0; i < 65; i++) last = await call('GET', `/api/bookings/50?auth=RMU-${String(i).padStart(6, '0')}`);

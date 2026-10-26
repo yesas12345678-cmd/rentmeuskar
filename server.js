@@ -669,8 +669,10 @@ const getAuthUser = async (req) => {
 
   let dbAnswered = false;
   try {
-    if (userId && typeof userId === 'number') {
-      const uRes = await pool.query('SELECT id, name, email, phone, dni, password_changed_at FROM users WHERE id = $1', [userId]);
+    // El id y el correo del token tienen que ser de la misma cuenta: un usuario creado sin BD recibe un id
+    // provisional que, al sincronizar, puede ser el de otra persona
+    if (userId && typeof userId === 'number' && tokenEmail) {
+      const uRes = await pool.query('SELECT id, name, email, phone, dni, password_changed_at FROM users WHERE id = $1 AND LOWER(email) = LOWER($2)', [userId, tokenEmail.trim()]);
       dbAnswered = true;
       if (uRes.rowCount > 0) {
         const { password_changed_at, ...user } = uRes.rows[0];
@@ -687,7 +689,7 @@ const getAuthUser = async (req) => {
     }
   } catch (e) {}
 
-  const fbUser = fallbackUsers.find(u => (userId && u.id === userId) || (tokenEmail && u.email && u.email.toLowerCase() === tokenEmail.toLowerCase()));
+  const fbUser = fallbackUsers.find(u => tokenEmail && u.email && u.email.toLowerCase() === tokenEmail.toLowerCase());
   if (fbUser) {
     if (issuedBeforePasswordChange(fbUser.password_changed_at)) return null;
     const { password: _password, ...user } = fbUser;
@@ -1447,6 +1449,16 @@ app.post('/api/auth/verify-registration', async (req, res) => {
       user
     });
   } catch (err) {
+    // Correo, teléfono o DNI ya registrados (p. ej. dos activaciones a la vez): no es un fallo de conexión
+    if (err && err.code === '23505') {
+      delete pendingRegistrations[cleanEmail];
+      return res.status(400).json({ error: DUPLICATE_ACCOUNT_ERROR });
+    }
+    // Sin BD solo se activa en local si la cuenta no existe ya en la copia local
+    if (fallbackUsers.some(u => (u.email || '').toLowerCase() === cleanEmail)) {
+      delete pendingRegistrations[cleanEmail];
+      return res.status(400).json({ error: DUPLICATE_ACCOUNT_ERROR });
+    }
     console.warn('Base de datos offline al confirmar registro, activando usuario localmente:', err.message);
     const mockId = fallbackUsers.length > 0 ? Math.max(...fallbackUsers.map(u => u.id)) + 1 : 1;
     const newUser = {
