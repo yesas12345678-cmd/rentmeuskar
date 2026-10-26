@@ -1571,6 +1571,10 @@ const initApp = () => {
 
     // Cerrar sesión
     document.getElementById('btn-client-logout').addEventListener('click', () => {
+        // Si el admin entró desde la web, su sesión del panel es la misma: también se cierra
+        if (localStorage.getItem('admin_token') && localStorage.getItem('admin_token') === localStorage.getItem('user_token')) {
+            localStorage.removeItem('admin_token');
+        }
         localStorage.removeItem('user_token');
         localStorage.removeItem('user_profile');
         window.closeAuthModal('client-modal');

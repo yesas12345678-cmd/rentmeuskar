@@ -615,6 +615,10 @@
         };
 
         window.handleClientLogout = function() {
+            // Si el admin entró desde la web, su sesión del panel es la misma: también se cierra
+            if (localStorage.getItem('admin_token') && localStorage.getItem('admin_token') === localStorage.getItem('user_token')) {
+                localStorage.removeItem('admin_token');
+            }
             localStorage.removeItem('user_token');
             localStorage.removeItem('user_profile');
             window.closeAuthModal('client-modal');
@@ -2505,7 +2509,7 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
 
     <!-- Custom Script -->
-    <script src="app.js?v=22.6"></script>
+    <script src="app.js?v=22.7"></script>
 </body>
 
 </html>
