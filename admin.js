@@ -562,7 +562,33 @@ const initAdmin = () => {
         }
     };
 
-    // Eliminar reserva con opción de Deshacer (Undo) durante 5 segundos
+    // Eliminar reserva con opción de Deshacer (Undo) durante 5 segundos. El borrado se envía al
+    // servidor cuando pasa ese plazo: antes se borraba al momento y "Deshacer" la volvía a crear
+    // con otro id, otro código de reseña y sin los datos del contrato.
+    const pendingBookingDeletes = new Map();
+    const sendBookingDelete = (id, keepalive = false) => fetch(`/api/bookings/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}` },
+        keepalive
+    });
+    // Si se cierra el panel durante esos 5 segundos, el borrado se envía igualmente
+    window.addEventListener('pagehide', () => {
+        pendingBookingDeletes.forEach((pending, id) => {
+            clearTimeout(pending.timer);
+            sendBookingDelete(id, true).catch(() => {});
+        });
+        pendingBookingDeletes.clear();
+    });
+
+    const restoreBooking = (booking) => {
+        if (!bookings.some(b => String(b.id) === String(booking.id))) {
+            bookings.push(booking);
+            bookings.sort((a, b) => b.id - a.id);
+        }
+        updateKPIs();
+        renderBookings();
+    };
+
     const deleteBooking = async (id) => {
         if (!confirm(`¿Estás seguro de que deseas eliminar la reserva #${id}?`)) {
             return;
@@ -571,59 +597,34 @@ const initAdmin = () => {
         const bookingToDelete = bookings.find(b => String(b.id) === String(id));
         if (!bookingToDelete) return;
 
-        const token = localStorage.getItem('admin_token');
-        
         // 1. Quitar la reserva de la lista y actualizar la interfaz de inmediato
         bookings = bookings.filter(b => String(b.id) !== String(id));
-        
         updateKPIs();
         renderBookings();
         closeModal();
 
-        // 2. Borrar en el servidor; si falla, se restaura y se explica (antes se daba por borrada siempre)
-        try {
-            const delRes = await fetch(`/api/bookings/${id}`, {
-                method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            if (!delRes.ok) throw new Error((await delRes.json().catch(() => ({}))).error || 'El servidor no pudo borrar la reserva.');
-        } catch (err) {
-            console.warn('Error backend al borrar reserva:', err);
-            bookings.push(bookingToDelete);
-            bookings.sort((a, b) => b.id - a.id);
-            updateKPIs();
-            renderBookings();
-            showToast(`No se ha borrado la reserva #${id}: ${err.message}`, 'error');
-            return;
-        }
+        // 2. Borrar en el servidor pasados 5 segundos, salvo que se pulse Deshacer
+        const timer = setTimeout(async () => {
+            pendingBookingDeletes.delete(id);
+            try {
+                const delRes = await sendBookingDelete(id);
+                if (!delRes.ok) throw new Error((await delRes.json().catch(() => ({}))).error || 'El servidor no pudo borrar la reserva.');
+            } catch (err) {
+                console.warn('Error backend al borrar reserva:', err);
+                restoreBooking(bookingToDelete);
+                showToast(`No se ha borrado la reserva #${id}: ${err.message}`, 'error');
+            }
+        }, 5000);
+        pendingBookingDeletes.set(id, { timer });
 
-        // 3. Mostrar notificación toast con botón Deshacer activo durante 5 segundos
-        showToast(`Reserva #${id} eliminada permanentemente.`, 'success', {
+        // 3. Notificación con botón Deshacer activo durante esos 5 segundos
+        showToast(`Reserva #${id} eliminada.`, 'success', {
             text: '<i class="fa-solid fa-rotate-left"></i> Deshacer',
-            onClick: async () => {
-                // Restaurar reserva en la lista
-                if (!bookings.some(b => String(b.id) === String(id))) {
-                    bookings.push(bookingToDelete);
-                    bookings.sort((a, b) => b.id - a.id);
-                }
-
-                // Volver a crear la reserva en la base de datos del servidor
-                try {
-                    await fetch('/api/bookings', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${token}`
-                        },
-                        body: JSON.stringify(bookingToDelete)
-                    });
-                } catch (rErr) {
-                    console.warn('Error backend al restaurar reserva:', rErr);
-                }
-
-                updateKPIs();
-                renderBookings();
-                showToast(`Reserva #${id} restaurada correctamente.`, 'info');
+            onClick: () => {
+                clearTimeout(timer);
+                pendingBookingDeletes.delete(id);
+                restoreBooking(bookingToDelete);
+                showToast(`Reserva #${id} restaurada.`, 'info');
             }
         });
     };
@@ -1528,7 +1529,21 @@ const initAdmin = () => {
         });
     };
 
-    // Eliminar furgoneta con opción de Deshacer (Undo) en 5 segundos
+    // Eliminar furgoneta con opción de Deshacer (Undo) en 5 segundos. Como con las reservas, el
+    // borrado se envía al pasar el plazo (antes "Deshacer" la recreaba con otro id y sin imágenes).
+    const pendingVanDeletes = new Map();
+    window.addEventListener('pagehide', () => {
+        pendingVanDeletes.forEach((timer, id) => {
+            clearTimeout(timer);
+            fetch(`/api/vans/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}` },
+                keepalive: true
+            }).catch(() => {});
+        });
+        pendingVanDeletes.clear();
+    });
+
     const deleteVan = async (id) => {
         const vanObj = fleet.find(v => v.id === id);
         if (!vanObj) return;
@@ -1545,61 +1560,49 @@ const initAdmin = () => {
 
         const token = localStorage.getItem('admin_token');
         if (!token) return;
+        const safeName = escapeHTML(vanObj.name);
+        const restoreVan = () => {
+            if (!fleet.some(v => v.id === id)) {
+                fleet.push(vanObj);
+                fleet.sort((a, b) => a.id - b.id);
+            }
+            renderFleet();
+        };
 
         // 1. Quitar la furgoneta localmente de inmediato para actualización instantánea
         fleet = fleet.filter(v => v.id !== id);
         renderFleet();
 
-        // 2. Notificar al servidor
-        // Si el servidor rechaza el borrado (p. ej. reservas futuras), se restaura y se explica el motivo
-        try {
-            const delRes = await fetch(`/api/vans/${id}`, {
-                method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            if (!delRes.ok) {
-                const delData = await delRes.json().catch(() => ({}));
-                fleet.push(vanObj);
-                fleet.sort((a, b) => a.id - b.id);
-                renderFleet();
-                showToast(delData.error || 'No se pudo eliminar la furgoneta.', 'error');
-                return;
+        // 2. Borrar en el servidor pasados 5 segundos, salvo que se pulse Deshacer. Si el servidor
+        // lo rechaza (p. ej. reservas futuras), se restaura y se explica el motivo
+        const timer = setTimeout(async () => {
+            pendingVanDeletes.delete(id);
+            try {
+                const delRes = await fetch(`/api/vans/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!delRes.ok) {
+                    const delData = await delRes.json().catch(() => ({}));
+                    restoreVan();
+                    showToast(escapeHTML(delData.error || 'No se pudo eliminar la furgoneta.'), 'error');
+                }
+            } catch (err) {
+                console.warn('Error al eliminar furgoneta en backend:', err);
+                restoreVan();
+                showToast('Error de conexión: la furgoneta no se ha eliminado.', 'error');
             }
-        } catch (err) {
-            console.warn('Error al eliminar furgoneta en backend:', err);
-            fleet.push(vanObj);
-            fleet.sort((a, b) => a.id - b.id);
-            renderFleet();
-            showToast('Error de conexión: la furgoneta no se ha eliminado.', 'error');
-            return;
-        }
+        }, 5000);
+        pendingVanDeletes.set(id, timer);
 
-        // 4. Mostrar toast con botón Deshacer durante 5 segundos
-        showToast(`Furgoneta "${vanObj.name}" eliminada correctamente.`, 'success', {
+        // 3. Toast con botón Deshacer durante esos 5 segundos
+        showToast(`Furgoneta "${safeName}" eliminada.`, 'success', {
             text: '<i class="fa-solid fa-rotate-left"></i> Deshacer',
-            onClick: async () => {
-                // Restaurar la furgoneta en memoria
-                if (!fleet.some(v => v.id === id)) {
-                    fleet.push(vanObj);
-                    fleet.sort((a, b) => a.id - b.id);
-                }
-
-                // Recrear o actualizar en el servidor backend
-                try {
-                    await fetch('/api/vans', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${token}`
-                        },
-                        body: JSON.stringify(vanObj)
-                    });
-                } catch (rErr) {
-                    console.warn('Error backend al restaurar furgoneta:', rErr);
-                }
-
-                renderFleet();
-                showToast(`Furgoneta "${vanObj.name}" restaurada con éxito.`, 'info');
+            onClick: () => {
+                clearTimeout(timer);
+                pendingVanDeletes.delete(id);
+                restoreVan();
+                showToast(`Furgoneta "${safeName}" restaurada.`, 'info');
             }
         });
     };
