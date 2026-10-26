@@ -302,6 +302,12 @@ assert.equal(saved.client_email, CLIENT.email);
   assert.equal(saved.client_dni, '00000000T');
 });
 
+test('opiniones demasiado largas se rechazan antes de llegar a la BD', async () => {
+  const res = await call('POST', '/api/reviews', { booking_code: 'RMU-X', client_name: '&'.repeat(90), rating: 5, comment: 'ok' });
+  assert.equal(res.status, 400);
+  assert.match(res.data.error, /demasiado larga/);
+});
+
 test('no se pueden probar códigos de reserva sin límite', async () => {
   let last;
   for (let i = 0; i < 65; i++) last = await call('GET', `/api/bookings/50?auth=RMU-${String(i).padStart(6, '0')}`);

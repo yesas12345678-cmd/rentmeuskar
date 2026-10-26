@@ -1456,11 +1456,11 @@
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                     <div class="custom-form-group" style="text-align: left;">
                         <label for="review-name-input"><i class="fa-solid fa-user"></i> Tu Nombre</label>
-                        <input type="text" id="review-name-input" class="custom-form-control" placeholder="" required>
+                        <input type="text" id="review-name-input" class="custom-form-control" placeholder="" maxlength="100" required>
                     </div>
                     <div class="custom-form-group" style="text-align: left;">
                         <label for="review-city-input"><i class="fa-solid fa-location-dot"></i> Ciudad</label>
-                        <input type="text" id="review-city-input" class="custom-form-control" placeholder="" required>
+                        <input type="text" id="review-city-input" class="custom-form-control" placeholder="" maxlength="100" required>
                     </div>
                 </div>
 
@@ -1481,7 +1481,7 @@
                 <div class="custom-form-group" style="text-align: left;">
                     <label for="review-comment-input"><i class="fa-solid fa-comment-dots"></i> Comentario /
                         Reseña</label>
-                    <textarea id="review-comment-input" class="custom-form-control" rows="3" placeholder=""
+                    <textarea maxlength="2000" id="review-comment-input" class="custom-form-control" rows="3" placeholder=""
                         style="resize: vertical; min-height: 80px;"></textarea>
                 </div>
 

@@ -386,10 +386,10 @@ async function syncDatabaseWithDisk(clientOrPool) {
       if (Array.isArray(fallbackReviews) && fallbackReviews.length > 0) {
         for (const rev of fallbackReviews) {
           await targetPool.query(
-            `INSERT INTO reviews (booking_code, client_name, rating, comment, role_or_city)
-             VALUES ($1, $2, $3, $4, $5)
+            `INSERT INTO reviews (booking_code, client_name, rating, comment, role_or_city, van_name)
+             VALUES ($1, $2, $3, $4, $5, $6)
              ON CONFLICT (booking_code) DO NOTHING`,
-            [rev.booking_code, rev.client_name, rev.rating || 5, rev.comment || '', rev.role_or_city || '']
+            [rev.booking_code, rev.client_name, rev.rating || 5, rev.comment || '', rev.role_or_city || '', rev.van_name || null]
           ).catch(e => console.warn('Error syncing review to DB:', e.message));
         }
       }
@@ -1063,7 +1063,10 @@ const initDb = async () => {
   `;
 
   const alterReviewsQueries = [
-    "ALTER TABLE reviews ALTER COLUMN comment DROP NOT NULL;"
+    "ALTER TABLE reviews ALTER COLUMN comment DROP NOT NULL;",
+    // POST /api/reviews guarda el vehículo; sin esta columna el INSERT fallaba y la opinión
+    // solo quedaba en el almacén local
+    "ALTER TABLE reviews ADD COLUMN IF NOT EXISTS van_name VARCHAR(255);"
   ];
 
   const createBlockagesTableQuery = `
@@ -4046,6 +4049,11 @@ app.post('/api/reviews', async (req, res) => {
   const safeComment = escapeHtml(comment.trim());
   const safeRoleOrCity = escapeHtml((role_or_city || '').trim());
   const finalVanName = escapeHtml((van_name || 'Ford Transit Custom L2H2 (8m³)').trim());
+  // Columnas VARCHAR(255): un texto más largo (ya escapado) hacía fallar el INSERT
+  if (client_name.length > 100 || (role_or_city || '').length > 100 || comment.length > 2000 ||
+      [safeClientName, safeRoleOrCity, finalVanName].some(v => v.length > 255)) {
+    return res.status(400).json({ error: 'La opinión es demasiado larga. El comentario admite hasta 2000 caracteres y el nombre o la ciudad hasta 100.' });
+  }
 
   // 1. Verificar que el código es de una reserva pagada/confirmada (también sin BD)
   if (!(await findReviewableCode(code))) {
