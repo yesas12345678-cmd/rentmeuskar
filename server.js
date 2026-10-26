@@ -4314,6 +4314,12 @@ app.use((err, req, res, next) => {
   if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
     return res.status(400).json({ error: 'Formato JSON malformado o inválido en la petición.' });
   }
+  if (err && err.type === 'entity.too.large') {
+    return res.status(413).json({ error: 'La petición es demasiado grande.' });
+  }
+  if (err && err.expose && err.status >= 400 && err.status < 500) {
+    return res.status(err.status).json({ error: 'Petición no válida.' });
+  }
   console.error('[UNHANDLED ERROR]', err);
   res.status(500).json({ error: 'Error interno del servidor.' });
 });

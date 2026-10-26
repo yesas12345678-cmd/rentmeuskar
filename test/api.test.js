@@ -189,3 +189,8 @@ test('las rutas de API inexistentes responden 404 en JSON', async () => {
   assert.equal(res.status, 404);
   assert.ok(res.data && res.data.error);
 });
+
+test('una petición demasiado grande devuelve 413, no 500', async () => {
+  const res = await call('POST', '/api/contact', { name: 'x', contact: 'x', message: 'a'.repeat(200 * 1024) });
+  assert.equal(res.status, 413);
+});
