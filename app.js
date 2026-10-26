@@ -449,6 +449,10 @@ const initApp = () => {
 
         if (extrasSection) extrasSection.style.display = 'block';
 
+        // Extras ya marcados por el cliente: se conservan al volver a pintar la lista
+        // (solo si sigue elegida la misma furgoneta)
+        const keepChecked = dynamicExtrasContainer.dataset.van === vanType;
+        const previouslyChecked = new Set(Array.from(dynamicExtrasContainer.querySelectorAll('.calc-dynamic-extra-checkbox:checked')).map(c => c.getAttribute('data-name')));
         dynamicExtrasContainer.innerHTML = '';
         extras.forEach((extra, index) => {
             const label = document.createElement('label');
@@ -494,7 +498,13 @@ const initApp = () => {
             });
 
             dynamicExtrasContainer.appendChild(label);
+            if (keepChecked && previouslyChecked.has(extra.name)) {
+                const input = label.querySelector('input');
+                input.checked = true;
+                input.dispatchEvent(new Event('change'));
+            }
         });
+        dynamicExtrasContainer.dataset.van = vanType;
     };
 
     // Renderizar especificaciones y condiciones consolidadas de la furgoneta seleccionada
@@ -616,12 +626,18 @@ const initApp = () => {
     };
 
     // Cargar catálogo de furgonetas desde la API y renderizar tarjetas públicas dinámicamente
+    // La web recarga catálogo y FAQ cada 30 s: si nada ha cambiado no se vuelve a pintar
+    // (antes se desmarcaban los extras elegidos y se cerraba la FAQ abierta)
+    let lastVansJson = '';
     const loadVans = async () => {
         try {
             const response = await fetch('/api/vans');
             if (response.ok) {
                 const rawVans = await response.json();
-                
+                const vansJson = JSON.stringify(rawVans);
+                if (vansJson === lastVansJson) return;
+                lastVansJson = vansJson;
+
                 if (Array.isArray(rawVans) && rawVans.length > 0) {
                     databaseVans = rawVans;
                 } else {
@@ -2754,6 +2770,7 @@ const initApp = () => {
     }
 
     // Cargar FAQs dinámicamente desde la API
+    let lastFaqsJson = '';
     const loadFaqs = async () => {
         const faqListContainer = document.querySelector('.faq-list');
         if (!faqListContainer) return;
@@ -2762,6 +2779,9 @@ const initApp = () => {
             const res = await fetch('/api/faqs');
             if (res.ok) {
                 const faqs = await res.json();
+                const faqsJson = JSON.stringify(faqs);
+                if (faqsJson === lastFaqsJson) return;
+                lastFaqsJson = faqsJson;
                 if (faqs.length > 0) {
                     faqListContainer.innerHTML = '';
                     // Textos de la FAQ (escritos en el panel) escapados antes de usar innerHTML
