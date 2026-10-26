@@ -1406,6 +1406,36 @@ app.post('/api/contact', async (req, res) => {
 });
 
 // 2. Inicio de sesión
+// Bloqueo por cuenta: el límite por IP no frena un ataque repartido entre muchas IPs
+const LOGIN_FAILURE_LIMIT = 10;
+const LOGIN_FAILURE_WINDOW_MS = 15 * 60 * 1000;
+const loginFailures = new Map();
+
+function isLoginLocked(identifier) {
+  const entry = loginFailures.get(identifier);
+  if (!entry) return false;
+  if (Date.now() - entry.first > LOGIN_FAILURE_WINDOW_MS) {
+    loginFailures.delete(identifier);
+    return false;
+  }
+  return entry.count >= LOGIN_FAILURE_LIMIT;
+}
+
+function recordLoginFailure(identifier) {
+  if (loginFailures.size > 5000) {
+    // Limpieza de entradas caducadas para que el mapa no crezca sin límite
+    for (const [key, value] of loginFailures) {
+      if (Date.now() - value.first > LOGIN_FAILURE_WINDOW_MS) loginFailures.delete(key);
+    }
+  }
+  const entry = loginFailures.get(identifier);
+  if (!entry || Date.now() - entry.first > LOGIN_FAILURE_WINDOW_MS) {
+    loginFailures.set(identifier, { count: 1, first: Date.now() });
+  } else {
+    entry.count += 1;
+  }
+}
+
 app.post('/api/auth/login', async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) {
@@ -1417,6 +1447,9 @@ app.post('/api/auth/login', async (req, res) => {
   }
 
   const cleanEmail = email.trim().toLowerCase();
+  if (isLoginLocked(cleanEmail)) {
+    return res.status(429).json({ error: 'Demasiados intentos fallidos con esta cuenta. Espera 15 minutos o recupera la contraseña.' });
+  }
 
   // Login de Administrador (usuario del panel, info@ o ADMIN_EMAIL del entorno)
   const adminLogins = [getAdminUsername(), 'info@rentmeuskar.com', (process.env.ADMIN_EMAIL || '').toLowerCase()].filter(Boolean);
@@ -1465,6 +1498,7 @@ app.post('/api/auth/login', async (req, res) => {
     });
   }
 
+  recordLoginFailure(cleanEmail);
   return res.status(401).json({ error: 'Correo electrónico o contraseña incorrectos.' });
 });
 
@@ -2905,7 +2939,7 @@ const handleTestPayment = async (req, res) => {
     });
   } catch (err) {
     console.error('Error al procesar pago Redsys test:', err);
-    res.status(500).json({ error: 'Error en el procesamiento de pago: ' + err.message });
+    res.status(500).json({ error: 'Error en el procesamiento del pago. Inténtalo de nuevo.' });
   }
 };
 
@@ -2959,7 +2993,7 @@ app.post('/api/redsys/confirm-payment', async (req, res) => {
     });
   } catch (err) {
     console.error('Error al confirmar pago:', err);
-    res.status(500).json({ error: 'Error al confirmar pago: ' + err.message });
+    res.status(500).json({ error: 'Error al consultar el pago. Inténtalo de nuevo.' });
   }
 });
 
