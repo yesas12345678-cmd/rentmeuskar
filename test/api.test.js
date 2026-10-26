@@ -61,6 +61,7 @@ before(async () => {
     ],
     fallbackBookings: [
       { id: 50, name: 'Pago Tardío', van_type: 'medium', van_name: 'Furgoneta Test', pickup_date: futureDate(120), pickup_time: '09:00', return_date: futureDate(121), return_time: '09:00', days: 1, extras: [], total_price: 100, user_id: 1, status: 'cancelled', payment_status: 'failed', payment_id: '261099999999', rental_mode: 'sin', created_at: '2020-01-01T00:00:00Z' },
+      { id: 52, name: 'Cancelada', van_type: 'medium', van_name: 'Furgoneta Test', pickup_date: futureDate(160), pickup_time: '09:00', return_date: futureDate(161), return_time: '09:00', days: 1, extras: [], total_price: 100, user_id: 1, status: 'cancelled', payment_status: 'failed', payment_id: '261077777777', rental_mode: 'sin', created_at: '2020-01-01T00:00:00Z' },
       { id: 51, name: 'Otro', van_type: 'medium', van_name: 'Furgoneta Test', pickup_date: futureDate(120), pickup_time: '09:00', return_date: futureDate(121), return_time: '09:00', days: 1, extras: [], total_price: 100, user_id: 2, status: 'confirmed', payment_status: 'paid', payment_id: '261088888888', rental_mode: 'sin', created_at: '2020-01-01T00:00:00Z' }
     ], fallbackBlockages: [], fallbackSettings: {}, fallbackReviews: [], manualReviewCodes: [], fallbackFaqs: [],
     fallbackVans: [{ id: 1, van_type: 'medium', name: 'Furgoneta Test', plate: '0000 TST', m3: '8m³', price_sin: 100, min_price_con: 50, km_price_con: 1, status: 'active', images: [], custom_extras: [{ name: 'GPS Navegador', price: 5, type: 'daily' }] },
@@ -342,6 +343,13 @@ test('FAQ con tipos u orden no válidos se rechazan', async () => {
   assert.equal((await call('POST', '/api/faqs', { question: ['x'], answer: 'y' }, admin)).status, 400);
   assert.equal((await call('POST', '/api/faqs', { question: 'x', answer: 'y', display_order: 1e12 }, admin)).status, 400);
   assert.equal((await call('POST', '/api/faqs', { question: '¿Prueba?', answer: 'Sí', display_order: 9 }, admin)).status, 201);
+});
+
+test('no se reactiva una reserva cancelada si sus fechas ya están ocupadas', async () => {
+  const admin = await login('zvaito', ADMIN_PASSWORD);
+  assert.equal((await call('POST', '/api/blockages', { van_type: 'medium', start_date: futureDate(160), end_date: futureDate(160), reason: 'ITV' }, admin)).status, 201);
+  assert.equal((await call('PUT', '/api/bookings/52', { status: 'confirmed' }, admin)).status, 409);
+  assert.equal((await call('PUT', '/api/bookings/52', { client_city: 'Huéscar' }, admin)).status, 200);
 });
 
 test('no se pueden probar códigos de reserva sin límite', async () => {

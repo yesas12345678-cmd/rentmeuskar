@@ -2344,6 +2344,23 @@ app.put('/api/bookings/:id', verifyAdmin, async (req, res) => {
     return res.status(400).json({ error: 'No hay cambios que guardar.' });
   }
 
+  // Reactivar una reserva que ya no ocupaba la furgoneta (cancelada o pago caducado): sus fechas
+  // pueden estar ya cogidas por otra reserva o un bloqueo, y quedaría reservada dos veces
+  if (updates.status && updates.status !== 'cancelled') {
+    let current = null;
+    try {
+      const r = await pool.query('SELECT * FROM bookings WHERE id = $1', [id]);
+      current = r.rows[0] || null;
+    } catch (e) {
+      current = fallbackBookings.find(b => b.id == id) || null;
+    }
+    const reactivated = current && { ...current, status: updates.status };
+    if (current && (current.rental_mode || 'sin') === 'sin' && !isActiveFallbackBooking(current) && isActiveFallbackBooking(reactivated) &&
+        !(await isVanAvailable(current.van_type, String(current.pickup_date).slice(0, 10), String(current.return_date).slice(0, 10)))) {
+      return res.status(409).json({ error: 'Las fechas de esta reserva ya están ocupadas por otra reserva o un bloqueo. Revisa el calendario antes de reactivarla.' });
+    }
+  }
+
   const applyToFallback = (message) => {
     const index = fallbackBookings.findIndex(b => b.id == id);
     if (index === -1) return res.status(404).json({ error: 'Reserva no encontrada.' });
