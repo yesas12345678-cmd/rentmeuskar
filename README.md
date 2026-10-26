@@ -1,38 +1,56 @@
 # RentMeUskar
 
-Este proyecto es una copia exacta local del sitio web de **RentMeUskar** (https://rentmeuskar.netlify.app/), un servicio de alquiler de furgonetas sin conductor en Huéscar y el Altiplano Granadino.
+Web de alquiler de furgonetas en Huéscar y el Altiplano Granadino: catálogo, calculadora de precio, reservas con pago online (Redsys), área de cliente, contratos, facturas y panel de administración.
 
-## Estructura del Proyecto
+## Arquitectura
 
-El sitio web está estructurado como una aplicación web estática pura (HTML5, CSS3, JavaScript nativo):
+No es una web estática: necesita el servidor Node.js para funcionar.
 
-- `index.html`: La estructura principal y contenido semántico del sitio.
-- `styles.css`: Estilos visuales premium, variables de marca, animaciones de scroll y adaptabilidad móvil.
-- `app.js`: Lógica interactiva que incluye:
-  - Navegación interactiva y activación de clases activas por scroll.
-  - Efecto de revelado gradual al hacer scroll (Intersection Observer).
-  - Acordeón interactivo para las preguntas frecuentes (FAQ).
-  - Simulador interactivo de presupuesto en tiempo real.
-  - Integración directa del formulario de reserva con WhatsApp.
-- `assets/`: Imágenes de la flota y logotipos oficiales descargados del servidor original.
+- `server.js`: servidor Express con toda la API (`/api/...`), autenticación, pagos Redsys, correos (Zoho SMTP) y PostgreSQL. Si la base de datos no responde, sigue funcionando con `data/admin_store.json`.
+- `index.html` + `app.js` + `styles.css`: web pública (calculadora, reservas, área de cliente, opiniones).
+- `admin.html` + `admin.js`: panel de administración (`/admin`).
+- `contract.html`, `invoice.html`: contrato y factura de cada reserva (`/contract/:id`, `/invoice/:id`).
+- `payment-success.html`, `payment-error.html`: vuelta desde la pasarela de pago.
+- `assets/`: imágenes y tipografías. `uploads/`: fotos subidas desde el panel (no están en git).
 
-## Ejecución Local
+Solo se sirven al navegador los archivos públicos anteriores; el código del servidor y `data/` no son accesibles desde la web.
 
-Para visualizar el proyecto localmente, simplemente abre el archivo `index.html` en cualquier navegador web, o utiliza un servidor local ligero:
+## Ejecución local
 
-### Opción 1: VS Code Live Server
-Si usas Visual Studio Code, puedes hacer clic derecho en `index.html` y seleccionar **Open with Live Server**.
-
-### Opción 2: Usar HTTP Server con Node/npm
-Si tienes Node.js instalado, puedes ejecutar en la terminal:
 ```bash
-npx http-server ./
+npm install
+cp .env.example .env   # y rellena los valores
+npm start              # http://localhost:3000
 ```
 
-## Tecnologías Utilizadas
+Sin `DATABASE_URL` el servidor arranca en modo sin base de datos (todo se guarda en `data/admin_store.json`).
 
-- **HTML5** & **CSS3** (Variables CSS nativas, Grid, Flexbox).
-- **JavaScript ES6** (Nativo, sin dependencias de frameworks pesados).
-- **Google Fonts** (Plus Jakarta Sans y Space Grotesk).
-- **FontAwesome v6** (Librería de iconos vectoriales).
-- **OpenStreetMap** (Localizador integrado para Huéscar).
+## Configuración (`.env`)
+
+Todas las variables están explicadas en `.env.example`. Las importantes:
+
+| Variable | Para qué |
+|---|---|
+| `DATABASE_URL` | PostgreSQL de producción |
+| `SESSION_SECRET` | Firma de sesiones (cadena aleatoria larga) |
+| `ADMIN_PASSWORD` (`ADMIN_USERNAME`, `ADMIN_EMAIL`) | Acceso al panel si no se han cambiado desde el propio panel |
+| `SMTP_USER`, `SMTP_PASS` | Correos de verificación, avisos de reserva y contacto |
+| `REDSYS_MERCHANT_CODE`, `REDSYS_SECRET_KEY`, `REDSYS_URL` | Pago real con tarjeta/Bizum |
+| `BASE_URL` | Dirección pública https; Redsys envía ahí la notificación de pago |
+| `ALLOWED_ORIGINS` | Otros dominios desde los que se sirve la web |
+| `ENABLE_TEST_PAYMENTS` | TPV simulado para pruebas. **Nunca `true` en producción**: marca reservas como pagadas sin cobrar |
+
+Modo de cobro (se consulta en `/api/payment-config`):
+- `redsys`: hay credenciales de Redsys → el cliente paga en la página de Redsys y la reserva se confirma con la notificación firmada.
+- `test`: `ENABLE_TEST_PAYMENTS=true` → TPV simulado (solo pruebas).
+- `off`: ninguno de los dos → las reservas se piden por WhatsApp y se paga al recoger.
+
+## Despliegue
+
+Producción en Docker con Dokploy. `rentmeuskar.netlify.app` es una versión estática antigua sin servidor (solo WhatsApp) y no refleja esta web.
+
+Antes de desplegar, revisar que en el servidor estén `SESSION_SECRET`, `ADMIN_PASSWORD`, `SMTP_PASS`, las claves de Redsys y `BASE_URL`, y que `ENABLE_TEST_PAYMENTS` no esté activado.
+
+## Tecnologías
+
+Node.js, Express 5, PostgreSQL (`pg`), Nodemailer, Multer, Helmet, express-rate-limit; en el navegador, JavaScript sin frameworks, Flatpickr, Font Awesome y Google Fonts.
