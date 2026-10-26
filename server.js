@@ -800,6 +800,30 @@ const bookingLimiter = rateLimit({
 });
 app.post('/api/redsys/create-payment', bookingLimiter);
 app.post('/api/bookings', bookingLimiter);
+
+// Una reserva por furgoneta a la vez: comprobar disponibilidad y guardar no es atómico, así que
+// dos clientes pagando las mismas fechas a la vez podían colarse los dos (el servidor es un solo proceso)
+const vanBookingLocks = new Map();
+function serializeBookingsByVan(req, res, next) {
+  const body = req.body || {};
+  const vanType = String((body.bookingData && body.bookingData.van_type) || body.van_type || '');
+  if (!vanType) return next();
+  const previous = vanBookingLocks.get(vanType) || Promise.resolve();
+  let release;
+  const current = new Promise(resolve => { release = resolve; });
+  const chained = previous.then(() => current);
+  vanBookingLocks.set(vanType, chained);
+  let released = false;
+  const done = () => {
+    if (released) return;
+    released = true;
+    release();
+    if (vanBookingLocks.get(vanType) === chained) vanBookingLocks.delete(vanType);
+  };
+  res.on('finish', done);
+  res.on('close', done);
+  previous.then(() => next());
+}
 app.post('/api/reviews', reviewLimiter);
 
 app.use(compression());
@@ -840,6 +864,8 @@ app.use(cors({
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+// Tras los parsers: el cerrojo necesita leer van_type del cuerpo
+app.post(['/api/redsys/create-payment', '/api/redsys/process-test-payment', '/api/redsys/simulate-payment', '/api/bookings'], serializeBookingsByVan);
 app.use('/uploads', express.static(uploadsDir, { maxAge: '7d' }));
 app.use('/assets', express.static(path.join(__dirname, 'assets'), { maxAge: '7d' }));
 

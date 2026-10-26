@@ -127,6 +127,15 @@ test('no se reserva en fechas ocupadas ni en bloqueos del admin', async () => {
   assert.equal(blocked.status, 400);
 });
 
+test('cinco pagos simultáneos para las mismas fechas: solo se acepta uno', async () => {
+  const token = (await call('POST', '/api/auth/login', CLIENT)).data.token;
+  const attempt = () => call('POST', '/api/redsys/process-test-payment', {
+    payMethod: 'card', cardDetails: { cardNumber: '4548810000000003' }, bookingData: booking(futureDate(90), futureDate(92))
+  }, token);
+  const results = await Promise.all([attempt(), attempt(), attempt(), attempt(), attempt()]);
+  assert.equal(results.filter(r => r.status === 201).length, 1);
+});
+
 test('no se aceptan fechas pasadas ni horas manipuladas', async () => {
   const token = (await call('POST', '/api/auth/login', CLIENT)).data.token;
   assert.equal((await call('POST', '/api/bookings', booking('2020-01-01', '2020-01-02'), token)).status, 400);
