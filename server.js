@@ -2372,12 +2372,19 @@ function discardUploadedFiles(files) {
   (files || []).forEach(file => fs.unlink(file.path, () => {}));
 }
 
-app.post('/api/bookings/:id/photos', verifyAdmin, upload.array('photos', 10), async (req, res) => {
+// Tras multer: si la petición acaba en error (validación, no encontrada...), sus imágenes se borran
+function discardUploadsOnError(req, res, next) {
+  res.on('finish', () => {
+    if (res.statusCode >= 400) discardUploadedFiles(req.files);
+  });
+  next();
+}
+
+app.post('/api/bookings/:id/photos', verifyAdmin, upload.array('photos', 10), discardUploadsOnError, async (req, res) => {
   const { id } = req.params;
   const { type } = req.body; // 'before' o 'after'
 
   if (!type || (type !== 'before' && type !== 'after')) {
-    discardUploadedFiles(req.files);
     return res.status(400).json({ error: "El campo 'type' debe ser 'before' o 'after'." });
   }
 
@@ -2385,7 +2392,6 @@ app.post('/api/bookings/:id/photos', verifyAdmin, upload.array('photos', 10), as
     return res.status(400).json({ error: 'No se han subido fotos.' });
   }
   if (!/^\d+$/.test(id)) {
-    discardUploadedFiles(req.files);
     return res.status(404).json({ error: 'Reserva no encontrada.' });
   }
 
@@ -2399,7 +2405,6 @@ app.post('/api/bookings/:id/photos', verifyAdmin, upload.array('photos', 10), as
     );
 
     if (result.rowCount === 0) {
-      discardUploadedFiles(req.files);
       return res.status(404).json({ error: 'Reserva no encontrada.' });
     }
 
@@ -2413,7 +2418,6 @@ app.post('/api/bookings/:id/photos', verifyAdmin, upload.array('photos', 10), as
     console.warn('Base de datos offline al guardar fotos, usando fallback:', err.message);
     const fBooking = fallbackBookings.find(b => b.id == id);
     if (!fBooking) {
-      discardUploadedFiles(req.files);
       return res.status(404).json({ error: 'Reserva no encontrada.' });
     }
     fBooking[column] = [...(fBooking[column] || []), ...paths];
@@ -3311,7 +3315,7 @@ function vanPriceError(body) {
   return null;
 }
 
-app.post('/api/vans', verifyAdmin, upload.array('images', 20), async (req, res) => {
+app.post('/api/vans', verifyAdmin, upload.array('images', 20), discardUploadsOnError, async (req, res) => {
   // Primero: valida y normaliza los precios (la desestructuración de abajo ya lee los valores limpios)
   const postPriceError = vanPriceError(req.body || {});
   if (postPriceError) {
@@ -3442,7 +3446,7 @@ app.post('/api/vans', verifyAdmin, upload.array('images', 20), async (req, res) 
 });
 
 // 4. Modificar una furgoneta
-app.put('/api/vans/:id', verifyAdmin, upload.array('images', 20), async (req, res) => {
+app.put('/api/vans/:id', verifyAdmin, upload.array('images', 20), discardUploadsOnError, async (req, res) => {
   const putPriceError = vanPriceError(req.body || {});
   if (putPriceError) {
     return res.status(400).json({ error: putPriceError });

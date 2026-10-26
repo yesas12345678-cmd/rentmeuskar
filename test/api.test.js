@@ -262,6 +262,14 @@ test('fotos de inspección: se guardan sin BD y no quedan archivos huérfanos si
   assert.equal((await upload(9999)).status, 404);
   await new Promise(r => setTimeout(r, 200));
   assert.equal(fs.readdirSync(uploadsDir).length, before);
+  // Furgoneta con precio no válido: se rechaza y su imagen no se queda en disco
+  const form = new FormData();
+  form.append('van_type', 'nueva'); form.append('name', 'Nueva'); form.append('price_sin', '-5');
+  form.append('images', new Blob([Buffer.from('89504e47', 'hex')], { type: 'image/png' }), 'van.png');
+  const van = await fetch(`${BASE}/api/vans`, { method: 'POST', headers: { Authorization: `Bearer ${admin}` }, body: form });
+  assert.equal(van.status, 400);
+  await new Promise(r => setTimeout(r, 200));
+  assert.equal(fs.readdirSync(uploadsDir).length, before);
 });
 
 test('no se pueden probar códigos de reserva sin límite', async () => {
