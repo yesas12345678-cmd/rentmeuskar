@@ -1457,7 +1457,7 @@ const initApp = () => {
             user = { name: '', email: '', phone: '', dni: '' };
         }
 
-        const cleanName = (user.name && user.name !== 'Tuemail' && user.name !== 'Jose Manuel') ? user.name : '';
+        const cleanName = (user.name && user.name !== 'Tuemail') ? user.name : '';
         const cleanEmail = (user.email && !user.email.includes('tuemail@') && !user.email.includes('cliente@rentmeuskar')) ? user.email : '';
         const cleanPhone = user.phone || '';
         const cleanDni = (user.dni && user.dni !== '00000000G' && user.dni !== '00000000A') ? user.dni : '';
