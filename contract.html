@@ -775,6 +775,12 @@
 
                     // Fianza
                     document.getElementById('fianza-deposit-val').textContent = b.rental_mode === 'con' ? '0,00 € (Exento)' : '500,00 €';
+                    // Importe configurado en Ajustes (si no carga, se queda el de 500,00 €)
+                    if (b.rental_mode !== 'con') {
+                        fetch('/api/settings').then(r => r.ok ? r.json() : {}).then(cfg => {
+                            if (cfg && cfg.fianza_amount) document.getElementById('fianza-deposit-val').textContent = `${cfg.fianza_amount} €`;
+                        }).catch(() => {});
+                    }
                     document.getElementById('fianza-dev-integra').textContent = b.fianza_returned_full ? '[X]' : '[ ]';
                     document.getElementById('fianza-dev-parcial').textContent = b.fianza_returned_partial ? '[X]' : '[ ]';
                     document.getElementById('fianza-retained-val').textContent = `${parseFloat(b.fianza_retained_amount || 0).toFixed(2)} €`;

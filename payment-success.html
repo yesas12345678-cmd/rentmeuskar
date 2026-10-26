@@ -194,7 +194,7 @@
                 <span class="order-value" id="total-amount" style="color: var(--color-neon, #82d105); font-size: 1.05rem;">0,00 €</span>
             </div>
             <div class="order-row">
-                <span class="order-label">Fianza (500,00 €):</span>
+                <span class="order-label">Fianza (<span class="rmu-fianza">500,00</span> €):</span>
                 <span class="order-value" style="color: #ffc107; font-size: 0.8rem;">A depositar en persona al recoger</span>
             </div>
             <div class="order-row">
@@ -223,6 +223,11 @@
         document.addEventListener('DOMContentLoaded', async () => {
             const urlParams = new URLSearchParams(window.location.search);
             const orderId = urlParams.get('order') || '';
+
+            // Importe de la fianza configurado en Ajustes del panel
+            fetch('/api/settings').then(r => r.ok ? r.json() : {}).then(cfg => {
+                if (cfg && cfg.fianza_amount) document.querySelectorAll('.rmu-fianza').forEach(el => { el.textContent = cfg.fianza_amount; });
+            }).catch(() => {});
             document.getElementById('order-id').innerText = orderId || '-';
 
             const titleEl = document.getElementById('success-title');

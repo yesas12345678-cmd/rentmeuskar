@@ -515,7 +515,7 @@ const initApp = () => {
         const fuelType = van.fuel_type || 'Diesel (Gasoil)';
         const ecoLabel = van.eco_label || 'C';
         const dailyKmLimit = van.daily_km_limit || 350;
-        const fianzaAmount = '500,00'; // Constante estipulada en la web
+        const fianzaAmount = window.RMU_FIANZA || '500,00'; // Importe de Ajustes del panel
 
         // Detectar modo actual
         const modeInput = document.querySelector('input[name="rental-mode"]:checked');
@@ -1379,7 +1379,7 @@ const initApp = () => {
 
                         const statusLabel = b.status === 'confirmed' ? 'Confirmado' : b.status === 'paid_pending' ? 'Pagado (Pendiente Aprobación)' : b.status === 'pending' ? 'Pendiente' : b.status === 'pending_payment' ? 'Esperando pago' : 'Cancelado';
                         const paymentLabel = b.payment_status === 'paid' ? 'Pagado' : 'Pendiente';
-                        const fianzaLabel = b.fianza_status === 'paid' ? 'Depositada (500€)' : b.fianza_status === 'refunded' ? 'Devuelta' : 'En persona (500€)';
+                        const fianzaLabel = b.fianza_status === 'paid' ? `Depositada (${window.RMU_FIANZA || '500,00'} €)` : b.fianza_status === 'refunded' ? 'Devuelta' : 'En persona (500€)';
 
                         const formatDate = (dateStr) => {
                             if (!dateStr) return '-';
@@ -1797,7 +1797,7 @@ const initApp = () => {
                         `- *Devolución:* ${returnDateStr} a las ${returnTimeStr}${extraDetailsText}\n` +
                         `- *Duración:* ${days} días\n\n` +
                         `*Precio estimado total:* ${totalPriceText}\n` +
-                        `*Fianza:* 500,00 € (A depositar/abonar en persona al recoger el vehículo)\n\n` +
+                        `*Fianza:* ${window.RMU_FIANZA || '500,00'} € (A depositar/abonar en persona al recoger el vehículo)\n\n` +
                         `(Solicitud pendiente de confirmación de disponibilidad del propietario).`;
                 }
 
@@ -2792,6 +2792,12 @@ const initApp = () => {
                 if (week && data.hours_weekdays) week.textContent = data.hours_weekdays;
                 if (sat && data.hours_saturdays) sat.textContent = data.hours_saturdays;
                 if (sun && data.hours_sundays) sun.textContent = data.hours_sundays;
+
+                // Importe de la fianza configurado en Ajustes del panel
+                if (data.fianza_amount) {
+                    window.RMU_FIANZA = String(data.fianza_amount);
+                    document.querySelectorAll('.rmu-fianza').forEach(el => { el.textContent = window.RMU_FIANZA; });
+                }
 
                 // Actualizar teléfono y whatsapp
                 if (data.contact_phone) {

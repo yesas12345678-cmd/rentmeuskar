@@ -2534,7 +2534,7 @@ async function sendBookingStatusEmail(booking, status) {
       html: `<div style="font-family: Arial, sans-serif;"><h2>${confirmed ? '¡Tu reserva está confirmada!' : 'Tu reserva ha sido cancelada'}</h2>
         <p>Hola ${field(booking.name)},</p>
         <p><strong>Vehículo:</strong> ${field(booking.van_name)}<br><strong>Fechas:</strong> ${dates}</p>
-        <p>${confirmed ? 'Te esperamos en la recogida. Recuerda traer DNI, carnet de conducir y la fianza de 500 €.' : 'Si tienes cualquier duda o habías pagado online, contacta con nosotros y te ayudamos.'}</p></div>`
+        <p>${confirmed ? `Te esperamos en la recogida. Recuerda traer DNI, carnet de conducir y la fianza de ${field(fallbackSettings.fianza_amount || '500,00')} €.` :'Si tienes cualquier duda o habías pagado online, contacta con nosotros y te ayudamos.'}</p></div>`
     });
   } catch (e) {
     console.error('[SMTP RESERVA] No se pudo enviar el aviso de cambio de estado:', e.message);
@@ -2552,7 +2552,7 @@ async function sendBookingPaidEmails(booking) {
     <p><strong>Reserva:</strong> #${field(booking.id)} · Pedido ${field(booking.payment_id)}</p>
     <p><strong>Vehículo:</strong> ${field(booking.van_name)}</p>
     <p><strong>Fechas:</strong> ${dates}</p>
-    <p><strong>Importe pagado:</strong> ${total} (la fianza de 500 € se deposita al recoger)</p>`;
+    <p><strong>Importe pagado:</strong> ${total} (la fianza de ${field(fallbackSettings.fianza_amount || '500,00')} € se deposita al recoger)</p>`;
 
   const messages = [{
     from: `"RentMeUskar Reservas" <${senderAddress}>`,
