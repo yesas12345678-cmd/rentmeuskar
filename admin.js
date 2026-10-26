@@ -540,7 +540,10 @@ const initAdmin = () => {
                 body: JSON.stringify(fields)
             });
 
-            if (!response.ok) throw new Error('Error al actualizar reserva');
+            if (!response.ok) {
+                const errData = await response.json().catch(() => ({}));
+                throw new Error(errData.error || 'No se pudo actualizar la reserva.');
+            }
             const data = await response.json();
             
             // Actualizar localmente
@@ -558,7 +561,7 @@ const initAdmin = () => {
             showToast(customToastMsg || `Reserva #${id} actualizada con éxito.`, 'success');
         } catch (err) {
             console.error(err);
-            showToast('No se pudo actualizar la reserva.', 'error');
+            showToast(escapeHTML(err.message || 'No se pudo actualizar la reserva.'), 'error');
         }
     };
 

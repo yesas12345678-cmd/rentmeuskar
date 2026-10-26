@@ -308,6 +308,15 @@ test('opiniones demasiado largas se rechazan antes de llegar a la BD', async () 
   assert.match(res.data.error, /demasiado larga/);
 });
 
+test('datos del contrato que no caben en la columna se rechazan con un mensaje claro', async () => {
+  const admin = await login('zvaito', ADMIN_PASSWORD);
+  const long = await call('PUT', '/api/bookings/50', { client_postal_code: '1'.repeat(60) }, admin);
+  assert.equal(long.status, 400);
+  assert.match(long.data.error, /client_postal_code/);
+  assert.equal((await call('PUT', '/api/bookings/50', { km_out: 1e12 }, admin)).status, 400);
+  assert.equal((await call('PUT', '/api/bookings/50', { client_postal_code: '18830' }, admin)).status, 200);
+});
+
 test('no se pueden probar códigos de reserva sin límite', async () => {
   let last;
   for (let i = 0; i < 65; i++) last = await call('GET', `/api/bookings/50?auth=RMU-${String(i).padStart(6, '0')}`);

@@ -2296,6 +2296,13 @@ const ADMIN_BOOKING_FIELDS = {
   accessory_rueda: 'bool', accessory_gato: 'bool', accessory_manual: 'bool'
 };
 
+// Tamaño de las columnas VARCHAR de esos campos (el resto son TEXT): un texto más largo hacía fallar el UPDATE
+const ADMIN_BOOKING_TEXT_LIMITS = {
+  contract_applied_rate: 100, client_postal_code: 50, client_city: 255, client_province: 255,
+  client_license_num: 100, second_driver_name: 255, second_driver_dni: 100, second_driver_phone: 100,
+  second_driver_license_num: 100, fuel_out: 50, fuel_in: 50, adblue_out: 50, adblue_in: 50, payment_method: 100
+};
+
 // Devuelve { updates } con los valores ya convertidos, o { error } si alguno no es válido
 function parseAdminBookingUpdates(body) {
   const updates = {};
@@ -2311,13 +2318,16 @@ function parseAdminBookingUpdates(body) {
     const empty = raw === null || raw === '';
     if (type === 'text') {
       if (!empty && typeof raw !== 'string') return { error: `Valor no válido para ${field}.` };
-      updates[field] = empty ? null : raw.trim().slice(0, 500);
+      const maxLength = ADMIN_BOOKING_TEXT_LIMITS[field] || 500;
+      if (!empty && raw.trim().length > maxLength) return { error: `El campo ${field} admite hasta ${maxLength} caracteres.` };
+      updates[field] = empty ? null : raw.trim();
     } else if (type === 'date') {
       if (!empty && !/^\d{4}-\d{2}-\d{2}$/.test(String(raw))) return { error: `Fecha no válida en ${field}.` };
       updates[field] = empty ? null : String(raw);
     } else if (type === 'int' || type === 'number') {
       const num = empty ? 0 : Number(raw);
-      if (!Number.isFinite(num) || num < 0) return { error: `Número no válido en ${field}.` };
+      // Límite de NUMERIC(10,2) e INTEGER: un número mayor hacía fallar el UPDATE
+      if (!Number.isFinite(num) || num < 0 || num > 99999999) return { error: `Número no válido en ${field}.` };
       updates[field] = type === 'int' ? Math.round(num) : Math.round(num * 100) / 100;
     } else if (type === 'bool') {
       updates[field] = raw === true || raw === 'true' || raw === 1 || raw === '1' || raw === 'on';
