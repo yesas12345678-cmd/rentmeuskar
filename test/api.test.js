@@ -241,6 +241,11 @@ test('un pago que llega tarde se registra aunque las fechas ya estén ocupadas, 
   assert.equal(bad.status, 400);
 });
 
+test('cambio de credenciales de admin con tipos incorrectos devuelve 400', async () => {
+  const admin = (await call('POST', '/api/auth/login', { email: 'zvaito', password: ADMIN_PASSWORD })).data.token;
+  assert.equal((await call('POST', '/api/admin/request-credential-change-code', { new_username: 123, new_password: ['x'] }, admin)).status, 400);
+});
+
 test('no se pueden probar códigos de reserva sin límite', async () => {
   let last;
   for (let i = 0; i < 65; i++) last = await call('GET', `/api/bookings/50?auth=RMU-${String(i).padStart(6, '0')}`);

@@ -1747,7 +1747,10 @@ app.post('/api/auth/reset-password', async (req, res) => {
 
   // Restablecer admin solo con un código emitido para la cuenta de administración (enviado a info@)
   if (pending.isAdmin) {
-    const finalAdminUser = new_username ? new_username.trim() : getAdminUsername();
+    const finalAdminUser = new_username && new_username.trim() ? new_username.trim() : getAdminUsername();
+    if (finalAdminUser.length < 3 || finalAdminUser.length > 100) {
+      return res.status(400).json({ error: 'El nombre de usuario debe tener entre 3 y 100 caracteres.' });
+    }
     try {
       await pool.query("INSERT INTO settings (key, value) VALUES ('admin_username', $1) ON CONFLICT (key) DO UPDATE SET value = $1", [finalAdminUser]);
       await pool.query("INSERT INTO settings (key, value) VALUES ('admin_password_hash', $1) ON CONFLICT (key) DO UPDATE SET value = $1", [passHash]);
@@ -3712,6 +3715,9 @@ app.post('/api/admin/request-credential-change-code', verifyAdmin, async (req, r
   const { new_username, new_password } = req.body;
   if (!new_username || !new_password) {
     return res.status(400).json({ error: 'El nuevo usuario y la nueva contraseña son obligatorios.' });
+  }
+  if (!areStrings(new_username, new_password) || new_username.length > 100 || new_password.length > 200) {
+    return res.status(400).json({ error: 'Los datos del formulario no son válidos.' });
   }
 
   const cleanUsername = new_username.trim();
