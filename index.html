@@ -608,71 +608,10 @@
             window.openAuthModal('edit-profile-modal');
         };
 
-        window.handleEditProfileSubmit = async function(e) {
+        // El guardado del perfil lo hace app.js (PUT /api/auth/me, mostrando el error real si falla).
+        // Antes este manejador también guardaba solo en el navegador y anunciaba éxito aunque fallara.
+        window.handleEditProfileSubmit = function(e) {
             if (e && e.preventDefault) e.preventDefault();
-            var nameEl = document.getElementById('edit-profile-name');
-            var emailEl = document.getElementById('edit-profile-email');
-            var phoneEl = document.getElementById('edit-profile-phone');
-            var dniEl = document.getElementById('edit-profile-dni');
-
-            var name = nameEl ? nameEl.value.trim() : '';
-            var email = emailEl ? emailEl.value.trim().toLowerCase() : '';
-            var phone = phoneEl ? phoneEl.value.trim() : '';
-            var dni = dniEl ? dniEl.value.trim().toUpperCase() : '';
-
-            if (dni && typeof window.validateSpanishID === 'function' && !window.validateSpanishID(dni)) {
-                alert('El DNI / NIE introducido no es válido. Debe contener 8 números y la letra correspondiente (ejemplo: 12345678Z o X1234567L).');
-                return false;
-            }
-
-            var token = localStorage.getItem('user_token');
-            var savedProfileStr = localStorage.getItem('user_profile');
-            var currentUser = savedProfileStr ? JSON.parse(savedProfileStr) : {};
-
-            var updatedUser = Object.assign({}, currentUser, {
-                name: name || currentUser.name,
-                email: email || currentUser.email,
-                phone: phone || currentUser.phone,
-                dni: dni || currentUser.dni
-            });
-
-            // 1. Guardar en user_profile
-            localStorage.setItem('user_profile', JSON.stringify(updatedUser));
-
-            // 2. Guardar en local_registered_users
-            var localUsers = JSON.parse(localStorage.getItem('local_registered_users') || '[]');
-            var foundIndex = localUsers.findIndex(function(u) {
-                return (u.email && updatedUser.email && u.email.toLowerCase() === updatedUser.email.toLowerCase()) || u.id === updatedUser.id;
-            });
-            if (foundIndex !== -1) {
-                localUsers[foundIndex].name = updatedUser.name;
-                localUsers[foundIndex].phone = updatedUser.phone;
-                localUsers[foundIndex].dni = updatedUser.dni;
-                if (updatedUser.email) localUsers[foundIndex].email = updatedUser.email;
-            } else {
-                localUsers.push(updatedUser);
-            }
-            localStorage.setItem('local_registered_users', JSON.stringify(localUsers));
-
-            try {
-                if (token) {
-                    await fetch('/api/auth/me', {
-                        method: 'PUT',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': 'Bearer ' + token
-                        },
-                        body: JSON.stringify({ name: name, email: email, phone: phone, dni: dni })
-                    });
-                }
-            } catch (err) {
-                console.warn('Backend de perfil offline, guardando cambios localmente:', err);
-            } finally {
-                window.closeAuthModal('edit-profile-modal');
-                if (typeof window.updateAuthUI === 'function') window.updateAuthUI();
-                if (typeof showAppToast === 'function') showAppToast('Perfil actualizado con éxito', 'success');
-                else alert('Perfil actualizado con éxito');
-            }
             return false;
         };
 
@@ -2566,7 +2505,7 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
 
     <!-- Custom Script -->
-    <script src="app.js?v=21.5"></script>
+    <script src="app.js?v=21.6"></script>
 </body>
 
 </html>

@@ -2727,10 +2727,9 @@ const initApp = () => {
                     alert(data.error || 'Error al publicar opinión.');
                 }
             } catch (err) {
+                // Sin respuesta del servidor la opinión NO se ha publicado (antes se anunciaba como publicada)
                 console.error(err);
-                showAppToast('¡Gracias! Tu reseña verificada ha sido publicada correctamente.', 'success');
-                window.closeAuthModal('write-review-modal');
-                loadReviews();
+                showAppToast('Error de conexión: tu opinión no se ha publicado. Inténtalo de nuevo.', 'error');
             } finally {
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = originalHtml;

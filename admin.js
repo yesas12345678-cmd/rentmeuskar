@@ -489,8 +489,10 @@ const initAdmin = () => {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const rawBookings = await response.json();
-            const deletedIds = JSON.parse(localStorage.getItem('deleted_booking_ids') || '[]');
-            bookings = rawBookings.filter(b => !deletedIds.includes(String(b.id)) && !deletedIds.includes(Number(b.id)));
+            // El servidor es la única fuente de verdad: antes se ocultaban ids guardados en el navegador,
+            // y una reserva que no se llegó a borrar (o una nueva con el mismo id) no volvía a aparecer
+            localStorage.removeItem('deleted_booking_ids');
+            bookings = rawBookings;
             
             updateKPIs();
             renderBookings();
@@ -574,21 +576,26 @@ const initAdmin = () => {
         // 1. Quitar la reserva de la lista y actualizar la interfaz de inmediato
         bookings = bookings.filter(b => String(b.id) !== String(id));
         
-        const deletedIds = JSON.parse(localStorage.getItem('deleted_booking_ids') || '[]');
-        if (!deletedIds.includes(String(id))) {
-            deletedIds.push(String(id));
-            localStorage.setItem('deleted_booking_ids', JSON.stringify(deletedIds));
-        }
-
         updateKPIs();
         renderBookings();
         closeModal();
 
-        // 2. Notificar al backend en segundo plano
-        fetch(`/api/bookings/${id}`, {
-            method: 'DELETE',
-            headers: { 'Authorization': `Bearer ${token}` }
-        }).catch(err => console.warn('Error backend al borrar reserva:', err));
+        // 2. Borrar en el servidor; si falla, se restaura y se explica (antes se daba por borrada siempre)
+        try {
+            const delRes = await fetch(`/api/bookings/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!delRes.ok) throw new Error((await delRes.json().catch(() => ({}))).error || 'El servidor no pudo borrar la reserva.');
+        } catch (err) {
+            console.warn('Error backend al borrar reserva:', err);
+            bookings.push(bookingToDelete);
+            bookings.sort((a, b) => b.id - a.id);
+            updateKPIs();
+            renderBookings();
+            showToast(`No se ha borrado la reserva #${id}: ${err.message}`, 'error');
+            return;
+        }
 
         // 3. Mostrar notificación toast con botón Deshacer activo durante 5 segundos
         showToast(`Reserva #${id} eliminada permanentemente.`, 'success', {
@@ -599,11 +606,6 @@ const initAdmin = () => {
                     bookings.push(bookingToDelete);
                     bookings.sort((a, b) => b.id - a.id);
                 }
-
-                // Eliminar id del almacenamiento local de borrados
-                const currentDeletedIds = JSON.parse(localStorage.getItem('deleted_booking_ids') || '[]');
-                const updatedDeletedIds = currentDeletedIds.filter(dId => String(dId) !== String(id));
-                localStorage.setItem('deleted_booking_ids', JSON.stringify(updatedDeletedIds));
 
                 // Volver a crear la reserva en la base de datos del servidor
                 try {
@@ -1367,25 +1369,12 @@ const initAdmin = () => {
                     }
                     showToast(`Código verificado ${data.codeObj.code} creado con especificaciones completas.`, 'success');
                 } else {
-                    const code = 'RMU-' + Math.floor(1000 + Math.random() * 9000);
-                    generatedCodeBox.style.display = 'block';
-                    generatedCodeText.textContent = code;
-                    const specsEl = document.getElementById('generated-code-specs');
-                    if (specsEl) {
-                        specsEl.textContent = `📦 ${van_name} | 🗓️ ${rental_days} Días (${rental_mode})`;
-                    }
-                    showToast(`Código verificado ${code} creado localmente.`, 'success');
+                    // Un código inventado en el navegador no existe en el servidor y el cliente no podría usarlo
+                    showToast((data && data.error) || 'No se pudo generar el código. Inténtalo de nuevo.', 'error');
                 }
             } catch (err) {
                 console.error(err);
-                const code = 'RMU-' + Math.floor(1000 + Math.random() * 9000);
-                generatedCodeBox.style.display = 'block';
-                generatedCodeText.textContent = code;
-                const specsEl = document.getElementById('generated-code-specs');
-                if (specsEl) {
-                    specsEl.textContent = `📦 ${van_name} | 🗓️ ${rental_days} Días (${rental_mode})`;
-                }
-                showToast(`Código verificado ${code} creado localmente.`, 'success');
+                showToast('Error de conexión: no se ha generado ningún código.', 'error');
             } finally {
                 btnGenerateCode.disabled = false;
                 btnGenerateCode.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Generar Código Específico';
