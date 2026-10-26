@@ -50,6 +50,7 @@ Todas las variables están explicadas en `.env.example`. Las importantes:
 
 Modo de cobro (se consulta en `/api/payment-config`):
 - `redsys`: hay credenciales de Redsys → el cliente paga en la página de Redsys y la reserva se confirma con la notificación firmada.
+  `REDSYS_URL` vale por defecto el entorno de **pruebas** (`https://sis-t.redsys.es:25443/sis/realizarPago`); para cobrar de verdad hay que poner `https://sis.redsys.es/sis/realizarPago` junto con el código de comercio y la clave reales.
 - `test`: `ENABLE_TEST_PAYMENTS=true` → TPV simulado (solo pruebas).
 - `off`: ninguno de los dos → las reservas se piden por WhatsApp y se paga al recoger.
 
@@ -57,7 +58,7 @@ Modo de cobro (se consulta en `/api/payment-config`):
 
 Producción en Docker con Dokploy. `rentmeuskar.netlify.app` es una versión estática antigua sin servidor (solo WhatsApp) y no refleja esta web.
 
-Antes de desplegar, revisar que en el servidor estén `SESSION_SECRET`, `ADMIN_PASSWORD`, `SMTP_PASS`, las claves de Redsys y `BASE_URL`, y que `ENABLE_TEST_PAYMENTS` no esté activado.
+Antes de desplegar, revisar que en el servidor estén `SESSION_SECRET`, `ADMIN_PASSWORD`, `SMTP_PASS`, las claves de Redsys y `BASE_URL`, que `REDSYS_URL` apunte a `sis.redsys.es` (no a `sis-t`) y que `ENABLE_TEST_PAYMENTS` no esté activado.
 
 ## Tecnologías
 
