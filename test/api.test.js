@@ -183,3 +183,9 @@ test('datos con tipos incorrectos devuelven 400, no 500', async () => {
     assert.ok(res.status < 500, `${url} devolvió ${res.status}`);
   }
 });
+
+test('las rutas de API inexistentes responden 404 en JSON', async () => {
+  const res = await call('GET', '/api/no-existe');
+  assert.equal(res.status, 404);
+  assert.ok(res.data && res.data.error);
+});

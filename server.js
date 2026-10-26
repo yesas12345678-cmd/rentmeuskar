@@ -4254,6 +4254,11 @@ app.delete('/api/faqs/:id', verifyAdmin, async (req, res) => {
   }
 });
 
+// Rutas de API inexistentes: responder en JSON (el frontend siempre hace res.json())
+app.use('/api', (req, res) => {
+  res.status(404).json({ error: 'Ruta de API no encontrada.' });
+});
+
 // --- ENRUTAMIENTO FRONTEND ---
 
 // Enrutamiento de páginas dinámicas del cliente (Contrato y Factura)
