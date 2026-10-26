@@ -1,3 +1,7 @@
+// Escapa textos del servidor (furgonetas, extras) antes de meterlos en innerHTML o en atributos
+const rmuEsc = (value) => String(value === undefined || value === null ? '' : value)
+    .replace(/[&<>'"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[c]));
+
 // Funciones globales de modales inmediata
 window.openAuthModal = (modalId) => {
     const el = document.getElementById(modalId);
@@ -468,10 +472,10 @@ const initApp = () => {
             const priceText = extra.type === 'daily' ? `+${parseFloat(extra.price).toFixed(2)}€ / día` : `+${parseFloat(extra.price).toFixed(2)}€ total`;
 
             label.innerHTML = `
-                <input type="checkbox" class="calc-dynamic-extra-checkbox" data-index="${index}" data-price="${extra.price}" data-type="${extra.type}" data-name="${extra.name}">
+                <input type="checkbox" class="calc-dynamic-extra-checkbox" data-index="${index}" data-price="${extra.price}" data-type="${extra.type}" data-name="${rmuEsc(extra.name)}">
                 <div class="extra-content">
                     <i class="fa-solid ${icon}"></i>
-                    <span class="extra-name">${extra.name}</span>
+                    <span class="extra-name">${rmuEsc(extra.name)}</span>
                     <span class="extra-price">${priceText}</span>
                 </div>
             `;
@@ -683,14 +687,14 @@ const initApp = () => {
 
                         article.innerHTML = `
                             <div class="van-image-container" style="position: relative;">
-                                <img src="${mainImg}" alt="${van.name}" class="van-image" id="img-van-${van.van_type}" loading="lazy" decoding="async">
+                                <img src="${rmuEsc(mainImg)}" alt="${rmuEsc(van.name)}" class="van-image" id="img-van-${van.van_type}" loading="lazy" decoding="async">
                                 <div class="van-tag ${van.van_type === 'medium' ? 'highlight' : ''}">${tag}</div>
                             </div>
                             <div class="van-details">
-                                <h3 class="van-name">${van.name}</h3>
+                                <h3 class="van-name">${rmuEsc(van.name)}</h3>
                                 <p class="van-model-example">${desc}</p>
                                 <ul class="van-specs">
-                                    <li><i class="fa-solid fa-box"></i> <strong>${van.m3}</strong> de capacidad</li>
+                                    <li><i class="fa-solid fa-box"></i> <strong>${rmuEsc(van.m3)}</strong> de capacidad</li>
                                     <li><i class="fa-solid fa-weight-hanging"></i> Carga útil: <strong>${specPayload}</strong></li>
                                     <li><i class="fa-solid fa-user"></i> <strong>${specPlazas}</strong></li>
                                     <li><i class="fa-solid fa-circle-check"></i> ${specExtra}</li>
@@ -2269,7 +2273,7 @@ const initApp = () => {
             slide.style.display = 'flex';
             slide.style.alignItems = 'center';
             slide.style.justifyContent = 'center';
-            slide.innerHTML = `<img src="${img}" style="width: 100%; height: 100%; object-fit: cover;" alt="${van.name} foto ${idx + 1}">`;
+            slide.innerHTML = `<img src="${img}" style="width: 100%; height: 100%; object-fit: cover;" alt="${rmuEsc(van.name)} foto ${idx + 1}">`;
             slidesContainer.appendChild(slide);
 
             const dot = document.createElement('span');
