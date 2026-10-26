@@ -2518,7 +2518,7 @@ const initApp = () => {
             const days = selectedOpt.getAttribute('data-days') || '2';
             const mode = selectedOpt.getAttribute('data-mode') || 'Sin Conductor';
             const code = selectedOpt.getAttribute('data-code') || ('RMU-B' + selectedOpt.value.replace('booking_', ''));
-            const fullSpec = `${vanName} • ${days} Días (${mode})`;
+            const fullSpec = `${vanName} • ${days} ${Number(days) === 1 ? 'día' : 'días'} (${mode})`;
 
             if (hiddenVanInput) hiddenVanInput.value = fullSpec;
             if (badgeText) badgeText.textContent = fullSpec;
@@ -2585,8 +2585,8 @@ const initApp = () => {
                         const code = b.review_code || ('RMU-B' + b.id);
                         const days = b.days || 2;
                         const mode = b.rental_mode === 'con' ? 'Con Conductor' : 'Sin Conductor';
-                        const label = `Reserva #${b.id} - ${van} • ${days} Días (${mode})`;
-                        html += `<option value="booking_${b.id}" data-van="${van}" data-days="${days}" data-mode="${mode}" data-code="${code}">${label}</option>`;
+                        const label = `Reserva #${b.id} - ${van} • ${days} ${Number(days) === 1 ? 'día' : 'días'} (${mode})`;
+                        html += `<option value="booking_${rmuEsc(b.id)}" data-van="${rmuEsc(van)}" data-days="${rmuEsc(days)}" data-mode="${rmuEsc(mode)}" data-code="${rmuEsc(code)}">${rmuEsc(label)}</option>`;
                     });
                     html += '</optgroup>';
                 }
@@ -2629,7 +2629,7 @@ const initApp = () => {
                     const nameInput = document.getElementById('review-name-input');
                     const cityInput = document.getElementById('review-city-input');
 
-                    const daysSpec = data.rental_days ? ` • ${data.rental_days} Días` : '';
+                    const daysSpec = data.rental_days ? ` • ${data.rental_days} ${Number(data.rental_days) === 1 ? 'día' : 'días'}` : '';
                     const modeSpec = data.rental_mode ? ` (${data.rental_mode})` : '';
                     const fullVanText = `${data.van_name}${daysSpec}${modeSpec}`;
 
