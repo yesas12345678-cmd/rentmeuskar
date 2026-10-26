@@ -765,15 +765,15 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://accounts.google.com"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net"],
       scriptSrcAttr: ["'unsafe-inline'"],
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://cdnjs.cloudflare.com", "https://cdn.jsdelivr.net"],
       fontSrc: ["'self'", "https://fonts.gstatic.com", "https://cdnjs.cloudflare.com", "data:"],
       imgSrc: ["'self'", "data:", "blob:", "https://*.googleusercontent.com", "https://images.unsplash.com"],
-      connectSrc: ["'self'", "https://accounts.google.com", "https://*.redsys.es:25443", "https://sis-t.redsys.es:25443", "https://sis.redsys.es", "https://wa.me", "https://api.whatsapp.com"],
+      connectSrc: ["'self'", "https://*.redsys.es:25443", "https://sis-t.redsys.es:25443", "https://sis.redsys.es", "https://wa.me", "https://api.whatsapp.com"],
       // El pago real se envía con un formulario POST al TPV de Redsys
       formAction: ["'self'", "https://sis-t.redsys.es:25443", "https://sis.redsys.es"],
-      frameSrc: ["'self'", "https://accounts.google.com"],
+      frameSrc: ["'self'"],
       objectSrc: ["'none'"],
       upgradeInsecureRequests: []
     }
