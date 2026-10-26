@@ -910,11 +910,15 @@ let currentCandidateIndex = 0;
 let isDbConnected = false;
 let isInitializingDb = false;
 
-let activePool = candidateDbUrls.length > 0 ? new Pool({
-  connectionString: candidateDbUrls[0],
-  connectionTimeoutMillis: 5000,
-  ssl: false
-}) : null;
+// Una conexión inactiva que se cae (p. ej. al reiniciar PostgreSQL) emite 'error' en el pool:
+// sin este manejador acababa como excepción no capturada
+const createDbPool = (connectionString) => {
+  const newPool = new Pool({ connectionString, connectionTimeoutMillis: 5000, ssl: false });
+  newPool.on('error', err => console.error('[DB] Error en una conexión inactiva del pool:', err.message));
+  return newPool;
+};
+
+let activePool = candidateDbUrls.length > 0 ? createDbPool(candidateDbUrls[0]) : null;
 
 // Proxy adapter para que todas las llamadas existentes a pool.query/pool.connect usen siempre la conexión activa
 const pool = {
@@ -1221,11 +1225,7 @@ const initDb = async () => {
       try {
         await activePool.end().catch(() => {});
       } catch (e) {}
-      activePool = new Pool({
-        connectionString: candidateDbUrls[currentCandidateIndex],
-        connectionTimeoutMillis: 5000,
-        ssl: false
-      });
+      activePool = createDbPool(candidateDbUrls[currentCandidateIndex]);
       console.log(`[DB FAILOVER] Conmutando al siguiente candidato de conexión: ${maskDbUrl(candidateDbUrls[currentCandidateIndex])}`);
     }
   } finally {
