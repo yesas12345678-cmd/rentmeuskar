@@ -1350,8 +1350,11 @@ const initApp = () => {
                 }
             }
 
+            // Sin perfil no se inventa un usuario (antes salía uno fijo con datos personales reales)
             if (!user) {
-                user = { id: 1, name: 'Jose Manuel', email: 'yesas12345678@gmail.com', dni: '' };
+                showAppToast('No hemos podido cargar tu cuenta. Inicia sesión de nuevo.', 'error');
+                window.openAuthModal('login-modal');
+                return;
             }
 
             const userInfoEl = document.getElementById('client-user-info');
@@ -1584,6 +1587,27 @@ const initApp = () => {
 
     updateAuthUI(); // Comprobar sesión al arrancar
 
+    // Validar la sesión guardada con el servidor: si ha caducado (30 días, cambio de contraseña...)
+    // se cierra aquí, en vez de mostrar al cliente como conectado y fallar al reservar
+    (async () => {
+        const token = localStorage.getItem('user_token');
+        if (!token) return;
+        try {
+            const res = await fetch('/api/auth/me', { headers: { 'Authorization': `Bearer ${token}` } });
+            if (res.status === 401) {
+                if (localStorage.getItem('admin_token') === token) localStorage.removeItem('admin_token');
+                localStorage.removeItem('user_token');
+                localStorage.removeItem('user_profile');
+                updateAuthUI();
+            } else if (res.ok) {
+                const fresh = await res.json();
+                if (fresh && !fresh.is_admin && fresh.email) localStorage.setItem('user_profile', JSON.stringify(fresh));
+            }
+        } catch (e) {
+            // Sin conexión no se cierra la sesión
+        }
+    })();
+
     /* ==========================================================================
        7. ENVIAR FORMULARIO, PASARELA TPV Y WHATSAPP FLOW
        ========================================================================== */
@@ -1708,8 +1732,11 @@ const initApp = () => {
             }
         }
 
+        // Sin cuenta cargada no se reserva con un usuario inventado: se pide iniciar sesión
         if (!user) {
-            user = { id: Date.now(), name: nameValue || 'Cliente', email: 'cliente@rentmeuskar.com' };
+            showAppToast('Inicia sesión para continuar con la reserva.', 'error');
+            window.openAuthModal('login-modal');
+            return;
         }
 
         // Construir datos temporales de reserva
