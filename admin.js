@@ -394,6 +394,11 @@ const initAdmin = () => {
     }
 
     btnAdminLogout.addEventListener('click', () => {
+        // Si la sesión se abrió desde la web, también es la de la web: se cierran las dos
+        if (localStorage.getItem('user_token') && localStorage.getItem('user_token') === localStorage.getItem('admin_token')) {
+            localStorage.removeItem('user_token');
+            localStorage.removeItem('user_profile');
+        }
         localStorage.removeItem('admin_token');
         dashboardDataLoaded = false;
         showToast('Sesión cerrada correctamente.', 'info');
