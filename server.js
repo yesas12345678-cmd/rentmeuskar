@@ -1453,6 +1453,9 @@ app.post('/api/contact', async (req, res) => {
   if (!name || !contact || !message || !areStrings(name, contact, message) || !areOptionalStrings(reason)) {
     return res.status(400).json({ error: 'Nombre, forma de contacto y mensaje son obligatorios.' });
   }
+  if (name.length > 100 || contact.length > 200 || (reason || '').length > 100 || message.length > 5000) {
+    return res.status(400).json({ error: 'El mensaje es demasiado largo (máximo 5000 caracteres).' });
+  }
 
   const safeName = escapeHtml(name.trim());
   const safeContact = escapeHtml(contact.trim());
@@ -1468,7 +1471,8 @@ app.post('/api/contact', async (req, res) => {
       await mailTransporter.sendMail({
         from: `"RentMeUskar Web" <${senderAddress}>`,
         to: adminEmail,
-        subject: `📩 Nuevo Mensaje Web de ${safeName} (${safeReason})`,
+        // El asunto no es HTML: texto plano (nodemailer lo codifica y quita saltos de línea)
+        subject: `📩 Nuevo Mensaje Web de ${name.trim().slice(0, 80)} (${(reason || 'General').trim().slice(0, 40)})`,
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; background-color: #070e24; color: #ffffff; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
             <h2 style="color: #82d105; margin-top: 0;">Nuevo Mensaje desde RentMeUskar.com</h2>
