@@ -1,8 +1,11 @@
 {
   "name": "rentmeuskar",
   "version": "1.0.0",
-  "description": "Este proyecto es una copia exacta local del sitio web de **RentMeUskar** (https://rentmeuskar.netlify.app/), un servicio de alquiler de furgonetas sin conductor en Huéscar y el Altiplano Granadino.",
+  "description": "Web de alquiler de furgonetas de RentMeUskar en Huéscar: reservas, pago con Redsys, contratos, facturas y panel de administración.",
   "main": "server.js",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js",
