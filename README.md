@@ -58,6 +58,10 @@ Modo de cobro (se consulta en `/api/payment-config`):
 
 Producción en Docker con Dokploy. `rentmeuskar.netlify.app` es una versión estática antigua sin servidor (solo WhatsApp) y no refleja esta web.
 
+**Carpetas que deben ser volúmenes persistentes en Dokploy** (si no, se borran en cada despliegue):
+- `uploads/` (o la ruta de `UPLOADS_DIR`): fotos de furgonetas e inspecciones subidas desde el panel.
+- `data/` (o `DATA_DIR`): `admin_store.json`, copia local de respaldo y los códigos de reseña manuales, que solo se guardan ahí.
+
 Antes de desplegar, revisar que en el servidor estén `SESSION_SECRET`, `ADMIN_PASSWORD`, `SMTP_PASS`, las claves de Redsys y `BASE_URL`, que `REDSYS_URL` apunte a `sis.redsys.es` (no a `sis-t`) y que `ENABLE_TEST_PAYMENTS` no esté activado.
 
 ## Tecnologías
