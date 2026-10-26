@@ -4601,6 +4601,16 @@ app.get('/:file', (req, res, next) => {
   res.sendFile(path.join(__dirname, req.params.file));
 });
 
+// Página no encontrada (antes salía el texto en inglés de Express "Cannot GET ...")
+app.use((req, res) => {
+  res.status(404).type('html').send(`<!DOCTYPE html><html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex">
+<title>Página no encontrada | RentMeUskar</title></head>
+<body style="margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#070e24;color:#fff;font-family:Arial,sans-serif;text-align:center;padding:1rem;">
+<main><h1>Página no encontrada</h1><p>La dirección no existe o ha cambiado.</p>
+<p><a href="/" style="color:#82d105;font-weight:bold;">Volver a RentMeUskar</a></p></main></body></html>`);
+});
+
 // Manejador centralizado de errores de subida de archivos (Multer) y validaciones
 app.use((err, req, res, next) => {
   if (err instanceof multer.MulterError) {
