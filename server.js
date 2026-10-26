@@ -3602,22 +3602,21 @@ app.put('/api/vans/:id', verifyAdmin, upload.array('images', 20), discardUploads
     finalImages = [...existingImages, ...newImages];
   }
 
+  // Lo que no llega en la petición se conserva (antes se vaciaban imágenes y extras), y un JSON
+  // mal formado se rechaza en vez de guardar la lista vacía
+  const imagesSent = req.body.image_order !== undefined || req.body.existing_images !== undefined || newImages.length > 0;
+  const extrasSent = req.body.custom_extras !== undefined;
+  const featuresSent = req.body.custom_features !== undefined;
   let customExtras = [];
-  if (req.body.custom_extras) {
-    try {
-      customExtras = typeof req.body.custom_extras === 'string' ? JSON.parse(req.body.custom_extras) : req.body.custom_extras;
-    } catch (e) {
-      console.error('Error parsing custom_extras:', e);
-    }
-  }
-
   let customFeatures = [];
-  if (req.body.custom_features) {
-    try {
-      customFeatures = typeof req.body.custom_features === 'string' ? JSON.parse(req.body.custom_features) : req.body.custom_features;
-    } catch (e) {
-      console.error('Error parsing custom_features:', e);
-    }
+  try {
+    if (extrasSent) customExtras = typeof req.body.custom_extras === 'string' ? JSON.parse(req.body.custom_extras || '[]') : req.body.custom_extras;
+    if (featuresSent) customFeatures = typeof req.body.custom_features === 'string' ? JSON.parse(req.body.custom_features || '[]') : req.body.custom_features;
+  } catch (e) {
+    return res.status(400).json({ error: 'La lista de extras o características no es válida.' });
+  }
+  if (!Array.isArray(customExtras) || !Array.isArray(customFeatures)) {
+    return res.status(400).json({ error: 'La lista de extras o características no es válida.' });
   }
 
   try {
@@ -3643,15 +3642,15 @@ app.put('/api/vans/:id', verifyAdmin, upload.array('images', 20), discardUploads
       min_price_con !== undefined ? parseFloat(min_price_con) : current.min_price_con,
       km_price_con !== undefined ? parseFloat(km_price_con) : current.km_price_con,
       status !== undefined ? status : current.status,
-      finalImages,
-      JSON.stringify(customExtras),
+      imagesSent ? finalImages : current.images,
+      JSON.stringify(extrasSent ? customExtras : (current.custom_extras || [])),
       max_occupants !== undefined ? parseInt(max_occupants) : current.max_occupants,
       eco_label !== undefined ? eco_label : current.eco_label,
       daily_km_limit !== undefined ? parseInt(daily_km_limit) : current.daily_km_limit,
       max_mass !== undefined ? parseInt(max_mass) : current.max_mass,
       fuel_type !== undefined ? fuel_type : current.fuel_type,
       waiting_hour_price !== undefined ? parseFloat(waiting_hour_price) : current.waiting_hour_price,
-      JSON.stringify(customFeatures),
+      JSON.stringify(featuresSent ? customFeatures : (current.custom_features || [])),
       id
     ];
 
@@ -3685,15 +3684,15 @@ app.put('/api/vans/:id', verifyAdmin, upload.array('images', 20), discardUploads
       min_price_con: min_price_con !== undefined ? parseFloat(min_price_con) : current.min_price_con,
       km_price_con: km_price_con !== undefined ? parseFloat(km_price_con) : current.km_price_con,
       status: status !== undefined ? status : current.status,
-      images: finalImages,
-      custom_extras: customExtras,
+      images: imagesSent ? finalImages : current.images,
+      custom_extras: extrasSent ? customExtras : current.custom_extras,
       max_occupants: max_occupants !== undefined ? parseInt(max_occupants) : current.max_occupants,
       eco_label: eco_label !== undefined ? eco_label : current.eco_label,
       daily_km_limit: daily_km_limit !== undefined ? parseInt(daily_km_limit) : current.daily_km_limit,
       max_mass: max_mass !== undefined ? parseInt(max_mass) : current.max_mass,
       fuel_type: fuel_type !== undefined ? fuel_type : current.fuel_type,
       waiting_hour_price: waiting_hour_price !== undefined ? parseFloat(waiting_hour_price) : current.waiting_hour_price,
-      custom_features: customFeatures
+      custom_features: featuresSent ? customFeatures : current.custom_features
     };
     fallbackVans[index] = updated;
     saveAdminStoreToFile();

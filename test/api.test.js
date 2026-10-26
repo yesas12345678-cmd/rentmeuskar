@@ -362,6 +362,15 @@ test('si el correo no sale, registro y recuperación lo dicen en vez de dar el e
   assert.equal((await call('POST', '/api/auth/forgot-password', { email: 'sincorreo@example.com' })).status, 503);
 });
 
+test('editar solo el precio de una furgoneta no borra sus extras ni imágenes', async () => {
+  const admin = await login('zvaito', ADMIN_PASSWORD);
+  const res = await call('PUT', '/api/vans/1', { price_sin: 120 }, admin);
+  assert.equal(res.status, 200);
+  assert.equal(res.data.van.custom_extras.length, 1);
+  assert.equal((await call('PUT', '/api/vans/1', { custom_extras: '{mal' }, admin)).status, 400);
+  await call('PUT', '/api/vans/1', { price_sin: 100 }, admin);
+});
+
 test('no se pueden probar códigos de reserva sin límite', async () => {
   let last;
   for (let i = 0; i < 65; i++) last = await call('GET', `/api/bookings/50?auth=RMU-${String(i).padStart(6, '0')}`);
