@@ -3360,6 +3360,27 @@ app.get('/api/admin/vans', verifyAdmin, async (req, res) => {
 
 // 3. Crear una nueva furgoneta
 // Precios de una furgoneta: números válidos, no negativos y tarifa diaria mayor que cero
+// Textos y enteros de la furgoneta dentro de lo que admiten sus columnas (si no, el INSERT/UPDATE
+// fallaba y el cambio solo quedaba en el almacén local). El tipo se usa en ids y atributos de la web.
+function vanFieldsError(body) {
+  if (body.van_type !== undefined && (typeof body.van_type !== 'string' || !/^[A-Za-z0-9_-]{1,50}$/.test(body.van_type))) {
+    return 'El identificador de la furgoneta solo admite letras, números y guiones (máx. 50).';
+  }
+  const textLimits = { name: 255, plate: 50, m3: 50, eco_label: 100, fuel_type: 100, status: 50 };
+  for (const [field, max] of Object.entries(textLimits)) {
+    const value = body[field];
+    if (value === undefined || value === '') continue;
+    if (typeof value !== 'string' || value.trim().length > max) return `El campo ${field} admite hasta ${max} caracteres.`;
+  }
+  for (const field of ['max_occupants', 'daily_km_limit', 'max_mass']) {
+    const value = body[field];
+    if (value === undefined || value === '') continue;
+    const num = Number(value);
+    if (!Number.isFinite(num) || num < 0 || num > 1000000) return `Número no válido en ${field}.`;
+  }
+  return null;
+}
+
 function vanPriceError(body) {
   const fields = { price_sin: 'Tarifa diaria', min_price_con: 'Tarifa mínima con conductor', km_price_con: 'Precio por km', waiting_hour_price: 'Hora de espera' };
   for (const [field, label] of Object.entries(fields)) {
@@ -3375,7 +3396,7 @@ function vanPriceError(body) {
 
 app.post('/api/vans', verifyAdmin, upload.array('images', 20), discardUploadsOnError, async (req, res) => {
   // Primero: valida y normaliza los precios (la desestructuración de abajo ya lee los valores limpios)
-  const postPriceError = vanPriceError(req.body || {});
+  const postPriceError = vanFieldsError(req.body || {}) || vanPriceError(req.body || {});
   if (postPriceError) {
     return res.status(400).json({ error: postPriceError });
   }
@@ -3505,7 +3526,7 @@ app.post('/api/vans', verifyAdmin, upload.array('images', 20), discardUploadsOnE
 
 // 4. Modificar una furgoneta
 app.put('/api/vans/:id', verifyAdmin, upload.array('images', 20), discardUploadsOnError, async (req, res) => {
-  const putPriceError = vanPriceError(req.body || {});
+  const putPriceError = vanFieldsError(req.body || {}) || vanPriceError(req.body || {});
   if (putPriceError) {
     return res.status(400).json({ error: putPriceError });
   }

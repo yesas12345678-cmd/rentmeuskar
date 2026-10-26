@@ -326,6 +326,16 @@ test('bloqueos con datos que la BD no acepta se rechazan', async () => {
   assert.equal((await call('POST', '/api/blockages', base, admin)).status, 201);
 });
 
+test('furgonetas con identificador o textos no válidos se rechazan', async () => {
+  const admin = await login('zvaito', ADMIN_PASSWORD);
+  const van = { van_type: 'nueva-1', name: 'Nueva', plate: '1111 AAA', m3: '8m³', price_sin: 80, min_price_con: 50, km_price_con: 1 };
+  assert.equal((await call('POST', '/api/vans', { ...van, van_type: 'a"><img src=x>' }, admin)).status, 400);
+  assert.equal((await call('POST', '/api/vans', { ...van, name: 'x'.repeat(300) }, admin)).status, 400);
+  assert.equal((await call('POST', '/api/vans', { ...van, max_mass: 1e12 }, admin)).status, 400);
+  assert.equal((await call('PUT', '/api/vans/1', { plate: 'x'.repeat(60) }, admin)).status, 400);
+  assert.equal((await call('POST', '/api/vans', van, admin)).status, 201);
+});
+
 test('no se pueden probar códigos de reserva sin límite', async () => {
   let last;
   for (let i = 0; i < 65; i++) last = await call('GET', `/api/bookings/50?auth=RMU-${String(i).padStart(6, '0')}`);
