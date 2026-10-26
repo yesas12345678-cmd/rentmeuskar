@@ -272,6 +272,16 @@ test('fotos de inspección: se guardan sin BD y no quedan archivos huérfanos si
   assert.equal(fs.readdirSync(uploadsDir).length, before);
 });
 
+test('con conductor: km y horas de espera se validan y se guardan como números', async () => {
+  const token = (await call('POST', '/api/auth/login', { email: 'otro@example.com', password: 'OtraClave!2030' })).data.token;
+  assert.equal((await call('POST', '/api/bookings', booking(futureDate(130), futureDate(130), { pickup_time: '09:00', return_time: '12:00', rental_mode: 'con', estimated_kms: 'abc', waiting_hours: 1e9 }), token)).status, 400);
+  assert.equal((await call('POST', '/api/bookings', booking(futureDate(130), futureDate(130), { rental_mode: 'otro' }), token)).status, 400);
+  const ok = await call('POST', '/api/bookings', booking(futureDate(131), futureDate(131), { pickup_time: '09:00', return_time: '12:00', rental_mode: 'con', estimated_kms: '50', waiting_hours: '1.5' }), token);
+  assert.equal(ok.status, 201);
+  assert.equal(ok.data.booking.estimated_kms, 50);
+  assert.equal(ok.data.booking.waiting_hours, 1.5);
+});
+
 test('no se pueden probar códigos de reserva sin límite', async () => {
   let last;
   for (let i = 0; i < 65; i++) last = await call('GET', `/api/bookings/50?auth=RMU-${String(i).padStart(6, '0')}`);

@@ -1978,6 +1978,9 @@ app.post('/api/bookings', async (req, res) => {
     days = quote.days;
     extras = quote.extras;
     van_name = quote.van.name || van_name;
+    rental_mode = quote.rentalMode;
+    estimated_kms = quote.kms;
+    waiting_hours = quote.wait;
     name = String(name).trim().slice(0, 100);
   }
 
@@ -2543,9 +2546,26 @@ async function computeBookingQuote(bookingData) {
     return { error: 'La hora de devolución debe ser posterior a la de recogida.' };
   }
 
+  const rentalMode = bookingData.rental_mode || 'sin';
+  if (rentalMode !== 'sin' && rentalMode !== 'con') {
+    return { error: 'La modalidad de alquiler no es válida.' };
+  }
+  // Km y horas de espera (solo con conductor) como números acotados: se guardan en columnas
+  // INTEGER y NUMERIC(5,2), y un valor raro hacía fallar el INSERT
+  let kms = 0;
+  let wait = 0;
+  if (rentalMode === 'con') {
+    kms = parseInt(bookingData.estimated_kms, 10) || 20;
+    wait = parseFloat(bookingData.waiting_hours) || 0;
+    if (kms < 1 || kms > 5000 || wait < 0 || wait > 100) {
+      return { error: 'Los kilómetros u horas de espera no son válidos.' };
+    }
+    wait = Math.round(wait * 100) / 100;
+  }
+
   const extras = [];
   let baseTaxable;
-  if ((bookingData.rental_mode || 'sin') === 'sin') {
+  if (rentalMode === 'sin') {
     let totalBase = parseFloat(van.price_sin) * days;
     if (days >= 3 && days <= 7) totalBase *= 0.95;
 
@@ -2566,8 +2586,6 @@ async function computeBookingQuote(bookingData) {
     });
     baseTaxable = totalBase + extrasCost;
   } else {
-    const kms = parseInt(bookingData.estimated_kms, 10) || 20;
-    const wait = Math.max(0, parseFloat(bookingData.waiting_hours) || 0);
     const extraKmCost = kms > 20 ? (kms - 20) * parseFloat(van.km_price_con) : 0;
     const waitingRate = van.waiting_hour_price !== undefined && van.waiting_hour_price !== null ? parseFloat(van.waiting_hour_price) : 30.00;
     baseTaxable = parseFloat(van.min_price_con) + extraKmCost + (wait * waitingRate);
@@ -2575,7 +2593,7 @@ async function computeBookingQuote(bookingData) {
 
   const total = Math.round(baseTaxable * 1.21 * 100) / 100;
   if (!(total > 0)) return { error: 'No se pudo calcular el importe de la reserva.' };
-  return { total, days, van, extras };
+  return { total, days, van, extras, rentalMode, kms, wait };
 }
 
 function generateRedsysOrderId() {
@@ -2934,6 +2952,9 @@ const handleTestPayment = async (req, res) => {
     bookingData.extras = quote.extras;
     bookingData.van_name = quote.van.name || bookingData.van_name;
     bookingData.name = String(bookingData.name || 'Cliente').trim().slice(0, 100);
+    bookingData.rental_mode = quote.rentalMode;
+    bookingData.estimated_kms = quote.kms;
+    bookingData.waiting_hours = quote.wait;
 
     const numOrder = 'TPV-' + generateRedsysOrderId();
     const methodName = payMethod === 'bizum' ? 'Bizum CaixaBank (Test)' : 'Tarjeta CaixaBank (Test)';
