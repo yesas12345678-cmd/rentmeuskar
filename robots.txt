@@ -1,13 +1,6 @@
 User-agent: *
 Allow: /
-Allow: /assets/
-Allow: /favicon.ico
-Allow: /assets/favicon.png
-
-User-agent: Googlebot
-Allow: /
-
-User-agent: Googlebot-Image
-Allow: /
+Disallow: /api/
+Disallow: /admin
 
 Sitemap: https://rentmeuskar.com/sitemap.xml
