@@ -1383,7 +1383,7 @@ const initApp = () => {
 
                         const statusLabel = b.status === 'confirmed' ? 'Confirmado' : b.status === 'paid_pending' ? 'Pagado (Pendiente Aprobación)' : b.status === 'pending' ? 'Pendiente' : b.status === 'pending_payment' ? (Date.now() - new Date(b.created_at).getTime() > 30 * 60 * 1000 ? 'Pago no completado' : 'Esperando pago') : 'Cancelado';
                         const paymentLabel = b.payment_status === 'paid' ? 'Pagado' : 'Pendiente';
-                        const fianzaLabel = b.fianza_status === 'paid' ? `Depositada (${window.RMU_FIANZA || '500,00'} €)` : b.fianza_status === 'refunded' ? 'Devuelta' : 'En persona (500€)';
+                        const fianzaLabel = b.fianza_status === 'paid' ? `Depositada (${window.RMU_FIANZA || '500,00'} €)` : b.fianza_status === 'refunded' ? 'Devuelta' : `En persona (${window.RMU_FIANZA || '500,00'} €)`;
 
                         const formatDate = (dateStr) => {
                             if (!dateStr) return '-';
