@@ -679,10 +679,11 @@ const initAdmin = () => {
             
             const vanClass = booking.van_type === 'medium' ? 'medium' : 'large';
             const vanIcon = booking.van_type === 'medium' ? 'fa-truck-front' : 'fa-truck-moving';
-            const vanSimpleName = booking.van_type === 'medium' ? 'Ford Transit' : 'MAN TGE';
+            // Nombre corto: las dos furgonetas de siempre por su modelo; cualquier otra, por su nombre
+            const vanSimpleName = booking.van_type === 'medium' ? 'Ford Transit' : booking.van_type === 'large' ? 'MAN TGE' : String(booking.van_name || booking.van_type || 'Furgoneta').slice(0, 30);
             const modeBadge = booking.rental_mode === 'con' 
-                ? '<span style="font-size:0.7rem; padding:2px 4px; border-radius:3px; background:rgba(0,210,255,0.1); color:#00d2ff; margin-left:0.3rem;"><i class="fa-solid fa-user-tie"></i> Con Driver</span>' 
-                : '<span style="font-size:0.7rem; padding:2px 4px; border-radius:3px; background:rgba(130,209,5,0.1); color:#82d105; margin-left:0.3rem;"><i class="fa-solid fa-key"></i> Sin Driver</span>';
+                ? '<span style="font-size:0.7rem; padding:2px 4px; border-radius:3px; background:rgba(0,210,255,0.1); color:#00d2ff; margin-left:0.3rem;"><i class="fa-solid fa-user-tie"></i> Con conductor</span>' 
+                : '<span style="font-size:0.7rem; padding:2px 4px; border-radius:3px; background:rgba(130,209,5,0.1); color:#82d105; margin-left:0.3rem;"><i class="fa-solid fa-key"></i> Sin conductor</span>';
             
             const clientNameVal = booking.client_name || booking.name;
             
