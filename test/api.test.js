@@ -126,6 +126,7 @@ test('reservas: precio del servidor, sin sesión no se reserva y nadie ve las de
   assert.equal(paid.status, 201);
   // 2 días x 100 € + GPS 2 x 5 € = 210 € + 21 % IVA; el total enviado (1 €) se ignora
   assert.equal(paid.data.booking.total_price, 254.1);
+  assert.equal(paid.data.booking.van_plate, '0000 TST', 'matrícula del catálogo, no una fija');
 
   const id = paid.data.booking.id;
   assert.equal((await call('GET', `/api/bookings/${id}`)).status, 404, 'sin sesión ni código');

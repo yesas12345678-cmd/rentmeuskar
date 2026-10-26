@@ -1998,22 +1998,8 @@ app.post('/api/bookings', async (req, res) => {
   // Datos de contacto calculados antes de tocar la BD para que el modo sin BD también los guarde
   const { email: clientEmail, phone: clientPhone, dni: clientDni } = bookingContact(requester, req.body);
   try {
-    // Obtener matrícula y volumen de la base de datos para la furgoneta
-    try {
-      const vanRes = await pool.query('SELECT plate, m3 FROM vans WHERE van_type = $1', [van_type]);
-      if (vanRes.rowCount > 0) {
-        realPlate = vanRes.rows[0].plate;
-        realM3 = vanRes.rows[0].m3;
-      } else {
-        // Fallback histórico
-        realPlate = van_type === 'medium' ? '3681 MCC' : '3758 MDW';
-        realM3 = van_type === 'medium' ? '8m³' : '14m³';
-      }
-    } catch (e) {
-      console.error('Error al consultar matrícula de furgoneta:', e);
-      realPlate = van_type === 'medium' ? '3681 MCC' : '3758 MDW';
-      realM3 = van_type === 'medium' ? '8m³' : '14m³';
-    }
+    // Matrícula y volumen de la furgoneta (BD o catálogo en memoria)
+    ({ plate: realPlate, m3: realM3 } = await getVanPlateAndM3(van_type));
 
     // Verificar colisión de fechas (solo para alquiler SIN conductor, con conductor no bloquea)
     if ((rental_mode || 'sin') === 'sin' && !(await isVanAvailable(van_type, pickup_date, return_date))) {
@@ -2541,6 +2527,19 @@ function bookingContact(user, body) {
   };
 }
 
+// Matrícula y volumen de una furgoneta: de la BD o del catálogo en memoria. Antes, sin BD se
+// ponía una matrícula fija según el tipo, y salía una matrícula equivocada en factura y contrato.
+async function getVanPlateAndM3(vanType) {
+  try {
+    const r = await pool.query('SELECT plate, m3 FROM vans WHERE van_type = $1', [vanType]);
+    if (r.rowCount > 0) return { plate: r.rows[0].plate || '', m3: r.rows[0].m3 || '' };
+  } catch (e) {
+    // BD no disponible: se usa el catálogo en memoria
+  }
+  const van = fallbackVans.find(v => v.van_type === vanType);
+  return { plate: (van && van.plate) || '', m3: (van && van.m3) || '' };
+}
+
 async function computeVanExists(vanType) {
   try {
     const r = await pool.query('SELECT 1 FROM vans WHERE van_type = $1', [vanType]);
@@ -3008,21 +3007,7 @@ const handleTestPayment = async (req, res) => {
     }
 
     // Obtener matrícula y volumen m3
-    let realPlate = '';
-    let realM3 = '';
-    try {
-      const vanRes = await pool.query('SELECT plate, m3 FROM vans WHERE van_type = $1', [bookingData.van_type]);
-      if (vanRes.rowCount > 0) {
-        realPlate = vanRes.rows[0].plate;
-        realM3 = vanRes.rows[0].m3;
-      } else {
-        realPlate = bookingData.van_type === 'medium' ? '3681 MCC' : '3758 MDW';
-        realM3 = bookingData.van_type === 'medium' ? '8m³' : '14m³';
-      }
-    } catch (e) {
-      realPlate = bookingData.van_type === 'medium' ? '3681 MCC' : '3758 MDW';
-      realM3 = bookingData.van_type === 'medium' ? '8m³' : '14m³';
-    }
+    const { plate: realPlate, m3: realM3 } = await getVanPlateAndM3(bookingData.van_type);
 
     // Resolver usuario autenticado y detalles de contacto
     const authUser = await getAuthUser(req);
