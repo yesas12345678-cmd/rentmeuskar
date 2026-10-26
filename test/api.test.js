@@ -408,6 +408,17 @@ test('el calendario de disponibilidad responde (no lo tapa la ruta /api/bookings
   assert.ok(Array.isArray(res.data));
 });
 
+test('un segundo intento de pago suelta el anterior sin pagar en vez de bloquear al cliente', async () => {
+  const token = await login('otro@example.com', 'OtraClave!2030');
+  const first = await call('POST', '/api/redsys/create-payment', { bookingData: booking(futureDate(170), futureDate(171)) }, token);
+  assert.equal(first.status, 200, JSON.stringify(first.data));
+  const second = await call('POST', '/api/redsys/create-payment', { bookingData: booking(futureDate(170), futureDate(171)) }, token);
+  assert.equal(second.status, 200, JSON.stringify(second.data));
+  const admin = await login('zvaito', ADMIN_PASSWORD);
+  const mine = (await call('GET', '/api/bookings', null, admin)).data.filter(b => b.user_id === 2 && b.status === 'pending_payment');
+  assert.equal(mine.length, 1);
+});
+
 test('no se pueden probar códigos de reserva sin límite', async () => {
   let last;
   for (let i = 0; i < 65; i++) last = await call('GET', `/api/bookings/50?auth=RMU-${String(i).padStart(6, '0')}`);

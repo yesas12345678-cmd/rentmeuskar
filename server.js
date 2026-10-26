@@ -2964,8 +2964,22 @@ app.post('/api/redsys/create-payment', async (req, res) => {
     if (!payer || payer.isAdmin) {
       return res.status(401).json({ error: 'Inicia sesión con tu cuenta de cliente para pagar la reserva.' });
     }
+    // Un solo pago abierto por cliente: al empezar otro se suelta el anterior sin pagar (antes, quien
+    // cerraba la pestaña de Redsys sin pagar no podía volver a intentarlo hasta pasados 30 minutos).
+    // Si aquel pago llegara a cobrarse, la notificación lo registra y avisa si hay choque de fechas.
     if ((await countOpenBookings(payer.id, 'pending_payment')) >= MAX_OPEN_PAYMENTS_PER_USER) {
-      return res.status(429).json({ error: 'Ya tienes un pago en curso. Complétalo o espera unos minutos antes de iniciar otro.' });
+      try {
+        await pool.query(
+          "UPDATE bookings SET status = 'cancelled', payment_status = 'failed' WHERE user_id = $1 AND status = 'pending_payment' AND payment_status != 'paid'",
+          [payer.id]
+        );
+      } catch (e) {
+        // Sin BD: se hace en la copia local
+      }
+      fallbackBookings
+        .filter(b => String(b.user_id) === String(payer.id) && b.status === 'pending_payment' && b.payment_status !== 'paid')
+        .forEach(b => { b.status = 'cancelled'; b.payment_status = 'failed'; });
+      saveAdminStoreToFile();
     }
 
     if (!(await isVanAvailable(bookingData.van_type, bookingData.pickup_date, bookingData.return_date))) {
