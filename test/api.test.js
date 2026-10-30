@@ -66,7 +66,8 @@ before(async () => {
   const store = {
     fallbackUsers: [
       { id: 1, name: 'Cliente Test', email: CLIENT.email, password: scryptHash(CLIENT.password), phone: '600000001', dni: '00000000T' },
-      { id: 2, name: 'Otro Cliente', email: 'otro@example.com', password: scryptHash('OtraClave!2030'), phone: '600000002', dni: '00000001R' }
+      { id: 2, name: 'Otro Cliente', email: 'otro@example.com', password: scryptHash('OtraClave!2030'), phone: '600000002', dni: '00000001R' },
+      { id: 3, name: 'Cliente Sesiones', email: 'sesion@example.com', password: scryptHash('ClaveSesion!2030'), phone: '600000003', dni: '00000002W' }
     ],
     fallbackBookings: [
       { id: 50, name: 'Pago Tardío', van_type: 'medium', van_name: 'Furgoneta Test', pickup_date: futureDate(120), pickup_time: '09:00', return_date: futureDate(121), return_time: '09:00', days: 1, extras: [], total_price: 100, user_id: 1, status: 'cancelled', payment_status: 'failed', payment_id: '261099999999', rental_mode: 'sin', created_at: '2020-01-01T00:00:00Z' },
@@ -275,6 +276,34 @@ test('límite por cuenta: quien abusa se bloquea aunque cambie de IP, y las dem�
   }
   assert.ok(blockedAt > 0 && blockedAt <= 305, `no se bloqueó la cuenta (bloqueo en ${blockedAt})`);
   assert.notEqual(await meFrom('198.51.100.77', userTokenFor(9002)), 429);
+});
+
+test('sesión de cliente: caduca a los 7 días y cerrar sesión la anula en el servidor', async () => {
+  const email = 'sesion@example.com';
+  const tokenAged = (days) => {
+    const payload = Buffer.from(JSON.stringify({ id: 3, email, ts: Date.now() - days * 24 * 60 * 60 * 1000 })).toString('base64url');
+    return `rmu_usr.${payload}.${crypto.createHmac('sha256', SESSION_SECRET).update(payload).digest('base64url')}`;
+  };
+  // 8 días: caducada; 6 días: todavía vale
+  assert.equal(await meFrom('198.51.100.201', tokenAged(8)), 401);
+  assert.equal(await meFrom('198.51.100.202', tokenAged(6)), 200);
+
+  // Iniciar sesión, usarla, cerrar sesión: el mismo token ya no sirve
+  const first = (await call('POST', '/api/auth/login', { email, password: 'ClaveSesion!2030' })).data.token;
+  assert.equal(await meFrom('198.51.100.203', first), 200);
+  const out = await fetch(BASE + '/api/auth/logout', { method: 'POST', headers: { Authorization: `Bearer ${first}`, 'X-Forwarded-For': '198.51.100.204' } });
+  assert.equal(out.status, 200);
+  assert.equal(await meFrom('198.51.100.205', first), 401);
+  // También las sesiones anteriores de otros dispositivos
+  assert.equal(await meFrom('198.51.100.206', tokenAged(1)), 401);
+
+  // Una sesión nueva después de cerrar sí funciona
+  await new Promise(r => setTimeout(r, 5));
+  const second = (await call('POST', '/api/auth/login', { email, password: 'ClaveSesion!2030' })).data.token;
+  assert.equal(await meFrom('198.51.100.207', second), 200);
+
+  // Cerrar sesión sin sesión válida no falla
+  assert.equal((await fetch(BASE + '/api/auth/logout', { method: 'POST' })).status, 200);
 });
 
 test('CORS: un origen que no está en la lista blanca se rechaza', async () => {

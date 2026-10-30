@@ -1615,7 +1615,7 @@ const initApp = () => {
 
     updateAuthUI(); // Comprobar sesión al arrancar
 
-    // Validar la sesión guardada con el servidor: si ha caducado (30 días, cambio de contraseña...)
+    // Validar la sesión guardada con el servidor: si ha caducado (7 días, cierre de sesión, cambio de contraseña...)
     // se cierra aquí, en vez de mostrar al cliente como conectado y fallar al reservar
     (async () => {
         const token = localStorage.getItem('user_token');

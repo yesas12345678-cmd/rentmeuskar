@@ -552,7 +552,7 @@ if (!process.env.SESSION_SECRET) {
   console.warn('[AUTH] Falta SESSION_SECRET en el entorno: se usa uno temporal y las sesiones caducarán al reiniciar.');
 }
 
-const USER_TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+const USER_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 function generateUserToken(userId, email) {
   const payload = Buffer.from(JSON.stringify({ id: userId, email: email || '', ts: Date.now() })).toString('base64url');
@@ -571,7 +571,7 @@ function verifyUserToken(token) {
       if (signature.length === expectedSig.length && crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSig))) {
         try {
           const data = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8'));
-          // Las sesiones de cliente caducan a los 30 días de iniciarse
+          // Las sesiones de cliente caducan a los 7 días de iniciarse
           if (!data.ts || Date.now() - data.ts > USER_TOKEN_TTL_MS) return null;
           return data; // { id, email, ts }
         } catch (e) {
@@ -661,7 +661,8 @@ const getAuthUser = async (req) => {
   const userId = tokenData.id;
   const tokenEmail = tokenData.email;
 
-  // Un token emitido antes del último cambio de contraseña ya no vale
+  // Un token emitido antes del último cambio de contraseña (o del último cierre de sesión) ya no vale:
+  // password_changed_at guarda el momento a partir del cual las sesiones anteriores quedan anuladas
   const issuedBeforePasswordChange = (changedAt) => {
     const changed = changedAt ? new Date(changedAt).getTime() : 0;
     return changed > 0 && tokenData.ts < changed;
@@ -1937,6 +1938,28 @@ app.post('/api/auth/reset-password', async (req, res) => {
   delete pendingPasswordResets[cleanEmail];
   delete pendingPasswordResets['info@rentmeuskar.com'];
   return res.json({ success: true, message: '¡Contraseña restablecida correctamente! Ya puedes iniciar sesión.' });
+});
+
+// Cerrar sesión: además de borrar el token del navegador, el servidor anula todas las sesiones de esa
+// cuenta emitidas hasta ahora (un token copiado deja de servir). Con una sesión que ya no vale responde
+// igualmente bien: cerrar sesión siempre debe poder hacerse. El token del administrador no se anula aquí
+// (caduca a las 12 horas y se invalida al cambiar sus credenciales).
+app.post('/api/auth/logout', async (req, res) => {
+  const authUser = await getAuthUser(req);
+  if (authUser && !authUser.isAdmin && authUser.email) {
+    const now = new Date();
+    try {
+      await pool.query('UPDATE users SET password_changed_at = $1 WHERE LOWER(email) = LOWER($2)', [now, authUser.email]);
+    } catch (e) {
+      console.warn('Base de datos offline al cerrar sesión:', e.message);
+    }
+    const fbUser = fallbackUsers.find(u => u.email && u.email.toLowerCase() === String(authUser.email).toLowerCase());
+    if (fbUser) {
+      fbUser.password_changed_at = now.toISOString();
+      saveAdminStoreToFile();
+    }
+  }
+  return res.json({ success: true });
 });
 
 // 3. Obtener perfil del usuario actual (blindado contra IDOR)

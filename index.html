@@ -617,6 +617,14 @@
         };
 
         window.handleClientLogout = function() {
+            // El servidor anula la sesión (si el token se hubiera copiado, deja de valer). No se espera a la respuesta:
+            // el cierre en este navegador es inmediato aunque no haya conexión.
+            var sessionToken = localStorage.getItem('user_token');
+            if (sessionToken) {
+                try {
+                    fetch('/api/auth/logout', { method: 'POST', headers: { 'Authorization': 'Bearer ' + sessionToken }, keepalive: true }).catch(function () {});
+                } catch (e) { /* sin red: se cierra igualmente aquí */ }
+            }
             // Si el admin entró desde la web, su sesión del panel es la misma: también se cierra
             if (localStorage.getItem('admin_token') && localStorage.getItem('admin_token') === localStorage.getItem('user_token')) {
                 localStorage.removeItem('admin_token');
@@ -2525,7 +2533,7 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
 
     <!-- Custom Script -->
-    <script src="app.js?v=23.5"></script>
+    <script src="app.js?v=23.6"></script>
 </body>
 
 </html>
