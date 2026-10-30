@@ -4,15 +4,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Alquiler de Furgonetas en Huéscar | RentMeUskar</title>
+    <title>Alquiler de Furgonetas en Huéscar, Baza y Granada | RentMeUskar</title>
     <meta name="description"
-        content="Alquiler de furgonetas sin conductor en Huéscar y el Altiplano Granadino. Furgonetas de carga de 8 y 14 m³ para tu mudanza o portes. Precios sin sorpresas.">
+        content="Alquiler de furgonetas de 8 y 14 m³ en Huéscar (Granada), con o sin conductor. Para Baza, Guadix y todo el Altiplano. Reserva online y 350 km al día incluidos.">
     <link rel="icon" href="/favicon.ico">
     <link rel="icon" type="image/png" sizes="48x48" href="/assets/favicon.png">
     <link rel="icon" type="image/png" sizes="96x96" href="/assets/favicon.png">
     <link rel="icon" type="image/png" sizes="192x192" href="/assets/favicon.png">
     <link rel="shortcut icon" type="image/png" href="/assets/favicon.png">
     <link rel="apple-touch-icon" sizes="180x180" href="/assets/favicon.png">
+
+    <meta name="geo.region" content="ES-GR">
+    <meta name="geo.placename" content="Huéscar, Granada">
 
     <!-- Canonical URL & Robots -->
     <link rel="canonical" href="https://rentmeuskar.com/">
@@ -22,8 +25,8 @@
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="RentMeUskar">
     <meta property="og:url" content="https://rentmeuskar.com/">
-    <meta property="og:title" content="Alquiler de Furgonetas en Huéscar | RentMeUskar">
-    <meta property="og:description" content="Alquiler de furgonetas sin conductor en Huéscar y el Altiplano Granadino. Furgonetas de carga de 8 y 14 m³ para tu mudanza o portes. Precios sin sorpresas.">
+    <meta property="og:title" content="Alquiler de Furgonetas en Huéscar, Baza y Granada | RentMeUskar">
+    <meta property="og:description" content="Alquiler de furgonetas de 8 y 14 m³ en Huéscar (Granada), con o sin conductor. Para Baza, Guadix y todo el Altiplano. Reserva online y 350 km al día incluidos.">
     <meta property="og:image" content="https://rentmeuskar.com/assets/favicon.png">
     <meta property="og:image:width" content="512">
     <meta property="og:image:height" content="512">
@@ -31,8 +34,8 @@
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:url" content="https://rentmeuskar.com/">
-    <meta name="twitter:title" content="Alquiler de Furgonetas en Huéscar | RentMeUskar">
-    <meta name="twitter:description" content="Alquiler de furgonetas sin conductor en Huéscar y el Altiplano Granadino. Furgonetas de carga de 8 y 14 m³ para tu mudanza o portes.">
+    <meta name="twitter:title" content="Alquiler de Furgonetas en Huéscar, Baza y Granada | RentMeUskar">
+    <meta name="twitter:description" content="Alquiler de furgonetas de 8 y 14 m³ en Huéscar (Granada), con o sin conductor. Para Baza, Guadix y todo el Altiplano. Reserva online.">
     <meta name="twitter:image" content="https://rentmeuskar.com/assets/favicon.png">
 
     <!-- Schema.org JSON-LD Structured Data (Google Brand Logo & Rich Snippets) -->
@@ -40,13 +43,15 @@
     {
       "@context": "https://schema.org",
       "@type": "AutoRental",
+      "@id": "https://rentmeuskar.com/#negocio",
       "name": "RentMeUskar",
-      "url": "https://rentmeuskar.com",
+      "legalName": "Servicios Logísticos Huéscar",
+      "url": "https://rentmeuskar.com/",
       "logo": "https://rentmeuskar.com/assets/favicon.png",
       "image": "https://rentmeuskar.com/assets/favicon.png",
-      "description": "Alquiler de furgonetas sin conductor en Huéscar, Baza, Guadix y el Altiplano Granadino.",
+      "description": "Alquiler de furgonetas de carga de 8 y 14 m³ en Huéscar (Granada), con y sin conductor.",
       "telephone": "+34614767411",
-      "priceRange": "€€",
+      "email": "info@rentmeuskar.com",
       "address": {
         "@type": "PostalAddress",
         "streetAddress": "Polígono Industrial La Sagra, Calle A",
@@ -56,20 +61,93 @@
         "addressCountry": "ES"
       },
       "areaServed": [
-        "Huéscar",
-        "Baza",
-        "Guadix",
-        "Puebla de Don Fadrique",
-        "Galera",
-        "Castilléjar",
-        "Altiplano Granadino"
+        {
+          "@type": "City",
+          "name": "Huéscar"
+        },
+        {
+          "@type": "City",
+          "name": "Baza"
+        },
+        {
+          "@type": "City",
+          "name": "Guadix"
+        },
+        {
+          "@type": "City",
+          "name": "Cúllar"
+        },
+        {
+          "@type": "City",
+          "name": "Benamaurel"
+        },
+        {
+          "@type": "City",
+          "name": "Caniles"
+        },
+        {
+          "@type": "City",
+          "name": "Puebla de Don Fadrique"
+        },
+        {
+          "@type": "City",
+          "name": "Castril"
+        },
+        {
+          "@type": "City",
+          "name": "Galera"
+        },
+        {
+          "@type": "City",
+          "name": "Orce"
+        },
+        {
+          "@type": "City",
+          "name": "Castilléjar"
+        },
+        {
+          "@type": "AdministrativeArea",
+          "name": "Provincia de Granada"
+        }
       ],
-      "openingHoursSpecification": {
-        "@type": "OpeningHoursSpecification",
-        "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
-        "opens": "08:00",
-        "closes": "21:00"
-      }
+      "openingHoursSpecification": [
+        {
+          "@type": "OpeningHoursSpecification",
+          "dayOfWeek": [
+            "https://schema.org/Monday",
+            "https://schema.org/Tuesday",
+            "https://schema.org/Wednesday",
+            "https://schema.org/Thursday",
+            "https://schema.org/Friday"
+          ],
+          "opens": "08:00",
+          "closes": "14:00"
+        },
+        {
+          "@type": "OpeningHoursSpecification",
+          "dayOfWeek": [
+            "https://schema.org/Monday",
+            "https://schema.org/Tuesday",
+            "https://schema.org/Wednesday",
+            "https://schema.org/Thursday",
+            "https://schema.org/Friday"
+          ],
+          "opens": "16:00",
+          "closes": "20:00"
+        },
+        {
+          "@type": "OpeningHoursSpecification",
+          "dayOfWeek": [
+            "https://schema.org/Saturday"
+          ],
+          "opens": "09:00",
+          "closes": "13:30"
+        }
+      ],
+      "sameAs": [
+        "https://facebook.com/rentmeuskar",
+        "https://instagram.com/rentmeuskar"
+      ]
     }
     </script>
 
@@ -90,7 +168,7 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
 
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="styles.css?v=4.2">
+    <link rel="stylesheet" href="styles.css?v=4.3">
 
 
     <!-- Global Auth Modal Handlers (Instant Execution) -->
@@ -717,7 +795,7 @@
                         <div class="hero-brand-badge animate-scale-in">// RENTMEUSKAR</div>
                         <h1 class="hero-title">
                             <span class="text-white">MUÉVETE</span><br>
-                            <span class="text-neon">A TU MANERA</span>
+                            <span class="text-neon">A TU MANERA</span><span class="sr-only"> · Alquiler de furgonetas en Huéscar y el Altiplano de Granada</span>
                         </h1>
                         <div class="hero-subbox animate-fade-in">
                             <p>ALQUILER DE FURGONETAS EN HUÉSCAR Y ALREDEDORES</p>
@@ -733,7 +811,7 @@
                             <div class="badge-icon-circle"><i class="fa-solid fa-shield-halved"></i></div>
                             <div class="badge-text">
                                 <strong>FURGONETAS</strong>
-                                <span>MODERNAS Y SEGURAS</span>
+                                <span>DE CARGA, 8 Y 14 M³</span>
                             </div>
                         </div>
                         <div class="hero-badge-item">
@@ -765,7 +843,7 @@
                             <i class="fa-solid fa-calendar-days"></i>
                             <div class="footer-bar-text">
                                 <strong>ALQUILA POR DÍAS</strong>
-                                <span>O POR HORAS</span>
+                                <span>ELIGE TUS FECHAS ONLINE</span>
                             </div>
                         </div>
                         <div class="footer-bar-item">
@@ -778,8 +856,8 @@
                         <div class="footer-bar-item">
                             <i class="fa-solid fa-thumbs-up"></i>
                             <div class="footer-bar-text">
-                                <strong>PRECIOS COMPETITIVOS</strong>
-                                <span>SIN SORPRESAS</span>
+                                <strong>PRECIOS CLAROS</strong>
+                                <span>IVA INCLUIDO</span>
                             </div>
                         </div>
                     </div>
@@ -803,8 +881,8 @@
                 </div>
                 <div class="stat-card reveal delay-1">
                     <div class="stat-icon"><i class="fa-solid fa-circle-check"></i></div>
-                    <h3 class="stat-number" id="stat-clients">Calidad Garantizada</h3>
-                    <p class="stat-label">Alquiler rápido y seguro</p>
+                    <h3 class="stat-number" id="stat-clients">Reserva Online</h3>
+                    <p class="stat-label">Elige fechas y paga con tarjeta</p>
                 </div>
                 <div class="stat-card reveal delay-2">
                     <div class="stat-icon"><i class="fa-solid fa-road"></i></div>
@@ -1038,16 +1116,14 @@
                 <div class="section-header reveal">
                     <span class="subtitle">Ventajas RentMeUskar</span>
                     <h2 class="section-title">¿Por Qué Alquilar Con Nosotros?</h2>
-                    <p class="section-desc">Estamos en Huéscar y conocemos el terreno. Te ofrecemos flexibilidad total y
-                        las mejores furgonetas de Granada.</p>
+                    <p class="section-desc">Estamos en Huéscar y conocemos la zona. Alquila una furgoneta de carga para tu mudanza o tus portes, con o sin conductor.</p>
                 </div>
 
                 <div class="services-grid">
                     <div class="service-card reveal">
                         <div class="service-icon"><i class="fa-solid fa-key"></i></div>
                         <h3 class="service-title">Sin Conductor</h3>
-                        <p class="service-desc-text">Conduce tú mismo. Solo necesitas tu permiso de conducir B (de
-                            coche) con al menos 2 años de antigüedad para operar cualquiera de nuestras furgonetas.</p>
+                        <p class="service-desc-text">Conduce tú mismo. Solo necesitas tu permiso de conducir B (de coche) en vigor para llevar cualquiera de nuestras furgonetas.</p>
                     </div>
                     <div class="service-card reveal delay-1">
                         <div class="service-icon"><i class="fa-solid fa-user-tie"></i></div>
@@ -1058,14 +1134,12 @@
                     <div class="service-card reveal delay-2">
                         <div class="service-icon"><i class="fa-solid fa-coins"></i></div>
                         <h3 class="service-title">Precios Claros</h3>
-                        <p class="service-desc-text">Lo que ves es lo que pagas. IVA, kilometraje acordado y seguro
-                            básico con franquicia incluidos. Sin sorpresas inesperadas al recoger la furgoneta.</p>
+                        <p class="service-desc-text">Lo que ves es lo que pagas: el precio ya incluye el IVA, y los 350 km diarios incluidos y la fianza se indican desde el principio.</p>
                     </div>
                     <div class="service-card reveal">
                         <div class="service-icon"><i class="fa-solid fa-clock-rotate-left"></i></div>
                         <h3 class="service-title">Flexibilidad Horaria</h3>
-                        <p class="service-desc-text">¿Necesitas recogerla a primera hora o entregarla tarde? Nos
-                            adaptamos a tus necesidades. Recogida y entrega personalizada en Huéscar.</p>
+                        <p class="service-desc-text">¿Necesitas recogerla a primera hora o entregarla tarde? Consúltanos y lo acordamos. La recogida y la entrega son en Huéscar.</p>
                     </div>
                     <div class="service-card reveal delay-1">
                         <div class="service-icon"><i class="fa-solid fa-location-arrow"></i></div>
@@ -1076,9 +1150,8 @@
                     </div>
                     <div class="service-card reveal delay-2">
                         <div class="service-icon"><i class="fa-solid fa-screwdriver-wrench"></i></div>
-                        <h3 class="service-title">Flota Moderna y Segura</h3>
-                        <p class="service-desc-text">Todos nuestros furgones pasan revisiones estrictas y cuentan con
-                            asistencia en carretera 24/7 en toda España para tu total tranquilidad.</p>
+                        <h3 class="service-title">Revisión en Cada Entrega</h3>
+                        <p class="service-desc-text">Al recoger la furgoneta revisamos contigo su estado, el combustible y los accesorios, y queda reflejado en el contrato.</p>
                     </div>
                 </div>
             </div>
@@ -1091,8 +1164,7 @@
                     <span class="subtitle">Opiniones</span>
                     <div id="reviews-count-badge"
                         style="display: none; justify-content: center; align-items: center; gap: 0.4rem; background: rgba(130, 209, 5, 0.1); color: var(--color-neon); font-size: 0.85rem; font-weight: 700; padding: 6px 14px; border-radius: 20px; border: 1px solid rgba(130, 209, 5, 0.3); width: fit-content; margin: 0.5rem auto 1.5rem auto;">
-                        <i class="fa-solid fa-circle-check"></i> Más de <span id="reviews-count-placeholder">0</span>
-                        reseñas verificadas
+                        <i class="fa-solid fa-circle-check"></i> <span id="reviews-count-placeholder">0</span> <span id="reviews-count-word">reseñas verificadas</span>
                     </div>
                     <h2 class="section-title">Lo Que Dicen Nuestros Vecinos</h2>
                     <p class="section-desc">La confianza de nuestros clientes en Huéscar y comarca es nuestra mayor
@@ -1294,6 +1366,9 @@
                     <li><a href="#calculadora">Calculadora de Precios</a></li>
                     <li><a href="#servicios">Servicios</a></li>
                     <li><a href="#faq">Preguntas Frecuentes</a></li>
+                    <li><a href="/alquiler-furgonetas-granada">Alquiler en la provincia de Granada</a></li>
+                    <li><a href="/alquiler-furgonetas-baza">Alquiler de furgonetas en Baza</a></li>
+                    <li><a href="/alquiler-furgonetas-guadix">Alquiler de furgonetas en Guadix</a></li>
                 </ul>
             </div>
 

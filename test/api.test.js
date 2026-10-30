@@ -320,6 +320,22 @@ test('CORS: un origen que no está en la lista blanca se rechaza', async () => {
   assert.ok(!res.headers.get('access-control-allow-origin'), 'se devolvió Access-Control-Allow-Origin a un origen no permitido');
 });
 
+test('SEO local: las páginas de zona existen, tienen su título y la ficha de empresa no inventa horarios', async () => {
+  for (const [page, titulo] of [['/alquiler-furgonetas-granada', 'provincia de Granada'], ['/alquiler-furgonetas-baza', 'Baza'], ['/alquiler-furgonetas-guadix', 'Guadix']]) {
+    const res = await fetch(BASE + page);
+    assert.equal(res.status, 200, `${page} devolvió ${res.status}`);
+    const html = await res.text();
+    assert.ok(html.includes('<title>') && html.includes(titulo), `${page} sin título con "${titulo}"`);
+    assert.ok(html.includes(`rel="canonical" href="https://rentmeuskar.com${page}"`), `${page} sin canonical`);
+  }
+  const home = await (await fetch(BASE + '/')).text();
+  assert.ok(home.includes('"@type": "AutoRental"'), 'falta la ficha de empresa');
+  assert.ok(!home.includes('"priceRange"'), 'la ficha no debe llevar un rango de precios inventado');
+  assert.ok(!/Más de\s*<span id="reviews-count-placeholder"/.test(home), 'el contador de reseñas no debe decir "Más de"');
+  const sitemap = await (await fetch(BASE + '/sitemap.xml')).text();
+  assert.ok(sitemap.includes('/alquiler-furgonetas-baza'), 'el sitemap no lista las páginas de zona');
+});
+
 test('las rutas de API inexistentes responden 404 en JSON', async () => {
   const res = await call('GET', '/api/no-existe');
   assert.equal(res.status, 404);

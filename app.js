@@ -2387,6 +2387,8 @@ const initApp = () => {
                 const reviewsCountPlaceholder = document.getElementById('reviews-count-placeholder');
                 if (reviewsCountPlaceholder) {
                     reviewsCountPlaceholder.textContent = reviews.length;
+                    const reviewsCountWord = document.getElementById('reviews-count-word');
+                    if (reviewsCountWord) reviewsCountWord.textContent = reviews.length === 1 ? 'reseña verificada' : 'reseñas verificadas';
                 }
 
                 if (reviews.length === 0) {
@@ -2824,6 +2826,8 @@ const initApp = () => {
 
                     // Rebind event listeners for accordion
                     bindFaqAccordion();
+                } else {
+                    faqListContainer.innerHTML = '<p style="text-align: center; color: var(--text-secondary); font-size: 0.95rem;">¿Tienes alguna duda? Escríbenos por WhatsApp o llámanos y te respondemos.</p>';
                 }
             }
         } catch (err) {

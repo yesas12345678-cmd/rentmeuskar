@@ -2026,3 +2026,16 @@ textarea:focus-visible, [tabindex]:focus-visible {
     .animate-fade-in, .animate-fade-in-up, .animate-fade-in-up-delayed,
     .animate-fade-in-up-late, .animate-slide-in-right { opacity: 1 !important; }
 }
+
+/* Texto solo para lectores de pantalla y buscadores (no se ve en la página) */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}

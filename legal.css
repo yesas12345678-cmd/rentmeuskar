@@ -121,3 +121,27 @@ a:hover { color: var(--color-neon-hover); }
     .legal-header, .legal-nav { display: none; }
     .card { background: #fff; border-color: #ccc; }
 }
+
+/* Botones de las páginas de zona */
+.cta {
+    display: inline-block;
+    background: var(--color-neon);
+    color: #07130a;
+    font-weight: 700;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    text-decoration: none;
+    margin: 0.3rem 0.5rem 0.3rem 0;
+}
+
+.cta:hover { background: var(--color-neon-hover); color: #07130a; }
+
+.cta-secondary {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-primary);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.cta-secondary:hover { background: rgba(255, 255, 255, 0.15); color: var(--text-primary); }
+
+h3 { font-size: 1.05rem; margin: 1.4rem 0 0.3rem; color: var(--text-primary); }
