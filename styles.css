@@ -1943,3 +1943,86 @@ select option:hover {
     background-color: #1e293b !important;
     color: #82d105 !important;
 }
+
+/* ==========================================================================
+   Mejoras de diseño (v2): mismos colores y estética, más pulido.
+   Todo este bloque se puede borrar sin afectar al resto.
+   ========================================================================== */
+
+/* Botones de la portada: reservar siempre a la vista, también en el móvil */
+.hero-cta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.8rem;
+    margin-top: 1.4rem;
+}
+
+.hero-cta .btn { flex: 0 1 auto; }
+
+/* Menú en anchos medios (tablet y portátil pequeño): el menú completo no cabía y se solapaba */
+@media (min-width: 769px) and (max-width: 1120px) {
+    .header-container { padding: 0 1rem; height: 88px; }
+    .main-header.scrolled .header-container { height: 74px; }
+    .nav-logo { height: 58px; width: 58px; }
+    .main-header.scrolled .nav-logo { height: 52px; width: 52px; }
+    .nav-menu { gap: 1rem; }
+    .nav-link { font-size: 0.8rem; white-space: nowrap; }
+    .header-actions { gap: 0.5rem; flex-shrink: 0; }
+    .header-actions .btn { white-space: nowrap; }
+    .btn-header-reserve { padding: 0.5rem 0.75rem !important; font-size: 0.72rem !important; letter-spacing: 0.02em !important; }
+    #user-auth-section .btn { max-width: 150px; overflow: hidden; text-overflow: ellipsis; }
+    .hero-section { padding-top: 110px; }
+}
+
+/* Portada en escritorio: las furgonetas pisan menos el titular */
+@media (min-width: 1025px) {
+    .hero-van-img {
+        width: 195%;
+        margin-left: -46%;
+    }
+}
+
+/* Móvil: botones de la portada a todo el ancho y el resto algo más compacto */
+@media (max-width: 768px) {
+    .hero-cta { width: 100%; justify-content: center; }
+    .hero-cta .btn { flex: 1 1 100%; }
+    .hero-badges { gap: 0.9rem; }
+    .section-title { font-size: 2rem; }
+    .fleet-section, .calculator-section, .services-section, .testimonials-section, .faq-section { padding: 5rem 0; }
+}
+
+/* Al saltar a una sección con el menú, el título ya no queda tapado por la barra fija */
+section[id], footer[id] { scroll-margin-top: 90px; }
+
+/* Texto más equilibrado en títulos y párrafos */
+h1, h2, h3 { text-wrap: balance; }
+.section-desc, .service-desc-text, .testimonial-text, .calculator-text { text-wrap: pretty; }
+
+/* Accesibilidad: foco visible al navegar con teclado */
+a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible,
+textarea:focus-visible, [tabindex]:focus-visible {
+    outline: 2px solid var(--color-neon);
+    outline-offset: 3px;
+    border-radius: 4px;
+}
+
+/* Selección de texto con el verde de la marca */
+::selection { background: var(--color-neon); color: #07130a; }
+
+/* Pulsar un botón se nota */
+.btn:active { transform: translateY(0) scale(0.98); }
+
+/* Tarjetas: sombra de elevación más suave al pasar el ratón */
+.van-card, .service-card, .testimonial-card, .stat-card { will-change: transform; }
+
+/* Si el sistema pide menos movimiento, se quitan las animaciones */
+@media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+    .animate-fade-in, .animate-fade-in-up, .animate-fade-in-up-delayed,
+    .animate-fade-in-up-late, .animate-slide-in-right { opacity: 1 !important; }
+}
