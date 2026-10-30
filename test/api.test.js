@@ -254,6 +254,35 @@ test('las páginas legales del pie existen y cargan sus estilos y datos', async 
   assert.ok(!/href="#" id="legal-/.test(home), 'el pie todavía tiene enlaces legales vacíos');
 });
 
+// Token de cliente firmado con el secreto de las pruebas (sirve para medir el límite por cuenta sin tocar cuentas reales)
+function userTokenFor(id) {
+  const payload = Buffer.from(JSON.stringify({ id, email: `limite${id}@example.com`, ts: Date.now() })).toString('base64url');
+  const signature = crypto.createHmac('sha256', SESSION_SECRET).update(payload).digest('base64url');
+  return `rmu_usr.${payload}.${signature}`;
+}
+
+async function meFrom(ip, token) {
+  const res = await fetch(BASE + '/api/auth/me', { headers: { Authorization: `Bearer ${token}`, 'X-Forwarded-For': ip } });
+  return res.status;
+}
+
+test('límite por cuenta: quien abusa se bloquea aunque cambie de IP, y las demás cuentas siguen bien', async () => {
+  const abusive = userTokenFor(9001);
+  let blockedAt = 0;
+  for (let i = 1; i <= 320 && !blockedAt; i++) {
+    // Una IP distinta en cada petición: solo el límite por cuenta puede pararlo
+    if ((await meFrom(`198.51.100.${(i % 250) + 1}`, abusive)) === 429) blockedAt = i;
+  }
+  assert.ok(blockedAt > 0 && blockedAt <= 305, `no se bloqueó la cuenta (bloqueo en ${blockedAt})`);
+  assert.notEqual(await meFrom('198.51.100.77', userTokenFor(9002)), 429);
+});
+
+test('CORS: un origen que no está en la lista blanca se rechaza', async () => {
+  const res = await fetch(BASE + '/api/vans', { headers: { Origin: 'https://sitio-malicioso.example' } });
+  assert.ok(res.status >= 400, `se aceptó un origen no permitido (${res.status})`);
+  assert.ok(!res.headers.get('access-control-allow-origin'), 'se devolvió Access-Control-Allow-Origin a un origen no permitido');
+});
+
 test('las rutas de API inexistentes responden 404 en JSON', async () => {
   const res = await call('GET', '/api/no-existe');
   assert.equal(res.status, 404);

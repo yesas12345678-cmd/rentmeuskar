@@ -726,6 +726,7 @@ function escapeHtml(str) {
 const compression = require('compression');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const { ipKeyGenerator } = rateLimit;
 
 // Rate limiting para prevenir ataques de fuerza bruta y DDoS
 const globalLimiter = rateLimit({
@@ -794,6 +795,34 @@ app.use(helmet({
 }));
 app.use(globalLimiter);
 
+// Identidad para los límites por usuario: la cuenta (cliente) si el token es válido, 'admin' si es el administrador
+function rateLimitIdentity(req) {
+  const header = req.headers.authorization;
+  if (!header) return null;
+  const token = header.replace('Bearer ', '').trim();
+  if (isValidAdminToken(token)) return 'admin';
+  const data = verifyUserToken(token);
+  return data && data.id !== undefined && data.id !== null ? `user:${data.id}` : null;
+}
+
+// Además del límite por IP: cada cuenta tiene el suyo. Compartir IP (oficina, datos móviles) no
+// castiga a todos, y quien cambia de IP con una sesión robada o abusiva sigue limitado.
+// Sin sesión no aplica (ya cuenta el límite por IP); el administrador queda fuera (su panel hace muchas
+// peticiones y su acceso ya está protegido por el login).
+const userLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 300,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => rateLimitIdentity(req) || ipKeyGenerator(req.ip),
+  skip: (req) => {
+    const identity = rateLimitIdentity(req);
+    return !identity || identity === 'admin';
+  },
+  message: { error: 'Has hecho demasiadas peticiones con tu cuenta. Espera unos minutos.' }
+});
+app.use('/api', userLimiter);
+
 // Rate limits específicos por endpoint crítico
 app.use('/api/auth/login', loginLimiter);
 app.use('/api/auth/register', authLimiter);
@@ -815,6 +844,21 @@ const bookingLimiter = rateLimit({
 });
 app.post('/api/redsys/create-payment', bookingLimiter);
 app.post('/api/bookings', bookingLimiter);
+// Y el mismo tope por cuenta (cambiar de IP no sirve para saltarse el límite de reservas)
+const bookingUserLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 15,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => rateLimitIdentity(req) || ipKeyGenerator(req.ip),
+  skip: (req) => {
+    const identity = rateLimitIdentity(req);
+    return !identity || identity === 'admin';
+  },
+  message: { error: 'Demasiadas solicitudes de reserva con tu cuenta. Espera unos minutos.' }
+});
+app.post('/api/redsys/create-payment', bookingUserLimiter);
+app.post('/api/bookings', bookingUserLimiter);
 // Los :id de la API son enteros de la BD: con otra cosa PostgreSQL fallaba y se respondía 500
 // Con otra cosa se salta la ruta (no se responde aquí: '/api/bookings/unavailable-dates' también encaja
 // en '/api/bookings/:id') y, si nada más coincide, contesta el 404 en JSON de la API
@@ -866,12 +910,17 @@ app.use(compression());
 // CORS restringido por lista blanca segura
 const allowedOrigins = [
   'https://rentmeuskar.com',
-  'https://www.rentmeuskar.com',
-  'http://rentmeuskar.com',
-  'http://www.rentmeuskar.com',
-  'http://localhost:3000',
-  'http://127.0.0.1:3000'
+  'https://www.rentmeuskar.com'
 ];
+// En producción solo https del dominio real; localhost y http solo para desarrollo y pruebas
+if (process.env.NODE_ENV !== 'production') {
+  allowedOrigins.push(
+    'http://rentmeuskar.com',
+    'http://www.rentmeuskar.com',
+    'http://localhost:3000',
+    'http://127.0.0.1:3000'
+  );
+}
 // Otros dominios donde se publique la web (p. ej. el de Dokploy): ALLOWED_ORIGINS separados por comas
 // y el origen de BASE_URL. Sin esto, los formularios fallaban con 403 desde cualquier otro dominio
 (process.env.ALLOWED_ORIGINS || '').split(',').map(o => o.trim().replace(/\/$/, '')).filter(Boolean)
@@ -892,9 +941,10 @@ app.use(cors({
     }
     return callback(new Error('Bloqueado por política CORS'));
   },
-  credentials: true,
+  // La sesión viaja en la cabecera Authorization, no en cookies: no hace falta credentials
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  maxAge: 600
 }));
 
 app.use(express.json());
@@ -2583,6 +2633,10 @@ app.delete('/api/bookings/:id', verifyAdmin, async (req, res) => {
       fallbackBookings.splice(index, 1);
       saveAdminStoreToFile();
       return res.json({ message: 'Reserva eliminada de memoria fallback (offline).' });
+    }
+    // Sin base de datos y sin copia local: la reserva simplemente no existe
+    if (/no configurada/i.test(String(err && err.message))) {
+      return res.status(404).json({ error: 'Reserva no encontrada.' });
     }
     res.status(500).json({ error: 'Error del servidor al eliminar la reserva.' });
   }
