@@ -9,20 +9,23 @@
     <link rel="icon" type="image/png" href="/assets/favicon.png">
     <link rel="shortcut icon" type="image/png" href="/assets/favicon.png">
     <link rel="apple-touch-icon" href="/assets/favicon.png">
-    
+
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    
+
     <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
         :root {
-            --primary-blue: #0b2265;
-            --light-blue: #e2eafc;
-            --text-dark: #1e293b;
-            --border-color: #cbd5e1;
+            --navy: #0f2178;
+            --line: #4f63c9;
+            --khaki: #e7e5cf;
+            --label: #1f2d7a;
+            --text-dark: #0f172a;
         }
+
+        * { box-sizing: border-box; }
 
         body {
             font-family: 'Inter', sans-serif;
@@ -30,24 +33,28 @@
             background-color: #fff;
             margin: 0;
             padding: 0;
-            font-size: 8.5px;
+            font-size: 10px;
             line-height: 1.3;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
         }
 
         .no-print-bar {
-            max-width: 800px;
+            max-width: 820px;
             margin: 10px auto;
             padding: 10px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
             background: #f8fafc;
             border: 1px solid #e2e8f0;
             border-radius: 6px;
         }
 
         .btn {
-            background: var(--primary-blue);
+            background: var(--navy);
             color: #fff;
             border: none;
             padding: 6px 12px;
@@ -60,266 +67,206 @@
             gap: 5px;
         }
 
-        .btn:hover {
-            opacity: 0.9;
-        }
+        .btn:hover { opacity: 0.9; }
 
         .contract-container {
-            max-width: 800px;
+            width: 820px;
+            max-width: 100%;
             margin: 0 auto;
-            padding: 20px;
+            padding: 14px;
             background: #fff;
         }
 
-        /* Header Style */
-        .contract-header {
+        /* Cabecera */
+        .head {
             display: grid;
-            grid-template-columns: 1.5fr 1fr 1fr;
-            gap: 15px;
+            grid-template-columns: 1.55fr 1.2fr 1.25fr;
+            gap: 14px;
             align-items: center;
             margin-bottom: 12px;
-            border-bottom: 2px solid var(--primary-blue);
-            padding-bottom: 10px;
         }
 
-        .header-logo-box img {
-            width: 75px;
-            height: 75px;
-            object-fit: contain;
-            margin-bottom: 2px;
-        }
+        .head .logo img { width: 84px; max-width: 100%; height: auto; display: block; }
 
-        .header-logo-box .brand-subtitle {
+        .head .tag {
             font-size: 8px;
             font-weight: 800;
-            color: var(--primary-blue);
-            letter-spacing: 0.05em;
+            letter-spacing: 0.18em;
+            color: var(--navy);
             text-transform: uppercase;
+            margin-top: 2px;
         }
 
-        .header-contact-box {
-            font-size: 7.5px;
-            color: #334155;
-        }
+        .head .contacts { font-size: 11px; color: #1f2937; font-weight: 500; }
+        .head .contacts div { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+        .head .contacts i { color: var(--navy); width: 14px; text-align: center; font-size: 13px; }
 
-        .header-contact-box div {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            margin-bottom: 3px;
-        }
-
-        .header-contact-box i {
-            color: var(--primary-blue);
-            width: 10px;
-            text-align: center;
-        }
-
-        .header-meta-box {
-            border: 1px solid var(--primary-blue);
-            border-radius: 4px;
-            overflow: hidden;
-            text-align: center;
-        }
-
-        .header-meta-box .meta-title {
-            background: var(--primary-blue);
+        .meta { border: 1px solid var(--line); }
+        .meta .meta-title {
+            background: var(--navy);
             color: #fff;
-            font-weight: 800;
-            padding: 4px;
-            font-size: 9px;
-            text-transform: uppercase;
-        }
-
-        .header-meta-box .meta-row {
-            display: grid;
-            grid-template-columns: 1.2fr 2fr;
-            border-top: 1px solid var(--primary-blue);
-        }
-
-        .header-meta-box .meta-label {
-            background: var(--light-blue);
-            font-weight: 700;
-            padding: 4px;
-            border-right: 1px solid var(--primary-blue);
-        }
-
-        .header-meta-box .meta-val {
-            padding: 4px;
-            font-weight: 700;
-        }
-
-        /* Section Block Style */
-        .section-block {
-            margin-bottom: 10px;
-        }
-
-        .section-title {
-            background: var(--primary-blue);
-            color: #fff;
-            font-weight: 800;
-            text-transform: uppercase;
-            padding: 3px 8px;
-            font-size: 9px;
-            border-radius: 3px 3px 0 0;
-            display: flex;
-            justify-content: space-between;
-        }
-
-        .section-grid {
-            border: 1px solid var(--border-color);
-            border-top: none;
+            font-weight: 600;
             padding: 8px;
-            background: #fff;
-            border-radius: 0 0 3px 3px;
+            font-size: 15px;
+            text-transform: uppercase;
+            text-align: center;
+            letter-spacing: 0.02em;
         }
-
-        /* Tables and layout grids */
-        .grid-2col {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
+        .meta .meta-row { display: grid; grid-template-columns: 1fr 1.1fr; border-top: 1px solid var(--line); }
+        .meta .meta-label {
+            padding: 8px 6px;
+            font-weight: 600;
+            font-size: 9.5px;
+            text-transform: uppercase;
+            text-align: center;
+            color: var(--label);
+            border-right: 1px solid var(--line);
+            display: flex; align-items: center; justify-content: center;
         }
+        .meta .meta-val { padding: 8px 6px; font-weight: 700; text-align: center; display: flex; align-items: center; justify-content: center; }
 
-        .grid-3col {
-            display: grid;
-            grid-template-columns: 1.2fr 1fr 1fr;
-            gap: 8px;
-        }
-
-        .field-row {
-            display: flex;
-            border-bottom: 1px solid #f1f5f9;
-            padding: 3px 0;
-        }
-
-        .field-label {
-            font-weight: 700;
-            color: #475569;
-            width: 110px;
-            flex-shrink: 0;
-        }
-
-        .field-val {
-            font-weight: 500;
-            color: #0f172a;
-        }
-
-        .checkbox-container {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            font-weight: 500;
-        }
-
-        .checkbox-box {
-            font-family: monospace;
+        /* Bloques */
+        .sec { margin-bottom: 7px; }
+        .sec-tab {
+            display: inline-block;
+            background: var(--navy);
+            color: #fff;
+            font-weight: 600;
+            text-transform: uppercase;
+            padding: 4px 22px 4px 10px;
             font-size: 11px;
-            font-weight: bold;
-            color: var(--primary-blue);
+            letter-spacing: 0.01em;
         }
-
-        /* Grid elements columns */
-        .col-title {
-            font-weight: 800;
-            border-bottom: 1px solid var(--primary-blue);
-            padding-bottom: 2px;
-            margin-bottom: 4px;
+        .sec-bar {
+            background: var(--navy);
+            color: #fff;
+            font-weight: 600;
             text-transform: uppercase;
-            color: var(--primary-blue);
-            font-size: 8px;
-        }
-
-        /* Sub tables */
-        .contract-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        .contract-table th, .contract-table td {
-            border: 1px solid var(--border-color);
-            padding: 3px 5px;
-            text-align: left;
-        }
-
-        .contract-table th {
-            background: var(--light-blue);
-            font-weight: 700;
-        }
-
-        /* Signatures box */
-        .signatures-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin-top: 15px;
-        }
-
-        .signature-card {
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            padding: 8px;
+            padding: 4px 10px;
+            font-size: 11px;
             text-align: center;
         }
+        .sec-bar.left { text-align: left; }
 
-        .signature-line {
-            height: 45px;
-            border-bottom: 1px dashed #94a3b8;
-            margin-bottom: 5px;
+        /* Rejilla de celdas: cada celda pinta arriba e izquierda; el recuadro cierra derecha y abajo */
+        .box { border: 1px solid var(--line); }
+        .box.open-top { border-top: 1px solid var(--line); }
+        .grid { display: grid; }
+        .cell {
+            border-top: 1px solid var(--line);
+            border-left: 1px solid var(--line);
+            padding: 2px 6px;
+            min-height: 21px;
         }
-
-        .signature-label {
-            font-weight: 700;
-            font-size: 8px;
+        .grid > .cell:first-child, .grid.no-left > .cell { border-left: none; }
+        .grid:first-child > .cell { border-top: none; }
+        .box > .cell:first-child, .box > .grid:first-child > .cell { border-top: none; }
+        .cell .lab {
+            display: block;
+            font-size: 7.6px;
             text-transform: uppercase;
-            color: #475569;
+            color: var(--label);
+            font-weight: 600;
+            letter-spacing: 0.01em;
         }
+        .cell .val { display: block; font-size: 10.5px; font-weight: 600; margin-top: 1px; word-break: break-word; }
+        .cell.center .lab, .cell.center .val { text-align: center; }
+        .cell .sub { font-size: 7.6px; color: #4b5563; text-align: center; display: block; }
+        .cell.row { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+        .cell.row .lab { font-size: 8px; }
+        .cell.row .val { margin: 0; text-align: right; white-space: nowrap; }
+        .cell.khaki { background: var(--khaki); }
+        .cell.head-cell { background: var(--khaki); text-align: center; font-weight: 600; text-transform: uppercase; color: #374151; font-size: 9px; }
+
+        .two { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+        .stack > .sec:last-child { margin-bottom: 0; }
+
+        /* Casillas */
+        .sq {
+            display: inline-block;
+            width: 11px; height: 11px;
+            border: 1px solid var(--line);
+            background: #fff;
+            flex-shrink: 0;
+            vertical-align: middle;
+            position: relative;
+        }
+        .sq.on::after {
+            content: '';
+            position: absolute; left: 2px; top: 2px; right: 2px; bottom: 2px;
+            background: var(--navy);
+        }
+        .chk { display: flex; align-items: center; gap: 6px; font-size: 9.5px; font-weight: 500; }
+
+        /* Vehículos */
+        .veh { padding: 4px 8px; font-size: 9.2px; line-height: 1.5; min-height: 112px; }
+        .veh + .veh { border-left: 1px solid var(--line); }
+        .veh .veh-head { display: flex; align-items: center; gap: 6px; font-weight: 600; font-size: 9.6px; text-transform: uppercase; margin-bottom: 2px; }
+        .veh b { font-weight: 700; }
+        .eco {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 20px; height: 20px; border-radius: 50%;
+            background: #2e9b4e; color: #fff; font-weight: 800; font-size: 10px;
+            border: 2px solid #8fd3a2; vertical-align: middle; margin-left: 4px;
+        }
+
+        /* Tablas de km / combustible / adblue */
+        .grid-3col { display: grid; grid-template-columns: 1.25fr 1fr 1fr; gap: 10px; margin-bottom: 7px; align-items: start; }
+        .lvl-head, .lvl-row { display: grid; grid-template-columns: 1.2fr 1fr 1fr; }
+        .lvl-head .cell { background: #fff; text-align: center; font-weight: 600; font-size: 8px; text-transform: uppercase; color: var(--label); }
+        .lvl-row .cell { display: flex; align-items: center; justify-content: center; min-height: 22px; }
+        .lvl-row .cell.name { justify-content: flex-start; font-weight: 600; font-size: 9px; text-transform: uppercase; color: var(--label); }
+
+        .fianza-row { display: grid; grid-template-columns: 1fr auto; }
+
+        /* Firmas */
+        .sign-head { background: var(--khaki); text-align: center; font-weight: 600; font-size: 9.5px; text-transform: uppercase; padding: 4px; border: 1px solid var(--line); }
+        .sign-box { border: 1px solid var(--line); border-top: none; padding: 6px 8px 8px; }
+        .sign-box .txt { font-size: 8.4px; margin-bottom: 4px; }
+        .sign-lines { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 4px; }
+        .sign-line { height: 32px; border-bottom: 1px solid #6b7280; display: flex; align-items: center; justify-content: center; }
+        .sign-label { text-align: center; font-weight: 600; font-size: 8px; text-transform: uppercase; margin-top: 3px; }
+
+        .foot { text-align: center; font-size: 8.4px; color: #374151; margin-top: 8px; }
+
+        @page { size: A4; margin: 6mm; }
 
         @media print {
-            body {
-                background: #fff;
-                padding: 0;
-                margin: 0;
-            }
-            .no-print-bar {
-                display: none;
-            }
-            .contract-container {
-                padding: 0;
-                margin: 0;
-                max-width: 100%;
-            }
+            body { background: #fff; }
+            .no-print-bar { display: none; }
+            /* El tamaño lo fija el script de beforeprint para que todo quepa en un A4 */
+            .contract-container { width: 820px; max-width: none; padding: 0; margin: 0; }
         }
     </style>
 </head>
 <body>
 
     <div class="no-print-bar">
-        <span style="font-size: 13px; font-weight: 700; color: var(--primary-blue);"><i class="fa-solid fa-file-invoice"></i> Vista Previa del Contrato de Alquiler</span>
+        <span style="font-size: 13px; font-weight: 700; color: var(--navy);"><i class="fa-solid fa-file-invoice"></i> Vista previa del contrato de alquiler</span>
         <div style="display: flex; gap: 8px;">
-            <button class="btn" onclick="window.print()"><i class="fa-solid fa-print"></i> Imprimir Contrato</button>
+            <button class="btn" onclick="window.print()"><i class="fa-solid fa-print"></i> Imprimir contrato</button>
             <button class="btn" style="background: #475569;" onclick="window.close()"><i class="fa-solid fa-xmark"></i> Cerrar</button>
         </div>
     </div>
 
-    <div class="contract-container">
-        
-        <!-- Header -->
-        <div class="contract-header">
-            <div class="header-logo-box">
+    <div class="contract-container" id="contract-container">
+
+        <!-- Cabecera -->
+        <div class="head">
+            <div class="logo">
                 <img src="/assets/logo.png?v=2" alt="RentMeUskar">
-                <div class="brand-subtitle">Alquiler de Vehículos • Con y Sin Conductor</div>
+                <div class="tag">Alquiler de vehículos · con y sin conductor</div>
             </div>
-            <div class="header-contact-box">
+            <div class="contacts">
                 <div><i class="fa-solid fa-phone"></i> <span id="contract-contact-phone">614 767 411</span></div>
-                <div><i class="fa-solid fa-envelope"></i> <span>info@rentmeuskar.com</span></div>
+                <div><i class="fa-regular fa-envelope"></i> <span id="contract-contact-email">info@rentmeuskar.com</span></div>
                 <div><i class="fa-brands fa-facebook"></i> <span>RentMeUskar</span></div>
                 <div><i class="fa-brands fa-instagram"></i> <span>@rentmeuskar</span></div>
             </div>
-            <div class="header-meta-box">
-                <div class="meta-title">Contrato de Alquiler</div>
+            <div class="meta">
+                <div class="meta-title">Contrato de alquiler</div>
                 <div class="meta-row">
-                    <span class="meta-label">Nº CTR</span>
+                    <span class="meta-label">Nº contrato</span>
                     <span class="meta-val" id="doc-contract-id">-</span>
                 </div>
                 <div class="meta-row">
@@ -330,308 +277,298 @@
         </div>
 
         <!-- 1. DATOS DEL ALQUILER -->
-        <div class="section-block">
-            <div class="section-title">1. Datos del Alquiler</div>
-            <div class="section-grid">
-                <div style="display: grid; grid-template-columns: 2fr 2fr 1fr 1.5fr; gap: 10px;">
-                    <div class="field-row">
-                        <span class="field-label" style="width: auto; margin-right: 5px;">FECHA Y HORA ENTREGA:</span>
-                        <span class="field-val" id="rent-pickup-date">-</span>
+        <div class="sec">
+            <div class="sec-tab">1. Datos del alquiler</div>
+            <div class="box">
+                <div class="grid" style="grid-template-columns: 1.5fr 1.5fr 1fr 1.7fr;">
+                    <div class="cell center"><span class="lab">Fecha y hora de entrega</span><span class="val" id="rent-pickup-date">-</span></div>
+                    <div class="cell center"><span class="lab">Fecha y hora de devolución</span><span class="val" id="rent-return-date">-</span></div>
+                    <div class="cell center"><span class="lab">Días de alquiler</span><span class="val" id="rent-days">-</span></div>
+                    <div class="cell center"><span class="lab">Tarifa aplicada</span><span class="val" id="rent-applied-rate">-</span><span class="sub">(1 día / Fin de semana / Semana / Otro)</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. ARRENDATARIO  |  3. SEGUNDO CONDUCTOR + 4. VEHÍCULO -->
+        <div class="two" style="margin-bottom: 10px; align-items: start;">
+            <div class="sec" style="margin-bottom: 0;">
+                <div class="sec-tab">2. Datos del arrendatario</div>
+                <div class="box">
+                    <div class="cell"><span class="lab">Nombre y apellidos</span><span class="val" id="client-name">-</span></div>
+                    <div class="grid" style="grid-template-columns: 1.1fr 1fr;">
+                        <div class="cell"><span class="lab">DNI / NIE</span><span class="val" id="client-dni">-</span></div>
+                        <div class="cell"><span class="lab">Fecha nacimiento</span><span class="val" id="client-birthdate">-</span></div>
                     </div>
-                    <div class="field-row">
-                        <span class="field-label" style="width: auto; margin-right: 5px;">FECHA Y HORA DEVOLUCIÓN:</span>
-                        <span class="field-val" id="rent-return-date">-</span>
+                    <div class="cell"><span class="lab">Dirección</span><span class="val" id="client-address">-</span></div>
+                    <div class="grid" style="grid-template-columns: 1fr 1.3fr;">
+                        <div class="cell"><span class="lab">Código postal</span><span class="val" id="client-cp">-</span></div>
+                        <div class="cell"><span class="lab">Población</span><span class="val" id="client-city">-</span></div>
                     </div>
-                    <div class="field-row">
-                        <span class="field-label" style="width: auto; margin-right: 5px;">DÍAS:</span>
-                        <span class="field-val" id="rent-days">-</span>
+                    <div class="grid" style="grid-template-columns: 1fr 1.3fr;">
+                        <div class="cell"><span class="lab">Provincia</span><span class="val" id="client-province">-</span></div>
+                        <div class="cell"><span class="lab">Teléfono</span><span class="val" id="client-phone">-</span></div>
                     </div>
-                    <div class="field-row">
-                        <span class="field-label" style="width: auto; margin-right: 5px;">TARIFA APLICADA:</span>
-                        <span class="field-val" id="rent-applied-rate">-</span>
+                    <div class="cell"><span class="lab">Correo electrónico</span><span class="val" id="client-email">-</span></div>
+                    <div class="grid" style="grid-template-columns: 1.1fr 1fr;">
+                        <div class="cell"><span class="lab">Nº permiso de conducir</span><span class="val" id="client-license-num">-</span></div>
+                        <div class="cell"><span class="lab">Fecha expedición</span><span class="val" id="client-license-exp">-</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stack">
+                <div class="sec">
+                    <div class="sec-tab">3. Segundo conductor (opcional)</div>
+                    <div class="box">
+                        <div class="cell"><span class="lab">Nombre y apellidos</span><span class="val" id="second-driver-name">-</span></div>
+                        <div class="grid" style="grid-template-columns: 1fr 1fr;">
+                            <div class="cell"><span class="lab">DNI / NIE</span><span class="val" id="second-driver-dni">-</span></div>
+                            <div class="cell"><span class="lab">Teléfono</span><span class="val" id="second-driver-phone">-</span></div>
+                        </div>
+                        <div class="grid" style="grid-template-columns: 1fr 1fr;">
+                            <div class="cell"><span class="lab">Nº permiso de conducir</span><span class="val" id="second-driver-license-num">-</span></div>
+                            <div class="cell"><span class="lab">Fecha expedición</span><span class="val" id="second-driver-license-exp">-</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sec">
+                    <div class="sec-tab">4. Datos del vehículo</div>
+                    <div class="box">
+                        <div class="grid" style="grid-template-columns: 1fr 1fr;" id="veh-grid">
+                            <div class="veh" id="veh-man">
+                                <div class="veh-head"><span class="sq" id="chk-van-man"></span> MAN TGE 14,4 m³</div>
+                                <div>Matrícula: <b id="man-plate">3758 MDW</b></div>
+                                <div>Nº ocupantes máximo: <b id="man-occ">3</b></div>
+                                <div>Masa máxima autorizada: <b id="man-mma">3500 kg</b></div>
+                                <div>Combustible: <b id="man-fuel">GASOIL</b></div>
+                                <div><b id="man-km">350 Km/día</b></div>
+                                <div>Etiqueta medioambiental: <span class="eco" id="man-eco">C</span></div>
+                            </div>
+                            <div class="veh" id="veh-ford">
+                                <div class="veh-head"><span class="sq" id="chk-van-ford"></span> FORD TRANSIT CUSTOM 8 m³</div>
+                                <div>Matrícula: <b id="ford-plate">3681 MCC</b></div>
+                                <div>Nº ocupantes máximo: <b id="ford-occ">3</b></div>
+                                <div>Masa máxima autorizada: <b id="ford-mma">2800 kg</b></div>
+                                <div>Combustible: <b id="ford-fuel">GASOIL</b></div>
+                                <div><b id="ford-km">350 Km/día</b></div>
+                                <div>Etiqueta medioambiental: <span class="eco" id="ford-eco">C</span></div>
+                            </div>
+                            <!-- Furgoneta distinta de las dos anteriores: solo se muestra la reservada -->
+                            <div class="veh" id="veh-other" style="display: none; grid-column: 1 / -1;">
+                                <div class="veh-head"><span class="sq on"></span> <span id="other-name">-</span></div>
+                                <div>Matrícula: <b id="other-plate">-</b></div>
+                                <div>Nº ocupantes máximo: <b id="other-occ">-</b></div>
+                                <div>Masa máxima autorizada: <b id="other-mma">-</b></div>
+                                <div>Combustible: <b id="other-fuel">-</b></div>
+                                <div><b id="other-km">-</b></div>
+                                <div>Etiqueta medioambiental: <span class="eco" id="other-eco">-</span></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- 2. DATOS DEL ARRENDATARIO & 3. SEGUNDO CONDUCTOR -->
-        <div class="grid-2col" style="margin-bottom: 10px;">
-            <div class="section-block" style="margin-bottom: 0;">
-                <div class="section-title">2. Datos del Arrendatario</div>
-                <div class="section-grid" style="height: 155px; overflow: hidden;">
-                    <div class="field-row"><span class="field-label" style="width: 75px;">Nombre/Apell:</span><span class="field-val" id="client-name">-</span></div>
-                    <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 5px;">
-                        <div class="field-row"><span class="field-label" style="width: 75px;">DNI/NIE:</span><span class="field-val" id="client-dni">-</span></div>
-                        <div class="field-row"><span class="field-label" style="width: 50px;">F. Nacim:</span><span class="field-val" id="client-birthdate">-</span></div>
-                    </div>
-                    <div class="field-row"><span class="field-label" style="width: 75px;">Dirección:</span><span class="field-val" id="client-address">-</span></div>
-                    <div style="display: grid; grid-template-columns: 1fr 1.2fr 1fr; gap: 4px;">
-                        <div class="field-row"><span class="field-label" style="width: 25px;">CP:</span><span class="field-val" id="client-cp">-</span></div>
-                        <div class="field-row"><span class="field-label" style="width: 30px;">Pobl:</span><span class="field-val" id="client-city">-</span></div>
-                        <div class="field-row"><span class="field-label" style="width: 30px;">Prov:</span><span class="field-val" id="client-province">-</span></div>
-                    </div>
-                    <div style="display: grid; grid-template-columns: 1fr 1.2fr; gap: 5px;">
-                        <div class="field-row"><span class="field-label" style="width: 45px;">Teléfono:</span><span class="field-val" id="client-phone">-</span></div>
-                        <div class="field-row"><span class="field-label" style="width: 30px;">Email:</span><span class="field-val" id="client-email">-</span></div>
-                    </div>
-                    <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 5px;">
-                        <div class="field-row"><span class="field-label" style="width: 75px;">Nº Permiso:</span><span class="field-val" id="client-license-num">-</span></div>
-                        <div class="field-row"><span class="field-label" style="width: 50px;">F. Exped:</span><span class="field-val" id="client-license-exp">-</span></div>
-                    </div>
+        <!-- KILÓMETROS · COMBUSTIBLE · ADBLUE -->
+        <div class="grid-3col">
+            <div>
+                <div class="sec-bar">Kilómetros</div>
+                <div class="box">
+                    <div class="cell row"><span class="lab">Kilómetros salida</span><span class="val" id="km-out">-</span></div>
+                    <div class="cell row"><span class="lab">Kilómetros devolución</span><span class="val" id="km-in">-</span></div>
+                    <div class="cell row"><span class="lab">Kilómetros incluidos</span><span class="val" id="km-included">-</span></div>
+                    <div class="cell row"><span class="lab">Kilómetros adicionales</span><span class="val" id="km-extra-qty">-</span></div>
+                    <div class="cell row"><span class="lab">Precio / km adicional</span><span class="val" id="km-price-extra">0,28 €/Km + IVA</span></div>
+                    <div class="cell"><div class="chk"><span class="sq" id="chk-km-package"></span> <span style="font-size: 8.4px;">Paquete 100 km / 20 € + IVA</span></div></div>
+                    <div class="cell row"><span class="lab">Total km adicionales</span><span class="val" id="km-extra-total">0,00 €</span></div>
                 </div>
             </div>
-            <div class="section-block" style="margin-bottom: 0;">
-                <div class="section-title">3. Segundo Conductor (Opcional)</div>
-                <div class="section-grid" style="height: 155px; overflow: hidden;">
-                    <div class="field-row"><span class="field-label" style="width: 80px;">Nombre/Apell:</span><span class="field-val" id="second-driver-name">-</span></div>
-                    <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 5px;">
-                        <div class="field-row"><span class="field-label" style="width: 80px;">DNI/NIE:</span><span class="field-val" id="second-driver-dni">-</span></div>
-                        <div class="field-row"><span class="field-label" style="width: 45px;">Teléfono:</span><span class="field-val" id="second-driver-phone">-</span></div>
-                    </div>
-                    <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 5px;">
-                        <div class="field-row"><span class="field-label" style="width: 80px;">Nº Permiso:</span><span class="field-val" id="second-driver-license-num">-</span></div>
-                        <div class="field-row"><span class="field-label" style="width: 45px;">F. Exped:</span><span class="field-val" id="second-driver-license-exp">-</span></div>
-                    </div>
-                    <div style="margin-top: 25px; font-size: 7.5px; color: #475569; font-style: italic;">
-                        El conductor adicional debe ser expresamente autorizado y cumplir los mismos requisitos de edad y experiencia de conducción.
-                    </div>
+            <div>
+                <div class="sec-bar">Combustible</div>
+                <div class="box">
+                    <div class="lvl-head"><div class="cell"></div><div class="cell">Entrega</div><div class="cell">Devolución</div></div>
+                    <div class="lvl-row"><div class="cell name">Lleno</div><div class="cell"><span class="sq" id="fuel-out-full"></span></div><div class="cell"><span class="sq" id="fuel-in-full"></span></div></div>
+                    <div class="lvl-row"><div class="cell name">3/4</div><div class="cell"><span class="sq" id="fuel-out-34"></span></div><div class="cell"><span class="sq" id="fuel-in-34"></span></div></div>
+                    <div class="lvl-row"><div class="cell name">1/2</div><div class="cell"><span class="sq" id="fuel-out-12"></span></div><div class="cell"><span class="sq" id="fuel-in-12"></span></div></div>
+                    <div class="lvl-row"><div class="cell name">1/4</div><div class="cell"><span class="sq" id="fuel-out-14"></span></div><div class="cell"><span class="sq" id="fuel-in-14"></span></div></div>
                 </div>
             </div>
-        </div>
-
-        <!-- 4. DATOS DEL VEHÍCULO -->
-        <div class="section-block">
-            <div class="section-title">4. Datos del Vehículo</div>
-            <div class="section-grid">
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 6px;">
-                    <div class="checkbox-container">
-                        <span class="checkbox-box" id="chk-van-man">[ ]</span>
-                        <span id="contract-van-line"><strong>MAN TGE L4H3 Gran Volumen (14m³)</strong> (Matrícula: 3758 MDW | MMA: 3500 kg | Ocupantes: 3)</span>
-                    </div>
-                    <div class="checkbox-container" id="contract-van-alt">
-                        <span class="checkbox-box" id="chk-van-ford">[ ]</span>
-                        <span><strong>FORD TRANSIT CUSTOM L2H2 (8m³)</strong> (Matrícula: 3681 MCC | MMA: 2800 kg | Ocupantes: 3)</span>
-                    </div>
-                </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1.2fr 1fr 1.2fr; gap: 10px; border-top: 1px solid #e2e8f0; padding-top: 5px; margin-top: 5px;">
-                    <div class="field-row"><span class="field-label" style="width: auto; margin-right: 4px;">MATRÍCULA:</span><span class="field-val" id="van-plate">-</span></div>
-                    <div class="field-row"><span class="field-label" style="width: auto; margin-right: 4px;">OCUPANTES MÁX:</span><span class="field-val" id="van-occupants">-</span></div>
-                    <div class="field-row"><span class="field-label" style="width: auto; margin-right: 4px;">MMA:</span><span class="field-val" id="van-mma">-</span></div>
-                    <div class="field-row"><span class="field-label" style="width: auto; margin-right: 4px;">COMBUSTIBLE:</span><span class="field-val" id="van-fuel">-</span></div>
-                    <div class="field-row"><span class="field-label" style="width: auto; margin-right: 4px;">KM/DÍA:</span><span class="field-val" id="van-kmlimit">-</span></div>
-                    <div class="field-row"><span class="field-label" style="width: auto; margin-right: 4px;">ETIQUETA ETIQ/C:</span><span class="field-val" id="van-eco">-</span></div>
-                </div>
-            </div>
-        </div>
-
-        <!-- KILOMETROS, COMBUSTIBLE, ADBLUE (3 columnas) -->
-        <div class="grid-3col" style="margin-bottom: 10px;">
-            <div class="section-block" style="margin-bottom: 0;">
-                <div class="section-title">Kilómetros</div>
-                <div class="section-grid" style="height: 125px; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between;">
-                    <div class="field-row"><span class="field-label" style="width: 90px;">KILÓMETROS SALIDA:</span><span class="field-val" id="km-out">-</span></div>
-                    <div class="field-row"><span class="field-label" style="width: 90px;">KILÓMETROS DEVOLUCIÓN:</span><span class="field-val" id="km-in">-</span></div>
-                    <div class="field-row"><span class="field-label" style="width: 90px;">KILÓMETROS INCLUIDOS:</span><span class="field-val" id="km-included">-</span></div>
-                    <div class="field-row"><span class="field-label" style="width: 90px;">KM ADICIONALES:</span><span class="field-val" id="km-extra-qty">-</span></div>
-                    <div class="field-row">
-                        <span class="field-label" style="width: auto; margin-right: 5px;">PRECIO/KM ADIC:</span>
-                        <span class="field-val" id="km-price-extra">0,28 €/Km + IVA</span>
-                    </div>
-                    <div class="checkbox-container">
-                        <span class="checkbox-box" id="chk-km-package">[ ]</span>
-                        <span style="font-size: 7.5px;">PAQUETE 100km / 20 € + IVA</span>
-                    </div>
-                </div>
-            </div>
-            <div class="section-block" style="margin-bottom: 0;">
-                <div class="section-title">Combustible</div>
-                <div class="section-grid" style="height: 125px; overflow: hidden; padding: 5px 8px;">
-                    <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 5px; font-weight: bold; border-bottom: 1.5px solid var(--primary-blue); padding-bottom: 2px; margin-bottom: 4px; text-transform: uppercase;">
-                        <span>NIVEL</span>
-                        <span style="text-align: center;">ENTR</span>
-                        <span style="text-align: center;">DEVO</span>
-                    </div>
-                    <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 5px; align-items: center; border-bottom: 1px solid #f1f5f9; padding: 2px 0;">
-                        <span>LLENO (1/1)</span>
-                        <span style="text-align: center;" class="checkbox-box" id="fuel-out-full">☐</span>
-                        <span style="text-align: center;" class="checkbox-box" id="fuel-in-full">☐</span>
-                    </div>
-                    <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 5px; align-items: center; border-bottom: 1px solid #f1f5f9; padding: 2px 0;">
-                        <span>3/4</span>
-                        <span style="text-align: center;" class="checkbox-box" id="fuel-out-34">☐</span>
-                        <span style="text-align: center;" class="checkbox-box" id="fuel-in-34">☐</span>
-                    </div>
-                    <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 5px; align-items: center; border-bottom: 1px solid #f1f5f9; padding: 2px 0;">
-                        <span>1/2</span>
-                        <span style="text-align: center;" class="checkbox-box" id="fuel-out-12">☐</span>
-                        <span style="text-align: center;" class="checkbox-box" id="fuel-in-12">☐</span>
-                    </div>
-                    <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 5px; align-items: center; padding: 2px 0;">
-                        <span>1/4</span>
-                        <span style="text-align: center;" class="checkbox-box" id="fuel-out-14">☐</span>
-                        <span style="text-align: center;" class="checkbox-box" id="fuel-in-14">☐</span>
-                    </div>
-                </div>
-            </div>
-            <div class="section-block" style="margin-bottom: 0;">
-                <div class="section-title">AdBlue (Si procede)</div>
-                <div class="section-grid" style="height: 125px; overflow: hidden; padding: 5px 8px;">
-                    <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 5px; font-weight: bold; border-bottom: 1.5px solid var(--primary-blue); padding-bottom: 2px; margin-bottom: 4px; text-transform: uppercase;">
-                        <span>NIVEL</span>
-                        <span style="text-align: center;">ENTR</span>
-                        <span style="text-align: center;">DEVO</span>
-                    </div>
-                    <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 5px; align-items: center; border-bottom: 1px solid #f1f5f9; padding: 2px 0;">
-                        <span>LLENO (1/1)</span>
-                        <span style="text-align: center;" class="checkbox-box" id="adblue-out-full">☐</span>
-                        <span style="text-align: center;" class="checkbox-box" id="adblue-in-full">☐</span>
-                    </div>
-                    <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 5px; align-items: center; border-bottom: 1px solid #f1f5f9; padding: 2px 0;">
-                        <span>1/2 u otros</span>
-                        <span style="text-align: center;" class="checkbox-box" id="adblue-out-half">☐</span>
-                        <span style="text-align: center;" class="checkbox-box" id="adblue-in-half">☐</span>
-                    </div>
-                    <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 5px; align-items: center; border-bottom: 1px solid #f1f5f9; padding: 2px 0;">
-                        <span>BAJO (1/4)</span>
-                        <span style="text-align: center;" class="checkbox-box" id="adblue-out-low">☐</span>
-                        <span style="text-align: center;" class="checkbox-box" id="adblue-in-low">☐</span>
-                    </div>
-                    <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 5px; align-items: center; padding: 2px 0;">
-                        <span>NO APLICA</span>
-                        <span style="text-align: center;" class="checkbox-box" id="adblue-out-na">☐</span>
-                        <span style="text-align: center;" class="checkbox-box" id="adblue-in-na">☐</span>
-                    </div>
+            <div>
+                <div class="sec-bar">AdBlue (si procede)</div>
+                <div class="box">
+                    <div class="lvl-head"><div class="cell"></div><div class="cell">Entrega</div><div class="cell">Devolución</div></div>
+                    <div class="lvl-row"><div class="cell name">Lleno</div><div class="cell"><span class="sq" id="adblue-out-full"></span></div><div class="cell"><span class="sq" id="adblue-in-full"></span></div></div>
+                    <div class="lvl-row"><div class="cell name">3/4</div><div class="cell"><span class="sq" id="adblue-out-34"></span></div><div class="cell"><span class="sq" id="adblue-in-34"></span></div></div>
+                    <div class="lvl-row"><div class="cell name">1/2</div><div class="cell"><span class="sq" id="adblue-out-12"></span></div><div class="cell"><span class="sq" id="adblue-in-12"></span></div></div>
+                    <div class="lvl-row"><div class="cell name">1/4</div><div class="cell"><span class="sq" id="adblue-out-14"></span></div><div class="cell"><span class="sq" id="adblue-in-14"></span></div></div>
+                    <div class="lvl-row"><div class="cell name">No aplica</div><div class="cell"><span class="sq" id="adblue-out-na"></span></div><div class="cell"><span class="sq" id="adblue-in-na"></span></div></div>
                 </div>
             </div>
         </div>
 
         <!-- 5. CONDICIONES ECONÓMICAS -->
-        <div class="section-block">
-            <div class="section-title">5. Condiciones Económicas</div>
-            <div class="section-grid" style="padding: 5px;">
-                <div style="display: grid; grid-template-columns: 1.25fr 1.15fr 1.6fr; gap: 5px; align-items: stretch;">
+        <div class="sec">
+            <div class="sec-tab">5. Condiciones económicas</div>
+            <div class="box">
+                <div class="grid" style="grid-template-columns: 1.15fr 1fr 1.15fr;">
                     <!-- Alquiler -->
-                    <div style="border-right: 1px solid var(--border-color); padding-right: 6px;">
-                        <div class="col-title">Detalle Alquiler</div>
-                        <div class="field-row" style="justify-content: space-between;"><span class="field-label" style="width: auto;">Precio Alquiler Base:</span><span class="field-val" id="price-rent-base">-</span></div>
-                        <div class="field-row" style="justify-content: space-between;"><span class="field-label" style="width: auto;">Precio Limpieza:</span><span class="field-val" id="price-cleaning">-</span></div>
-                        <div class="field-row" style="justify-content: space-between;"><span class="field-label" style="width: auto;">IVA (21%):</span><span class="field-val" id="price-iva">-</span></div>
-                        <div class="field-row" style="justify-content: space-between; border-bottom: none; font-weight: bold; margin-top: 5px;"><span class="field-label" style="width: auto; color:#000;">TOTAL CONTRATO:</span><span class="field-val" id="price-total-general" style="color: var(--primary-blue);">-</span></div>
+                    <div>
+                        <div class="cell head-cell" style="border-top: none;">Alquiler</div>
+                        <div class="cell row"><span class="lab">Precio alquiler</span><span class="val" id="price-rent-base">-</span></div>
+                        <div class="cell row" id="row-cleaning" style="display: none;"><span class="lab">Limpieza</span><span class="val" id="price-cleaning">-</span></div>
+                        <div class="cell row"><span class="lab">IVA (21 %)</span><span class="val" id="price-iva">-</span></div>
+                        <div class="cell row"><span class="lab">Total alquiler</span><span class="val" id="price-total-rent">-</span></div>
+                        <div class="cell row"><span class="lab" style="font-weight: 800;">Total general</span><span class="val" id="price-total-general">-</span></div>
                     </div>
                     <!-- Forma de pago -->
-                    <div style="border-right: 1px solid var(--border-color); padding: 0 6px;">
-                        <div class="col-title">Forma de Pago</div>
-                        <div style="display: grid; grid-template-columns: 1fr; gap: 4px; margin-top: 5px;">
-                            <div class="checkbox-container"><span class="checkbox-box" id="pay-efectivo">☐</span> <span>EFECTIVO</span></div>
-                            <div class="checkbox-container"><span class="checkbox-box" id="pay-tarjeta">☐</span> <span>TARJETA</span></div>
-                            <div class="checkbox-container"><span class="checkbox-box" id="pay-transferencia">☐</span> <span>TRANSFERENCIA</span></div>
-                            <div class="checkbox-container"><span class="checkbox-box" id="pay-bizum">☐</span> <span>BIZUM / OTRO</span></div>
+                    <div style="border-left: 1px solid var(--line);">
+                        <div class="cell" style="border-top: none; text-align: center; font-weight: 600; text-transform: uppercase; font-size: 9px; color: #374151;">Forma de pago</div>
+                        <div class="cell" style="border-left: none; padding: 8px 10px;">
+                            <div class="grid" style="grid-template-columns: 1fr 1fr; row-gap: 12px;">
+                                <div class="chk"><span class="sq" id="pay-efectivo"></span> Efectivo</div>
+                                <div class="chk"><span class="sq" id="pay-tarjeta"></span> Tarjeta</div>
+                                <div class="chk"><span class="sq" id="pay-transferencia"></span> Transferencia</div>
+                                <div class="chk"><span class="sq" id="pay-bizum"></span> Bizum</div>
+                            </div>
+                            <div style="margin-top: 14px; font-size: 9px; font-weight: 500;">Otra forma: <span id="pay-otra" style="font-weight: 700;"></span></div>
                         </div>
                     </div>
                     <!-- Fianza -->
-                    <div style="padding-left: 6px;">
-                        <div class="col-title">Fianza de Garantía (500,00 €)</div>
-                        <div class="field-row" style="justify-content: space-between; padding-bottom: 2px;"><span class="field-label" style="width: auto;">Fianza Entregada:</span><span class="field-val" id="fianza-deposit-val">-</span></div>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-top: 3px; border-top: 1px solid #f1f5f9; padding-top: 4px;">
-                            <div class="checkbox-container"><span class="checkbox-box" id="fianza-dev-integra">☐</span> <span>Devuelta Íntegra</span></div>
-                            <div class="checkbox-container"><span class="checkbox-box" id="fianza-dev-parcial">☐</span> <span>Devuelta Parcial</span></div>
-                        </div>
-                        <div class="field-row" style="margin-top: 4px; border-bottom: none;"><span class="field-label" style="width: 75px;">Retenido (€):</span><span class="field-val" id="fianza-retained-val">-</span></div>
-                        <div class="field-row" style="border-bottom: none;"><span class="field-label" style="width: 35px;">Motivo:</span><span class="field-val" style="font-size: 7.5px;" id="fianza-retained-reason">-</span></div>
+                    <div style="border-left: 1px solid var(--line);">
+                        <div class="cell head-cell" style="border-top: none;">Fianza</div>
+                        <div class="cell row"><span class="lab">Fianza entregada</span><span class="val" id="fianza-deposit-val">-</span></div>
+                        <div class="cell row"><span class="lab">Devuelta íntegra</span><span class="sq" id="fianza-dev-integra"></span></div>
+                        <div class="cell row"><span class="lab">Devuelta parcialmente</span><span class="sq" id="fianza-dev-parcial"></span></div>
+                        <div class="cell row"><span class="lab">Importe retenido</span><span class="val" id="fianza-retained-val">-</span></div>
+                        <div class="cell row"><span class="lab">Motivo</span><span class="val" style="font-size: 8.4px; white-space: normal;" id="fianza-retained-reason">-</span></div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- 6. ESTADO DE VEHICULO & 7. ACCESORIOS ENTREGADOS -->
-        <div class="grid-2col" style="margin-bottom: 10px;">
-            <div class="section-block" style="margin-bottom: 0;">
-                <div class="section-title">6. Estado del Vehículo en Entrega</div>
-                <div class="section-grid" style="height: 125px; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between;">
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px;">
-                        <div class="checkbox-container"><span class="checkbox-box" id="state-int-limpio">☐</span> <span>Interior Limpio</span></div>
-                        <div class="checkbox-container"><span class="checkbox-box" id="state-int-sucio">☐</span> <span>Interior Sucio</span></div>
+        <!-- 6. ESTADO DEL VEHÍCULO  |  7. ACCESORIOS -->
+        <div class="two" style="margin-bottom: 10px; align-items: start;">
+            <div class="sec" style="margin-bottom: 0;">
+                <div class="sec-tab">6. Estado del vehículo en entrega</div>
+                <div class="box">
+                    <div class="grid" style="grid-template-columns: 1fr 1fr;">
+                        <div class="cell"><div class="chk"><span class="sq" id="state-int-limpio"></span> Interior limpio</div></div>
+                        <div class="cell"><div class="chk"><span class="sq" id="state-int-sucio"></span> Interior no limpio</div></div>
                     </div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px;">
-                        <div class="checkbox-container"><span class="checkbox-box" id="state-ext-limpio">☐</span> <span>Exterior Limpio</span></div>
-                        <div class="checkbox-container"><span class="checkbox-box" id="state-ext-sucio">☐</span> <span>Exterior Sucio</span></div>
+                    <div class="grid" style="grid-template-columns: 1fr 1fr;">
+                        <div class="cell"><div class="chk"><span class="sq" id="state-ext-limpio"></span> Exterior limpio</div></div>
+                        <div class="cell"><div class="chk"><span class="sq" id="state-ext-sucio"></span> Exterior no limpio</div></div>
                     </div>
-                    <div style="border-top: 1px solid #e2e8f0; padding-top: 4px;">
-                        <strong>Precio limpieza (Si procede):</strong> MAN TGE: 40 €+IVA | FORD Transit: 30 €+IVA
+                    <div class="cell" style="padding-bottom: 6px;">
+                        <span class="lab" style="margin-bottom: 4px;">Precio de limpieza (si procede)</span>
+                        <div class="chk" style="justify-content: space-between;"><span style="display: inline-flex; gap: 6px; align-items: center;"><span class="sq" id="clean-man"></span> MAN TGE 14,4 m³</span><span>40 € + IVA</span></div>
+                        <div class="chk" style="justify-content: space-between; margin-top: 4px;"><span style="display: inline-flex; gap: 6px; align-items: center;"><span class="sq" id="clean-ford"></span> FORD TRANSIT CUSTOM 8 m³</span><span>30 € + IVA</span></div>
                     </div>
-                    <div class="field-row" style="border-bottom: none;">
-                        <span class="field-label" style="width: 65px;">OBSERVACIONES:</span>
-                        <span class="field-val" style="font-size: 7.5px; font-style: italic;" id="doc-observaciones">-</span>
-                    </div>
+                    <div class="cell" style="min-height: 38px;"><span class="lab">Observaciones</span><span class="val" style="font-size: 9px; font-style: italic;" id="doc-observaciones">-</span></div>
                 </div>
             </div>
-            <div class="section-block" style="margin-bottom: 0;">
-                <div class="section-title">7. Accesorios Entregados</div>
-                <div class="section-grid" style="height: 125px; overflow: hidden; padding: 4px 6px;">
-                    <div style="display: grid; grid-template-columns: 1.1fr 1fr; gap: 3px; font-size: 7.5px;">
-                        <div class="checkbox-container"><span class="checkbox-box" id="acc-permiso">☐</span> <span>Permiso Circulación</span></div>
-                        <div class="checkbox-container"><span class="checkbox-box" id="acc-chaleco">☐</span> <span>Chaleco Reflectante</span></div>
-                        <div class="checkbox-container"><span class="checkbox-box" id="acc-ficha">☐</span> <span>Ficha Técnica</span></div>
-                        <div class="checkbox-container"><span class="checkbox-box" id="acc-rueda">☐</span> <span>Rueda Repuesto/Kit</span></div>
-                        <div class="checkbox-container"><span class="checkbox-box" id="acc-llave">☐</span> <span>Llave Principal</span></div>
-                        <div class="checkbox-container"><span class="checkbox-box" id="acc-gato">☐</span> <span>Gato y Herramientas</span></div>
-                        <div class="checkbox-container"><span class="checkbox-box" id="acc-llave-rep">☐</span> <span>Llave Repuesto</span></div>
-                        <div class="checkbox-container"><span class="checkbox-box" id="acc-manual">☐</span> <span>Manual Vehículo</span></div>
-                        <div class="checkbox-container"><span class="checkbox-box" id="acc-v16">☐</span> <span>Baliza V16</span></div>
-                        <div class="checkbox-container"><span class="checkbox-box" id="acc-adaptador">☐</span> <span>Adaptador 13->7</span></div>
-                        <div class="checkbox-container" style="grid-column: 1 / -1;"><span class="checkbox-box" id="acc-gancho">☐</span> <span>Gancho de Remolque</span></div>
+
+            <div class="sec" style="margin-bottom: 0;">
+                <div class="sec-tab">7. Accesorios entregados</div>
+                <div class="box">
+                    <div class="grid" style="grid-template-columns: 1.15fr 1fr;">
+                        <div class="cell" style="display: grid; row-gap: 7px; padding: 8px;">
+                            <div class="chk"><span class="sq" id="acc-permiso"></span> Permiso de circulación</div>
+                            <div class="chk"><span class="sq" id="acc-ficha"></span> Ficha técnica</div>
+                            <div class="chk"><span class="sq" id="acc-llave"></span> Llave principal</div>
+                            <div class="chk"><span class="sq" id="acc-llave-rep"></span> Llave de repuesto</div>
+                            <div class="chk"><span class="sq" id="acc-v16"></span> Baliza V16</div>
+                            <div class="chk"><span class="sq" id="acc-adaptador"></span> Adaptador 13 → 7 polos</div>
+                            <div class="chk"><span class="sq" id="acc-gancho"></span> Gancho de remolque</div>
+                        </div>
+                        <div class="cell" style="display: grid; row-gap: 7px; padding: 8px; align-content: start;">
+                            <div class="chk"><span class="sq" id="acc-chaleco"></span> Chaleco reflectante</div>
+                            <div class="chk"><span class="sq" id="acc-rueda"></span> Rueda de repuesto / kit antipinchazos</div>
+                            <div class="chk"><span class="sq" id="acc-gato"></span> Gato y herramientas</div>
+                            <div class="chk"><span class="sq" id="acc-manual"></span> Manual del vehículo</div>
+                        </div>
                     </div>
-                    <div class="field-row" style="border-bottom: none; margin-top: 4px; padding-top: 2px; border-top: 1px dashed #e2e8f0;">
-                        <span class="field-label" style="width: 70px;">Otros Accesorios:</span>
-                        <span class="field-val" id="acc-others">-</span>
-                    </div>
+                    <div class="cell"><span class="lab">Otros accesorios</span><span class="val" style="font-size: 9px;" id="acc-others">-</span></div>
                 </div>
             </div>
         </div>
 
         <!-- 8. DECLARACIÓN DEL CLIENTE -->
-        <div class="section-block">
-            <div class="section-title">8. Declaración del Cliente</div>
-            <div class="section-grid" style="font-size: 7.5px; color: #334155; line-height: 1.4;">
-                <div class="checkbox-container" style="margin-bottom: 2px;">
-                    <span class="checkbox-box" style="font-size: 9px;">☑</span>
-                    <span>Declaro haber recibido el vehículo y los accesorios anteriormente indicados, en las condiciones reflejadas en este contrato.</span>
-                </div>
-                <div class="checkbox-container">
-                    <span class="checkbox-box" style="font-size: 9px;">☑</span>
-                    <span>Declaro haber revisado el estado del vehículo y estar conforme con su entrega y con las cláusulas de responsabilidad y seguro anexas.</span>
-                </div>
+        <div class="sec">
+            <div class="sec-tab">8. Declaración del cliente</div>
+            <div class="box" style="padding: 6px 10px; display: grid; row-gap: 5px;">
+                <div class="chk"><span class="sq"></span> <span style="font-size: 8.8px;">Declaro haber recibido el vehículo y los accesorios anteriormente indicados, en las condiciones reflejadas en este contrato.</span></div>
+                <div class="chk"><span class="sq"></span> <span style="font-size: 8.8px;">Declaro haber revisado el estado del vehículo y estar conforme con su entrega.</span></div>
             </div>
         </div>
 
         <!-- 9. FIRMAS -->
-        <div class="section-block">
-            <div class="section-title">9. Firmas</div>
-            <div class="signatures-grid">
-                <div class="signature-card">
-                    <div class="signature-line"></div>
-                    <div class="signature-label">Firma Arrendador (RentMeUskar)</div>
-                </div>
-                <div class="signature-card">
-                    <div class="signature-line">
-                        <!-- Firma digital del cliente si estuviera firmada -->
-                        <div id="contract-client-signature-img" style="display: none; height: 100%;">
-                            <img src="" style="max-height: 40px; display: block; margin: 0 auto;">
+        <div class="sec" style="margin-bottom: 0;">
+            <div class="sec-tab">9. Firmas</div>
+            <div class="two" style="gap: 14px; margin-top: 0;">
+                <div>
+                    <div class="sign-head">Entrega del vehículo</div>
+                    <div class="sign-box">
+                        <div class="txt">El arrendatario recibe el vehículo y los accesorios en las condiciones indicadas.</div>
+                        <div class="sign-lines">
+                            <div><div class="sign-line"></div><div class="sign-label">Firma arrendador</div></div>
+                            <div>
+                                <div class="sign-line">
+                                    <!-- Firma digital del cliente si estuviera firmada -->
+                                    <div id="contract-client-signature-img" style="display: none; height: 100%;">
+                                        <img src="" alt="Firma del arrendatario" style="max-height: 40px; display: block; margin: 0 auto;">
+                                    </div>
+                                </div>
+                                <div class="sign-label">Firma arrendatario</div>
+                            </div>
                         </div>
                     </div>
-                    <div class="signature-label">Firma Arrendatario (Cliente)</div>
+                </div>
+                <div>
+                    <div class="sign-head">Devolución del vehículo</div>
+                    <div class="sign-box">
+                        <div class="txt">El arrendatario devuelve el vehículo y los accesorios en las condiciones indicadas.</div>
+                        <div class="sign-lines">
+                            <div><div class="sign-line"></div><div class="sign-label">Firma arrendador</div></div>
+                            <div><div class="sign-line"></div><div class="sign-label">Firma arrendatario</div></div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <div style="text-align: center; font-size: 7px; color: #94a3b8; margin-top: 10px;">
-            El vehículo alquilado comprende un límite de kilometraje diario indicado en la sección 4. Todo kilometraje excedido será facturado a razón de 0,28 €/Km + IVA.
+        <div class="foot">
+            El vehículo alquilado comprende <span id="foot-km">350</span> Km, todos los Km excedentes serán cargados a un coste de <span id="foot-price">0,28</span> €/Km + IVA.
         </div>
 
     </div>
 
     <script>
+        // En pantallas estrechas el contrato se reduce entero en vez de cortarse
+        function fitContract() {
+            var box = document.getElementById('contract-container');
+            var scale = Math.min(1, (window.innerWidth - 8) / 820);
+            box.style.zoom = scale < 1 ? scale : '';
+        }
+        window.addEventListener('resize', fitContract);
+        fitContract();
+
+        // Al imprimir: el contrato se escala para que quepa entero en una hoja A4 (área útil 198 x 285 mm)
+        window.addEventListener('beforeprint', function () {
+            var box = document.getElementById('contract-container');
+            box.style.zoom = '';
+            var scale = Math.min(748 / 820, 1077 / box.offsetHeight) * 0.98;
+            box.style.zoom = scale;
+        });
+        window.addEventListener('afterprint', fitContract);
+
         document.addEventListener('DOMContentLoaded', () => {
+            const $ = (id) => document.getElementById(id);
+            const setText = (id, value) => { const el = $(id); if (el) el.textContent = value; };
+            // Casilla marcada o vacía
+            const chk = (id, on) => { const el = $(id); if (el) el.classList.toggle('on', !!on); };
+
             const urlParams = new URLSearchParams(window.location.search);
             let bookingId = urlParams.get('id');
             if (!bookingId) {
@@ -639,7 +576,7 @@
                 const pathParts = cleanPath.split('/');
                 bookingId = pathParts[pathParts.length - 1];
             }
-            
+
             if (!bookingId || isNaN(bookingId)) {
                 alert('ID de reserva inválido.');
                 return;
@@ -657,172 +594,173 @@
                     return res.json();
                 })
                 .then(b => {
-                    document.getElementById('doc-contract-id').textContent = `RMU-CTR-${b.id}`;
-                    
-                    const formatTimestamp = (timestampStr) => {
-                        const date = new Date(timestampStr);
-                        return date.toLocaleDateString('es-ES');
-                    };
+                    setText('doc-contract-id', `RMU-CTR-${b.id}`);
 
                     const formatDate = (dateStr) => {
                         if (!dateStr) return '-';
-                        const cleanDate = dateStr.split('T')[0];
+                        const cleanDate = String(dateStr).split('T')[0];
                         const [year, month, day] = cleanDate.split('-');
-                        return `${day}/${month}/${year}`;
+                        return day && month && year ? `${day}/${month}/${year}` : '-';
                     };
+                    const euros = (n) => `${(Number(n) || 0).toFixed(2).replace('.', ',')} €`;
 
-                    document.getElementById('doc-contract-date').textContent = formatTimestamp(b.created_at);
-                    
-                    // 1. Datos Alquiler
-                    document.getElementById('rent-pickup-date').textContent = `${formatDate(b.pickup_date)} ${b.pickup_time}`;
-                    document.getElementById('rent-return-date').textContent = `${formatDate(b.return_date)} ${b.return_time}`;
-                    document.getElementById('rent-days').textContent = b.days || '0';
-                    document.getElementById('rent-applied-rate').textContent = b.contract_applied_rate || `${b.days === 1 ? '1 día' : b.days + ' días'}`;
+                    setText('doc-contract-date', new Date(b.created_at).toLocaleDateString('es-ES'));
 
-                    // 2. Datos Arrendatario
-                    document.getElementById('client-name').textContent = b.user_name || b.name || '-';
-                    document.getElementById('client-dni').textContent = b.user_dni || b.dni || '-';
-                    document.getElementById('client-birthdate').textContent = formatDate(b.client_birthdate);
-                    document.getElementById('client-address').textContent = b.client_address || '-';
-                    document.getElementById('client-cp').textContent = b.client_postal_code || '-';
-                    document.getElementById('client-city').textContent = b.client_city || '-';
-                    document.getElementById('client-province').textContent = b.client_province || '-';
-                    document.getElementById('client-phone').textContent = b.user_phone || b.phone || '-';
-                    document.getElementById('client-email').textContent = b.user_email || b.email || '-';
-                    document.getElementById('client-license-num').textContent = b.client_license_num || '-';
-                    document.getElementById('client-license-exp').textContent = formatDate(b.client_license_exp);
+                    // 1. Datos del alquiler
+                    setText('rent-pickup-date', `${formatDate(b.pickup_date)} ${b.pickup_time || ''}`.trim());
+                    setText('rent-return-date', `${formatDate(b.return_date)} ${b.return_time || ''}`.trim());
+                    setText('rent-days', b.days || '0');
+                    setText('rent-applied-rate', b.contract_applied_rate || `${b.days === 1 ? '1 día' : b.days + ' días'}`);
 
-                    // 3. Segundo Conductor
-                    document.getElementById('second-driver-name').textContent = b.second_driver_name || '-';
-                    document.getElementById('second-driver-dni').textContent = b.second_driver_dni || '-';
-                    document.getElementById('second-driver-phone').textContent = b.second_driver_phone || '-';
-                    document.getElementById('second-driver-license-num').textContent = b.second_driver_license_num || '-';
-                    document.getElementById('second-driver-license-exp').textContent = formatDate(b.second_driver_license_exp);
+                    // 2. Arrendatario
+                    setText('client-name', b.user_name || b.name || '-');
+                    setText('client-dni', b.user_dni || b.dni || '-');
+                    setText('client-birthdate', formatDate(b.client_birthdate));
+                    setText('client-address', b.client_address || '-');
+                    setText('client-cp', b.client_postal_code || '-');
+                    setText('client-city', b.client_city || '-');
+                    setText('client-province', b.client_province || '-');
+                    setText('client-phone', b.user_phone || b.phone || '-');
+                    setText('client-email', b.user_email || b.email || '-');
+                    setText('client-license-num', b.client_license_num || '-');
+                    setText('client-license-exp', formatDate(b.client_license_exp));
 
-                    // 4. Vehículo
+                    // 3. Segundo conductor
+                    setText('second-driver-name', b.second_driver_name || '-');
+                    setText('second-driver-dni', b.second_driver_dni || '-');
+                    setText('second-driver-phone', b.second_driver_phone || '-');
+                    setText('second-driver-license-num', b.second_driver_license_num || '-');
+                    setText('second-driver-license-exp', formatDate(b.second_driver_license_exp));
+
+                    // 4. Vehículo: los datos reservados sustituyen a los de la plantilla en su recuadro
                     const isFord = b.van_type === 'medium';
-                    document.getElementById('chk-van-man').textContent = !isFord ? '[X]' : '[ ]';
-                    document.getElementById('chk-van-ford').textContent = isFord ? '[X]' : '[ ]';
-                    
-                    document.getElementById('van-plate').textContent = b.van_plate || (isFord ? '3681 MCC' : '3758 MDW');
-                    // Furgoneta que no es ninguna de las dos de la plantilla: se muestra la reservada
-                    // (antes cualquier otra salía marcada como MAN TGE)
-                    if (b.van_type !== 'medium' && b.van_type !== 'large') {
-                        const line = document.getElementById('contract-van-line');
-                        line.textContent = '';
-                        const strong = document.createElement('strong');
-                        strong.textContent = b.van_name || 'Furgoneta';
-                        line.appendChild(strong);
-                        line.appendChild(document.createTextNode(` (Matrícula: ${b.van_plate || '-'} | MMA: ${b.max_mass ? b.max_mass + ' kg' : '-'} | Ocupantes: ${b.max_occupants || '-'})`));
-                        document.getElementById('contract-van-alt').style.display = 'none';
+                    const isMan = b.van_type === 'large';
+                    const vehData = {
+                        plate: b.van_plate, occ: b.max_occupants,
+                        mma: b.max_mass ? `${b.max_mass} kg` : '',
+                        fuel: b.fuel_type, km: b.daily_km_limit ? `${b.daily_km_limit} Km/día` : '',
+                        eco: b.eco_label
+                    };
+                    const fillVeh = (prefix) => {
+                        if (vehData.plate) setText(`${prefix}-plate`, vehData.plate);
+                        if (vehData.occ) setText(`${prefix}-occ`, vehData.occ);
+                        if (vehData.mma) setText(`${prefix}-mma`, vehData.mma);
+                        if (vehData.fuel) setText(`${prefix}-fuel`, vehData.fuel);
+                        if (vehData.km) setText(`${prefix}-km`, vehData.km);
+                        if (vehData.eco) setText(`${prefix}-eco`, vehData.eco);
+                    };
+                    if (isFord || isMan) {
+                        chk('chk-van-ford', isFord);
+                        chk('chk-van-man', isMan);
+                        fillVeh(isFord ? 'ford' : 'man');
+                    } else {
+                        // Furgoneta que no es ninguna de las dos de la plantilla: se muestra la reservada
+                        $('veh-man').style.display = 'none';
+                        $('veh-ford').style.display = 'none';
+                        $('veh-other').style.display = 'block';
+                        setText('other-name', b.van_name || 'Furgoneta');
+                        setText('other-plate', b.van_plate || '-');
+                        setText('other-occ', b.max_occupants || '-');
+                        setText('other-mma', b.max_mass ? `${b.max_mass} kg` : '-');
+                        setText('other-fuel', b.fuel_type || '-');
+                        setText('other-km', b.daily_km_limit ? `${b.daily_km_limit} Km/día` : '-');
+                        setText('other-eco', b.eco_label || '-');
                     }
-                    document.getElementById('van-occupants').textContent = b.max_occupants || '3';
-                    document.getElementById('van-mma').textContent = b.max_mass ? `${b.max_mass} kg` : (isFord ? '2800 kg' : '3500 kg');
-                    document.getElementById('van-fuel').textContent = b.fuel_type || 'GASOIL';
-                    document.getElementById('van-kmlimit').textContent = b.daily_km_limit ? `${b.daily_km_limit} Km` : '350 Km';
-                    document.getElementById('van-eco').textContent = b.eco_label || 'C';
 
-                    // 5. Kilómetros
+                    // Kilómetros
                     const kmOut = b.km_out !== undefined && b.km_out !== null ? b.km_out : 0;
                     const kmIn = b.km_in !== undefined && b.km_in !== null ? b.km_in : 0;
                     const kmInc = b.km_included !== undefined && b.km_included !== null ? b.km_included : 350;
+                    const kmPrice = parseFloat(b.km_price_extra || 0.28);
                     const extraKms = (kmIn > 0 && kmIn > (kmOut + kmInc)) ? (kmIn - (kmOut + kmInc)) : 0;
 
-                    document.getElementById('km-out').textContent = `${kmOut} km`;
-                    document.getElementById('km-in').textContent = kmIn > 0 ? `${kmIn} km` : 'En curso';
-                    document.getElementById('km-included').textContent = `${kmInc} km`;
-                    document.getElementById('km-extra-qty').textContent = `${extraKms} km`;
-                    document.getElementById('km-price-extra').textContent = `${parseFloat(b.km_price_extra || 0.28).toFixed(2)} €/Km + IVA`;
-                    document.getElementById('chk-km-package').textContent = b.km_extra_package ? '[X]' : '[ ]';
+                    setText('km-out', `${kmOut} km`);
+                    setText('km-in', kmIn > 0 ? `${kmIn} km` : 'En curso');
+                    setText('km-included', `${kmInc} km`);
+                    setText('km-extra-qty', `${extraKms} km`);
+                    setText('km-price-extra', `${kmPrice.toFixed(2).replace('.', ',')} €/Km + IVA`);
+                    setText('km-extra-total', euros(extraKms * kmPrice));
+                    chk('chk-km-package', b.km_extra_package);
+                    setText('foot-km', kmInc);
+                    setText('foot-price', kmPrice.toFixed(2).replace('.', ','));
 
-                    // Combustible
-                    const fuelOut = b.fuel_out || 'Lleno';
-                    const fuelIn = b.fuel_in || 'Lleno';
-                    document.getElementById('fuel-out-full').textContent = fuelOut === 'Lleno' ? '☒' : '☐';
-                    document.getElementById('fuel-out-34').textContent = fuelOut === '3/4' ? '☒' : '☐';
-                    document.getElementById('fuel-out-12').textContent = fuelOut === '1/2' ? '☒' : '☐';
-                    document.getElementById('fuel-out-14').textContent = fuelOut === '1/4' ? '☒' : '☐';
-                    
+                    // Combustible y AdBlue
+                    const level = (value) => (value === 'Lleno' ? 'full' : value === '3/4' ? '34' : value === '1/2' ? '12' : value === '1/4' ? '14' : value === 'No aplica' ? 'na' : '');
+                    const setLevels = (kind, side, value) => {
+                        ['full', '34', '12', '14', 'na'].forEach(l => chk(`${kind}-${side}-${l}`, level(value) === l));
+                    };
+                    setLevels('fuel', 'out', b.fuel_out || 'Lleno');
+                    setLevels('adblue', 'out', b.adblue_out || 'Lleno');
                     if (kmIn > 0) {
-                        document.getElementById('fuel-in-full').textContent = fuelIn === 'Lleno' ? '☒' : '☐';
-                        document.getElementById('fuel-in-34').textContent = fuelIn === '3/4' ? '☒' : '☐';
-                        document.getElementById('fuel-in-12').textContent = fuelIn === '1/2' ? '☒' : '☐';
-                        document.getElementById('fuel-in-14').textContent = fuelIn === '1/4' ? '☒' : '☐';
+                        setLevels('fuel', 'in', b.fuel_in || 'Lleno');
+                        setLevels('adblue', 'in', b.adblue_in || 'Lleno');
                     }
 
-                    // AdBlue
-                    const adbOut = b.adblue_out || 'Lleno';
-                    const adbIn = b.adblue_in || 'Lleno';
-                    document.getElementById('adblue-out-full').textContent = adbOut === 'Lleno' ? '☒' : '☐';
-                    document.getElementById('adblue-out-half').textContent = (adbOut === '1/2' || adbOut === '3/4') ? '☒' : '☐';
-                    document.getElementById('adblue-out-low').textContent = adbOut === '1/4' ? '☒' : '☐';
-                    document.getElementById('adblue-out-na').textContent = adbOut === 'No aplica' ? '☒' : '☐';
-                    
-                    if (kmIn > 0) {
-                        document.getElementById('adblue-in-full').textContent = adbIn === 'Lleno' ? '☒' : '☐';
-                        document.getElementById('adblue-in-half').textContent = (adbIn === '1/2' || adbIn === '3/4') ? '☒' : '☐';
-                        document.getElementById('adblue-in-low').textContent = adbIn === '1/4' ? '☒' : '☐';
-                        document.getElementById('adblue-in-na').textContent = adbIn === 'No aplica' ? '☒' : '☐';
-                    }
-
-                    // 5. Condiciones Económicas
+                    // 5. Condiciones económicas (total_price ya lleva IVA)
                     const cleanPrice = parseFloat(b.cleaning_price || 0);
                     const baseRentPrice = parseFloat(b.total_price || 0) / 1.21;
                     const ivaVal = (baseRentPrice + cleanPrice) * 0.21;
                     const totalGeneral = (baseRentPrice + cleanPrice) + ivaVal;
 
-                    document.getElementById('price-rent-base').textContent = `${baseRentPrice.toFixed(2)} €`;
-                    document.getElementById('price-cleaning').textContent = `${cleanPrice.toFixed(2)} €`;
-                    document.getElementById('price-iva').textContent = `${ivaVal.toFixed(2)} €`;
-                    document.getElementById('price-total-general').textContent = `${totalGeneral.toFixed(2)} € (IVA Incl.)`;
+                    setText('price-rent-base', euros(baseRentPrice));
+                    if (cleanPrice > 0) {
+                        $('row-cleaning').style.display = 'flex';
+                        setText('price-cleaning', euros(cleanPrice));
+                    }
+                    setText('price-iva', euros(ivaVal));
+                    setText('price-total-rent', euros(baseRentPrice * 1.21));
+                    setText('price-total-general', euros(totalGeneral));
 
-                    // Forma Pago
-                    // Normaliza textos de pagos online ('Tarjeta (Redsys)', 'Bizum (Redsys)') a la casilla correcta
+                    // Forma de pago: textos de pagos online ('Tarjeta (Redsys)') a la casilla correcta
                     const payMethod = (m => { const s = String(m || 'tarjeta').toLowerCase(); return s.includes('bizum') ? 'bizum' : s.includes('efectivo') ? 'efectivo' : s.includes('transfer') ? 'transferencia' : (s.includes('tarjeta') || s.includes('card') || s.includes('tpv')) ? 'tarjeta' : 'otro'; })(b.payment_method);
-                    document.getElementById('pay-efectivo').textContent = payMethod === 'efectivo' ? '[X]' : '[ ]';
-                    document.getElementById('pay-tarjeta').textContent = payMethod === 'tarjeta' ? '[X]' : '[ ]';
-                    document.getElementById('pay-transferencia').textContent = payMethod === 'transferencia' ? '[X]' : '[ ]';
-                    document.getElementById('pay-bizum').textContent = (payMethod === 'bizum' || payMethod === 'otro') ? '[X]' : '[ ]';
+                    chk('pay-efectivo', payMethod === 'efectivo');
+                    chk('pay-tarjeta', payMethod === 'tarjeta');
+                    chk('pay-transferencia', payMethod === 'transferencia');
+                    chk('pay-bizum', payMethod === 'bizum');
+                    if (payMethod === 'otro') setText('pay-otra', b.payment_method || '');
 
                     // Fianza
-                    document.getElementById('fianza-deposit-val').textContent = b.rental_mode === 'con' ? '0,00 € (Exento)' : '500,00 €';
-                    // Importe de la fianza y teléfono de Ajustes (si no cargan, se quedan los valores por defecto)
+                    setText('fianza-deposit-val', b.rental_mode === 'con' ? '0,00 € (exento)' : '500,00 €');
+                    // Importe de la fianza, teléfono y correo de Ajustes (si no cargan, se quedan los valores por defecto)
                     fetch('/api/settings').then(r => r.ok ? r.json() : {}).then(cfg => {
-                        if (cfg && cfg.fianza_amount && b.rental_mode !== 'con') document.getElementById('fianza-deposit-val').textContent = `${cfg.fianza_amount} €`;
+                        if (cfg && cfg.fianza_amount && b.rental_mode !== 'con') setText('fianza-deposit-val', `${cfg.fianza_amount} €`);
                         const digits = cfg && cfg.contact_phone ? String(cfg.contact_phone).replace(/\D/g, '') : '';
                         // 34614767411 -> 614 767 411
                         const national = digits.length === 11 && digits.startsWith('34') ? digits.slice(2) : digits;
-                        if (national.length === 9) document.getElementById('contract-contact-phone').textContent = national.replace(/(\d{3})(\d{3})(\d{3})/, '$1 $2 $3');
+                        if (national.length === 9) setText('contract-contact-phone', national.replace(/(\d{3})(\d{3})(\d{3})/, '$1 $2 $3'));
+                        if (cfg && cfg.contact_email) setText('contract-contact-email', cfg.contact_email);
                     }).catch(() => {});
-                    document.getElementById('fianza-dev-integra').textContent = b.fianza_returned_full ? '[X]' : '[ ]';
-                    document.getElementById('fianza-dev-parcial').textContent = b.fianza_returned_partial ? '[X]' : '[ ]';
-                    document.getElementById('fianza-retained-val').textContent = `${parseFloat(b.fianza_retained_amount || 0).toFixed(2)} €`;
-                    document.getElementById('fianza-retained-reason').textContent = b.fianza_retained_reason || '-';
+                    chk('fianza-dev-integra', b.fianza_returned_full);
+                    chk('fianza-dev-parcial', b.fianza_returned_partial);
+                    setText('fianza-retained-val', euros(b.fianza_retained_amount));
+                    setText('fianza-retained-reason', b.fianza_retained_reason || '-');
 
-                    // 6. Estado del Vehículo
-                    document.getElementById('state-int-limpio').textContent = b.clean_interior_yes ? '[X]' : '[ ]';
-                    document.getElementById('state-int-sucio').textContent = b.clean_interior_no ? '[X]' : '[ ]';
-                    document.getElementById('state-ext-limpio').textContent = b.clean_exterior_yes ? '[X]' : '[ ]';
-                    document.getElementById('state-ext-sucio').textContent = b.clean_exterior_no ? '[X]' : '[ ]';
-                    document.getElementById('doc-observaciones').textContent = b.delivery_notes || '-';
+                    // 6. Estado del vehículo
+                    chk('state-int-limpio', b.clean_interior_yes);
+                    chk('state-int-sucio', b.clean_interior_no);
+                    chk('state-ext-limpio', b.clean_exterior_yes);
+                    chk('state-ext-sucio', b.clean_exterior_no);
+                    chk('clean-ford', cleanPrice > 0 && isFord);
+                    chk('clean-man', cleanPrice > 0 && isMan);
+                    setText('doc-observaciones', b.delivery_notes || '-');
 
                     // 7. Accesorios
-                    document.getElementById('acc-permiso').textContent = b.accessory_permiso ? '[X]' : '[ ]';
-                    document.getElementById('acc-ficha').textContent = b.accessory_ficha ? '[X]' : '[ ]';
-                    document.getElementById('acc-llave').textContent = b.accessory_llave ? '[X]' : '[ ]';
-                    document.getElementById('acc-llave-rep').textContent = b.accessory_llave_repuesto ? '[X]' : '[ ]';
-                    document.getElementById('acc-v16').textContent = b.accessory_v16 ? '[X]' : '[ ]';
-                    document.getElementById('acc-adaptador').textContent = b.accessory_adaptador ? '[X]' : '[ ]';
-                    document.getElementById('acc-gancho').textContent = b.accessory_gancho ? '[X]' : '[ ]';
-                    document.getElementById('acc-chaleco').textContent = b.accessory_chaleco ? '[X]' : '[ ]';
-                    document.getElementById('acc-rueda').textContent = b.accessory_rueda ? '[X]' : '[ ]';
-                    document.getElementById('acc-gato').textContent = b.accessory_gato ? '[X]' : '[ ]';
-                    document.getElementById('acc-manual').textContent = b.accessory_manual ? '[X]' : '[ ]';
-                    document.getElementById('acc-others').textContent = b.accessory_others || '-';
+                    chk('acc-permiso', b.accessory_permiso);
+                    chk('acc-ficha', b.accessory_ficha);
+                    chk('acc-llave', b.accessory_llave);
+                    chk('acc-llave-rep', b.accessory_llave_repuesto);
+                    chk('acc-v16', b.accessory_v16);
+                    chk('acc-adaptador', b.accessory_adaptador);
+                    chk('acc-gancho', b.accessory_gancho);
+                    chk('acc-chaleco', b.accessory_chaleco);
+                    chk('acc-rueda', b.accessory_rueda);
+                    chk('acc-gato', b.accessory_gato);
+                    chk('acc-manual', b.accessory_manual);
+                    setText('acc-others', b.accessory_others || '-');
 
                     // Firma digital del cliente
                     if (b.contract_signed && b.contract_signature) {
-                        const sigImgBox = document.getElementById('contract-client-signature-img');
+                        const sigImgBox = $('contract-client-signature-img');
                         sigImgBox.querySelector('img').src = b.contract_signature;
                         sigImgBox.style.display = 'block';
                     }
