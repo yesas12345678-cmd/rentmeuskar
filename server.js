@@ -2878,6 +2878,9 @@ async function sendBookingPaidEmails(booking, { dateConflict = false } = {}) {
   const field = value => escapeHtml(String(value === undefined || value === null ? '' : value));
   const dates = `${field(String(booking.pickup_date).slice(0, 10))} ${field(booking.pickup_time)} → ${field(String(booking.return_date).slice(0, 10))} ${field(booking.return_time)}`;
   const total = `${(parseFloat(booking.total_price) || 0).toFixed(2)} €`;
+  // Enlaces al contrato y a la factura de esta reserva (el código de acceso es el de la propia reserva)
+  const siteUrl = String(process.env.BASE_URL || 'https://rentmeuskar.com').replace(/\/+$/, '');
+  const docUrl = (kind) => field(`${siteUrl}/${kind}/${encodeURIComponent(booking.id)}?auth=${encodeURIComponent(booking.review_code || booking.payment_id || '')}`);
   const summary = `
     <p><strong>Reserva:</strong> #${field(booking.id)} · Pedido ${field(booking.payment_id)}</p>
     <p><strong>Vehículo:</strong> ${field(booking.van_name)}</p>
@@ -2900,7 +2903,8 @@ async function sendBookingPaidEmails(booking, { dateConflict = false } = {}) {
       subject: `Pago recibido · Reserva #${booking.id} RentMeUskar`,
       html: `<div style="font-family: Arial, sans-serif;"><h2>¡Gracias, ${field(booking.name)}!</h2>
         <p>Hemos recibido el pago de tu reserva. Te confirmaremos la recogida en breve.</p>${summary}
-        <p>Puedes ver tu factura y contrato en tu área de cliente de rentmeuskar.com.</p></div>`
+        <p>Aquí tienes tu contrato y tu factura (también los encontrarás siempre en tu área de cliente de rentmeuskar.com):</p>
+        <p><a href="${docUrl('contract')}">Ver mi contrato</a> &nbsp;·&nbsp; <a href="${docUrl('invoice')}">Ver mi factura</a></p></div>`
     });
   }
   for (const message of messages) {
@@ -4663,6 +4667,17 @@ app.get(['/contract', '/contract/:id', '/contrato', '/contrato/:id'], (req, res)
 
 app.get(['/invoice', '/invoice/:id', '/factura', '/factura/:id'], (req, res) => {
   res.sendFile(path.join(__dirname, 'invoice.html'));
+});
+
+// Comprobación de salud para herramientas de vigilancia (UptimeRobot, Better Stack...): responde 200 si el servidor
+// está vivo; "db" indica si la base de datos contesta. No devuelve ningún dato privado.
+app.get('/healthz', async (req, res) => {
+  let db = false;
+  try {
+    await pool.query('SELECT 1');
+    db = true;
+  } catch (e) { /* sin base de datos: el servidor sigue vivo con la copia local */ }
+  res.set('Cache-Control', 'no-store').json({ ok: true, db });
 });
 
 // Ruta amigable para la consola de administración (/admin)

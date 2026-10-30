@@ -306,6 +306,14 @@ test('sesión de cliente: caduca a los 7 días y cerrar sesión la anula en el s
   assert.equal((await fetch(BASE + '/api/auth/logout', { method: 'POST' })).status, 200);
 });
 
+test('/healthz responde para las herramientas de vigilancia sin datos privados', async () => {
+  const res = await fetch(BASE + '/healthz');
+  assert.equal(res.status, 200);
+  const body = await res.json();
+  assert.equal(body.ok, true);
+  assert.deepEqual(Object.keys(body).sort(), ['db', 'ok']);
+});
+
 test('CORS: un origen que no está en la lista blanca se rechaza', async () => {
   const res = await fetch(BASE + '/api/vans', { headers: { Origin: 'https://sitio-malicioso.example' } });
   assert.ok(res.status >= 400, `se aceptó un origen no permitido (${res.status})`);
