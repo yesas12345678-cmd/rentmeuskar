@@ -1426,6 +1426,14 @@ const initApp = () => {
                         return { label: 'Cancelada', color: '#ff4d6d', note: '' };
                     };
 
+                    // Fotos del estado de la furgoneta (antes y después del alquiler) que sube el administrador
+                    window.rmuClientPhotos = {};
+                    bookingsList.forEach(b => {
+                        const before = Array.isArray(b.photos_before) ? b.photos_before : [];
+                        const after = Array.isArray(b.photos_after) ? b.photos_after : [];
+                        if (before.length || after.length) window.rmuClientPhotos[String(b.id)] = { before, after };
+                    });
+
                     // Más recientes primero
                     const ordered = bookingsList.slice().sort((a, b) => Number(b.id) - Number(a.id));
                     listEl.innerHTML = ordered.map(b => {
@@ -1456,10 +1464,11 @@ const initApp = () => {
                                     <span>${fianzaLabel}</span>
                                 </div>
                                 ${st.note ? `<div class="client-booking-note">${st.note}</div>` : ''}
-                                ${canDownloadDocs ? `
+                                ${canDownloadDocs || window.rmuClientPhotos[String(b.id)] ? `
                                     <div class="client-booking-actions">
-                                        <button class="client-doc-btn" onclick="window.open('/contract/${id}?auth=${auth}', '_blank')"><i class="fa-solid fa-file-signature"></i> Contrato</button>
-                                        <button class="client-doc-btn" onclick="window.open('/invoice/${id}?auth=${auth}', '_blank')"><i class="fa-solid fa-file-invoice-dollar"></i> Factura</button>
+                                        ${canDownloadDocs ? `<button class="client-doc-btn" onclick="window.open('/contract/${id}?auth=${auth}', '_blank')"><i class="fa-solid fa-file-signature"></i> Contrato</button>
+                                        <button class="client-doc-btn" onclick="window.open('/invoice/${id}?auth=${auth}', '_blank')"><i class="fa-solid fa-file-invoice-dollar"></i> Factura</button>` : ''}
+                                        ${window.rmuClientPhotos[String(b.id)] ? `<button class="client-doc-btn" onclick="window.openClientPhotosModal(window.rmuClientPhotos['${id}'].before, window.rmuClientPhotos['${id}'].after)"><i class="fa-solid fa-camera"></i> Fotos de la furgoneta</button>` : ''}
                                     </div>` : ''}
                             </article>`;
                     }).join('');
@@ -1569,8 +1578,8 @@ const initApp = () => {
             beforeUrls.forEach(url => {
                 const img = document.createElement('img');
                 img.src = url;
-                img.style.width = '60px';
-                img.style.height = '60px';
+                img.style.width = '96px';
+                img.style.height = '96px';
                 img.style.objectFit = 'cover';
                 img.style.borderRadius = '6px';
                 img.style.cursor = 'pointer';
@@ -1586,8 +1595,8 @@ const initApp = () => {
             afterUrls.forEach(url => {
                 const img = document.createElement('img');
                 img.src = url;
-                img.style.width = '60px';
-                img.style.height = '60px';
+                img.style.width = '96px';
+                img.style.height = '96px';
                 img.style.objectFit = 'cover';
                 img.style.borderRadius = '6px';
                 img.style.cursor = 'pointer';
