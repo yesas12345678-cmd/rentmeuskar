@@ -4602,6 +4602,8 @@ app.get('/favicon.ico', (req, res) => {
 const PUBLIC_ROOT_FILES = new Set([
   'index.html', 'admin.html', 'contract.html', 'invoice.html',
   'payment-success.html', 'payment-error.html',
+  'aviso-legal.html', 'privacidad.html', 'cookies.html', 'condiciones.html',
+  'legal.css', 'legal.js',
   'styles.css', 'app.js', 'admin.js',
   'robots.txt', 'sitemap.xml', 'favicon.jpeg'
 ]);
@@ -4609,6 +4611,11 @@ const PUBLIC_ROOT_FILES = new Set([
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
+
+// Páginas legales con dirección corta (/privacidad, /cookies...)
+for (const page of ['aviso-legal', 'privacidad', 'cookies', 'condiciones']) {
+  app.get('/' + page, (req, res) => res.sendFile(path.join(__dirname, page + '.html')));
+}
 
 app.get('/:file', (req, res, next) => {
   if (!PUBLIC_ROOT_FILES.has(req.params.file)) return next();

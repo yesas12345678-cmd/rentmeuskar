@@ -245,6 +245,15 @@ test('login: entrar bien no gasta el límite de intentos y borra los fallos de l
   for (let i = 0; i < 9; i++) assert.equal(await loginFrom('203.0.113.22', CLIENT.email, 'incorrecta'), 401);
 });
 
+test('las páginas legales del pie existen y cargan sus estilos y datos', async () => {
+  for (const page of ['/condiciones', '/privacidad', '/cookies', '/aviso-legal', '/legal.css', '/legal.js']) {
+    const res = await fetch(BASE + page);
+    assert.equal(res.status, 200, `${page} devolvió ${res.status}`);
+  }
+  const home = await (await fetch(BASE + '/')).text();
+  assert.ok(!/href="#" id="legal-/.test(home), 'el pie todavía tiene enlaces legales vacíos');
+});
+
 test('las rutas de API inexistentes responden 404 en JSON', async () => {
   const res = await call('GET', '/api/no-existe');
   assert.equal(res.status, 404);
