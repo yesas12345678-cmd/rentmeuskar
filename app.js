@@ -1309,14 +1309,19 @@ const initApp = () => {
         const borderColor = (type === 'success') ? 'var(--color-neon, #82d105)' : '#ef4444';
 
         toast.style.cssText = `background:${bgColor};border:1px solid ${borderColor};color:#fff;padding:1rem 1.5rem;border-radius:8px;box-shadow:0 10px 25px rgba(0,0,0,0.5);font-size:0.9rem;font-weight:600;display:flex;align-items:center;gap:0.75rem;transition:all 0.3s ease;`;
-        toast.innerHTML = `<i class="fa-solid ${type === 'success' ? 'fa-circle-check' : 'fa-circle-exclamation'}" style="color:${borderColor}"></i> <span>${message}</span>`;
+        toast.setAttribute('role', type === 'success' ? 'status' : 'alert');
+        toast.innerHTML = `<i class="fa-solid ${type === 'success' ? 'fa-circle-check' : 'fa-circle-exclamation'}" style="color:${borderColor}"></i> <span></span>`;
+        // Texto plano: los mensajes pueden traer datos del servidor o del usuario
+        toast.querySelector('span').textContent = message;
 
         toastBox.appendChild(toast);
         setTimeout(() => {
             toast.style.opacity = '0';
             setTimeout(() => toast.remove(), 300);
-        }, 3500);
+        }, type === 'success' ? 3500 : 6000);
     };
+    // El formulario de login/registro (script de index.html) también lo usa
+    window.showAppToast = showAppToast;
 
     // Login y Registro Estándar por Email y Contraseña
 
@@ -1391,50 +1396,73 @@ const initApp = () => {
                 console.warn('Backend bookings offline:', bErr);
             }
 
-            const tbody = document.getElementById('client-bookings-tbody');
-            if (tbody) {
+            const listEl = document.getElementById('client-bookings-list');
+            if (listEl) {
                 if (!bookingsList || bookingsList.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; padding: 2rem;">No tienes reservas registradas.</td></tr>`;
+                    listEl.innerHTML = '<p class="client-empty">Todavía no tienes reservas. ¡Reserva tu furgoneta y aparecerá aquí!</p>';
                 } else {
-                    tbody.innerHTML = '';
-                    bookingsList.forEach(b => {
-                        const tr = document.createElement('tr');
+                    // Textos guardados en la reserva: se escapan antes de pintarlos con innerHTML
+                    const esc = (value) => String(value === undefined || value === null ? '' : value)
+                        .replace(/[&<>'"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[c]));
+                    const formatDate = (dateStr) => {
+                        if (!dateStr) return '-';
+                        if (dateStr.includes('/')) return dateStr;
+                        const parts = dateStr.split('T')[0].split('-');
+                        return parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : dateStr;
+                    };
+                    const fianza = window.RMU_FIANZA || '500,00';
+                    const holdExpired = (b) => Date.now() - new Date(b.created_at).getTime() > 30 * 60 * 1000;
 
-                        const statusLabel = b.status === 'confirmed' ? 'Confirmado' : b.status === 'paid_pending' ? 'Pagado (Pendiente Aprobación)' : b.status === 'pending' ? 'Pendiente' : b.status === 'pending_payment' ? (Date.now() - new Date(b.created_at).getTime() > 30 * 60 * 1000 ? 'Pago no completado' : 'Esperando pago') : 'Cancelado';
-                        const paymentLabel = b.payment_status === 'paid' ? 'Pagado' : 'Pendiente';
-                        const fianzaLabel = b.fianza_status === 'paid' ? `Depositada (${window.RMU_FIANZA || '500,00'} €)` : b.fianza_status === 'refunded' ? 'Devuelta' : `En persona (${window.RMU_FIANZA || '500,00'} €)`;
+                    // Estado -> texto, color y explicación para el cliente
+                    const statusInfo = (b) => {
+                        if (b.status === 'confirmed') return { label: 'Confirmada', color: '#82d105', note: '' };
+                        if (b.status === 'paid_pending') return { label: 'Pagada', color: '#00d2ff', note: 'Hemos recibido tu pago. Te confirmaremos la reserva en breve.' };
+                        if (b.status === 'pending') return { label: 'Pendiente', color: '#ffb703', note: 'Estamos revisando tu solicitud y te confirmaremos pronto.' };
+                        if (b.status === 'pending_payment') {
+                            return holdExpired(b)
+                                ? { label: 'Pago no completado', color: '#ff4d6d', note: 'El pago no se completó y las fechas se han liberado.' }
+                                : { label: 'Esperando pago', color: '#ffb703', note: 'Completa el pago para asegurar las fechas.' };
+                        }
+                        return { label: 'Cancelada', color: '#ff4d6d', note: '' };
+                    };
 
-                        const formatDate = (dateStr) => {
-                            if (!dateStr) return '-';
-                            if (dateStr.includes('/')) return dateStr;
-                            const cleanDate = dateStr.split('T')[0];
-                            const parts = cleanDate.split('-');
-                            if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
-                            return dateStr;
-                        };
-
-                        // Textos guardados en la reserva: se escapan antes de pintarlos con innerHTML
-                        const esc = (value) => String(value === undefined || value === null ? '' : value)
-                            .replace(/[&<>'"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[c]));
+                    // Más recientes primero
+                    const ordered = bookingsList.slice().sort((a, b) => Number(b.id) - Number(a.id));
+                    listEl.innerHTML = ordered.map(b => {
+                        const st = statusInfo(b);
+                        const fianzaLabel = b.fianza_status === 'paid' ? `Fianza depositada (${fianza} €)` : b.fianza_status === 'refunded' ? 'Fianza devuelta' : `Fianza en persona (${fianza} €)`;
                         const canDownloadDocs = b.status === 'confirmed' || b.status === 'paid_pending';
-
-                        tr.innerHTML = `
-                            <td>#${esc(b.id)}</td>
-                            <td><strong>${b.van_name ? esc(b.van_name.split(' ')[0]) : 'Furgoneta'} ${b.van_name ? esc(b.van_name.split(' ')[1] || '') : ''}</strong></td>
-                            <td>${esc(formatDate(b.pickup_date))} ${esc(b.pickup_time)}</td>
-                            <td>${esc(formatDate(b.return_date))} ${esc(b.return_time)}</td>
-                            <td><strong>${parseFloat(b.total_price || 0).toFixed(2)} €</strong></td>
-                            <td><span style="font-size: 0.8rem; padding: 2px 6px; border-radius: 4px; background: rgba(255,255,255,0.05);">${fianzaLabel}</span></td>
-                            <td><span style="font-size: 0.8rem; font-weight: 700; color: ${b.status === 'confirmed' ? '#82d105' : b.status === 'paid_pending' ? '#00d2ff' : b.status === 'pending' ? '#ffb703' : '#ff4d6d'};">${statusLabel}</span></td>
-                            <td>
+                        const auth = encodeURIComponent(b.review_code || b.payment_id || '');
+                        const id = encodeURIComponent(b.id);
+                        const vanName = b.van_name ? esc(b.van_name) : 'Furgoneta';
+                        const pickupTime = b.pickup_time ? ` · ${esc(b.pickup_time)}` : '';
+                        const returnTime = b.return_time ? ` · ${esc(b.return_time)}` : '';
+                        return `
+                            <article class="client-booking-card" style="--status-color: ${st.color};">
+                                <div class="client-booking-head">
+                                    <div>
+                                        <div class="client-booking-van">${vanName}</div>
+                                        <div class="client-booking-ref">Reserva #${esc(b.id)}</div>
+                                    </div>
+                                    <span class="client-status-badge">${st.label}</span>
+                                </div>
+                                <div class="client-booking-dates">
+                                    <div><span class="client-date-label">Recogida</span><span class="client-date-value">${esc(formatDate(b.pickup_date))}${pickupTime}</span></div>
+                                    <span class="arrow"><i class="fa-solid fa-arrow-right"></i></span>
+                                    <div><span class="client-date-label">Devolución</span><span class="client-date-value">${esc(formatDate(b.return_date))}${returnTime}</span></div>
+                                </div>
+                                <div class="client-booking-meta">
+                                    <span>Total: <strong>${parseFloat(b.total_price || 0).toFixed(2)} €</strong></span>
+                                    <span>${fianzaLabel}</span>
+                                </div>
+                                ${st.note ? `<div class="client-booking-note">${st.note}</div>` : ''}
                                 ${canDownloadDocs ? `
-                                    <button class="client-doc-btn" onclick="window.open('/contract/${b.id}?auth=${encodeURIComponent(b.review_code || b.payment_id || '')}', '_blank')"><i class="fa-solid fa-file-signature"></i> Contrato</button>
-                                    <button class="client-doc-btn" onclick="window.open('/invoice/${b.id}?auth=${encodeURIComponent(b.review_code || b.payment_id || '')}', '_blank')"><i class="fa-solid fa-file-invoice-dollar"></i> Factura</button>
-                                ` : '<span style="color: var(--text-muted); font-size: 0.75rem;">Pendiente</span>'}
-                            </td>
-                        `;
-                        tbody.appendChild(tr);
-                    });
+                                    <div class="client-booking-actions">
+                                        <button class="client-doc-btn" onclick="window.open('/contract/${id}?auth=${auth}', '_blank')"><i class="fa-solid fa-file-signature"></i> Contrato</button>
+                                        <button class="client-doc-btn" onclick="window.open('/invoice/${id}?auth=${auth}', '_blank')"><i class="fa-solid fa-file-invoice-dollar"></i> Factura</button>
+                                    </div>` : ''}
+                            </article>`;
+                    }).join('');
                 }
             }
 
@@ -1885,10 +1913,7 @@ const initApp = () => {
     // ==========================================================================
     // 8. PASARELA TPV VIRTUAL CAIXABANK / REDSYS (ENTORNO DEMO - SOLO TEST CARDS)
     // ==========================================================================
-    const tabMethodCard = document.getElementById('tab-method-card');
-    const tabMethodBizum = document.getElementById('tab-method-bizum');
     const tpvCardFields = document.getElementById('tpv-card-fields');
-    const tpvBizumFields = document.getElementById('tpv-bizum-fields');
     const tpvSubmitLabel = document.getElementById('tpv-submit-label');
     const tpvErrorBanner = document.getElementById('tpv-error-banner');
     const tpvErrorText = document.getElementById('tpv-error-text');
@@ -1898,26 +1923,24 @@ const initApp = () => {
     const tpvCardExpiry = document.getElementById('tpv-card-expiry');
     const tpvCardCvc = document.getElementById('tpv-card-cvc');
     const tpvCardName = document.getElementById('tpv-card-name');
-    const tpvBizumPhone = document.getElementById('tpv-bizum-phone');
 
     // Modo de cobro que indica el servidor: 'redsys' (TPV real), 'test' (simulado) u 'off'
     let paymentMode = 'off';
     let redsysNotice = null;
 
-    // Con Redsys real los datos de tarjeta/Bizum se piden en la página del banco, nunca aquí
+    // Con Redsys real los datos de la tarjeta se piden en la página del banco, nunca aquí
     const applyPaymentModeUi = () => {
         const isRedsys = paymentMode === 'redsys';
-        [tpvCardNumber, tpvCardExpiry, tpvCardCvc, tpvCardName, tpvBizumPhone].forEach(input => {
-            if (input) input.required = !isRedsys && input !== tpvBizumPhone;
+        [tpvCardNumber, tpvCardExpiry, tpvCardCvc, tpvCardName].forEach(input => {
+            if (input) input.required = !isRedsys;
         });
         if (isRedsys) {
             if (tpvCardFields) tpvCardFields.style.display = 'none';
-            if (tpvBizumFields) tpvBizumFields.style.display = 'none';
             if (!redsysNotice && tpvForm) {
                 redsysNotice = document.createElement('p');
                 redsysNotice.className = 'tpv-redsys-notice';
                 redsysNotice.style.cssText = 'color: var(--text-secondary); font-size: 0.9rem; line-height: 1.5; margin: 0 0 1rem;';
-                redsysNotice.innerHTML = '<i class="fa-solid fa-lock"></i> Al pulsar en pagar te llevaremos a la pasarela segura de Redsys para introducir tu tarjeta o confirmar el Bizum. Tu reserva se confirma en cuanto el banco autoriza el pago.';
+                redsysNotice.innerHTML = '<i class="fa-solid fa-lock"></i> Al pulsar en pagar te llevaremos a la página de pago segura de Redsys, donde introducirás los datos de tu tarjeta. Tu reserva se confirma en cuanto se autoriza el pago.';
                 tpvForm.insertBefore(redsysNotice, tpvForm.firstChild);
             }
         }
@@ -1932,33 +1955,6 @@ const initApp = () => {
             if (typeof updateCalculatorUI === 'function') updateCalculatorUI();
         })
         .catch(() => { /* sin configuración: el servidor responderá con el motivo al pagar */ });
-
-    // Manejar cambio de pestañas de método de pago (Tarjeta vs Bizum)
-    const setTpvMethod = (method) => {
-        const isBizum = method === 'bizum';
-        if (tabMethodCard && tabMethodBizum) {
-            tabMethodCard.classList.toggle('active', !isBizum);
-            tabMethodBizum.classList.toggle('active', isBizum);
-            const cardRadio = tabMethodCard.querySelector('input');
-            const bizumRadio = tabMethodBizum.querySelector('input');
-            if (cardRadio) cardRadio.checked = !isBizum;
-            if (bizumRadio) bizumRadio.checked = isBizum;
-        }
-        if (tpvCardFields) tpvCardFields.style.display = isBizum || paymentMode === 'redsys' ? 'none' : 'block';
-        if (tpvBizumFields) tpvBizumFields.style.display = isBizum && paymentMode !== 'redsys' ? 'block' : 'none';
-        if (tpvSubmitLabel) {
-            const amountText = document.getElementById('tpv-total-amount')?.textContent || '0,00 €';
-            tpvSubmitLabel.innerHTML = isBizum
-                ? `Pagar con Bizum <strong id="tpv-btn-amount">${amountText}</strong>`
-                : `Pagar <strong id="tpv-btn-amount">${amountText}</strong>`;
-        }
-        if (tpvErrorBanner) tpvErrorBanner.style.display = 'none';
-        if (tpvCardNumber) tpvCardNumber.classList.remove('input-error');
-        if (tpvBizumPhone) tpvBizumPhone.classList.remove('input-error');
-    };
-
-    if (tabMethodCard) tabMethodCard.addEventListener('click', () => setTpvMethod('card'));
-    if (tabMethodBizum) tabMethodBizum.addEventListener('click', () => setTpvMethod('bizum'));
 
     // Formateo de número de tarjeta en bloques de 4 dígitos con detección visual de marca
     if (tpvCardNumber) {
@@ -2002,17 +1998,6 @@ const initApp = () => {
         });
     }
 
-    // Formateo de Teléfono Bizum (formato 600 000 000)
-    if (tpvBizumPhone) {
-        tpvBizumPhone.addEventListener('input', (e) => {
-            let val = e.target.value.replace(/\D/g, '').substring(0, 9);
-            let formatted = val.match(/.{1,3}/g)?.join(' ') || val;
-            e.target.value = formatted;
-            tpvBizumPhone.classList.remove('input-error');
-            if (tpvErrorBanner) tpvErrorBanner.style.display = 'none';
-        });
-    }
-
 
 
     // Función auxiliar para mostrar errores bancarios en el banner
@@ -2031,7 +2016,7 @@ const initApp = () => {
 
     // Pago real: el servidor crea la reserva pendiente y firma los parámetros; el navegador
     // envía un formulario POST al TPV de Redsys, que vuelve a payment-success/payment-error
-    const startRedsysPayment = async (payMethod) => {
+    const startRedsysPayment = async () => {
         const submitBtn = document.getElementById('tpv-submit-btn');
         const originalBtnHtml = submitBtn.innerHTML;
         submitBtn.disabled = true;
@@ -2045,7 +2030,7 @@ const initApp = () => {
                     'Content-Type': 'application/json',
                     ...(token ? { 'Authorization': `Bearer ${token}` } : {})
                 },
-                body: JSON.stringify({ bookingData: pendingBookingData, payMethod })
+                body: JSON.stringify({ bookingData: pendingBookingData })
             });
             const data = await response.json();
             if (!response.ok || !data.actionUrl || !data.params) {
@@ -2082,18 +2067,15 @@ const initApp = () => {
             return;
         }
 
-        const isBizum = tabMethodBizum && tabMethodBizum.classList.contains('active');
-        const selectedPayMethod = isBizum ? 'bizum' : 'card';
-
         if (paymentMode === 'redsys') {
-            await startRedsysPayment(selectedPayMethod);
+            await startRedsysPayment();
             return;
         }
 
         let cardPayload = null;
 
-        // 1. VALIDACIÓN ESTRICTA DEL MÉTODO DE PAGO
-        if (!isBizum) {
+        // 1. VALIDACIÓN ESTRICTA DE LA TARJETA
+        {
             const rawCard = (tpvCardNumber?.value || '').replace(/\s+/g, '');
             const rawExpiry = (tpvCardExpiry?.value || '').trim();
             const rawCvc = (tpvCardCvc?.value || '').trim();
@@ -2152,13 +2134,6 @@ const initApp = () => {
                 cardExpiry: rawExpiry,
                 cardHolder: rawName
             };
-        } else {
-            // Validación Bizum
-            const rawPhone = (tpvBizumPhone?.value || '').replace(/\s+/g, '');
-            if (!rawPhone || rawPhone.length !== 9 || (!rawPhone.startsWith('6') && !rawPhone.startsWith('7'))) {
-                showTpvError('Por favor, introduzca un número de teléfono móvil válido para Bizum (9 dígitos).', tpvBizumPhone);
-                return;
-            }
         }
 
         // 2. ACTIVAR SECUENCIA REALISTA DE VERIFICACIÓN 3D-SECURE CAIXABANK
@@ -2171,18 +2146,14 @@ const initApp = () => {
         const substatusText = document.getElementById('tpv-3ds-substatus-text');
 
         if (overlay3ds) overlay3ds.style.display = 'flex';
-        if (statusText) statusText.textContent = 'Conectando con la pasarela CaixaBank...';
-        if (substatusText) substatusText.textContent = isBizum
-            ? 'Enviando solicitud de cobro seguro al servicio Bizum...'
-            : 'Iniciando protocolo de Comercio Electrónico Seguro (3D-Secure 2.2)...';
+        if (statusText) statusText.textContent = 'Procesando el pago...';
+        if (substatusText) substatusText.textContent = 'No cierres ni recargues esta página.';
 
         try {
             // Retardo de autenticación bancaria realista
             await new Promise(r => setTimeout(r, 650));
-            if (statusText) statusText.textContent = isBizum
-                ? 'Esperando autorización en la app de tu entidad bancaria...'
-                : 'Verificando autenticación con el banco emisor...';
-            if (substatusText) substatusText.textContent = 'Verificación criptográfica de clave y SMS en curso...';
+            if (statusText) statusText.textContent = 'Verificando el pago con el banco...';
+            if (substatusText) substatusText.textContent = 'Un momento, casi está.';
 
             await new Promise(r => setTimeout(r, 700));
 
@@ -2196,7 +2167,6 @@ const initApp = () => {
                 },
                 body: JSON.stringify({
                     bookingData: pendingBookingData,
-                    payMethod: selectedPayMethod,
                     cardDetails: cardPayload
                 })
             });

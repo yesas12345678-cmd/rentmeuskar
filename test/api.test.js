@@ -211,6 +211,40 @@ test('datos con tipos incorrectos devuelven 400, no 500', async () => {
   }
 });
 
+test('un POST sin cuerpo devuelve 400, no 500', async () => {
+  for (const url of ['/api/auth/login', '/api/auth/register', '/api/auth/forgot-password', '/api/contact']) {
+    const res = await call('POST', url);
+    assert.ok(res.status >= 400 && res.status < 500, `${url} devolvió ${res.status}`);
+  }
+});
+
+// Petición de login desde una IP concreta (el servidor confía en X-Forwarded-For del proxy)
+async function loginFrom(ip, email, password) {
+  const res = await fetch(BASE + '/api/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Forwarded-For': ip },
+    body: JSON.stringify({ email, password })
+  });
+  return res.status;
+}
+
+test('login: los intentos fallidos de otra IP no dejan fuera al administrador', async () => {
+  for (let i = 0; i < 10; i++) {
+    assert.equal(await loginFrom('203.0.113.10', 'zvaito', 'incorrecta'), 401);
+  }
+  assert.equal(await loginFrom('203.0.113.99', 'zvaito', ADMIN_PASSWORD), 200);
+});
+
+test('login: entrar bien no gasta el límite de intentos y borra los fallos de la cuenta', async () => {
+  for (let i = 0; i < 25; i++) {
+    assert.equal(await loginFrom('203.0.113.20', CLIENT.email, CLIENT.password), 200);
+  }
+  for (let i = 0; i < 9; i++) assert.equal(await loginFrom('203.0.113.21', CLIENT.email, 'incorrecta'), 401);
+  assert.equal(await loginFrom('203.0.113.21', CLIENT.email, CLIENT.password), 200);
+  // Tras un acierto la cuenta empieza de cero: otros 9 fallos no la bloquean
+  for (let i = 0; i < 9; i++) assert.equal(await loginFrom('203.0.113.22', CLIENT.email, 'incorrecta'), 401);
+});
+
 test('las rutas de API inexistentes responden 404 en JSON', async () => {
   const res = await call('GET', '/api/no-existe');
   assert.equal(res.status, 404);

@@ -744,6 +744,16 @@ const authLimiter = rateLimit({
   message: { error: 'Demasiados intentos de autenticación. Por favor, inténtalo en 15 minutos.' }
 });
 
+// Login: solo cuentan los intentos fallidos, para que los clientes que entran bien (o varios tras la misma IP) no se bloqueen
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  skipSuccessfulRequests: true,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Demasiados intentos de autenticación. Por favor, inténtalo en 15 minutos.' }
+});
+
 const contactLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 10,
@@ -785,7 +795,7 @@ app.use(helmet({
 app.use(globalLimiter);
 
 // Rate limits específicos por endpoint crítico
-app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/login', loginLimiter);
 app.use('/api/auth/register', authLimiter);
 app.use('/api/auth/verify-registration', authLimiter);
 app.use('/api/auth/forgot-password', authLimiter);
@@ -889,6 +899,11 @@ app.use(cors({
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+// Express 5 deja req.body sin definir cuando la petición no trae cuerpo: las rutas que lo desestructuran daban un 500
+app.use((req, res, next) => {
+  if (req.body === undefined || req.body === null) req.body = {};
+  next();
+});
 // Tras los parsers: el cerrojo necesita leer van_type del cuerpo
 app.post(['/api/redsys/create-payment', '/api/redsys/process-test-payment', '/api/redsys/simulate-payment', '/api/bookings'], serializeBookingsByVan);
 app.use('/uploads', express.static(uploadsDir, { maxAge: '7d' }));
@@ -1574,14 +1589,16 @@ app.post('/api/auth/login', async (req, res) => {
   }
 
   const cleanEmail = email.trim().toLowerCase();
-  if (isLoginLocked(cleanEmail)) {
+  // Login de Administrador (usuario del panel, info@ o ADMIN_EMAIL del entorno)
+  const adminLogins = [getAdminUsername(), 'info@rentmeuskar.com', (process.env.ADMIN_EMAIL || '').toLowerCase()].filter(Boolean);
+  // El bloqueo del administrador es por IP: si fuera por cuenta, cualquiera podría dejarle fuera con intentos fallidos
+  const lockKey = adminLogins.includes(cleanEmail) ? `${req.ip}|${cleanEmail}` : cleanEmail;
+  if (isLoginLocked(lockKey)) {
     return res.status(429).json({ error: 'Demasiados intentos fallidos con esta cuenta. Espera 15 minutos o recupera la contraseña.' });
   }
 
-  // Login de Administrador (usuario del panel, info@ o ADMIN_EMAIL del entorno)
-  const adminLogins = [getAdminUsername(), 'info@rentmeuskar.com', (process.env.ADMIN_EMAIL || '').toLowerCase()].filter(Boolean);
-
   if (adminLogins.includes(cleanEmail) && verifyAdminPassword(password)) {
+    loginFailures.delete(lockKey);
     return res.json({
       token: getCurrentAdminToken(),
       user: { id: 1, name: 'Administrador', email: cleanEmail, is_admin: true }
@@ -1604,6 +1621,7 @@ app.post('/api/auth/login', async (req, res) => {
           const fbUser = fallbackUsers.find(u => u.id === user.id);
           if (fbUser) { fbUser.password = upgraded; saveAdminStoreToFile(); }
         }
+        loginFailures.delete(lockKey);
         return res.json({
           message: 'Inicio de sesión exitoso.',
           token: generateUserToken(user.id, user.email),
@@ -1624,6 +1642,7 @@ app.post('/api/auth/login', async (req, res) => {
       user.password = hashPassword(password);
       saveAdminStoreToFile();
     }
+    loginFailures.delete(lockKey);
     const { password: _, ...userWithoutPass } = user;
     return res.json({
       message: 'Inicio de sesión exitoso.',
@@ -1634,7 +1653,7 @@ app.post('/api/auth/login', async (req, res) => {
 
   // Correo sin cuenta: se calcula igualmente un hash para que el tiempo de respuesta no delate si existe
   if (!passwordChecked) verifyPassword(password, LOGIN_TIMING_DUMMY_HASH);
-  recordLoginFailure(cleanEmail);
+  recordLoginFailure(lockKey);
   return res.status(401).json({ error: 'Correo electrónico o contraseña incorrectos.' });
 });
 
@@ -2935,7 +2954,7 @@ app.get('/api/payment-config', (req, res) => {
 // 1. Crear la reserva pendiente y los parámetros firmados para redirigir al TPV de Redsys
 app.post('/api/redsys/create-payment', async (req, res) => {
   try {
-    const { bookingData, payMethod } = req.body;
+    const { bookingData } = req.body;
     if (!bookingData) {
       return res.status(400).json({ error: 'Faltan datos de la reserva.' });
     }
@@ -2993,7 +3012,6 @@ app.post('/api/redsys/create-payment', async (req, res) => {
     const numOrder = generateRedsysOrderId();
 
     const authUser = payer;
-    const isBizum = payMethod === 'bizum';
     await saveBookingRecord({
       name: String(bookingData.name || (authUser && authUser.name) || 'Cliente').trim().slice(0, 100),
       van_type: bookingData.van_type,
@@ -3016,7 +3034,7 @@ app.post('/api/redsys/create-payment', async (req, res) => {
       van_plate: quote.van.plate || '',
       van_m3: quote.van.m3 || '',
       review_code: generateReviewCode(),
-      payment_method: isBizum ? 'Bizum (Redsys)' : 'Tarjeta (Redsys)',
+      payment_method: 'Tarjeta (Redsys)',
       client_email: bookingContact(authUser, bookingData).email || null,
       client_phone: bookingContact(authUser, bookingData).phone || null,
       client_dni: bookingContact(authUser, bookingData).dni || null
@@ -3038,12 +3056,10 @@ app.post('/api/redsys/create-payment', async (req, res) => {
       DS_MERCHANT_MERCHANTURL: `${baseUrl}/api/redsys/notification`,
       DS_MERCHANT_URLOK: `${baseUrl}/payment-success.html?order=${numOrder}`,
       DS_MERCHANT_URLKO: `${baseUrl}/payment-error.html?order=${numOrder}`,
-      DS_MERCHANT_MERCHANTNAME: 'RentMeUskar'
+      DS_MERCHANT_MERCHANTNAME: 'RentMeUskar',
+      // Solo tarjeta: así la página de Redsys no ofrece Bizum
+      DS_MERCHANT_PAYMETHODS: 'C'
     };
-
-    if (isBizum) {
-      merchantParamsObj.DS_MERCHANT_PAYMETHODS = 'z';
-    }
 
     const merchantParamsJsonStr = JSON.stringify(merchantParamsObj);
     const merchantParamsBase64 = Buffer.from(merchantParamsJsonStr).toString('base64');
@@ -3073,16 +3089,16 @@ const handleTestPayment = async (req, res) => {
       return res.status(503).json({ error: 'El pago online no está disponible en este momento. Contacta con nosotros por WhatsApp o teléfono para completar tu reserva.' });
     }
 
-    const { bookingData, payMethod, cardDetails } = req.body;
+    const { bookingData, cardDetails } = req.body;
     if (!bookingData) {
       return res.status(400).json({ error: 'Faltan datos de la reserva para procesar el pago.' });
     }
-    if (payMethod !== 'bizum' && !(cardDetails && cardDetails.cardNumber)) {
+    if (!(cardDetails && cardDetails.cardNumber)) {
       return res.status(400).json({ error: 'Faltan los datos de la tarjeta.' });
     }
 
     // Doble validación de seguridad: en entorno de pruebas ÚNICAMENTE se autorizan tarjetas de test de Redsys / CaixaBank
-    if (payMethod === 'card' && cardDetails && cardDetails.cardNumber) {
+    {
       const cleanCard = String(cardDetails.cardNumber).replace(/\s+/g, '');
       const isApprovedTestCard = /^(454881|519999)\d{10}$/.test(cleanCard) ||
                                  cleanCard === '4548810000000003' ||
@@ -3129,7 +3145,7 @@ const handleTestPayment = async (req, res) => {
     bookingData.waiting_hours = quote.wait;
 
     const numOrder = 'TPV-' + generateRedsysOrderId();
-    const methodName = payMethod === 'bizum' ? 'Bizum CaixaBank (Test)' : 'Tarjeta CaixaBank (Test)';
+    const methodName = 'Tarjeta CaixaBank (Test)';
 
     // Validar colisión de fechas
     if (!(await isVanAvailable(bookingData.van_type, bookingData.pickup_date, bookingData.return_date))) {
