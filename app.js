@@ -2872,6 +2872,11 @@ const initApp = () => {
 
                     if (phoneLink) phoneLink.href = 'tel:+' + cleanPhone;
                     if (phoneText) phoneText.textContent = formattedPhone;
+                    // Teléfono de la tarjeta "¿Dudas antes de reservar?" del simulador
+                    const calcPhoneLink = document.getElementById('calc-phone-link');
+                    const calcPhoneText = document.getElementById('calc-phone-text');
+                    if (calcPhoneLink) calcPhoneLink.href = 'tel:+' + cleanPhone;
+                    if (calcPhoneText) calcPhoneText.textContent = formattedPhone;
                     if (waLink) waLink.href = 'https://wa.me/' + cleanPhone;
                     if (waText) waText.textContent = formattedPhone;
                 }

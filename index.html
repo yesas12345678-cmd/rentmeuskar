@@ -168,7 +168,7 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
 
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="styles.css?v=4.4">
+    <link rel="stylesheet" href="styles.css?v=4.6">
 
 
     <!-- Global Auth Modal Handlers (Instant Execution) -->
@@ -913,10 +913,13 @@
             <div class="container">
                 <div class="calculator-wrapper reveal">
                     <div class="calculator-info">
-                        <img src="assets/logo.png?v=2" alt="RentMeUskar Logo" class="calc-logo" loading="lazy" decoding="async"
-                            style="align-self: flex-start; margin-bottom: 1.5rem; display: block; filter: drop-shadow(0 10px 25px rgba(0, 0, 0, 0.6)) drop-shadow(0 0 20px rgba(130, 209, 5, 0.25)); -webkit-user-drag: none; user-select: none;">
-                        <span class="subtitle">Calcula en 1 Minuto</span>
-                        <h2 class="calculator-title">Simulador de Presupuesto</h2>
+                        <div class="calc-intro-head">
+                            <img src="assets/logo.png?v=2" alt="RentMeUskar Logo" class="calc-logo" loading="lazy" decoding="async">
+                            <div>
+                                <span class="subtitle">Calcula en 1 Minuto</span>
+                                <h2 class="calculator-title">Simulador de Presupuesto</h2>
+                            </div>
+                        </div>
                         <p class="calculator-text">
                             Selecciona el vehículo, introduce las fechas y elige los extras que necesites. Verás el
                             precio total estimado al instante. Si te convence, solicita la reserva y te responderemos
@@ -935,6 +938,24 @@
                             <div class="check-item">
                                 <i class="fa-solid fa-circle-check text-neon"></i>
                                 <span>Pago online seguro con Redsys; la fianza se deposita al recoger</span>
+                            </div>
+                        </div>
+
+                        <div class="calc-steps">
+                            <h3>Cómo funciona</h3>
+                            <ol>
+                                <li><strong>Elige</strong> la furgoneta y las fechas en el calendario.</li>
+                                <li><strong>Revisa</strong> el precio final, con el IVA incluido.</li>
+                                <li><strong>Reserva:</strong> paga con tarjeta (alquileres de hasta 7 días) o solicítala por WhatsApp.</li>
+                                <li><strong>Recoge</strong> la furgoneta en Huéscar con tu DNI y tu permiso de conducir.</li>
+                            </ol>
+                        </div>
+
+                        <div class="calc-contact">
+                            <i class="fa-solid fa-headset"></i>
+                            <div>
+                                <strong>¿Dudas antes de reservar?</strong>
+                                <span>Llámanos al <a href="tel:+34614767411" id="calc-phone-link"><span id="calc-phone-text">+34 614 767 411</span></a></span>
                             </div>
                         </div>
 
@@ -2608,7 +2629,7 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
 
     <!-- Custom Script -->
-    <script src="app.js?v=23.7"></script>
+    <script src="app.js?v=23.8"></script>
 </body>
 
 </html>

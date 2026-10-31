@@ -968,12 +968,15 @@ a {
     display: grid;
     grid-template-columns: 0.95fr 1.05fr;
     gap: 5rem;
-    align-items: center;
+    align-items: start;
 }
 
 .calculator-info {
     display: flex;
     flex-direction: column;
+    /* Al bajar por el formulario, esta columna acompaña en pantalla en vez de dejar un hueco */
+    position: sticky;
+    top: 120px;
 }
 
 .calculator-title {
@@ -2040,14 +2043,71 @@ textarea:focus-visible, [tabindex]:focus-visible {
     border: 0;
 }
 
-/* Logo del simulador de presupuesto: más grande (escritorio) y contenido en móvil */
-.calc-logo {
-    width: 260px;
-    height: 260px;
-    max-width: 100%;
-    object-fit: contain;
+/* Simulador de presupuesto: logo de tamaño normal junto al título, y la columna rellena con información útil */
+.calc-intro-head {
+    display: flex;
+    align-items: center;
+    gap: 1.4rem;
+    margin-bottom: 0.5rem;
 }
 
-@media (max-width: 768px) {
-    .calc-logo { width: 200px; height: 200px; }
+.calc-logo {
+    width: 150px;
+    height: 150px;
+    flex-shrink: 0;
+    object-fit: contain;
+    filter: drop-shadow(0 10px 25px rgba(0, 0, 0, 0.6)) drop-shadow(0 0 20px rgba(130, 209, 5, 0.25));
+    -webkit-user-drag: none;
+    user-select: none;
+}
+
+.calc-intro-head .calculator-title { margin-bottom: 0; }
+
+.calc-steps {
+    background: rgba(3, 7, 18, 0.35);
+    border: var(--border-glow);
+    border-left: 3px solid var(--color-neon);
+    border-radius: var(--border-radius-md);
+    padding: 1.2rem 1.4rem;
+    margin-bottom: 1.2rem;
+}
+
+.calc-steps h3 { font-size: 1.05rem; margin-bottom: 0.7rem; }
+
+.calc-steps ol {
+    margin: 0;
+    padding-left: 1.2rem;
+    display: grid;
+    gap: 0.5rem;
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+}
+
+.calc-steps li::marker { color: var(--color-neon); font-weight: 700; }
+.calc-steps strong { color: var(--text-primary); }
+
+.calc-contact {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    background: var(--color-neon-glow);
+    border: 1px solid var(--color-neon-border);
+    border-radius: var(--border-radius-md);
+    padding: 1rem 1.3rem;
+}
+
+.calc-contact i { font-size: 1.6rem; color: var(--color-neon); }
+.calc-contact div { display: flex; flex-direction: column; gap: 0.1rem; font-size: 0.95rem; }
+.calc-contact span { color: var(--text-secondary); }
+.calc-contact a { color: var(--color-neon); font-weight: 700; }
+.calc-contact a:hover { color: var(--color-neon-hover); }
+
+/* Tablet y móvil: una sola columna, sin que la columna se quede fija */
+@media (max-width: 1024px) {
+    .calculator-info { position: static; }
+}
+
+@media (max-width: 560px) {
+    .calc-intro-head { flex-direction: column; align-items: flex-start; gap: 0.8rem; }
+    .calc-logo { width: 120px; height: 120px; }
 }
