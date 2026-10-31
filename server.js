@@ -3968,7 +3968,8 @@ app.get('/api/settings', async (req, res) => {
 
 // Las credenciales de administración nunca salen en el endpoint público
 function publicSettings(settings) {
-  return Object.fromEntries(Object.entries(settings).filter(([key]) => !key.startsWith('admin_')));
+  // El texto largo de las condiciones se sirve aparte (/condiciones y /api/conditions-page)
+  return Object.fromEntries(Object.entries(settings).filter(([key]) => !key.startsWith('admin_') && !key.startsWith('conditions_page')));
 }
 
 // Condiciones de las furgonetas que se muestran en la web: lista de tarjetas editable desde el panel
@@ -3998,6 +3999,20 @@ app.put('/api/settings', verifyAdmin, async (req, res) => {
     const checked = validateConditions(req.body.conditions);
     if (checked.error) return res.status(400).json({ error: checked.error });
     conditions_json = checked.json;
+  }
+  // Página completa de condiciones: lista de apartados, o null para volver al texto de origen
+  let conditions_page_json;
+  let conditions_page_updated;
+  if (req.body.conditions_page !== undefined) {
+    if (req.body.conditions_page === null) {
+      conditions_page_json = '';
+      conditions_page_updated = '';
+    } else {
+      const checkedPage = validateConditionsPage(req.body.conditions_page);
+      if (checkedPage.error) return res.status(400).json({ error: checkedPage.error });
+      conditions_page_json = checkedPage.json;
+      conditions_page_updated = new Date().toISOString();
+    }
   }
   const fields = { hours_weekdays, hours_saturdays, hours_sundays, show_reviews_count, contact_phone, contact_email, fianza_amount };
   if (Object.values(fields).some(v => v !== undefined && (typeof v !== 'string' || v.length > 200))) {
@@ -4036,7 +4051,9 @@ app.put('/api/settings', verifyAdmin, async (req, res) => {
       { key: 'contact_phone', value: contact_phone },
       { key: 'contact_email', value: contact_email },
       { key: 'fianza_amount', value: fianza_amount },
-      { key: 'conditions_json', value: conditions_json }
+      { key: 'conditions_json', value: conditions_json },
+      { key: 'conditions_page_json', value: conditions_page_json },
+      { key: 'conditions_page_updated', value: conditions_page_updated }
     ];
     
     for (const q of queries) {
@@ -4061,6 +4078,8 @@ app.put('/api/settings', verifyAdmin, async (req, res) => {
     if (contact_email !== undefined) fallbackSettings.contact_email = contact_email;
     if (fianza_amount !== undefined) fallbackSettings.fianza_amount = fianza_amount;
     if (conditions_json !== undefined) fallbackSettings.conditions_json = conditions_json;
+    if (conditions_page_json !== undefined) fallbackSettings.conditions_page_json = conditions_page_json;
+    if (conditions_page_updated !== undefined) fallbackSettings.conditions_page_updated = conditions_page_updated;
     
     saveAdminStoreToFile();
     res.json({ message: 'Configuración actualizada temporalmente en memoria (Modo offline sin BD).', settings: fallbackSettings });
@@ -4698,6 +4717,13 @@ app.delete('/api/faqs/:id', verifyAdmin, async (req, res) => {
 });
 
 // Rutas de API inexistentes: responder en JSON (el frontend siempre hace res.json())
+// Texto de las condiciones completas (público): el guardado se hace en PUT /api/settings
+app.get('/api/conditions-page', async (req, res) => {
+  if (req.query.default === '1') return res.json({ sections: DEFAULT_CONDITIONS_PAGE, isDefault: true });
+  const settings = await readSettingsMap(['conditions_page_json']);
+  res.json(conditionsSectionsFrom(settings.conditions_page_json));
+});
+
 app.use('/api', (req, res) => {
   res.status(404).json({ error: 'Ruta de API no encontrada.' });
 });
@@ -4747,6 +4773,103 @@ const PUBLIC_ROOT_FILES = new Set([
 
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+// ---- Condiciones generales de alquiler: texto editable desde el panel (Ajustes) ----
+// Formato del texto: líneas en blanco separan párrafos; una línea que empieza por "- " es un punto de lista;
+// **negrita**; [texto](/ruta) o [texto](https://...) o [texto](mailto:...) para enlaces.
+// Marcas que se rellenan solas: {email}, {telefono}, {fianza} (salen de Ajustes).
+const DEFAULT_CONDITIONS_PAGE = [
+  { title: '', body: 'Estas condiciones regulan el alquiler de furgonetas de Servicios Logísticos Huéscar (RentMeUskar) contratado a través de esta web. Las condiciones concretas de cada alquiler (fechas, vehículo, precio y estado del vehículo) constan en el **contrato de alquiler** que recibes con tu reserva; si hubiera diferencias, prevalece el contrato.' },
+  { title: '1. Quién puede alquilar', body: '- Ser mayor de edad y tener permiso de conducir en vigor válido en España para la categoría del vehículo.\n- Presentar en la entrega el DNI/NIE y el permiso de conducir originales, que deben coincidir con los datos de la reserva.\n- Solo pueden conducir el arrendatario y el segundo conductor autorizado en el contrato.' },
+  { title: '2. Reserva y pago', body: '- Necesitas una cuenta para reservar. El precio se calcula en la web según el vehículo, las fechas y los extras elegidos, e incluye el IVA.\n- El pago online se hace con tarjeta en la pasarela segura de Redsys. Tu reserva se confirma cuando se autoriza el pago y nosotros la revisamos; hasta entonces puede figurar como pendiente.\n- Si el pago no se completa, las fechas se liberan pasado un breve plazo.\n- Algunas reservas (por ejemplo, con conductor o de larga duración) se tramitan contactando con nosotros.' },
+  { title: '3. Kilómetros incluidos', body: 'El alquiler incluye **350 km por día**. Los kilómetros que superen ese límite se cobran a **0,28 €/km + IVA**. Puedes consultar en el contrato las condiciones aplicables, incluido el paquete de 100 km adicionales.' },
+  { title: '4. Fianza', body: 'Al recoger el vehículo se deposita una fianza de garantía de **{fianza} €**, que se abona en persona. Se devuelve íntegra al devolver el vehículo en las condiciones pactadas. Si hay daños, falta de accesorios u otros costes imputables al arrendatario, se descontará el importe correspondiente, que se te justificará.' },
+  { title: '5. Entrega, estado y devolución', body: '- En la entrega se revisa el estado del vehículo, el nivel de combustible y de AdBlue, los kilómetros y los accesorios, y se deja constancia en el contrato.\n- El vehículo debe devolverse en la fecha, hora y lugar pactados y con el nivel de combustible indicado en el contrato.\n- Si se devuelve sucio, se podrá cobrar una limpieza: **40 € + IVA** (MAN TGE) o **30 € + IVA** (Ford Transit Custom).\n- Si vas a retrasarte en la devolución, avísanos cuanto antes.' },
+  { title: '6. Uso del vehículo', body: '- Debe usarse con la diligencia debida, respetando las normas de tráfico y la carga máxima autorizada.\n- No está permitido cederlo a terceros no autorizados en el contrato ni conducirlo bajo los efectos del alcohol o las drogas.\n- Las multas, peajes y sanciones durante el alquiler corresponden al arrendatario.\n- En caso de avería, accidente o robo, avísanos de inmediato y sigue nuestras instrucciones.' },
+  { title: '7. Seguro', body: 'Los vehículos cuentan con el seguro obligatorio. Las coberturas, exclusiones y posibles franquicias se detallan en el contrato. El arrendatario responde de los daños que no cubra el seguro o que se produzcan por un uso indebido.' },
+  { title: '8. Cancelaciones y modificaciones', body: 'Para cancelar o cambiar una reserva, contacta con nosotros cuanto antes por teléfono, WhatsApp o [correo]({email_enlace}), indicando el número de reserva. Conforme a la normativa de consumidores, el derecho de desistimiento de 14 días **no se aplica** a los servicios de alquiler de vehículos con una fecha o período de ejecución específicos.' },
+  { title: '9. Datos personales', body: 'Tratamos tus datos según nuestra [Política de Privacidad](/privacidad).' },
+  { title: '10. Reclamaciones y legislación', body: 'Si tienes alguna queja, escríbenos y la atenderemos lo antes posible. Estas condiciones se rigen por la ley española, y los consumidores pueden acudir a los juzgados y tribunales de su domicilio.' }
+];
+
+function validateConditionsPage(list) {
+  if (!Array.isArray(list) || list.length < 1 || list.length > 20) return { error: 'Debe haber entre 1 y 20 apartados.' };
+  const clean = [];
+  for (const item of list) {
+    if (!item || typeof item !== 'object' || !areStrings(item.title, item.body)) return { error: 'Algún apartado no es válido.' };
+    const title = item.title.trim();
+    const body = item.body.replace(/\r/g, '').trim();
+    if (title.length > 80) return { error: 'El título de cada apartado admite hasta 80 caracteres.' };
+    if (body.length > 4000) return { error: 'El texto de cada apartado admite hasta 4000 caracteres.' };
+    if (!title && !body) return { error: 'Hay un apartado vacío: escribe algo o quítalo.' };
+    clean.push({ title, body });
+  }
+  return { json: JSON.stringify(clean) };
+}
+
+// Ajustes que necesita la página de condiciones (BD primero; sin BD, la copia en memoria)
+async function readSettingsMap(keys) {
+  try {
+    const result = await pool.query('SELECT key, value FROM settings WHERE key = ANY($1)', [keys]);
+    const map = {};
+    result.rows.forEach(r => { map[r.key] = r.value; });
+    return map;
+  } catch (e) {
+    const map = {};
+    keys.forEach(k => { if (fallbackSettings[k] !== undefined) map[k] = fallbackSettings[k]; });
+    return map;
+  }
+}
+
+function conditionsSectionsFrom(json) {
+  try {
+    const list = json ? JSON.parse(json) : null;
+    if (Array.isArray(list) && list.length > 0) return { sections: list, isDefault: false };
+  } catch (e) { /* texto guardado dañado: se usa el de origen */ }
+  return { sections: DEFAULT_CONDITIONS_PAGE, isDefault: true };
+}
+
+function richInline(escaped) {
+  return escaped
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/\[([^\]]+)\]\((\/[^)\s]*|https:\/\/[^)\s]*|mailto:[^)\s]*)\)/g, (m, text, url) => `<a href="${url}">${text}</a>`);
+}
+
+function renderConditionsBody(body) {
+  return String(body || '').replace(/\r/g, '').split(/\n\s*\n/).map(block => {
+    const lines = block.split('\n').map(l => l.trim()).filter(Boolean);
+    if (!lines.length) return '';
+    if (lines.every(l => l.startsWith('- '))) {
+      return '<ul>' + lines.map(l => '<li>' + richInline(escapeHtml(l.slice(2))) + '</li>').join('') + '</ul>';
+    }
+    return '<p>' + lines.map(l => richInline(escapeHtml(l))).join('<br>') + '</p>';
+  }).filter(Boolean).join('\n        ');
+}
+
+function fillConditionsTokens(text, tokens) {
+  return String(text || '').replace(/\{(\w+)\}/g, (m, key) => (tokens[key] !== undefined ? tokens[key] : m));
+}
+
+app.get(['/condiciones', '/condiciones.html'], async (req, res, next) => {
+  try {
+    const template = await fs.promises.readFile(path.join(__dirname, 'condiciones.html'), 'utf8');
+    const settings = await readSettingsMap(['conditions_page_json', 'conditions_page_updated', 'contact_email', 'fianza_amount']);
+    const email = settings.contact_email || 'info@rentmeuskar.com';
+    const tokens = { email, email_enlace: 'mailto:' + email, fianza: settings.fianza_amount || '500,00' };
+    const { sections } = conditionsSectionsFrom(settings.conditions_page_json);
+    const html = sections.map(s => {
+      const title = s.title ? `<h2>${escapeHtml(fillConditionsTokens(s.title, tokens))}</h2>\n        ` : '';
+      return title + renderConditionsBody(fillConditionsTokens(s.body, tokens));
+    }).join('\n\n        ');
+    const updatedDate = settings.conditions_page_updated ? new Date(settings.conditions_page_updated) : null;
+    const updated = updatedDate && !isNaN(updatedDate)
+      ? 'Última actualización: ' + updatedDate.toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })
+      : 'Última actualización: 30 de octubre de 2026';
+    res.type('html').send(template.replace('<!--CONDICIONES-->', () => html).replace('{{ACTUALIZADO}}', () => updated));
+  } catch (err) {
+    next(err);
+  }
 });
 
 // Páginas legales con dirección corta (/privacidad, /cookies...)

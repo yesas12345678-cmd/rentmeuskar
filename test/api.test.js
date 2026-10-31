@@ -395,6 +395,51 @@ test('los iconos de la web (favicon .ico, .png y .svg) se sirven y pesan poco', 
   assert.ok(home.includes('favicon.svg'), 'la portada no enlaza el icono vectorial');
 });
 
+test('condiciones completas: la página sale del texto guardado, escapa el HTML y se puede volver al original', async () => {
+  const admin = await login('zvaito', ADMIN_PASSWORD);
+  const page = async () => (await fetch(BASE + '/condiciones')).text();
+
+  // Por defecto sale el texto de origen
+  let html = await page();
+  assert.ok(html.includes('1. Quién puede alquilar'));
+  assert.ok(html.includes('<strong>350 km por día</strong>'));
+
+  // Sin sesión de administrador no se puede cambiar
+  assert.equal((await call('PUT', '/api/settings', { conditions_page: [{ title: 'x', body: 'y' }] })).status, 401);
+
+  // Edición con lista, negrita, enlace, marca {fianza} y HTML malicioso
+  const body = 'Primer párrafo con **negrita** y {fianza} €.\n\n- Punto uno\n- Punto <b>dos</b>\n\n[Privacidad](/privacidad) y [malo](javascript:alert(1)) <script>alert(1)</script>';
+  const saved = await call('PUT', '/api/settings', { conditions_page: [{ title: 'Mi apartado <i>1</i>', body }] }, admin);
+  assert.equal(saved.status, 200);
+  html = await page();
+  assert.ok(html.includes('<h2>Mi apartado &lt;i&gt;1&lt;/i&gt;</h2>'));
+  assert.ok(html.includes('<strong>negrita</strong>'));
+  assert.ok(html.includes('<ul><li>Punto uno</li><li>Punto &lt;b&gt;dos&lt;/b&gt;</li></ul>'));
+  assert.ok(html.includes('<a href="/privacidad">Privacidad</a>'));
+  assert.ok(!html.includes('<script>alert(1)'), 'se coló HTML');
+  assert.ok(!html.includes('href="javascript'), 'se coló un enlace javascript');
+  assert.ok(!html.includes('1. Quién puede alquilar'), 'sigue saliendo el texto de origen');
+
+  // API pública del texto; los ajustes públicos no arrastran el texto largo
+  const api = await call('GET', '/api/conditions-page');
+  assert.equal(api.data.isDefault, false);
+  assert.equal(api.data.sections.length, 1);
+  assert.equal((await call('GET', '/api/conditions-page?default=1')).data.isDefault, true);
+  assert.ok(!('conditions_page_json' in (await call('GET', '/api/settings')).data));
+
+  // Datos no válidos: 400
+  const invalid = [[], 'texto', [{ title: 5, body: 'a' }], [{ title: 'a'.repeat(81), body: 'a' }], [{ title: 'a', body: 'b'.repeat(4001) }],
+    [{ title: '', body: '' }], Array(21).fill({ title: 'a', body: 'b' })];
+  for (const bad of invalid) {
+    assert.equal((await call('PUT', '/api/settings', { conditions_page: bad }, admin)).status, 400, JSON.stringify(bad).slice(0, 50));
+  }
+
+  // Volver al texto de origen
+  assert.equal((await call('PUT', '/api/settings', { conditions_page: null }, admin)).status, 200);
+  html = await page();
+  assert.ok(html.includes('1. Quién puede alquilar'));
+});
+
 test('las rutas de API inexistentes responden 404 en JSON', async () => {
   const res = await call('GET', '/api/no-existe');
   assert.equal(res.status, 404);

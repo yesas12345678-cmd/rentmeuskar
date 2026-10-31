@@ -1324,6 +1324,91 @@ const initAdmin = () => {
         }
     });
 
+    // ---- Condiciones completas (página /condiciones) ----
+    let pageSections = [];
+    const pageEditor = document.getElementById('conditions-page-editor');
+
+    const renderPageEditor = () => {
+        if (!pageEditor) return;
+        pageEditor.innerHTML = '';
+        pageSections.forEach((sec, index) => {
+            const row = document.createElement('div');
+            row.style.cssText = 'border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 1rem; display: grid; gap: 0.6rem; background: rgba(3,7,18,0.35);';
+
+            const title = document.createElement('input');
+            title.type = 'text'; title.className = 'search-input'; title.maxLength = 80;
+            title.placeholder = 'Título del apartado (puede quedar vacío)';
+            title.style.paddingLeft = '0.8rem'; title.value = sec.title;
+            title.addEventListener('input', () => { sec.title = title.value; });
+
+            const body = document.createElement('textarea');
+            body.className = 'search-input'; body.maxLength = 4000; body.rows = 6;
+            body.placeholder = 'Texto del apartado';
+            body.style.cssText = 'padding: 0.6rem 0.8rem; resize: vertical; font-family: inherit; line-height: 1.5;';
+            body.value = sec.body;
+            body.addEventListener('input', () => { sec.body = body.value; });
+
+            const actions = document.createElement('div');
+            actions.style.cssText = 'display: flex; gap: 0.4rem; justify-content: flex-end;';
+            const makeBtn = (label, handler, disabled) => {
+                const b = document.createElement('button');
+                b.type = 'button'; b.className = 'btn btn-secondary btn-sm'; b.innerHTML = label; b.disabled = !!disabled;
+                b.addEventListener('click', handler);
+                return b;
+            };
+            actions.append(
+                makeBtn('<i class="fa-solid fa-arrow-up"></i>', () => { [pageSections[index - 1], pageSections[index]] = [pageSections[index], pageSections[index - 1]]; renderPageEditor(); }, index === 0),
+                makeBtn('<i class="fa-solid fa-arrow-down"></i>', () => { [pageSections[index + 1], pageSections[index]] = [pageSections[index], pageSections[index + 1]]; renderPageEditor(); }, index === pageSections.length - 1),
+                makeBtn('<i class="fa-solid fa-trash"></i> Quitar', () => { pageSections.splice(index, 1); renderPageEditor(); })
+            );
+
+            row.append(title, body, actions);
+            pageEditor.appendChild(row);
+        });
+    };
+
+    const loadConditionsPage = async (original) => {
+        if (!pageEditor) return;
+        try {
+            const res = await fetch('/api/conditions-page' + (original ? '?default=1' : ''));
+            const data = await res.json();
+            pageSections = (data.sections || []).map(x => ({ title: x.title || '', body: x.body || '' }));
+            renderPageEditor();
+        } catch (err) {
+            console.error(err);
+            showToast('No se pudieron cargar las condiciones completas.', 'error');
+        }
+    };
+
+    const btnAddPageSection = document.getElementById('btn-add-page-section');
+    const btnRestorePage = document.getElementById('btn-restore-page');
+    const btnSavePage = document.getElementById('btn-save-page');
+    if (btnAddPageSection) btnAddPageSection.addEventListener('click', () => {
+        if (pageSections.length >= 20) { showToast('Máximo 20 apartados.', 'error'); return; }
+        pageSections.push({ title: '', body: '' });
+        renderPageEditor();
+    });
+    if (btnRestorePage) btnRestorePage.addEventListener('click', async () => {
+        await loadConditionsPage(true);
+        showToast('Se ha cargado el texto original. Pulsa Guardar para publicarlo.', 'info');
+    });
+    if (btnSavePage) btnSavePage.addEventListener('click', async () => {
+        if (pageSections.some(x => !x.title.trim() && !x.body.trim())) { showToast('Hay un apartado vacío: escribe algo o quítalo.', 'error'); return; }
+        try {
+            const res = await fetch('/api/settings', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('admin_token') },
+                body: JSON.stringify({ conditions_page: pageSections })
+            });
+            const data = await res.json();
+            if (res.ok) showToast('Condiciones completas guardadas. Ya se ven en /condiciones.', 'success');
+            else showToast(data.error || 'No se pudieron guardar las condiciones completas.', 'error');
+        } catch (err) {
+            console.error(err);
+            showToast('Error de conexión con el servidor.', 'error');
+        }
+    });
+
     const fetchSettings = async () => {
         try {
             const res = await fetch('/api/settings');
@@ -1335,6 +1420,7 @@ const initAdmin = () => {
             if (settingContactEmail) settingContactEmail.value = data.contact_email || 'info@rentmeuskar.com';
             if (settingFianzaAmount) settingFianzaAmount.value = data.fianza_amount || '500,00';
             loadConditionsFromSettings(data.conditions_json);
+            loadConditionsPage(false);
             if (settingShowReviewsCount) {
                 settingShowReviewsCount.checked = data.show_reviews_count === 'true';
             }
