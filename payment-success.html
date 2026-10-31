@@ -204,12 +204,6 @@
         </div>
 
         <div class="actions-group">
-            <a href="#" id="btn-invoice" class="btn-primary" style="display: none;" target="_blank">
-                <i class="fa-solid fa-file-invoice"></i> Ver Justificante / Factura
-            </a>
-            <a href="#" id="btn-contract" class="btn-secondary" style="display: none;" target="_blank">
-                <i class="fa-solid fa-file-signature"></i> Ver Contrato de Alquiler
-            </a>
             <a href="https://api.whatsapp.com/send?phone=34614767411" id="btn-whatsapp" target="_blank" class="btn-secondary btn-whatsapp">
                 <i class="fa-brands fa-whatsapp"></i> Notificar a RentMeUskar por WhatsApp
             </a>
@@ -280,16 +274,6 @@
                         if (b.id) {
                             document.getElementById('booking-id-row').style.display = 'flex';
                             document.getElementById('booking-id-val').innerText = '#' + b.id;
-
-                            // Habilitar botones de factura y contrato
-                            const authParam = encodeURIComponent(b.review_code || b.payment_id || '');
-                            const btnInvoice = document.getElementById('btn-invoice');
-                            btnInvoice.href = '/invoice/' + b.id + (authParam ? '?auth=' + authParam : '');
-                            btnInvoice.style.display = 'inline-flex';
-
-                            const btnContract = document.getElementById('btn-contract');
-                            btnContract.href = '/contract/' + b.id + (authParam ? '?auth=' + authParam : '');
-                            btnContract.style.display = 'inline-flex';
                         }
 
                         if (b.name) document.getElementById('client-name').innerText = b.name;
