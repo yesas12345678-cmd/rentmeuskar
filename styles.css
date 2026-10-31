@@ -2111,3 +2111,81 @@ textarea:focus-visible, [tabindex]:focus-visible {
     .calc-intro-head { flex-direction: column; align-items: flex-start; gap: 0.8rem; }
     .calc-logo { width: 120px; height: 120px; }
 }
+
+/* Condiciones de las furgonetas (sustituye a las tres tarjetas de estadísticas) */
+.conditions-section { padding: 6rem 0; }
+
+.cond-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+}
+
+.cond-card {
+    background-color: rgba(3, 7, 18, 0.4);
+    border: var(--border-glow);
+    border-radius: var(--border-radius-md);
+    padding: 1.8rem;
+    transition: var(--transition-smooth);
+}
+
+.cond-card:hover {
+    transform: translateY(-5px);
+    border-color: var(--color-neon-border);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+}
+
+.cond-icon {
+    width: 46px;
+    height: 46px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    background: var(--color-neon-glow);
+    border: 1px solid var(--color-neon-border);
+    color: var(--color-neon);
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
+}
+
+.cond-card h3 {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-secondary);
+    margin-bottom: 0.35rem;
+}
+
+.cond-value {
+    font-family: var(--font-heading);
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1.2;
+    margin-bottom: 0.6rem;
+}
+
+.cond-text {
+    font-size: 0.92rem;
+    color: var(--text-secondary);
+    line-height: 1.55;
+}
+
+.cond-more { text-align: center; margin-top: 2rem; }
+.cond-more a { color: var(--color-neon); font-weight: 700; }
+.cond-more a:hover { color: var(--color-neon-hover); }
+
+@media (max-width: 1024px) {
+    .cond-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 640px) {
+    .conditions-section { padding: 4rem 0; }
+    .cond-grid { grid-template-columns: 1fr; }
+}
+
+/* Enlaces a las páginas de zona dentro de la tarjeta "Servicio en el Altiplano" */
+.zone-links { display: inline-block; margin-top: 0.7rem; font-size: 0.88rem; color: var(--text-secondary); }
+.zone-links a { color: var(--color-neon); font-weight: 600; }
+.zone-links a:hover { color: var(--color-neon-hover); text-decoration: underline; }

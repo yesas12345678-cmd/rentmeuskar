@@ -52,6 +52,7 @@
       "description": "Alquiler de furgonetas de carga de 8 y 14 m³ en Huéscar (Granada), con y sin conductor.",
       "telephone": "+34614767411",
       "email": "info@rentmeuskar.com",
+      "hasMap": "https://www.google.com/maps/search/?api=1&query=Pol%C3%ADgono+Industrial+La+Sagra+Calle+A+18830+Hu%C3%A9scar",
       "address": {
         "@type": "PostalAddress",
         "streetAddress": "Polígono Industrial La Sagra, Calle A",
@@ -168,7 +169,7 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
 
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="styles.css?v=4.6">
+    <link rel="stylesheet" href="styles.css?v=4.8">
 
 
     <!-- Global Auth Modal Handlers (Instant Execution) -->
@@ -871,24 +872,53 @@
             </div>
         </section>
 
-        <!-- Stats Counter Section -->
-        <section class="stats-section" id="stats-area">
-            <div class="stats-container container">
-                <div class="stat-card reveal">
-                    <div class="stat-icon"><i class="fa-solid fa-truck"></i></div>
-                    <h3 class="stat-number" id="stat-vans">2 Modelos</h3>
-                    <p class="stat-label">Adaptados a cada necesidad</p>
+                <!-- Condiciones de las furgonetas -->
+        <section class="stats-section conditions-section" id="condiciones-resumen">
+            <div class="container">
+                <div class="section-header reveal">
+                    <span class="subtitle">Condiciones</span>
+                    <h2 class="section-title">Condiciones de las Furgonetas</h2>
+                    <p class="section-desc">Lo que debes saber antes de alquilar, en pocas líneas.</p>
                 </div>
-                <div class="stat-card reveal delay-1">
-                    <div class="stat-icon"><i class="fa-solid fa-circle-check"></i></div>
-                    <h3 class="stat-number" id="stat-clients">Reserva Online</h3>
-                    <p class="stat-label">Elige fechas y paga con tarjeta</p>
+                <div class="cond-grid">
+                    <div class="cond-card reveal">
+                        <div class="cond-icon"><i class="fa-solid fa-road"></i></div>
+                        <h3>Kilómetros</h3>
+                        <p class="cond-value">350 km al día</p>
+                        <p class="cond-text">Incluidos en el precio. Los kilómetros de más se cobran a 0,28 €/km + IVA.</p>
+                    </div>
+                    <div class="cond-card reveal delay-1">
+                        <div class="cond-icon"><i class="fa-solid fa-shield-halved"></i></div>
+                        <h3>Fianza</h3>
+                        <p class="cond-value"><span class="rmu-fianza">500,00</span> €</p>
+                        <p class="cond-text">Se deposita en persona al recoger y se devuelve íntegra al devolver la furgoneta en las condiciones pactadas.</p>
+                    </div>
+                    <div class="cond-card reveal delay-2">
+                        <div class="cond-icon"><i class="fa-solid fa-id-card"></i></div>
+                        <h3>Documentación</h3>
+                        <p class="cond-value">DNI/NIE y carné B</p>
+                        <p class="cond-text">Originales y en vigor al recoger. Sin conductor solo necesitas el permiso de conducir B.</p>
+                    </div>
+                    <div class="cond-card reveal">
+                        <div class="cond-icon"><i class="fa-solid fa-credit-card"></i></div>
+                        <h3>Pago online</h3>
+                        <p class="cond-value">Hasta 7 días</p>
+                        <p class="cond-text">Paga con tarjeta desde la web. Para más de 7 días o con conductor, contáctanos.</p>
+                    </div>
+                    <div class="cond-card reveal delay-1">
+                        <div class="cond-icon"><i class="fa-solid fa-broom"></i></div>
+                        <h3>Limpieza</h3>
+                        <p class="cond-value">40 € / 30 € + IVA</p>
+                        <p class="cond-text">Solo si la devuelves sucia: 40 € la MAN TGE y 30 € la Ford Transit Custom.</p>
+                    </div>
+                    <div class="cond-card reveal delay-2">
+                        <div class="cond-icon"><i class="fa-solid fa-location-dot"></i></div>
+                        <h3>Entrega y devolución</h3>
+                        <p class="cond-value">En Huéscar</p>
+                        <p class="cond-text">En cada entrega revisamos contigo el estado, el combustible y los accesorios, y queda reflejado en el contrato.</p>
+                    </div>
                 </div>
-                <div class="stat-card reveal delay-2">
-                    <div class="stat-icon"><i class="fa-solid fa-road"></i></div>
-                    <h3 class="stat-number" id="stat-kms">350 km/día</h3>
-                    <p class="stat-label">Kilómetros incluidos</p>
-                </div>
+                <p class="cond-more reveal"><a href="/condiciones">Leer las condiciones completas <i class="fa-solid fa-arrow-right"></i></a></p>
             </div>
         </section>
 
@@ -1167,7 +1197,7 @@
                         <h3 class="service-title">Servicio en el Altiplano</h3>
                         <p class="service-desc-text">Atendemos a todo el Altiplano de Granada: Huéscar, Castril, Galera,
                             Orce, Puebla de Don Fadrique, Castilléjar, Baza, Cúllar, Benamaurel, Caniles y todos los
-                            alrededores. Tu solución logística local.</p>
+                            alrededores. Tu solución logística local.<br><span class="zone-links">Alquiler de furgonetas en <a href="/alquiler-furgonetas-huescar">Huéscar</a> · <a href="/alquiler-furgonetas-baza">Baza</a> · <a href="/alquiler-furgonetas-guadix">Guadix</a> · <a href="/alquiler-furgonetas-granada">provincia de Granada</a></span></p>
                     </div>
                     <div class="service-card reveal delay-2">
                         <div class="service-icon"><i class="fa-solid fa-screwdriver-wrench"></i></div>
@@ -1387,6 +1417,7 @@
                     <li><a href="#calculadora">Calculadora de Precios</a></li>
                     <li><a href="#servicios">Servicios</a></li>
                     <li><a href="#faq">Preguntas Frecuentes</a></li>
+                    <li><a href="/alquiler-furgonetas-huescar">Alquiler de furgonetas en Huéscar</a></li>
                     <li><a href="/alquiler-furgonetas-granada">Alquiler en la provincia de Granada</a></li>
                     <li><a href="/alquiler-furgonetas-baza">Alquiler de furgonetas en Baza</a></li>
                     <li><a href="/alquiler-furgonetas-guadix">Alquiler de furgonetas en Guadix</a></li>

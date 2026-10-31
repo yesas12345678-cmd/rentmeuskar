@@ -321,7 +321,7 @@ test('CORS: un origen que no está en la lista blanca se rechaza', async () => {
 });
 
 test('SEO local: las páginas de zona existen, tienen su título y la ficha de empresa no inventa horarios', async () => {
-  for (const [page, titulo] of [['/alquiler-furgonetas-granada', 'provincia de Granada'], ['/alquiler-furgonetas-baza', 'Baza'], ['/alquiler-furgonetas-guadix', 'Guadix']]) {
+  for (const [page, titulo] of [['/alquiler-furgonetas-huescar', 'Huéscar'], ['/alquiler-furgonetas-granada', 'provincia de Granada'], ['/alquiler-furgonetas-baza', 'Baza'], ['/alquiler-furgonetas-guadix', 'Guadix']]) {
     const res = await fetch(BASE + page);
     assert.equal(res.status, 200, `${page} devolvió ${res.status}`);
     const html = await res.text();

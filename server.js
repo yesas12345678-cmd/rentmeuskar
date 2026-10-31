@@ -4686,7 +4686,7 @@ const PUBLIC_ROOT_FILES = new Set([
   'index.html', 'admin.html', 'contract.html', 'invoice.html',
   'payment-success.html', 'payment-error.html',
   'aviso-legal.html', 'privacidad.html', 'cookies.html', 'condiciones.html',
-  'alquiler-furgonetas-granada.html', 'alquiler-furgonetas-baza.html', 'alquiler-furgonetas-guadix.html',
+  'alquiler-furgonetas-huescar.html', 'alquiler-furgonetas-granada.html', 'alquiler-furgonetas-baza.html', 'alquiler-furgonetas-guadix.html',
   'legal.css', 'legal.js',
   'styles.css', 'app.js', 'admin.js',
   'robots.txt', 'sitemap.xml', 'favicon.jpeg'
@@ -4698,7 +4698,7 @@ app.get('/', (req, res) => {
 
 // Páginas legales con dirección corta (/privacidad, /cookies...)
 for (const page of ['aviso-legal', 'privacidad', 'cookies', 'condiciones',
-  'alquiler-furgonetas-granada', 'alquiler-furgonetas-baza', 'alquiler-furgonetas-guadix']) {
+  'alquiler-furgonetas-huescar', 'alquiler-furgonetas-granada', 'alquiler-furgonetas-baza', 'alquiler-furgonetas-guadix']) {
   app.get('/' + page, (req, res) => res.sendFile(path.join(__dirname, page + '.html')));
 }
 
