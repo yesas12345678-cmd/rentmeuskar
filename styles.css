@@ -2039,3 +2039,15 @@ textarea:focus-visible, [tabindex]:focus-visible {
     white-space: nowrap;
     border: 0;
 }
+
+/* Logo del simulador de presupuesto: más grande (escritorio) y contenido en móvil */
+.calc-logo {
+    width: 260px;
+    height: 260px;
+    max-width: 100%;
+    object-fit: contain;
+}
+
+@media (max-width: 768px) {
+    .calc-logo { width: 200px; height: 200px; }
+}
