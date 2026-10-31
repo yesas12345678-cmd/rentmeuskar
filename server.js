@@ -4139,7 +4139,7 @@ app.post('/api/admin/request-credential-change-code', verifyAdmin, async (req, r
               Se ha solicitado una modificación para <strong>CAMBIAR EL NOMBRE DE USUARIO Y LA CONTRASEÑA DE ACCESO DEL PANEL DE ADMINISTRACIÓN DE RENTMEUSKAR</strong>.
             </p>
             <div style="background: rgba(130, 209, 5, 0.08); border-left: 4px solid #82d105; padding: 12px 16px; margin: 16px 0; border-radius: 4px;">
-              <p style="margin: 0; color: #ffffff; font-size: 14px;"><strong>Nuevo Nombre de Usuario Solicitado:</strong> ${cleanUsername}</p>
+              <p style="margin: 0; color: #ffffff; font-size: 14px;"><strong>Nuevo Nombre de Usuario Solicitado:</strong> ${escapeHtml(cleanUsername)}</p>
             </div>
             <p style="color: #cbd5e0; line-height: 1.6;">
               Este código de verificación es necesario para confirmar que eres el propietario legítimo antes de aplicar el nuevo usuario y la nueva contraseña. Introduce el siguiente código de 6 dígitos en la pantalla de la Consola de Administración:
