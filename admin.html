@@ -1056,7 +1056,10 @@
                         </div>
                         <div class="custom-form-group" style="margin-bottom: 1.5rem;">
                             <label style="display: block; font-size: 0.8rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 0.5rem; font-weight: 600; letter-spacing: 0.05em;">Nueva Contraseña Admin</label>
-                            <input type="password" id="admin-new-password" autocomplete="new-password" minlength="8" class="search-input" style="padding-left: 1rem;" placeholder="Nueva contraseña" required>
+                            <div style="position: relative; display: flex; align-items: center; width: 100%;">
+                                <input type="password" id="admin-new-password" autocomplete="new-password" minlength="8" class="search-input" style="padding-left: 1rem; padding-right: 2.5rem; width: 100%;" placeholder="Nueva contraseña" required>
+                                <i class="fa-solid fa-eye toggle-password-btn" onclick="togglePasswordVisibility('admin-new-password', this)" title="Mostrar/Ocultar contraseña" style="position: absolute; right: 0.8rem; color: var(--text-secondary); cursor: pointer;"></i>
+                            </div>
                         </div>
 
                         <button type="button" class="btn btn-primary" id="btn-request-admin-code" style="width: 100%; height: 46px; background: rgba(0, 210, 255, 0.15); border-color: #00d2ff; color: #00d2ff; font-weight: 700;">
