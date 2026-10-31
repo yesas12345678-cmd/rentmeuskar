@@ -1,15 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <!-- Fondo azul noche de la marca -->
-  <rect width="64" height="64" rx="14" fill="#0f1c3f"/>
-  <!-- Furgoneta verde de la marca: caja de carga + cabina, esquinas redondeadas -->
-  <path d="M7 20H37V26.5H48.5L57 36V46H7Z" fill="#82d105" stroke="#82d105" stroke-width="4" stroke-linejoin="round"/>
-  <!-- Ventanilla -->
-  <path d="M41.5 30H47.4L52.2 35.8H41.5Z" fill="#0f1c3f" stroke="#0f1c3f" stroke-width="1.6" stroke-linejoin="round"/>
-  <!-- Pasos de rueda y ruedas -->
-  <circle cx="19" cy="47" r="8.5" fill="#0f1c3f"/>
-  <circle cx="46" cy="47" r="8.5" fill="#0f1c3f"/>
-  <circle cx="19" cy="47" r="5.6" fill="#82d105"/>
-  <circle cx="46" cy="47" r="5.6" fill="#82d105"/>
-  <circle cx="19" cy="47" r="2.1" fill="#0f1c3f"/>
-  <circle cx="46" cy="47" r="2.1" fill="#0f1c3f"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="4 7.35 56 56">
+  <!-- Furgoneta verde de la marca, sin fondo: ocupa todo el icono. Los huecos (pasos de rueda y ventanilla) son transparentes. -->
+  <path fill="#82d105" fill-rule="evenodd" d="M5 21Q5 18 8 18H36Q39 18 39 21V24.5H49.4Q50.8 24.5 51.9 25.8L58.1 33.6Q59 34.8 59 36.3V45Q59 48 56 48H54.44A8.5 8.5 0 1 0 37.56 48H27.44A8.5 8.5 0 1 0 10.56 48H8Q5 48 5 45ZM41.5 30H47.4L52.2 35.8H41.5Z"/>
+  <!-- Ruedas (aros) -->
+  <circle cx="19" cy="47" r="4.5" fill="none" stroke="#82d105" stroke-width="2.8"/>
+  <circle cx="46" cy="47" r="4.5" fill="none" stroke="#82d105" stroke-width="2.8"/>
 </svg>
