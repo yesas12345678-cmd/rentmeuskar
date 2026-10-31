@@ -217,7 +217,12 @@ async function syncDatabaseWithDisk(clientOrPool) {
   try {
     // 1. Furgonetas (SAFE 2-WAY MERGE)
     try {
-      if (Array.isArray(fallbackVans) && fallbackVans.length > 0) {
+      // Una vez creada la base de datos, ella manda: la copia local no puede volver a meter furgonetas
+      // que el administrador borró ni pisar sus precios y nombres con los valores por defecto
+      // (antes, cada reinicio recreaba las dos furgonetas de fábrica con su precio original)
+      const vansInitialized = await targetPool.query("SELECT 1 FROM settings WHERE key = 'vans_initialized'");
+      const dbIsAuthority = vansInitialized.rowCount > 0;
+      if (!dbIsAuthority && Array.isArray(fallbackVans) && fallbackVans.length > 0) {
         for (const van of fallbackVans) {
           await targetPool.query(
             `INSERT INTO vans (van_type, name, plate, m3, price_sin, min_price_con, km_price_con, status, images, custom_extras, max_occupants, eco_label, daily_km_limit, max_mass, fuel_type, waiting_hour_price, custom_features)
@@ -238,7 +243,10 @@ async function syncDatabaseWithDisk(clientOrPool) {
         }
       }
       const vansRes = await targetPool.query("SELECT * FROM vans ORDER BY id ASC");
-      if (vansRes.rows.length > 0) {
+      if (dbIsAuthority) {
+        // El catálogo en memoria es exactamente el de la base de datos (sin furgonetas fantasma)
+        fallbackVans = vansRes.rows;
+      } else if (vansRes.rows.length > 0) {
         vansRes.rows.forEach(dbV => {
           const idx = fallbackVans.findIndex(v => String(v.id) === String(dbV.id) || v.van_type === dbV.van_type);
           if (idx !== -1) {
@@ -323,7 +331,8 @@ async function syncDatabaseWithDisk(clientOrPool) {
     try {
       for (const [key, value] of Object.entries(fallbackSettings)) {
         await targetPool.query(
-          "INSERT INTO settings (key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value",
+          // Solo se añaden los ajustes que faltan: los que ya están en la base de datos (horarios, fianza...) no se pisan
+          "INSERT INTO settings (key, value) VALUES ($1, $2) ON CONFLICT (key) DO NOTHING",
           [key, String(value)]
         ).catch(e => console.warn('Error syncing setting to DB:', e.message));
       }
