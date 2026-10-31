@@ -1214,6 +1214,116 @@ const initAdmin = () => {
         }
     };
 
+    // ---- Condiciones de las furgonetas (tarjetas de la web pública) ----
+    const DEFAULT_CONDITIONS = [
+        { icon: 'road', title: 'Kilómetros', value: '350 km al día', text: 'Incluidos en el precio. Los kilómetros de más se cobran a 0,28 €/km + IVA.' },
+        { icon: 'shield-halved', title: 'Fianza', value: '{fianza} €', text: 'Se deposita en persona al recoger y se devuelve íntegra al devolver la furgoneta en las condiciones pactadas.' },
+        { icon: 'id-card', title: 'Documentación', value: 'DNI/NIE y carné B', text: 'Originales y en vigor al recoger. Sin conductor solo necesitas el permiso de conducir B.' },
+        { icon: 'credit-card', title: 'Pago online', value: 'Hasta 7 días', text: 'Paga con tarjeta desde la web. Para más de 7 días o con conductor, contáctanos.' },
+        { icon: 'broom', title: 'Limpieza', value: '40 € / 30 € + IVA', text: 'Solo si la devuelves sucia: 40 € la MAN TGE y 30 € la Ford Transit Custom.' },
+        { icon: 'location-dot', title: 'Entrega y devolución', value: 'En Huéscar', text: 'En cada entrega revisamos contigo el estado, el combustible y los accesorios, y queda reflejado en el contrato.' }
+    ];
+    const CONDITION_ICON_LABELS = {
+        'road': 'Carretera', 'shield-halved': 'Escudo', 'id-card': 'Documento', 'credit-card': 'Tarjeta', 'broom': 'Limpieza',
+        'location-dot': 'Lugar', 'clock': 'Reloj', 'key': 'Llave', 'gas-pump': 'Combustible', 'screwdriver-wrench': 'Herramientas',
+        'euro-sign': 'Euro', 'calendar-days': 'Calendario', 'phone': 'Teléfono', 'circle-check': 'Visto'
+    };
+    let conditionsState = DEFAULT_CONDITIONS.map(c => ({ ...c }));
+    const conditionsEditor = document.getElementById('conditions-editor');
+
+    const renderConditionsEditor = () => {
+        if (!conditionsEditor) return;
+        conditionsEditor.innerHTML = '';
+        conditionsState.forEach((cond, index) => {
+            const row = document.createElement('div');
+            row.style.cssText = 'border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 1rem; display: grid; gap: 0.6rem; background: rgba(3,7,18,0.35);';
+
+            const top = document.createElement('div');
+            top.style.cssText = 'display: grid; grid-template-columns: 150px 1fr 1fr; gap: 0.6rem;';
+            const select = document.createElement('select');
+            select.className = 'search-input';
+            select.style.paddingLeft = '0.8rem';
+            Object.keys(CONDITION_ICON_LABELS).forEach(key => {
+                const opt = document.createElement('option');
+                opt.value = key;
+                opt.textContent = CONDITION_ICON_LABELS[key];
+                if (key === cond.icon) opt.selected = true;
+                select.appendChild(opt);
+            });
+            select.addEventListener('change', () => { cond.icon = select.value; });
+            const title = document.createElement('input');
+            title.type = 'text'; title.className = 'search-input'; title.maxLength = 40; title.placeholder = 'Título (ej. Kilómetros)';
+            title.style.paddingLeft = '0.8rem'; title.value = cond.title;
+            title.addEventListener('input', () => { cond.title = title.value; });
+            const value = document.createElement('input');
+            value.type = 'text'; value.className = 'search-input'; value.maxLength = 40; value.placeholder = 'Dato destacado (ej. 350 km al día)';
+            value.style.paddingLeft = '0.8rem'; value.value = cond.value;
+            value.addEventListener('input', () => { cond.value = value.value; });
+            top.append(select, title, value);
+
+            const text = document.createElement('textarea');
+            text.className = 'search-input'; text.maxLength = 300; text.rows = 2; text.placeholder = 'Explicación corta';
+            text.style.cssText = 'padding: 0.6rem 0.8rem; resize: vertical; font-family: inherit;'; text.value = cond.text;
+            text.addEventListener('input', () => { cond.text = text.value; });
+
+            const actions = document.createElement('div');
+            actions.style.cssText = 'display: flex; gap: 0.4rem; justify-content: flex-end;';
+            const makeBtn = (label, handler, disabled) => {
+                const b = document.createElement('button');
+                b.type = 'button'; b.className = 'btn btn-secondary btn-sm'; b.innerHTML = label; b.disabled = !!disabled;
+                b.addEventListener('click', handler);
+                return b;
+            };
+            actions.append(
+                makeBtn('<i class="fa-solid fa-arrow-up"></i>', () => { [conditionsState[index - 1], conditionsState[index]] = [conditionsState[index], conditionsState[index - 1]]; renderConditionsEditor(); }, index === 0),
+                makeBtn('<i class="fa-solid fa-arrow-down"></i>', () => { [conditionsState[index + 1], conditionsState[index]] = [conditionsState[index], conditionsState[index + 1]]; renderConditionsEditor(); }, index === conditionsState.length - 1),
+                makeBtn('<i class="fa-solid fa-trash"></i> Quitar', () => { conditionsState.splice(index, 1); renderConditionsEditor(); })
+            );
+
+            row.append(top, text, actions);
+            conditionsEditor.appendChild(row);
+        });
+    };
+
+    const loadConditionsFromSettings = (json) => {
+        let list = null;
+        try { list = json ? JSON.parse(json) : null; } catch (e) { list = null; }
+        conditionsState = (Array.isArray(list) && list.length ? list : DEFAULT_CONDITIONS).map(c => ({
+            icon: c.icon || 'circle-check', title: c.title || '', value: c.value || '', text: c.text || ''
+        }));
+        renderConditionsEditor();
+    };
+
+    const btnAddCondition = document.getElementById('btn-add-condition');
+    const btnResetConditions = document.getElementById('btn-reset-conditions');
+    const btnSaveConditions = document.getElementById('btn-save-conditions');
+    if (btnAddCondition) btnAddCondition.addEventListener('click', () => {
+        if (conditionsState.length >= 12) { showToast('Máximo 12 condiciones.', 'error'); return; }
+        conditionsState.push({ icon: 'circle-check', title: '', value: '', text: '' });
+        renderConditionsEditor();
+    });
+    if (btnResetConditions) btnResetConditions.addEventListener('click', () => {
+        conditionsState = DEFAULT_CONDITIONS.map(c => ({ ...c }));
+        renderConditionsEditor();
+        showToast('Se han puesto las condiciones de ejemplo. Pulsa Guardar para publicarlas.', 'info');
+    });
+    if (btnSaveConditions) btnSaveConditions.addEventListener('click', async () => {
+        if (conditionsState.some(c => !c.title.trim())) { showToast('Cada condición necesita un título.', 'error'); return; }
+        try {
+            const res = await fetch('/api/settings', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('admin_token') },
+                body: JSON.stringify({ conditions: conditionsState })
+            });
+            const data = await res.json();
+            if (res.ok) showToast('Condiciones guardadas. Ya se ven en la web.', 'success');
+            else showToast(data.error || 'No se pudieron guardar las condiciones.', 'error');
+        } catch (err) {
+            console.error(err);
+            showToast('Error de conexión con el servidor.', 'error');
+        }
+    });
+
     const fetchSettings = async () => {
         try {
             const res = await fetch('/api/settings');
@@ -1224,6 +1334,7 @@ const initAdmin = () => {
             if (settingContactPhone) settingContactPhone.value = data.contact_phone || '34614767411';
             if (settingContactEmail) settingContactEmail.value = data.contact_email || 'info@rentmeuskar.com';
             if (settingFianzaAmount) settingFianzaAmount.value = data.fianza_amount || '500,00';
+            loadConditionsFromSettings(data.conditions_json);
             if (settingShowReviewsCount) {
                 settingShowReviewsCount.checked = data.show_reviews_count === 'true';
             }

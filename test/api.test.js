@@ -336,6 +336,30 @@ test('SEO local: las páginas de zona existen, tienen su título y la ficha de e
   assert.ok(sitemap.includes('/alquiler-furgonetas-baza'), 'el sitemap no lista las páginas de zona');
 });
 
+test('condiciones de las furgonetas: se editan desde el panel, se validan y salen en los ajustes públicos', async () => {
+  const admin = await login('zvaito', ADMIN_PASSWORD);
+  const card = (extra = {}) => ({ icon: 'road', title: 'Kilómetros', value: '350 km al día', text: 'Incluidos en el precio.', ...extra });
+
+  // Sin sesión de administrador no se pueden cambiar
+  assert.equal((await call('PUT', '/api/settings', { conditions: [card()] })).status, 401);
+
+  // Con sesión se guardan; un icono que no está en la lista se sustituye por uno seguro
+  const ok = await call('PUT', '/api/settings', { conditions: [card(), card({ icon: 'icono-raro', title: 'Fianza', value: '{fianza} €' })] }, admin);
+  assert.equal(ok.status, 200);
+  const list = JSON.parse((await call('GET', '/api/settings')).data.conditions_json);
+  assert.equal(list.length, 2);
+  assert.equal(list[0].title, 'Kilómetros');
+  assert.equal(list[1].icon, 'circle-check');
+
+  // Datos no válidos: 400 y no se cambia nada
+  const invalid = [[], 'texto', [card({ title: '' })], [card({ title: 'a'.repeat(41) })], [card({ value: 'v'.repeat(41) })],
+    [card({ text: 't'.repeat(301) })], [card({ title: 5 })], [null], Array(13).fill(card())];
+  for (const bad of invalid) {
+    assert.equal((await call('PUT', '/api/settings', { conditions: bad }, admin)).status, 400, JSON.stringify(bad).slice(0, 60));
+  }
+  assert.equal(JSON.parse((await call('GET', '/api/settings')).data.conditions_json).length, 2);
+});
+
 test('las rutas de API inexistentes responden 404 en JSON', async () => {
   const res = await call('GET', '/api/no-existe');
   assert.equal(res.status, 404);

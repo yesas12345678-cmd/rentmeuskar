@@ -641,8 +641,8 @@ const initApp = () => {
                 if (Array.isArray(rawVans) && rawVans.length > 0) {
                     databaseVans = rawVans;
                 } else {
-                    console.warn('Catálogo recibido vacío del servidor, aplicando furgonetas base.');
-                    useStaticVansFallback();
+                    // Sin furgonetas en el panel: no se inventan (antes aparecían un Ford y una MAN escritos en el código)
+                    databaseVans = [];
                 }
                 
                 populateVanDropdown(databaseVans);
@@ -651,6 +651,10 @@ const initApp = () => {
                 if (fleetGridContainer) {
                     fleetGridContainer.innerHTML = '';
                     const activeVans = databaseVans.filter(v => v.status === 'active');
+
+                    if (activeVans.length === 0) {
+                        fleetGridContainer.innerHTML = '<p style="grid-column: 1 / -1; text-align: center; color: var(--text-secondary);">Ahora mismo no hay furgonetas disponibles para reservar en la web. Contáctanos y te ayudamos.</p>';
+                    }
 
                     activeVans.forEach((van, index) => {
                         const article = document.createElement('article');
@@ -842,24 +846,13 @@ const initApp = () => {
         }
     };
 
+    // Si no se puede cargar el catálogo no se muestran furgonetas inventadas: se avisa al cliente
     const useStaticVansFallback = () => {
-        databaseVans = [
-            {
-                van_type: 'medium', name: 'Ford Transit Custom L2H2 (8m³)', plate: '3681 MCC', m3: '8m³', price_sin: 79.00, min_price_con: 50.00, km_price_con: 1.00, custom_extras: [
-                    { name: 'GPS Navegador', price: 5.00, type: 'daily' },
-                    { name: 'Segundo Conductor', price: 8.00, type: 'daily' },
-                    { name: 'Kit Mudanza', price: 10.00, type: 'once' }
-                ]
-            },
-            {
-                van_type: 'large', name: 'MAN TGE L4H3 Gran Volumen (14m³)', plate: '3758 MDW', m3: '14m³', price_sin: 107.44, min_price_con: 60.00, km_price_con: 1.40, custom_extras: [
-                    { name: 'GPS Navegador', price: 5.00, type: 'daily' },
-                    { name: 'Segundo Conductor', price: 8.00, type: 'daily' },
-                    { name: 'Kit Mudanza', price: 10.00, type: 'once' }
-                ]
-            }
-        ];
+        databaseVans = [];
         populateVanDropdown(databaseVans);
+        if (fleetGridContainer) {
+            fleetGridContainer.innerHTML = '<p style="grid-column: 1 / -1; text-align: center; color: var(--text-secondary);">No hemos podido cargar las furgonetas ahora mismo. Recarga la página o contáctanos.</p>';
+        }
     };
 
     loadVans();
@@ -2835,6 +2828,44 @@ const initApp = () => {
         }
     };
 
+    // Condiciones de las furgonetas: las edita el titular en el panel (Ajustes); sin nada guardado se quedan las de la página
+    const COND_ICONS = ['road', 'shield-halved', 'id-card', 'credit-card', 'broom', 'location-dot', 'clock', 'key', 'gas-pump', 'screwdriver-wrench', 'euro-sign', 'calendar-days', 'phone', 'circle-check'];
+    const renderConditions = (json) => {
+        const grid = document.querySelector('.cond-grid');
+        if (!grid || !json) return;
+        let list;
+        try { list = JSON.parse(json); } catch (e) { return; }
+        if (!Array.isArray(list) || list.length === 0) return;
+        const fianza = window.RMU_FIANZA || '500,00';
+        const fill = (text) => String(text || '').split('{fianza}').join(fianza);
+        grid.innerHTML = '';
+        list.forEach(item => {
+            const card = document.createElement('div');
+            card.className = 'cond-card';
+            const iconBox = document.createElement('div');
+            iconBox.className = 'cond-icon';
+            const icon = document.createElement('i');
+            icon.className = 'fa-solid fa-' + (COND_ICONS.includes(item.icon) ? item.icon : 'circle-check');
+            iconBox.appendChild(icon);
+            const title = document.createElement('h3');
+            title.textContent = fill(item.title);
+            card.append(iconBox, title);
+            if (item.value) {
+                const value = document.createElement('p');
+                value.className = 'cond-value';
+                value.textContent = fill(item.value);
+                card.appendChild(value);
+            }
+            if (item.text) {
+                const text = document.createElement('p');
+                text.className = 'cond-text';
+                text.textContent = fill(item.text);
+                card.appendChild(text);
+            }
+            grid.appendChild(card);
+        });
+    };
+
     // Cargar configuraciones de horario, contacto y de visualización del badge de opiniones
     const loadSettings = async () => {
         try {
@@ -2854,6 +2885,8 @@ const initApp = () => {
                     window.RMU_FIANZA = String(data.fianza_amount);
                     document.querySelectorAll('.rmu-fianza').forEach(el => { el.textContent = window.RMU_FIANZA; });
                 }
+
+                renderConditions(data.conditions_json);
 
                 // Actualizar teléfono y whatsapp
                 if (data.contact_phone) {

@@ -101,11 +101,7 @@ let fallbackVans = [
     extra_driver_price: 10.00,
     extra_moving_price: 10.00,
     images: ['assets/ford_transit_custom.png'],
-    custom_extras: [
-      { name: 'GPS Navegador', price: 5.00, type: 'daily' },
-      { name: 'Segundo Conductor', price: 8.00, type: 'daily' },
-      { name: 'Kit Mudanza', price: 10.00, type: 'once' }
-    ],
+    custom_extras: [], // los extras los crea el titular desde el panel de administración
     max_occupants: 3,
     eco_label: 'C',
     daily_km_limit: 350,
@@ -128,11 +124,7 @@ let fallbackVans = [
     extra_driver_price: 10.00,
     extra_moving_price: 10.00,
     images: ['assets/man_tge.png'],
-    custom_extras: [
-      { name: 'GPS Navegador', price: 5.00, type: 'daily' },
-      { name: 'Segundo Conductor', price: 8.00, type: 'daily' },
-      { name: 'Kit Mudanza', price: 10.00, type: 'once' }
-    ],
+    custom_extras: [], // los extras los crea el titular desde el panel de administración
     max_occupants: 3,
     eco_label: 'C',
     daily_km_limit: 350,
@@ -3946,8 +3938,34 @@ function publicSettings(settings) {
   return Object.fromEntries(Object.entries(settings).filter(([key]) => !key.startsWith('admin_')));
 }
 
+// Condiciones de las furgonetas que se muestran en la web: lista de tarjetas editable desde el panel
+const CONDITION_ICONS = ['road', 'shield-halved', 'id-card', 'credit-card', 'broom', 'location-dot', 'clock', 'key', 'gas-pump', 'screwdriver-wrench', 'euro-sign', 'calendar-days', 'phone', 'circle-check'];
+function validateConditions(list) {
+  if (!Array.isArray(list) || list.length < 1 || list.length > 12) return { error: 'Debe haber entre 1 y 12 condiciones.' };
+  const clean = [];
+  for (const item of list) {
+    if (!item || typeof item !== 'object' || !areStrings(item.title, item.value, item.text) || typeof item.icon !== 'string') {
+      return { error: 'Alguna condición no es válida.' };
+    }
+    const title = item.title.trim();
+    const value = item.value.trim();
+    const text = item.text.trim();
+    if (!title || title.length > 40) return { error: 'El título de cada condición es obligatorio y admite hasta 40 caracteres.' };
+    if (value.length > 40) return { error: 'El dato destacado admite hasta 40 caracteres.' };
+    if (text.length > 300) return { error: 'El texto de cada condición admite hasta 300 caracteres.' };
+    clean.push({ icon: CONDITION_ICONS.includes(item.icon) ? item.icon : 'circle-check', title, value, text });
+  }
+  return { json: JSON.stringify(clean) };
+}
+
 app.put('/api/settings', verifyAdmin, async (req, res) => {
   let { hours_weekdays, hours_saturdays, hours_sundays, show_reviews_count, contact_phone, contact_email, fianza_amount } = req.body;
+  let conditions_json;
+  if (req.body.conditions !== undefined) {
+    const checked = validateConditions(req.body.conditions);
+    if (checked.error) return res.status(400).json({ error: checked.error });
+    conditions_json = checked.json;
+  }
   const fields = { hours_weekdays, hours_saturdays, hours_sundays, show_reviews_count, contact_phone, contact_email, fianza_amount };
   if (Object.values(fields).some(v => v !== undefined && (typeof v !== 'string' || v.length > 200))) {
     return res.status(400).json({ error: 'Valores de configuración no válidos.' });
@@ -3984,7 +4002,8 @@ app.put('/api/settings', verifyAdmin, async (req, res) => {
       { key: 'show_reviews_count', value: show_reviews_count },
       { key: 'contact_phone', value: contact_phone },
       { key: 'contact_email', value: contact_email },
-      { key: 'fianza_amount', value: fianza_amount }
+      { key: 'fianza_amount', value: fianza_amount },
+      { key: 'conditions_json', value: conditions_json }
     ];
     
     for (const q of queries) {
@@ -4008,6 +4027,7 @@ app.put('/api/settings', verifyAdmin, async (req, res) => {
     if (contact_phone !== undefined) fallbackSettings.contact_phone = contact_phone;
     if (contact_email !== undefined) fallbackSettings.contact_email = contact_email;
     if (fianza_amount !== undefined) fallbackSettings.fianza_amount = fianza_amount;
+    if (conditions_json !== undefined) fallbackSettings.conditions_json = conditions_json;
     
     saveAdminStoreToFile();
     res.json({ message: 'Configuración actualizada temporalmente en memoria (Modo offline sin BD).', settings: fallbackSettings });

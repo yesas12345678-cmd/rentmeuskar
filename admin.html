@@ -1002,6 +1002,22 @@
                     </form>
                 </div>
 
+                <!-- Condiciones de las furgonetas (tarjetas del apartado público "Condiciones de las Furgonetas") -->
+                <div class="table-card" id="conditions-card" style="padding: 2rem; max-width: 900px; margin: 0 auto 2rem auto; text-align: left;">
+                    <h3 style="font-size: 1.1rem; color: #fff; margin-bottom: 0.5rem; font-family: var(--font-heading); display: flex; align-items: center; gap: 0.5rem;">
+                        <i class="fa-solid fa-list-check" style="color: var(--color-neon);"></i> Condiciones de las furgonetas
+                    </h3>
+                    <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 1.2rem; line-height: 1.5;">
+                        Son las tarjetas del apartado "Condiciones de las Furgonetas" de la web. Puedes cambiar los textos, añadir, quitar y ordenar. Escribe <strong>{fianza}</strong> y saldrá el importe de la fianza de Ajustes.
+                    </p>
+                    <div id="conditions-editor" style="display: grid; gap: 1rem;"></div>
+                    <div style="display: flex; gap: 0.6rem; flex-wrap: wrap; margin-top: 1.2rem; align-items: center;">
+                        <button type="button" class="btn btn-secondary" id="btn-add-condition"><i class="fa-solid fa-plus"></i> Añadir condición</button>
+                        <button type="button" class="btn btn-secondary" id="btn-reset-conditions"><i class="fa-solid fa-rotate-left"></i> Restaurar las de ejemplo</button>
+                        <button type="button" class="btn btn-primary" id="btn-save-conditions" style="margin-left: auto;"><i class="fa-solid fa-floppy-disk"></i> Guardar condiciones</button>
+                    </div>
+                </div>
+
                 <!-- Formulario de Cambio de Credenciales de Admin (Usuario y Contraseña con Verificación por Email) -->
                 <div class="table-card" style="padding: 2rem; max-width: 600px; margin: 0 auto 2rem auto; text-align: left;">
                     <h3 style="font-size: 1.1rem; color: #fff; margin-bottom: 0.5rem; font-family: var(--font-heading); display: flex; align-items: center; gap: 0.5rem; margin-top: 0;">
@@ -1889,6 +1905,6 @@
     <!-- Toast Notification Container -->
     <div class="toast-container" id="toast-container"></div>
 
-    <script src="admin.js?v=3.7"></script>
+    <script src="admin.js?v=3.8"></script>
 </body>
 </html>
