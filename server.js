@@ -1353,6 +1353,17 @@ app.post('/api/auth/register', async (req, res) => {
   if (dni && !validateSpanishID(dni)) {
     return res.status(400).json({ error: 'El DNI / NIE introducido no es válido (comprueba los 8 números y la letra).' });
   }
+  // Para alquilar hacen falta nombre completo, correo, teléfono y DNI/NIE: se piden ya al crear la cuenta
+  if (!phone || !dni) {
+    return res.status(400).json({ error: 'El teléfono de contacto y el DNI / NIE son obligatorios.' });
+  }
+  const registerPhoneDigits = phone.replace(/\D/g, '');
+  if (registerPhoneDigits.length < 9 || registerPhoneDigits.length > 15) {
+    return res.status(400).json({ error: 'El teléfono de contacto no es válido.' });
+  }
+  if (name.trim().split(/\s+/).filter(Boolean).length < 2) {
+    return res.status(400).json({ error: 'Escribe tu nombre completo (nombre y apellidos).' });
+  }
 
   const cleanEmail = email.trim().toLowerCase();
   const cleanName = name.trim();
@@ -2144,6 +2155,10 @@ app.post('/api/bookings', async (req, res) => {
     name = String(name).trim().slice(0, 100);
   }
 
+  // Sin nombre completo, correo, teléfono y DNI/NIE no se registra ninguna reserva
+  const contactIssue = bookingContactProblem(requester, { ...req.body, name });
+  if (contactIssue) return res.status(400).json({ error: contactIssue, code: 'PROFILE_INCOMPLETE' });
+
   // Declaradas fuera del try: el catch de modo sin BD también las usa
   let realPlate = '';
   let realM3 = '';
@@ -2711,6 +2726,20 @@ function bookingContact(user, body) {
   };
 }
 
+// Datos que hacen falta para alquilar: nombre completo, correo, teléfono y DNI/NIE válidos (salen de la cuenta).
+// Devuelve el mensaje del primer dato que falta o no es válido, o null si está todo. El administrador queda fuera.
+function bookingContactProblem(user, body) {
+  if (user && user.isAdmin) return null;
+  const contact = bookingContact(user, body);
+  const name = String((user && user.name) || (body && body.name) || '').trim();
+  if (name.split(/\s+/).filter(Boolean).length < 2) return 'Falta tu nombre completo (nombre y apellidos). Complétalo en "Editar mi perfil".';
+  if (!EMAIL_PATTERN.test(contact.email)) return 'Falta un correo electrónico válido.';
+  const phoneDigits = contact.phone.replace(/\D/g, '');
+  if (phoneDigits.length < 9 || phoneDigits.length > 15) return 'Falta un teléfono de contacto válido. Complétalo en "Editar mi perfil".';
+  if (!validateSpanishID(contact.dni)) return 'Falta un DNI/NIE válido. Complétalo en "Editar mi perfil".';
+  return null;
+}
+
 // Matrícula y volumen de una furgoneta: de la BD o del catálogo en memoria. Antes, sin BD se
 // ponía una matrícula fija según el tipo, y salía una matrícula equivocada en factura y contrato.
 async function getVanPlateAndM3(vanType) {
@@ -3076,6 +3105,8 @@ app.post('/api/redsys/create-payment', async (req, res) => {
     const numOrder = generateRedsysOrderId();
 
     const authUser = payer;
+    const payContactIssue = bookingContactProblem(authUser, bookingData);
+    if (payContactIssue) return res.status(400).json({ error: payContactIssue, code: 'PROFILE_INCOMPLETE' });
     await saveBookingRecord({
       name: String(bookingData.name || (authUser && authUser.name) || 'Cliente').trim().slice(0, 100),
       van_type: bookingData.van_type,
@@ -3221,6 +3252,8 @@ const handleTestPayment = async (req, res) => {
 
     // Resolver usuario autenticado y detalles de contacto
     const authUser = await getAuthUser(req);
+    const testContactIssue = bookingContactProblem(authUser, bookingData);
+    if (testContactIssue) return res.status(400).json({ error: testContactIssue, code: 'PROFILE_INCOMPLETE' });
     const { email: clientEmail, phone: clientPhone, dni: clientDni } = bookingContact(authUser, bookingData);
 
     // Validar user_id frente a tabla users (solo el usuario autenticado, nunca el enviado en el cuerpo)

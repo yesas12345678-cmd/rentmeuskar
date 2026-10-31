@@ -67,7 +67,8 @@ before(async () => {
     fallbackUsers: [
       { id: 1, name: 'Cliente Test', email: CLIENT.email, password: scryptHash(CLIENT.password), phone: '600000001', dni: '00000000T' },
       { id: 2, name: 'Otro Cliente', email: 'otro@example.com', password: scryptHash('OtraClave!2030'), phone: '600000002', dni: '00000001R' },
-      { id: 3, name: 'Cliente Sesiones', email: 'sesion@example.com', password: scryptHash('ClaveSesion!2030'), phone: '600000003', dni: '00000002W' }
+      { id: 3, name: 'Cliente Sesiones', email: 'sesion@example.com', password: scryptHash('ClaveSesion!2030'), phone: '600000003', dni: '00000002W' },
+      { id: 4, name: 'Cliente Incompleto', email: 'incompleto@example.com', password: scryptHash('ClaveIncompleta!2030'), phone: '', dni: '' }
     ],
     fallbackBookings: [
       { id: 50, name: 'Pago Tardío', van_type: 'medium', van_name: 'Furgoneta Test', pickup_date: futureDate(120), pickup_time: '09:00', return_date: futureDate(121), return_time: '09:00', days: 1, extras: [], total_price: 100, user_id: 1, status: 'cancelled', payment_status: 'failed', payment_id: '261099999999', rental_mode: 'sin', created_at: '2020-01-01T00:00:00Z' },
@@ -358,6 +359,29 @@ test('condiciones de las furgonetas: se editan desde el panel, se validan y sale
     assert.equal((await call('PUT', '/api/settings', { conditions: bad }, admin)).status, 400, JSON.stringify(bad).slice(0, 60));
   }
   assert.equal(JSON.parse((await call('GET', '/api/settings')).data.conditions_json).length, 2);
+});
+
+test('no se registra ni se alquila sin nombre completo, correo, teléfono y DNI/NIE', async () => {
+  // Registro: faltan teléfono, DNI o apellidos
+  const complete = { name: 'Luis Gómez Pérez', email: 'luis.nuevo@example.com', password: 'Clave-Segura-1', phone: '600123123', dni: '12345678Z' };
+  for (const missing of [{ phone: '' }, { dni: '' }, { phone: '123' }, { name: 'Luis' }]) {
+    const res = await call('POST', '/api/auth/register', { ...complete, ...missing });
+    assert.equal(res.status, 400, JSON.stringify(missing));
+  }
+
+  // Una cuenta sin teléfono ni DNI no puede reservar ni pagar por ninguna de las vías
+  const token = await login('incompleto@example.com', 'ClaveIncompleta!2030');
+  const dates = [futureDate(230), futureDate(231)];
+  const bookingData = booking(dates[0], dates[1], { name: 'Cliente Incompleto' });
+  const attempts = [
+    await call('POST', '/api/bookings', bookingData, token),
+    await call('POST', '/api/redsys/create-payment', { bookingData }, token),
+    await call('POST', '/api/redsys/process-test-payment', { bookingData, cardDetails: { cardNumber: '4548810000000003', cardExpiry: '12/27', cardHolder: 'Cliente Incompleto' } }, token)
+  ];
+  for (const res of attempts) {
+    assert.equal(res.status, 400);
+    assert.equal(res.data.code, 'PROFILE_INCOMPLETE');
+  }
 });
 
 test('las rutas de API inexistentes responden 404 en JSON', async () => {

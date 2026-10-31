@@ -1642,6 +1642,28 @@ const initApp = () => {
        7. ENVIAR FORMULARIO, PASARELA TPV Y WHATSAPP FLOW
        ========================================================================== */
 
+    // Para alquilar hacen falta nombre completo, correo, teléfono y DNI/NIE en la cuenta (el servidor también lo exige)
+    const ensureProfileComplete = async (token) => {
+        let profile = null;
+        try {
+            const res = await fetch('/api/auth/me', { headers: { 'Authorization': `Bearer ${token}` } });
+            if (res.ok) profile = await res.json();
+        } catch (err) {
+            return true; // sin conexión decide el servidor
+        }
+        if (!profile || profile.is_admin) return true;
+        localStorage.setItem('user_profile', JSON.stringify(profile));
+        const nameOk = String(profile.name || '').trim().split(/\s+/).filter(Boolean).length >= 2;
+        const emailOk = !!profile.email;
+        const phoneDigits = String(profile.phone || '').replace(/\D/g, '');
+        const phoneOk = phoneDigits.length >= 9 && phoneDigits.length <= 15;
+        const dniOk = typeof window.validateSpanishID === 'function' ? window.validateSpanishID(String(profile.dni || '')) : !!profile.dni;
+        if (nameOk && emailOk && phoneOk && dniOk) return true;
+        showAppToast('Para alquilar completa tu perfil: nombre y apellidos, teléfono y DNI/NIE.', 'error');
+        window.openEditProfileModal();
+        return false;
+    };
+
     calcForm.addEventListener('submit', async (e) => {
         e.preventDefault();
 
@@ -1652,6 +1674,9 @@ const initApp = () => {
             window.openAuthModal('login-modal');
             return;
         }
+
+        // 1b. La cuenta debe tener todos los datos del contrato
+        if (!(await ensureProfileComplete(token))) return;
 
         const vanType = vanSelect.value;
         if (!vanType) {
