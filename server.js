@@ -287,9 +287,12 @@ async function syncDatabaseWithDisk(clientOrPool) {
       console.warn('[SYNC WARN] Error al sincronizar bloqueos:', e.message);
     }
 
+    // Una vez inicializada la base, ella manda: la copia local no puede devolver preguntas ni opiniones borradas
+    const dbIsAuthorityForContent = (await targetPool.query("SELECT 1 FROM settings WHERE key = 'vans_initialized'")).rowCount > 0;
+
     // 3. FAQs (SAFE 2-WAY MERGE CON DEDUPLICACIÓN ESTRICTA)
     try {
-      if (Array.isArray(fallbackFaqs) && fallbackFaqs.length > 0) {
+      if (!dbIsAuthorityForContent && Array.isArray(fallbackFaqs) && fallbackFaqs.length > 0) {
         for (const faq of fallbackFaqs) {
           if (!faq.question) continue;
           await targetPool.query(
@@ -303,6 +306,7 @@ async function syncDatabaseWithDisk(clientOrPool) {
         }
       }
       const faqsRes = await targetPool.query("SELECT * FROM faqs ORDER BY display_order ASC, id ASC");
+      if (dbIsAuthorityForContent && faqsRes.rows.length === 0) fallbackFaqs = [];
       if (faqsRes.rows.length > 0) {
         const seenFaqSet = new Set();
         const cleanDbFaqs = [];
@@ -382,7 +386,7 @@ async function syncDatabaseWithDisk(clientOrPool) {
 
     // 6. Reseñas (SAFE 2-WAY MERGE)
     try {
-      if (Array.isArray(fallbackReviews) && fallbackReviews.length > 0) {
+      if (!dbIsAuthorityForContent && Array.isArray(fallbackReviews) && fallbackReviews.length > 0) {
         for (const rev of fallbackReviews) {
           await targetPool.query(
             `INSERT INTO reviews (booking_code, client_name, rating, comment, role_or_city, van_name)
@@ -393,6 +397,7 @@ async function syncDatabaseWithDisk(clientOrPool) {
         }
       }
       const reviewsRes = await targetPool.query("SELECT * FROM reviews ORDER BY id DESC");
+      if (dbIsAuthorityForContent) fallbackReviews = [];
       if (reviewsRes.rows.length > 0) {
         reviewsRes.rows.forEach(dbR => {
           const idx = fallbackReviews.findIndex(r => String(r.id) === String(dbR.id));
@@ -4429,6 +4434,7 @@ app.delete('/api/admin/reviews/:id', verifyAdmin, async (req, res) => {
     if (index !== -1) {
       fallbackReviews.splice(index, 1);
     }
+    saveAdminStoreToFile();
     
     if (result.rowCount === 0) {
       if (index !== -1) {
@@ -4445,6 +4451,7 @@ app.delete('/api/admin/reviews/:id', verifyAdmin, async (req, res) => {
       return res.status(404).json({ error: 'Opinión no encontrada.' });
     }
     fallbackReviews.splice(index, 1);
+    saveAdminStoreToFile();
     res.json({ message: 'Opinión eliminada de memoria local (Modo offline).' });
   }
 });
