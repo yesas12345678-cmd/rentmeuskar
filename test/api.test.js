@@ -661,3 +661,24 @@ test('no se pueden probar códigos de reserva sin límite', async () => {
   for (let i = 0; i < 65; i++) last = await call('GET', `/api/bookings/50?auth=RMU-${String(i).padStart(6, '0')}`);
   assert.equal(last.status, 429);
 });
+
+test('no se crea una cuenta con un correo, teléfono o DNI que ya tiene otra, aunque cambie el formato', async () => {
+  const fresh = { name: 'Rosa Gil Ortiz', email: 'rosa.nueva@example.com', password: 'Clave-Segura-1', phone: '611222333', dni: '12345678Z' };
+  const duplicates = [
+    { email: 'CLIENTE@example.com' },
+    { phone: '600000001' },
+    { phone: '+34 600 00 00 01' },
+    { phone: '0034-600000001' },
+    { dni: '00000000T' },
+    { dni: '00000000-t' }
+  ];
+  for (const change of duplicates) {
+    const res = await call('POST', '/api/auth/register', { ...fresh, ...change });
+    assert.equal(res.status, 400, JSON.stringify(change));
+    assert.match(res.data.error, /Ya existe una cuenta|DNI/, JSON.stringify(change));
+  }
+  // Tampoco se puede cambiar el perfil a un teléfono o DNI ajenos
+  const token = await login('otro@example.com', 'OtraClave!2030');
+  assert.equal((await call('PUT', '/api/auth/me', { phone: '+34 600000001' }, token)).status, 400);
+  assert.equal((await call('PUT', '/api/auth/me', { dni: '00000000T' }, token)).status, 400);
+});

@@ -1325,7 +1325,12 @@ const pendingRegistrations = {};
 
 // 1. Registro de usuarios con verificación previa de correo electrónico
 // Mismo mensaje para email, teléfono o DNI repetidos: no revela cuál de los tres existe
-const DUPLICATE_ACCOUNT_ERROR = 'Ya existe una cuenta con alguno de estos datos (correo, teléfono o DNI). Si es tuya, inicia sesión o recupera la contraseña.';
+// Teléfono y DNI se comparan sin formato: "600 11 12 22", "+34 600111222" y "600111222" son el mismo teléfono
+const phoneKey = p => { const d = String(p || '').replace(/\D/g, ''); return d.length >= 9 ? d.slice(-9) : d; };
+const dniKey = s => String(s || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+const PHONE_KEY_SQL = "RIGHT(REGEXP_REPLACE(COALESCE(phone, ''), '\\D', '', 'g'), 9)";
+const DNI_KEY_SQL = "UPPER(REGEXP_REPLACE(COALESCE(dni, ''), '[^A-Za-z0-9]', '', 'g'))";
+const DUPLICATE_ACCOUNT_ERROR ='Ya existe una cuenta con alguno de estos datos (correo, teléfono o DNI). Si es tuya, inicia sesión o recupera la contraseña.';
 
 app.post('/api/auth/register', async (req, res) => {
   const { name, email, password, phone, dni } = req.body;
@@ -1379,15 +1384,15 @@ app.post('/api/auth/register', async (req, res) => {
     }
 
     if (cleanPhone) {
-      const checkPhone = await pool.query('SELECT id FROM users WHERE phone = $1', [cleanPhone]);
-      if (checkPhone.rowCount > 0 || fallbackUsers.some(u => u.phone === cleanPhone)) {
+      const checkPhone = await pool.query(`SELECT id FROM users WHERE ${PHONE_KEY_SQL} = $1`, [phoneKey(cleanPhone)]);
+      if (checkPhone.rowCount > 0 || fallbackUsers.some(u => phoneKey(u.phone) === phoneKey(cleanPhone))) {
         return res.status(400).json({ error: DUPLICATE_ACCOUNT_ERROR });
       }
     }
 
     if (cleanDni) {
-      const checkDni = await pool.query('SELECT id FROM users WHERE UPPER(dni) = $1', [cleanDni]);
-      if (checkDni.rowCount > 0 || fallbackUsers.some(u => u.dni && u.dni.toUpperCase() === cleanDni)) {
+      const checkDni = await pool.query(`SELECT id FROM users WHERE ${DNI_KEY_SQL} = $1`, [dniKey(cleanDni)]);
+      if (checkDni.rowCount > 0 || fallbackUsers.some(u => u.dni && dniKey(u.dni) === dniKey(cleanDni))) {
         return res.status(400).json({ error: DUPLICATE_ACCOUNT_ERROR });
       }
     }
@@ -1395,10 +1400,10 @@ app.post('/api/auth/register', async (req, res) => {
     if (fallbackUsers.some(u => u.email.toLowerCase() === cleanEmail)) {
       return res.status(400).json({ error: DUPLICATE_ACCOUNT_ERROR });
     }
-    if (cleanPhone && fallbackUsers.some(u => u.phone === cleanPhone)) {
+    if (cleanPhone && fallbackUsers.some(u => phoneKey(u.phone) === phoneKey(cleanPhone))) {
       return res.status(400).json({ error: DUPLICATE_ACCOUNT_ERROR });
     }
-    if (cleanDni && fallbackUsers.some(u => u.dni && u.dni.toUpperCase() === cleanDni)) {
+    if (cleanDni && fallbackUsers.some(u => u.dni && dniKey(u.dni) === dniKey(cleanDni))) {
       return res.status(400).json({ error: DUPLICATE_ACCOUNT_ERROR });
     }
   }
@@ -1495,6 +1500,15 @@ app.post('/api/auth/verify-registration', async (req, res) => {
 
   // Código correcto: Crear usuario en la base de datos e iniciar sesión automáticamente
   try {
+    // Dos personas pueden haber pedido código con el mismo teléfono o DNI antes de activar: gana quien activa primero
+    const taken = await pool.query(
+      `SELECT id FROM users WHERE LOWER(email) = $1 OR ($2 <> '' AND ${PHONE_KEY_SQL} = $2) OR ($3 <> '' AND ${DNI_KEY_SQL} = $3) LIMIT 1`,
+      [cleanEmail, phoneKey(pending.phone), dniKey(pending.dni)]
+    );
+    if (taken.rowCount > 0) {
+      delete pendingRegistrations[cleanEmail];
+      return res.status(400).json({ error: DUPLICATE_ACCOUNT_ERROR });
+    }
     const result = await pool.query(
       'INSERT INTO users (name, email, password, phone, dni) VALUES ($1, $2, $3, $4, $5) RETURNING id, name, email, phone, dni, created_at',
       [pending.name, pending.email, pending.passHash, pending.phone, pending.dni]
@@ -1517,7 +1531,9 @@ app.post('/api/auth/verify-registration', async (req, res) => {
       return res.status(400).json({ error: DUPLICATE_ACCOUNT_ERROR });
     }
     // Sin BD solo se activa en local si la cuenta no existe ya en la copia local
-    if (fallbackUsers.some(u => (u.email || '').toLowerCase() === cleanEmail)) {
+    if (fallbackUsers.some(u => (u.email || '').toLowerCase() === cleanEmail ||
+        (pending.phone && phoneKey(u.phone) === phoneKey(pending.phone)) ||
+        (pending.dni && u.dni && dniKey(u.dni) === dniKey(pending.dni)))) {
       delete pendingRegistrations[cleanEmail];
       return res.status(400).json({ error: DUPLICATE_ACCOUNT_ERROR });
     }
@@ -1995,10 +2011,10 @@ app.put('/api/auth/me', async (req, res) => {
   if (cleanPhone || cleanDni) {
     let taken = false;
     try {
-      const dup = await pool.query('SELECT id FROM users WHERE id <> $1 AND (($2 <> \'\' AND phone = $2) OR ($3 <> \'\' AND UPPER(dni) = $3)) LIMIT 1', [userId, cleanPhone, cleanDni]);
+      const dup = await pool.query(`SELECT id FROM users WHERE id <> $1 AND (($2 <> '' AND ${PHONE_KEY_SQL} = $2) OR ($3 <> '' AND ${DNI_KEY_SQL} = $3)) LIMIT 1`, [userId, phoneKey(cleanPhone), dniKey(cleanDni)]);
       taken = dup.rowCount > 0;
     } catch (e) {
-      taken = fallbackUsers.some(u => u.id !== userId && ((cleanPhone && u.phone === cleanPhone) || (cleanDni && String(u.dni || '').toUpperCase() === cleanDni)));
+      taken = fallbackUsers.some(u => u.id !== userId && ((cleanPhone && phoneKey(u.phone) === phoneKey(cleanPhone)) || (cleanDni && dniKey(u.dni) === dniKey(cleanDni))));
     }
     if (taken) {
       return res.status(400).json({ error: 'Ese teléfono o DNI ya pertenece a otra cuenta.' });
