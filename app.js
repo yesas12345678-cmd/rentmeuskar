@@ -551,10 +551,10 @@ const initApp = () => {
                     <div>
                         <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-shield-halved text-neon" style="width: 16px;"></i> <strong>Fianza obligatoria:</strong> ${fianzaAmount} €</p>
                         <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-road text-neon" style="width: 16px;"></i> <strong>Km Incluidos:</strong> ${dailyKmLimit} km/día</p>
-                        <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-money-bill-transfer text-neon" style="width: 16px;"></i> <strong>Km adicionales:</strong> Consultar tarifa</p>
+                        <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-money-bill-transfer text-neon" style="width: 16px;"></i> <strong>Km adicionales:</strong> 0,28 € + IVA por km</p>
                         <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-tags text-neon" style="width: 16px;"></i> <strong>Descuento:</strong> 5% a partir de 3 días</p>
-                        <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-triangle-exclamation text-neon" style="width: 16px;"></i> <strong>Política de Combustible:</strong> Mismo Nivel</p>
-                        <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-bottle-droplet text-neon" style="width: 16px;"></i> <strong>AdBlue:</strong> No incluido (se abona el consumido)</p>
+                        <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-gas-pump text-neon" style="width: 16px;"></i> <strong>Combustible:</strong> el nivel se anota en el contrato al entregar y al devolver</p>
+                        <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-bottle-droplet text-neon" style="width: 16px;"></i> <strong>AdBlue:</strong> el nivel se anota en el contrato al entregar y al devolver</p>
                     </div>
                 </div>
             `;
@@ -575,13 +575,12 @@ const initApp = () => {
                         <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-user text-neon" style="width: 16px;"></i> <strong>Plazas:</strong> ${maxOccupants} plazas</p>
                         <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-gas-pump text-neon" style="width: 16px;"></i> <strong>Combustible:</strong> ${rmuEsc(fuelType)}</p>
                         <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-leaf text-neon" style="width: 16px;"></i> <strong>Distintivo Eco:</strong> Etiqueta ${rmuEsc(ecoLabel)}</p>
-                        <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-circle-check text-neon" style="width: 16px;"></i> <strong>Fianza y Combustible:</strong> Incluidos</p>
+                        <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-circle-check text-neon" style="width: 16px;"></i> <strong>Fianza:</strong> no se exige con conductor</p>
                     </div>
                     <div>
-                        <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-receipt text-neon" style="width: 16px;"></i> <strong>Tarifa mínima:</strong> ${minCon} € + IVA (incluye 20km/1h)</p>
+                        <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-receipt text-neon" style="width: 16px;"></i> <strong>Tarifa mínima:</strong> ${minCon} € + IVA (incluye 20 km)</p>
                         <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-money-bill-transfer text-neon" style="width: 16px;"></i> <strong>Precio km extra:</strong> ${kmCon} € + IVA/km</p>
                         <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-hourglass-half text-neon" style="width: 16px;"></i> <strong>Hora de espera:</strong> ${waitCon} € + IVA/h</p>
-                        <p style="margin: 0.3rem 0; color: #fff;"><i class="fa-solid fa-handshake-angle text-neon" style="width: 16px;"></i> <strong>Servicio Incluido:</strong> Ayuda de carga y descarga ligera</p>
                     </div>
                 </div>
             `;
@@ -664,60 +663,23 @@ const initApp = () => {
 
                         const mainImg = (van.images && van.images.length > 0) ? van.images[0] : 'assets/ford_transit_custom.png';
 
-                        let tag = 'Furgoneta';
-                        let desc = 'Capacidad de carga y comodidad';
-                        let specPayload = '1.000 kg';
-                        let specPlazas = '3 plazas';
-                        let specExtra = 'Puerta lateral corredera';
-
-                        if (van.van_type === 'medium') {
-                            tag = 'Más Popular';
-                            desc = 'Capacidad de carga mediana y ágil';
-                            specPayload = '1.000 kg';
-                            specPlazas = '3 plazas delanteras';
-                            specExtra = 'Puerta lateral corredera';
-                        } else if (van.van_type === 'large') {
-                            tag = 'Gran Volumen';
-                            desc = 'Máxima capacidad para grandes portes';
-                            specPayload = '1.400 kg';
-                            specPlazas = '3 plazas con cabina amplia';
-                            specExtra = 'Altura interior para estar de pie';
-                        } else {
-                            const m3Num = parseFloat(van.m3) || 10;
-                            if (m3Num < 6) {
-                                tag = 'Compacta';
-                                desc = 'Ideal para pequeños traslados urbanos';
-                                specPayload = '600 kg';
-                                specPlazas = '2 plazas';
-                                specExtra = 'Fácil de aparcar';
-                            } else if (m3Num > 12) {
-                                tag = 'Súper Volumen';
-                                desc = 'Para grandes mudanzas y largos trayectos';
-                                specPayload = '1.500 kg';
-                                specPlazas = '3 plazas';
-                                specExtra = 'Espacio de carga optimizado';
-                            } else {
-                                tag = 'Versátil';
-                                desc = 'Perfecto equilibrio entre tamaño y potencia';
-                                specPayload = '1.200 kg';
-                                specPlazas = '3 plazas';
-                                specExtra = 'Fácil conducción';
-                            }
-                        }
+                        // Solo datos reales de la furgoneta (los que se editan en el panel). Antes salían
+                        // cargas útiles, puertas y etiquetas como 'Más popular' escritas a mano en el código.
+                        const specPlazas = `${van.max_occupants || 3} plazas`;
+                        const specMass = van.max_mass ? `${van.max_mass} kg` : '';
+                        const specKm = `${van.daily_km_limit || 350} km/día incluidos`;
 
                         article.innerHTML = `
                             <div class="van-image-container" style="position: relative;">
                                 <img src="${rmuEsc(mainImg)}" alt="${rmuEsc(van.name)}" class="van-image" id="img-van-${van.van_type}" loading="lazy" decoding="async">
-                                <div class="van-tag ${van.van_type === 'medium' ? 'highlight' : ''}">${tag}</div>
                             </div>
                             <div class="van-details">
                                 <h3 class="van-name">${rmuEsc(van.name)}</h3>
-                                <p class="van-model-example">${desc}</p>
                                 <ul class="van-specs">
                                     <li><i class="fa-solid fa-box"></i> <strong>${rmuEsc(van.m3)}</strong> de capacidad</li>
-                                    <li><i class="fa-solid fa-weight-hanging"></i> Carga útil: <strong>${specPayload}</strong></li>
                                     <li><i class="fa-solid fa-user"></i> <strong>${specPlazas}</strong></li>
-                                    <li><i class="fa-solid fa-circle-check"></i> ${specExtra}</li>
+                                    ${specMass ? `<li><i class="fa-solid fa-weight-hanging"></i> Masa máxima: <strong>${rmuEsc(specMass)}</strong></li>` : ''}
+                                    <li><i class="fa-solid fa-road"></i> ${specKm}</li>
                                 </ul>
                                 <div class="van-footer">
                                     <div class="van-price">
