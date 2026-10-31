@@ -384,6 +384,17 @@ test('no se registra ni se alquila sin nombre completo, correo, teléfono y DNI/
   }
 });
 
+test('los iconos de la web (favicon .ico, .png y .svg) se sirven y pesan poco', async () => {
+  for (const [url, tipo, maxKb] of [['/favicon.ico', 'icon', 60], ['/assets/favicon.png', 'png', 120], ['/assets/favicon.svg', 'svg', 10]]) {
+    const res = await fetch(BASE + url);
+    assert.equal(res.status, 200, url);
+    assert.ok((res.headers.get('content-type') || '').includes(tipo), `${url} con tipo ${res.headers.get('content-type')}`);
+    assert.ok((await res.arrayBuffer()).byteLength < maxKb * 1024, `${url} pesa demasiado`);
+  }
+  const home = await (await fetch(BASE + '/')).text();
+  assert.ok(home.includes('favicon.svg'), 'la portada no enlaza el icono vectorial');
+});
+
 test('las rutas de API inexistentes responden 404 en JSON', async () => {
   const res = await call('GET', '/api/no-existe');
   assert.equal(res.status, 404);

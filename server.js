@@ -4729,9 +4729,9 @@ app.get('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, 'admin.html'));
 });
 
-// Servir favicon.ico de forma directa y explícita con fondo circular azul oscuro
+// Servir favicon.ico de forma directa y explícita (furgoneta verde sobre fondo azul noche)
 app.get('/favicon.ico', (req, res) => {
-  res.sendFile(path.join(__dirname, 'assets', 'favicon.png'));
+  res.sendFile(path.join(__dirname, 'assets', 'favicon.ico'));
 });
 
 // Servir solo los archivos públicos de la raíz (nunca el código del servidor ni data/)

@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Fondo azul noche de la marca -->
+  <rect width="64" height="64" rx="14" fill="#0f1c3f"/>
+  <!-- Furgoneta verde de la marca: caja de carga + cabina, esquinas redondeadas -->
+  <path d="M7 20H37V26.5H48.5L57 36V46H7Z" fill="#82d105" stroke="#82d105" stroke-width="4" stroke-linejoin="round"/>
+  <!-- Ventanilla -->
+  <path d="M41.5 30H47.4L52.2 35.8H41.5Z" fill="#0f1c3f" stroke="#0f1c3f" stroke-width="1.6" stroke-linejoin="round"/>
+  <!-- Pasos de rueda y ruedas -->
+  <circle cx="19" cy="47" r="8.5" fill="#0f1c3f"/>
+  <circle cx="46" cy="47" r="8.5" fill="#0f1c3f"/>
+  <circle cx="19" cy="47" r="5.6" fill="#82d105"/>
+  <circle cx="46" cy="47" r="5.6" fill="#82d105"/>
+  <circle cx="19" cy="47" r="2.1" fill="#0f1c3f"/>
+  <circle cx="46" cy="47" r="2.1" fill="#0f1c3f"/>
+</svg>
